@@ -60,11 +60,11 @@ function genFloor(n,seed){
   g.safe=safeRooms.map(r=>({x0:r.x*TILE,y0:r.y*TILE,x1:(r.x+r.w)*TILE,y1:(r.y+r.h)*TILE}));
   g.smiths=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
   // floor 1: shadow creatures. floor 2 on: mostly the dead, with a few living things left for spell-casters
-  const bag=n<2?['shade','shade','shade','skitter','skitter','skitter','brute','wisp']:['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'];
+  const bag=SPAWNS[Math.min(n,SPAWNS.length)-1];
   for(const r of rooms){
     if(r.kind!=='room')continue;
     const cnt=2+Math.floor(r.w*r.h/24)+ri(0,1)+Math.min(2,Math.floor((n-1)/2));
-    for(let i=0;i<cnt;i++)g.enemies.push(makeEnemy(bag[ri(0,bag.length-1)],(ri(r.x+1,r.x+r.w-2)+.5)*TILE,(ri(r.y+1,r.y+r.h-2)+.5)*TILE,hpM,dmgM,rng()<.07));
+    for(let i=0;i<cnt;i++)g.enemies.push(makeEnemy(bag[ri(0,bag.length-1)],(ri(r.x+1,r.x+r.w-2)+.5)*TILE,(ri(r.y+1,r.y+r.h-2)+.5)*TILE,hpM,dmgM,rng()<ELITE_CHANCE));
     if(rng()<.4)g.chests.push({x:(ri(r.x+1,r.x+r.w-2)+.5)*TILE,y:(ri(r.y+1,r.y+r.h-2)+.5)*TILE});   // opened or not is per player: floorState(n).chests
   }
   // The boss is always there, even on a floor you have cleared: a rematch is optional (the floor gate takes you past it)

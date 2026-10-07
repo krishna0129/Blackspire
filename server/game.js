@@ -232,4 +232,4 @@ class Game{
     }
   }
 }
-module.exports={Game,validSheet,TICK};
+module.exports={Game,validSheet,loadRules,TICK};

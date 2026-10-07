@@ -58,8 +58,7 @@ function simUpdate(dt){
   forPlayers(pl=>{if(pl.dead)return;const opened=floorState(G.n).chests;
     for(let ci=0;ci<G.chests.length;ci++){const c=G.chests[ci];if(opened.includes(ci)||hyp(c.x-P.x,c.y-P.y)>=13)continue;
       opened.push(ci);sfx('pick');burst(c.x,c.y,10,'#dcb65c',50);
-      dropItem(c.x+rand(-10,10),c.y+14,randomItem(G.n,12),c.x,c.y);if(Math.random()<.35)dropItem(c.x+rand(-12,12),c.y+16,randomItem(G.n,6),c.x,c.y);
-      dropShards(c.x,c.y+10,Math.round(rand(8,16)*(1+.25*(G.n-1))));dropMats(c.x,c.y+10,{scrap:Math.round(rand(1,2)),ember:Math.random()<.25?1:0});if(Math.random()<.5)dropPotion(c.x+12,c.y+10,c.x,c.y);}});
+      dropLoot('chest',c.x,c.y+10);}});
   // the boss wakes when anyone is inside its chamber, and goes back to sleep at full health if nobody is left alive in there
   const b=G.bossEnt,r=G.boss;
   if(b&&!b.dead&&!G.bossAwake&&G.players.some(pl=>!pl.gone&&!pl.dead&&pl.x>(r.x+1)*TILE&&pl.x<(r.x+r.w-1)*TILE&&pl.y>(r.y+1)*TILE&&pl.y<(r.y+r.h-1)*TILE))wakeBoss();

@@ -81,22 +81,12 @@ function killEnemy(e){
   const T=ETYPES[e.type];
   forPlayers(pl=>{
     S.kills++;gainXp(T.xp*(1+.3*(G.n-1))*(e.elite?3:1));
-    const sh=Math.round((e.boss?60:e.elite?14:rand(1,4))*(1+.25*(G.n-1)));
-    dropShards(e.x,e.y,sh);
-    // materials: scrap is common, emberstone mostly from elites, spire crystals from bosses
-    if(e.boss)dropMats(e.x,e.y,{scrap:Math.round(rand(4,6)),ember:Math.round(rand(2,3)),crystal:1});
-    else if(e.elite)dropMats(e.x,e.y,{scrap:Math.round(rand(1,3)),ember:Math.random()<.4?1:0,crystal:Math.random()<.04?1:0});
-    else dropMats(e.x,e.y,{scrap:Math.random()<.3?1:0,ember:Math.random()<.03?1:0});
+    dropLoot(e.boss?'boss':e.elite?'elite':'normal',e.x,e.y);
     if(e.boss){
-      for(let i=0;i<3;i++)dropItem(e.x+rand(-18,18),e.y+rand(-14,14),randomItem(G.n+1,25,i===0?2:1),e.x,e.y);
-      dropPotion(e.x+10,e.y+16,e.x,e.y);dropPotion(e.x-12,e.y+14,e.x,e.y);
       const fs=floorState(G.n),first=!fs.boss;fs.boss++;S.best=Math.max(S.best,G.n+1);
       fs.shops=[];   // a fallen boss restocks this floor's blacksmiths
       bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'The blacksmiths on this floor have restocked.',3600);
       if(!P.dead)P.hp=ST.maxHp;persist();
-    }else{
-      if(Math.random()<(e.elite?.7:.13))dropItem(e.x,e.y,randomItem(G.n,e.elite?18:0,e.elite?1:0));
-      if(Math.random()<(e.elite?.3:.055))dropPotion(e.x+rand(-6,6),e.y+rand(-6,6),e.x,e.y);
     }
   });
   if(e.boss){G.gate={x:(G.boss.x+G.boss.w/2)*TILE,y:(G.boss.y+2.5)*TILE};shake(8);sfx('gate');openGates();bossBar(null);}
@@ -111,6 +101,14 @@ function drop(d,ox,oy){
   d.t=0;d.owner=P.id;d.uid=++G.did;G.drops.push(d);   // loot is personal: only its owner sees and picks it up
 }
 function dropShards(x,y,n){while(n>0){const a=Math.min(n,n>12?5:1);n-=a;drop({k:'shard',amt:a,x:x+rand(-8,8),y:y+rand(-8,8)},x,y);}}
+// Rolls the current player's share of a LOOT table entry (data.js) and drops it around (x,y).
+function dropLoot(kind,x,y){
+  const L=LOOT[kind],sp=kind==='boss'?18:kind==='chest'?12:6;
+  dropShards(x,y,Math.round(rand(L.shards[0],L.shards[1])*(1+.25*(G.n-1))));
+  const m={};for(const k in L.mats){const[c,lo,hi]=L.mats[k];m[k]=Math.random()<c?Math.round(rand(lo,hi)):0;}dropMats(x,y,m);
+  for(const q of L.items)if(Math.random()<q.chance)dropItem(x+rand(-sp,sp),y+rand(-sp,sp),randomItem(G.n+q.ilvl,q.bonus,q.minRar),x,y);
+  for(const c of L.potions)if(Math.random()<c)dropPotion(x+rand(-sp,sp),y+rand(-sp,sp),x,y);
+}
 function dropMats(x,y,m){for(const id in m)if(m[id]>0)drop({k:'mat',id,amt:m[id],x:x+rand(-9,9),y:y+rand(-9,9)},x,y);}
 function dropItem(x,y,it,ox=x,oy=y){drop({k:'item',item:it,x,y},ox,oy);}
 const dropPotion=(x,y,ox,oy)=>drop({k:'potion',x,y},ox,oy);

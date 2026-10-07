@@ -50,6 +50,7 @@ assets/sprites/       every sprite, as PNG (see assets/README.md)
 assets/templates/     a full-colour character sheet to repaint
 tools/make_sprites.py regenerates the default sprite PNGs (needs Pillow)
 tools/build.py        optional: packs single player into dist/blackspire.html
+tools/wiki.js         writes docs/wiki from the game's data
 server/               the online server (Node): index.js (HTTP and WebSocket), game.js (parties, running floors),
                       db.js (accounts and characters), test/
 ```
@@ -97,6 +98,13 @@ Enemies, chests and bosses drop three materials: Iron scrap (common), Emberstone
 (bosses). Salvaging gear gives shards and materials back. A blacksmith enhances gear up to +10 for shards plus
 materials: scrap for +1 to +3, emberstone from +4, crystals from +7. Up to +5 it always works. From +6 an attempt can
 fail (80%, 65%, 50%, 38%, 28%): the level stays, the cost is spent, and each failure adds 10% to that item's next try.
+
+## Docs
+
+- [docs/wiki](docs/wiki/README.md): the player wiki (drops, enhancement, monsters), generated from the game's data
+  by `npm run wiki`. `npm test` fails if it is out of date.
+- [docs/design](docs/design): design proposals: [skill trees and mutations](docs/design/skill-trees.md),
+  [floor 3](docs/design/floor-3.md).
 
 ## Saves
 
