@@ -35,6 +35,8 @@ function update(dt){
   // drops
   for(const d of G.drops){d.t+=dt;const dist=hyp(d.x-P.x,d.y-P.y);if(d.t<.25)continue;
     if(d.k==='shard'){if(dist<46){const s=140*dt/Math.max(dist,1);d.x+=(P.x-d.x)*s;d.y+=(P.y-d.y)*s;}if(dist<8){S.shards+=d.amt;d.gone=true;}}
+    else if(d.k==='mat'){if(dist<46){const s=140*dt/Math.max(dist,1);d.x+=(P.x-d.x)*s;d.y+=(P.y-d.y)*s;}
+      if(dist<8){S.mats[d.id]=(S.mats[d.id]||0)+d.amt;d.gone=true;sfx('pick');log(`Picked up <span style="color:${MATS[d.id].color}">${d.amt>1?d.amt+' ':''}${MATS[d.id].name}</span>`);}}
     else if(d.k==='potion'){if(dist<10){S.potions++;d.gone=true;sfx('pick');log('Picked up a potion');}}
     else if(dist<11){if(S.inv.length<BAG_SIZE){d.item.isNew=true;S.inv.push(d.item);d.gone=true;sfx(d.item.rarity>=2?'rare':'pick');
         toast(d.item);bagBadge();if(d.item.rarity>=2)burst(P.x,P.y-4,14,RARITY[d.item.rarity].color,70);
@@ -45,7 +47,7 @@ function update(dt){
   for(let ci=0;ci<G.chests.length;ci++){const c=G.chests[ci];if(c.open||hyp(c.x-P.x,c.y-P.y)>=13)continue;
     c.open=true;floorState(G.n).chests.push(ci);sfx('pick');burst(c.x,c.y,10,'#dcb65c',50);
     dropItem(c.x+rand(-10,10),c.y+14,randomItem(G.n,12),c.x,c.y);if(Math.random()<.35)dropItem(c.x+rand(-12,12),c.y+16,randomItem(G.n,6),c.x,c.y);
-    dropShards(c.x,c.y+10,Math.round(rand(8,16)*(1+.25*(G.n-1))));if(Math.random()<.5)dropPotion(c.x+12,c.y+10,c.x,c.y);}
+    dropShards(c.x,c.y+10,Math.round(rand(8,16)*(1+.25*(G.n-1))));dropMats(c.x,c.y+10,{scrap:Math.round(rand(1,2)),ember:Math.random()<.25?1:0});if(Math.random()<.5)dropPotion(c.x+12,c.y+10,c.x,c.y);}
   // fx
   for(const a of[G.fx,G.nums])for(const f of a)f.t+=dt;
   G.fx=G.fx.filter(f=>f.t<f.d);G.nums=G.nums.filter(n=>n.t<.75);

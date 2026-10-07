@@ -30,6 +30,7 @@ function render(){
   for(const c of G.chests)ctx.drawImage(chestSheet(),c.open?14:0,0,14,11,Math.round(c.x-camX-7),Math.round(c.y-camY-6),14,11);
   for(const d of G.drops){const x=Math.round(d.x-camX),y=Math.round(d.y-camY+Math.sin(d.t*5)*1.2);
     if(d.k==='shard'){ctx.fillStyle='#6fd6e6';ctx.fillRect(x,y-1,1,3);ctx.fillRect(x-1,y,3,1);}
+    else if(d.k==='mat'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-2,4,4);ctx.fillStyle=MATS[d.id].color;ctx.fillRect(x-1,y-1,2,2);}
     else if(d.k==='potion'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,6);ctx.fillStyle='#d9534f';ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#e6e1d3';ctx.fillRect(x,y-2,1,1);}
     else{const c=RARITY[d.item.rarity].color;ctx.fillStyle='#050508';ctx.fillRect(x-3,y-1,7,3);ctx.fillRect(x-1,y-3,3,7);ctx.fillStyle=c;ctx.fillRect(x-2,y,5,1);ctx.fillRect(x,y-2,1,5);ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);}}
   // entities, y-sorted

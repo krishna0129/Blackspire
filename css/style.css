@@ -149,6 +149,8 @@ input[type=text]{font:inherit;color:var(--bone);background:#000;border:1px solid
 dl.stats{display:grid;grid-template-columns:1fr auto;gap:1px 10px;margin:0;font-size:13px}
 dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 .bagHead{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:var(--dim)}
+#pMats{display:flex;gap:12px}
+.mat{display:inline-block;width:7px;height:7px;box-shadow:0 0 0 1px #000}
 .detail{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;min-height:150px}
 .detail h4{margin:0;font-size:18px;font-weight:700}
 .detail .sub{color:var(--dim);font-size:12px;margin-bottom:6px}

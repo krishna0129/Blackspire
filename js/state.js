@@ -17,6 +17,7 @@ const Store={
       if(it&&it.slot==='weapon'&&it.type==='rapier'){it.type='mace';it.base.dmg=+(it.base.dmg*2).toFixed(1);it.name=it.name.replace(/rapier/i,'mace');}};
     fix(s.equip.weapon);if(Array.isArray(s.inv))s.inv.forEach(fix);
     migrateFloors(s);
+    s.mats=Object.assign({scrap:0,ember:0,crystal:0},s.mats);
     return s;}catch(e){return null;}},
   save(s){
     s.t=Date.now();let ok=true;
@@ -42,7 +43,7 @@ function newState(name,look,wkey,tint){
   return{v:1,seed:(Math.random()*2147483647)|0,
     char:{name,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0},
     equip:{weapon:makeWeapon(wt,1,0,school),armor:makeArmor('tunic',1,0,tint),boots:makeBoots('boots',1,0),trinket:null},
-    inv:[],shards:0,potions:3,floor:1,best:1,kills:0,deaths:0,hp:null,
+    inv:[],shards:0,mats:{scrap:0,ember:0,crystal:0},potions:3,floor:1,best:1,kills:0,deaths:0,hp:null,
     floors:{}};
 }
 // What the save remembers about each floor, by floor number: which chests are opened, what each blacksmith sells,

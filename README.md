@@ -57,6 +57,13 @@ Each floor's boss guards the way up. Beating it unlocks the next floor. The ambe
 travels to any floor you have unlocked. Enemies and the boss are back whenever you arrive, so bosses can be fought
 again for their loot. Chests you opened stay empty, and a floor's blacksmiths restock each time its boss falls.
 
+## Materials and enhancement
+
+Enemies, chests and bosses drop three materials: Iron scrap (common), Emberstone (mostly elites) and Spire crystal
+(bosses). Salvaging gear gives shards and materials back. A blacksmith enhances gear up to +10 for shards plus
+materials: scrap for +1 to +3, emberstone from +4, crystals from +7. Up to +5 it always works. From +6 an attempt can
+fail (80%, 65%, 50%, 38%, 28%): the level stays, the cost is spent, and each failure adds 10% to that item's next try.
+
 ## Saves
 
 Progress is kept in the browser's local storage, per address. `Store.SYNC_URL` in `js/state.js` is the hook for

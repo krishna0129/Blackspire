@@ -243,6 +243,7 @@ function renderPanel(){
     ['Mana',ST.maxMp],['Mana per second',ST.mpRegen.toFixed(2)],
     ...(ST.skill==='fireball'?[['Fireball damage',(ST.dmg*2.6).toFixed(0)]]:ST.skill==='heal'?[['Heal restores',healAmount()]]:[]),['Kills',S.kills],['Deaths',S.deaths]].map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
   $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;$('#pShards').textContent=S.shards;
+  $('#pMats').innerHTML=Object.keys(MATS).map(k=>`<span title="${MATS[k].name}"><i class="mat" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('');
   $('#pTitle').textContent=atSmith?'Blacksmith':c.name;
   $('#shopBox').hidden=!atSmith;
   if(atSmith){const sg=$('#sGrid');sg.innerHTML='';
@@ -300,10 +301,18 @@ function renderDetail(){
     el.appendChild(acts);return;}
   if(sel.from==='bag')btn('Equip','primary',equipSel);
   if(it.slot!=='trinket'&&!atSmith){const n=document.createElement('span');n.className='muted';n.style.alignSelf='center';n.textContent='Enhancing is done at a blacksmith.';acts.appendChild(n);}
-  if(it.slot!=='trinket'&&atSmith){const cost=enhanceCost(it);
-    if((it.plus||0)>=10)btn('Fully enhanced','',()=>{},true);
-    else btn(`Enhance to +${(it.plus||0)+1} for ${cost} shards`,'',()=>{if(S.shards>=cost){S.shards-=cost;it.plus=(it.plus||0)+1;sfx('lvl');afterGearChange();}},S.shards<cost);}
-  if(sel.from==='bag')btn(`Salvage for ${salvageValue(it)} shards`,'',()=>{S.shards+=salvageValue(it);S.inv.splice(sel.i,1);sel=null;sfx('pick');renderPanel();});
+  if(it.slot!=='trinket'&&atSmith){
+    if((it.plus||0)>=ENH_MAX)btn('Fully enhanced','',()=>{},true);
+    else{const r=enhanceRecipe(it),can=S.shards>=r.shards&&hasMats(S.mats,r.mats),pct=Math.round(r.chance*100);
+      btn(`Enhance to +${r.to}`+(pct<100?` (${pct}%)`:''),'',()=>{const ok=enhanceItem(S,it);if(ok===null)return;
+        if(ok){sfx('lvl');log(`<span style="color:var(--cyan)">${esc(it.name)} is now +${it.plus}.</span>`);}
+        else{sfx('lock');log(`The enhancement failed. ${esc(it.name)} stays +${it.plus||0}; the next try is more likely to work.`);}
+        save();afterGearChange();},!can);
+      const need=document.createElement('div');need.className='muted';need.style.width='100%';
+      need.innerHTML=`Costs ${r.shards} shards and ${matsText(r.mats)}.`+(pct<100?` From +6 an attempt can fail: the level stays, the cost is spent, and each failure adds 10% to the next try.`:'')+
+        (it.pity?` <span style="color:var(--cyan)">+${Math.round(it.pity*100)}% from earlier failures.</span>`:'');
+      acts.appendChild(need);}}
+  if(sel.from==='bag')btn(`Salvage for ${salvageValue(it)} shards, ${matsText(salvageMats(it))}`,'',()=>{salvageItem(S,sel.i);sel=null;sfx('pick');renderPanel();});
   if(sel.from==='eq'&&it.slot==='trinket')btn('Unequip','',()=>{if(S.inv.length<BAG_SIZE){S.inv.push(it);S.equip.trinket=null;sel=null;afterGearChange();}},S.inv.length>=BAG_SIZE);
   el.appendChild(acts);
 }

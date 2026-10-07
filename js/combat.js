@@ -86,6 +86,10 @@ function killEnemy(e){
   gainXp(T.xp*(1+.3*(G.n-1))*(e.elite?3:1));
   const sh=Math.round((e.boss?60:e.elite?14:rand(1,4))*(1+.25*(G.n-1)));
   dropShards(e.x,e.y,sh);
+  // materials: scrap is common, emberstone mostly from elites, spire crystals from bosses
+  if(e.boss)dropMats(e.x,e.y,{scrap:Math.round(rand(4,6)),ember:Math.round(rand(2,3)),crystal:1});
+  else if(e.elite)dropMats(e.x,e.y,{scrap:Math.round(rand(1,3)),ember:Math.random()<.4?1:0,crystal:Math.random()<.04?1:0});
+  else dropMats(e.x,e.y,{scrap:Math.random()<.3?1:0,ember:Math.random()<.03?1:0});
   if(e.boss){
     for(let i=0;i<3;i++)dropItem(e.x+rand(-18,18),e.y+rand(-14,14),randomItem(G.n+1,25,i===0?2:1),e.x,e.y);
     dropPotion(e.x+10,e.y+16,e.x,e.y);dropPotion(e.x-12,e.y+14,e.x,e.y);
@@ -110,6 +114,7 @@ function drop(d,ox,oy){
   d.t=0;G.drops.push(d);
 }
 function dropShards(x,y,n){while(n>0){const a=Math.min(n,n>12?5:1);n-=a;drop({k:'shard',amt:a,x:x+rand(-8,8),y:y+rand(-8,8)},x,y);}}
+function dropMats(x,y,m){for(const id in m)if(m[id]>0)drop({k:'mat',id,amt:m[id],x:x+rand(-9,9),y:y+rand(-9,9)},x,y);}
 function dropItem(x,y,it,ox=x,oy=y){drop({k:'item',item:it,x,y},ox,oy);}
 const dropPotion=(x,y,ox,oy)=>drop({k:'potion',x,y},ox,oy);
 function gainXp(v){

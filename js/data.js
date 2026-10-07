@@ -115,4 +115,10 @@ const ETYPES={
   wisp:{name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
   boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d'},
 };
+// Enhancement materials, from common to rare. Enemies, chests and bosses drop them; salvaging gear gives them back.
+const MATS={
+  scrap:{name:'Iron scrap',color:'#b9b4c8'},
+  ember:{name:'Emberstone',color:'#f08a3c'},
+  crystal:{name:'Spire crystal',color:'#a98be0'},
+};
 const BOSSES=['The Gate Warden','The Bone Regent','The Pale Collector','Ash Regent','The Unlit King','Keeper of the Ninth Stair','Old Hunger','The Bell Below'];
