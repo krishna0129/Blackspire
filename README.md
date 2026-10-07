@@ -109,6 +109,7 @@ fail (80%, 65%, 50%, 38%, 28%): the level stays, the cost is spent, and each fai
   rendered by the game itself with `npm run wiki:images`, which needs Playwright and a Chromium
   (`npx playwright install chromium`); rerun it after changing sprites.
 - [docs/design](docs/design): design proposals: [skill trees and mutations](docs/design/skill-trees.md),
+  [class trees and skill ranks](docs/design/class-trees.md),
   [floor 3](docs/design/floor-3.md).
 
 ## Saves
