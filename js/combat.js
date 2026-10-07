@@ -118,11 +118,13 @@ function gainXp(v){
 function heal(v){P.hp=Math.min(ST.maxHp,P.hp+v);}
 let god=false;   // debug menu
 let lastBreak=0;
-function hurtPlayer(dmg,src,sure,from){   // sure = telegraphed boss attack, which dexterity cannot evade. from = where a shot came from
+// sure = telegraphed boss attack, which dexterity cannot evade. from = where a shot came from.
+// ground = it comes up from under your feet, so no shield can stop it: the answer is to move.
+function hurtPlayer(dmg,src,sure,from,ground){
   if(P.inv>0||P.dead||god)return;
   // Blocking: a raised shield stops blows that come from the side you face. Each one costs mana.
   const o=from||src;
-  if(P.blocking&&o&&ST.shield){
+  if(P.blocking&&o&&ST.shield&&!ground){
     const SH=SHIELDS[ST.shield];
     if(Math.abs(angDiff(Math.atan2(o.y-P.y,o.x-P.x),DIR_ANGLE[P.dir]))<=SH.arc*Math.PI/360){
       if(P.mp>=SH.cost){

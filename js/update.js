@@ -236,7 +236,7 @@ function boneAttack(e,d,ux,uy,rage){
     const n=rage<1?5:4;e.state='cast';e.t=.3*n+.3;e.atkT=1.6*rage;
     const spike=k=>{if(e.dead||k>=n)return;const tx=P.x,ty=P.y,rad=19;
       G.tele.push({x:tx,y:ty,r:rad,t:0,d:.62*rage,fn:()=>{if(e.dead)return;G.fx.push({k:'spikes',x:tx,y:ty,t:0,d:.4});G.shake=Math.max(G.shake,3);
-        if(hyp(P.x-tx,P.y-ty)<rad+P.r-2)hurtPlayer(e.dmg*1.1,e,true);}});
+        if(hyp(P.x-tx,P.y-ty)<rad+P.r-2)hurtPlayer(e.dmg*1.1,e,true,null,true);}});
       after(.3,()=>spike(k+1));};
     spike(0);
   }else{
