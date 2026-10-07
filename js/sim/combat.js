@@ -108,7 +108,7 @@ function drop(d,ox,oy){
   if(bad(d.x,d.y)){let ok=false;
     for(let i=1;i<=8&&!ok;i++){const u=i/8,x=d.x+(ox-d.x)*u,y=d.y+(oy-d.y)*u;if(!bad(x,y)){d.x=x;d.y=y;ok=true;}}
     if(!ok){d.x=P.x;d.y=P.y;}}
-  d.t=0;d.owner=P.id;G.drops.push(d);   // loot is personal: only its owner sees and picks it up
+  d.t=0;d.owner=P.id;d.uid=++G.did;G.drops.push(d);   // loot is personal: only its owner sees and picks it up
 }
 function dropShards(x,y,n){while(n>0){const a=Math.min(n,n>12?5:1);n-=a;drop({k:'shard',amt:a,x:x+rand(-8,8),y:y+rand(-8,8)},x,y);}}
 function dropMats(x,y,m){for(const id in m)if(m[id]>0)drop({k:'mat',id,amt:m[id],x:x+rand(-9,9),y:y+rand(-9,9)},x,y);}
@@ -177,9 +177,9 @@ function useSkill(){
     burst(P.x,P.y,10,'#55556a',50);
     if(best){const dir=Math.atan2(best.y-P.y,best.x-P.x);let tx=best.x+Math.cos(dir)*(best.r+9),ty=best.y+Math.sin(dir)*(best.r+9);
       if(boxSolid(tx,ty,P.cr)){tx=best.x-Math.cos(dir)*(best.r+9);ty=best.y-Math.sin(dir)*(best.r+9);}
-      if(!boxSolid(tx,ty,P.cr)){P.x=tx;P.y=ty;}
+      if(!boxSolid(tx,ty,P.cr)){P.x=tx;P.y=ty;P.tp++;}
       P.dir=dirOf(Math.atan2(best.y-P.y,best.x-P.x));P.aim=DIR_ANGLE[P.dir];P.inv=Math.max(P.inv,.35);if(damageEnemy(best,3,{crit:true,melee:true}))gainMomentum();slashFx(P.aim,120,ST.range+6);}
-    else{P.dash={t:.12,vx:Math.cos(a)*300,vy:Math.sin(a)*300,mult:0,hit:new Set()};P.inv=Math.max(P.inv,.2);}
+    else{P.dash={t:.12,vx:Math.cos(a)*300,vy:Math.sin(a)*300};P.inv=Math.max(P.inv,.2);}
   }
   else if(id==='sunder'){hitArc(a,170,ST.range*1.35,2.8,{sunder:4,kb:90});slashFx(a,170,ST.range*1.35,1,.22);shake(6);}
   else if(id==='guard'){P.guard=5;vfx({k:'ring',x:P.x,y:P.y,r:24,t:0,d:.3});burst(P.x,P.y,12,'#e6e1d3',50);}
@@ -213,7 +213,7 @@ function castHeal(){
 // Steps the current player through gate q into the chamber, which seals behind them until the boss dies.
 function enterChamber(q){
   if(!q||G.gatesOpen||!G.bossEnt||G.bossEnt.dead||P.dead)return;
-  burst(P.x,P.y,10,'#7a2a32',50);P.x=q.ix;P.y=q.iy;P.dash=null;P.locked=true;
+  burst(P.x,P.y,10,'#7a2a32',50);P.x=q.ix;P.y=q.iy;P.tp++;P.dash=null;P.locked=true;
   // whatever was chasing you is left outside, unless someone else is still out there for it to fight
   if(G.players.every(q=>q.locked||q.dead||q.gone)){G.proj=[];for(const e of G.enemies)if(!e.boss&&e.state!=='idle')e.state='idle';}
   sfx('lock');wakeBoss();
@@ -221,7 +221,7 @@ function enterChamber(q){
 function dodge(){
   if(P.dead||P.dodgeCd>0||P.dash)return;
   let mx=P.in.mx,my=P.in.my;if(!mx&&!my){mx=Math.cos(P.aim);my=Math.sin(P.aim);}const m=hyp(mx,my);
-  P.dash={t:.16,vx:mx/m*ST.move*3.3,vy:my/m*ST.move*3.3,mult:0,hit:new Set()};P.inv=Math.max(P.inv,.3);P.dodgeCd=.9;
+  P.dash={t:.16,vx:mx/m*ST.move*3.3,vy:my/m*ST.move*3.3};P.inv=Math.max(P.inv,.3);P.dodgeCd=.9;
 }
 function usePotion(){
   if(P.dead||P.potCd>0||S.potions<=0||P.hp>=ST.maxHp)return;

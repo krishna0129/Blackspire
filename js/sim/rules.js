@@ -93,13 +93,14 @@ function migrateSave(s){
   s.mats=Object.assign({scrap:0,ember:0,crystal:0},s.mats);
   return s;
 }
-// A player's runtime on floor G. They start at the entrance, or at their last safe room on this floor.
+// A player's runtime on floor G. tp counts moves the rules make for them (a teleport, a respawn): online, the
+// browser normally decides where its player stands, but a newer tp from the server means "jump to where I say". They start at the entrance, or at their last safe room on this floor.
 function makePlayer(id,save){
   const st=computeStats(save.char,save.equip),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.smiths[save.cp]?G.smiths[save.cp]:null;
   return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,
     aim:0,face:1,atkCd:0,atkBuf:0,skillCd:0,skillMax:0,dodgeCd:0,potCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
-    guard:0,hot:null,ward:0,in:{mx:0,my:0,atk:false,block:false},lastBreak:-9,lastSheath:-9,lastNoMana:-9};
+    guard:0,hot:null,ward:0,tp:0,in:{mx:0,my:0,atk:false,block:false},lastBreak:-9,lastSheath:-9,lastNoMana:-9};
 }
 // Back on your feet at the last safe room on this floor (or the entrance), at full health. Used online, where the
 // floor goes on without you; single player rebuilds the whole floor instead.
-function respawnPlayer(pl){const fresh=makePlayer(pl.id,pl.S);for(const k of['x','y','hp','mp','dead','locked','inv','dash','swing','safe'])pl[k]=fresh[k];pl.inv=1;}
+function respawnPlayer(pl){const fresh=makePlayer(pl.id,pl.S);for(const k of['x','y','hp','mp','dead','locked','inv','dash','swing','safe'])pl[k]=fresh[k];pl.inv=1;pl.tp++;}

@@ -73,14 +73,31 @@ function resetBoss(){
 function updatePlayer(dt){
   if(P.dead)return;
   P.mp=Math.min(ST.maxMp,P.mp+ST.mpRegen*dt);if(P.guard>0)P.guard-=dt;if(P.ward>0)P.ward-=dt;if(P.hot){heal(P.hot.rate*dt);P.hot.t-=dt;if(P.hot.t<=0)P.hot=null;}
-  P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.dodgeCd=Math.max(0,P.dodgeCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.inv=Math.max(0,P.inv-dt);
+  P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.inv=Math.max(0,P.inv-dt);
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
   heal(ST.regen*dt);
   // Safe rooms: no fighting in either direction. The last one you stand in is where you wake after dying.
   const si=P.locked?-1:safeIndex(P.x,P.y);P.safe=si>=0;
   if(si>=0&&(S.cp!==si||S.cpFloor!==G.n)){S.cp=si;S.cpFloor=G.n;if(si>0){log('Safe room reached. You will wake here if you fall.');sfx('pick');}}
+  steerPlayer(dt);
+  if(!P.dash){
+    if(P.atkBuf>0)P.atkBuf-=dt;
+    if((P.in.atk||P.atkBuf>0)&&P.atkCd<=0&&!P.blocking){P.atkBuf=0;if(P.safe)sheathed();else startSwing();}
+  }
+  if(P.swing){const s=P.swing;s.t+=dt;
+    if(!s.hit&&s.t>=s.d*.4){s.hit=true;
+      if(ST.magic)castBolt();
+      else if(ST.ranged)fireArrow(P.aim,1);
+      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,1,{melee:true});
+      if(ST.thrust)vfx({k:'line',x:P.x,y:P.y,a:s.a,len:ST.range+5,t:0,d:.1});else slashFx(s.a,ST.arc,ST.range,s.dir,.14);}}
+    if(s.t>=s.d)P.swing=null;}
+}
+// Facing, blocking and moving. Online, each browser runs this for its own player so movement answers at once, and
+// sends where it ended up; the server (where P.remote is set) runs it too for facing and timers, but takes the
+// position from the browser after checking it (see the server's checkMove).
+function steerPlayer(dt){
+  P.dodgeCd=Math.max(0,P.dodgeCd-dt);
   let mx=P.in.mx,my=P.in.my;const m=hyp(mx,my);if(m>1){mx/=m;my/=m;}
-  // aim
   // Facing is one of four directions and follows movement; attacks, shots and skills all go the way you face.
   // Moving diagonally keeps the current facing when it is one of the two directions held.
   // Blocking: hold the key to raise the shield. You keep facing the same way (so you can back off or sidestep
@@ -92,25 +109,15 @@ function updatePlayer(dt){
     if(ax>.25&&ay>.25){if(P.dir!==h&&P.dir!==v)P.dir=ax>=ay?h:v;}else P.dir=ax>ay?h:v;}
   P.aim=DIR_ANGLE[P.dir];
   if(P.dash){
-    const D=P.dash;moveEnt(P,D.vx*dt,D.vy*dt);D.t-=dt;
+    const D=P.dash;if(!P.remote)moveEnt(P,D.vx*dt,D.vy*dt);D.t-=dt;
     if(Math.random()<.7)part({x:P.x,y:P.y+rand(-6,4),vx:0,vy:0,t:0,d:.22,c:'#4a4a5e'});
-    if(D.mult>0)for(const e of G.enemies){if(e.dead||D.hit.has(e))continue;if(hyp(e.x-P.x,e.y-P.y)<P.r+e.r+9){D.hit.add(e);damageEnemy(e,D.mult,{kb:20});}}
     if(D.t<=0)P.dash=null;
   }else{
     const sp=ST.move*(P.swing?(ST.magic||ST.ranged?.3:0):P.blocking?SHIELDS[ST.shield].slow:1);   // you plant your feet to swing
-    if(P.lunge>0){P.lunge-=dt;moveEnt(P,Math.cos(P.aim)*110*dt,Math.sin(P.aim)*110*dt);}
-    moveEnt(P,mx*sp*dt,my*sp*dt);
+    if(P.lunge>0){P.lunge-=dt;if(!P.remote)moveEnt(P,Math.cos(P.aim)*110*dt,Math.sin(P.aim)*110*dt);}
+    if(!P.remote)moveEnt(P,mx*sp*dt,my*sp*dt);
     P.moving=m>.1;if(P.moving)P.walk+=dt*(sp/64)*7;
-    if(P.atkBuf>0)P.atkBuf-=dt;
-    if((P.in.atk||P.atkBuf>0)&&P.atkCd<=0&&!P.blocking){P.atkBuf=0;if(P.safe)sheathed();else startSwing();}
   }
-  if(P.swing){const s=P.swing;s.t+=dt;
-    if(!s.hit&&s.t>=s.d*.4){s.hit=true;
-      if(ST.magic)castBolt();
-      else if(ST.ranged)fireArrow(P.aim,1);
-      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,1,{melee:true});
-      if(ST.thrust)vfx({k:'line',x:P.x,y:P.y,a:s.a,len:ST.range+5,t:0,d:.1});else slashFx(s.a,ST.arc,ST.range,s.dir,.14);}}
-    if(s.t>=s.d)P.swing=null;}
 }
 function updateEnemy(e,dt){   // enemies never step into a safe room, whether walking or knocked back
   const ox=e.x,oy=e.y;updateEnemyCore(e,dt);

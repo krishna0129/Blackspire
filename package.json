@@ -1,0 +1,11 @@
+{
+  "name": "blackspire",
+  "private": true,
+  "description": "Blackspire: single player runs from index.html; online play needs this server.",
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning server/index.js",
+    "test": "node --no-warnings=ExperimentalWarning --test server/test/*.test.js"
+  },
+  "engines": { "node": ">=22.5" },
+  "dependencies": { "ws": "^8.18.0" }
+}
