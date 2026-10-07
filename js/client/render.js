@@ -35,11 +35,11 @@ function render(){
     else if(d.k==='potion'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,6);ctx.fillStyle='#d9534f';ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#e6e1d3';ctx.fillRect(x,y-2,1,1);}
     else{const c=RARITY[d.item.rarity].color;ctx.fillStyle='#050508';ctx.fillRect(x-3,y-1,7,3);ctx.fillRect(x-1,y-3,3,7);ctx.fillStyle=c;ctx.fillRect(x-2,y,5,1);ctx.fillRect(x,y-2,1,5);ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);}}
   // entities, y-sorted
-  const list=[P];
+  const list=[P,...(NET.on?NET.others:[])];
   for(const e of G.enemies)if(e.x-camX>-48&&e.x-camX<W+48&&e.y-camY>-48&&e.y-camY<H+48)list.push(e);   // only what is on screen
   for(const q of G.smiths)list.push({smith:q,y:q.y,r:6});
   list.sort((a,b)=>(a.y+a.r)-(b.y+b.r));
-  for(const e of list){if(e===P)drawPlayer();else if(e.smith)drawSmith(e.smith,t);else drawEnemy(e,t);}
+  for(const e of list){if(e===P)drawPlayer();else if(e.other)drawOther(e);else if(e.smith)drawSmith(e.smith,t);else drawEnemy(e,t);}
   // projectiles, particles, slashes
   for(const p of G.proj){const x=Math.round(p.x-camX),y=Math.round(p.y-camY);ctx.fillStyle=p.c||'#6fd6e6';
     if(p.arrow){const c=Math.cos(p.a),sn=Math.sin(p.a);for(let i=1;i<7;i++)ctx.fillRect(Math.round(x-c*i),Math.round(y-sn*i),1,1);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);continue;}
@@ -87,6 +87,13 @@ function render(){
     ctx.globalAlpha=n.t>.5?1-(n.t-.5)/.25:1;drawNum(n.v,n.x-camX,n.y-camY-n.t*18,col);}
   ctx.globalAlpha=1;
 }
+// Someone else in your party, with their name over their head.
+function drawOther(q){
+  if(!q.av)return;drawPlayer(q,q.st,q.av,q.wspr,q.bowf);
+  if(q.dead)return;const x=Math.round(q.x)-camX,y=Math.round(q.y)-camY-22;
+  ctx.font='8px "Pixelify Sans",monospace';ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText(q.name,x+1,y+1);ctx.fillStyle='#cfe9ee';ctx.fillText(q.name,x,y);
+  const w=16,hp=clamp(q.hp/q.maxHp,0,1);ctx.fillStyle='#000';ctx.fillRect(x-w/2-1,y+2,w+2,3);ctx.fillStyle='#8fd14f';ctx.fillRect(x-w/2,y+3,Math.ceil(w*hp),1);
+}
 function drawPortal(q,t,col,hi){
   const gx=q.x-camX,gy=q.y-camY,pu=Math.sin(t*4)*1.5;
   ctx.globalAlpha=.18;ctx.fillStyle=col;ctx.beginPath();ctx.arc(gx,gy,13+pu,0,TAU);ctx.fill();ctx.globalAlpha=1;
@@ -116,33 +123,34 @@ function drawEnemy(e,t){
 // The off-hand shield: [dx, dy, frame (0 front, 1 back, 2 edge-on), drawn in front of the body?] for facing down, up, left, right.
 const SHIELD_REST=[[-7,3,0,1],[-7,2,1,0],[1,3,0,1],[-1,3,0,0]],SHIELD_UP=[[0,7,0,1],[0,-13,1,0],[-8,1,2,1],[8,1,2,1]];   // facing away, a raised shield shows over the head
 const HAND=[[5,4],[5,-1],[-4,3],[4,3]],SWING_PIVOT=[[1,5],[1,-3],[-3,3],[3,3]],REST_ANGLE=[Math.PI/2-.35,-Math.PI/2+.45,Math.PI-1,1],BOOK=[[7,5],[7,-5],[-8,1],[8,1]];
-function drawPlayer(){
-  const x=Math.round(P.x)-camX,y=Math.round(P.y)-camY;
-  if(P.dead)return;
-  const d=P.dir,sw=P.swing,base=DIR_ANGLE[d];
-  const col=sw?3:(P.moving&&!P.dash?[1,0,2,0][Math.floor(P.walk)%4]:0);   // attack pose, or step, stand, other step, stand
-  let wa=ST.ranged?base:REST_ANGLE[d],hx=x+HAND[d][0],hy=y+HAND[d][1];
+// Draws a player: you (the defaults), or someone in your party online, with their own stats, avatar and weapon.
+function drawPlayer(pl=P,st=ST,av=AV,wspr=WSPR,bowf=BOWF){
+  const x=Math.round(pl.x)-camX,y=Math.round(pl.y)-camY;
+  if(pl.dead)return;
+  const d=pl.dir,sw=pl.swing,base=DIR_ANGLE[d];
+  const col=sw?3:(pl.moving&&!pl.dash?[1,0,2,0][Math.floor(pl.walk)%4]:0);   // attack pose, or step, stand, other step, stand
+  let wa=st.ranged?base:REST_ANGLE[d],hx=x+HAND[d][0],hy=y+HAND[d][1];
   if(sw){const p=sw.t/sw.d;hx=x+SWING_PIVOT[d][0];hy=y+SWING_PIVOT[d][1];
-    if(ST.thrust){wa=base;const off=Math.sin(p*Math.PI)*8;hx+=Math.cos(base)*off;hy+=Math.sin(base)*off;}
-    else if(ST.ranged)wa=base;
-    else wa=base+(p-.5)*Math.max(100,ST.arc)*Math.PI/180;}   // the blade sweeps across the direction faced
-  const weapon=ST.magic?()=>{   // a grimoire floats by the hand instead of swinging
-      const bx=x+BOOK[d][0],by=Math.round(y+BOOK[d][1]+Math.sin(G.time*3));ctx.drawImage(WSPR,bx-6,by-5);
+    if(st.thrust){wa=base;const off=Math.sin(p*Math.PI)*8;hx+=Math.cos(base)*off;hy+=Math.sin(base)*off;}
+    else if(st.ranged)wa=base;
+    else wa=base+(p-.5)*Math.max(100,st.arc)*Math.PI/180;}   // the blade sweeps across the direction faced
+  const weapon=st.magic?()=>{   // a grimoire floats by the hand instead of swinging
+      const bx=x+BOOK[d][0],by=Math.round(y+BOOK[d][1]+Math.sin(G.time*3));ctx.drawImage(wspr,bx-6,by-5);
       if(sw){ctx.fillStyle='#cfc8ff';ctx.fillRect(bx+Math.round(Math.cos(base)*6),by+Math.round(Math.sin(base)*6),2,2);}}
-    :()=>{const spr=BOWF&&sw?BOWF[sw.hit?2:1]:WSPR;   // bow: draw, loose, then back to a nocked arrow
+    :()=>{const spr=bowf&&sw?bowf[sw.hit?2:1]:wspr;   // bow: draw, loose, then back to a nocked arrow
       ctx.save();ctx.translate(Math.round(hx),Math.round(hy));ctx.rotate(wa);ctx.drawImage(spr,-spr.ox,-spr.oy);ctx.restore();};
   ctx.globalAlpha=.4;ctx.fillStyle='#000';ctx.fillRect(x-5,y+9,10,2);ctx.globalAlpha=1;
-  const SH=ST.shield?SHIELDS[ST.shield]:null,sp=SH?(P.blocking?SHIELD_UP:SHIELD_REST)[d]:null;
-  const shield=()=>{const im=shieldSprite(ST.shield);ctx.drawImage(im,sp[2]*SH.w,0,SH.w,SH.h,x+sp[0]-(SH.w>>1),y+sp[1]-(SH.h>>1),SH.w,SH.h);};
+  const SH=st.shield?SHIELDS[st.shield]:null,sp=SH?(pl.blocking?SHIELD_UP:SHIELD_REST)[d]:null;
+  const shield=()=>{const im=shieldSprite(st.shield);ctx.drawImage(im,sp[2]*SH.w,0,SH.w,SH.h,x+sp[0]-(SH.w>>1),y+sp[1]-(SH.h>>1),SH.w,SH.h);};
   const behind=d===1;if(behind)weapon();   // facing away: the weapon is on the far side of the body
   if(sp&&!sp[3])shield();
-  if(P.inv>0&&!P.dash&&Math.floor(G.time*24)%2)ctx.globalAlpha=.45;
+  if(pl.inv>0&&!pl.dash&&Math.floor(G.time*24)%2)ctx.globalAlpha=.45;
   const fx=col*FRAME_W,fy=DIR_ROW[d]*FRAME_H;
-  if(d===2){ctx.save();ctx.translate(x,0);ctx.scale(-1,1);ctx.drawImage(AV,fx,fy,FRAME_W,FRAME_H,-12,y-13,FRAME_W,FRAME_H);ctx.restore();}
-  else ctx.drawImage(AV,fx,fy,FRAME_W,FRAME_H,x-12,y-13,FRAME_W,FRAME_H);
+  if(d===2){ctx.save();ctx.translate(x,0);ctx.scale(-1,1);ctx.drawImage(av,fx,fy,FRAME_W,FRAME_H,-12,y-13,FRAME_W,FRAME_H);ctx.restore();}
+  else ctx.drawImage(av,fx,fy,FRAME_W,FRAME_H,x-12,y-13,FRAME_W,FRAME_H);
   ctx.globalAlpha=1;if(!behind)weapon();
   if(sp&&sp[3])shield();
-  if(P.guard>0){const t=G.time*3;if(P.guard>1||Math.floor(G.time*10)%2)for(let k=0;k<3;k++)dotArc(x,y,13,t+k*TAU/3,t+k*TAU/3+1.3,'#e6e1d3');}
+  if(pl.guard>0){const t=G.time*3;if(pl.guard>1||Math.floor(G.time*10)%2)for(let k=0;k<3;k++)dotArc(x,y,13,t+k*TAU/3,t+k*TAU/3+1.3,'#e6e1d3');}
 }
 const mini=$('#mini'),mctx=mini.getContext('2d');mini.width=MW;mini.height=MH;
 function drawMini(){

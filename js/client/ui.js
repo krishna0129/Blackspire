@@ -47,7 +47,8 @@ function toast(it){
 function bagBadge(){const n=S.inv.filter(i=>i.isNew).length;$('#bagNew').textContent=n?n+' new':'';$('#btnBag').classList.toggle('has',n>0);}
 
 /* ---------- flow ---------- */
-function save(){S.floor=G?G.n:S.floor;if(P&&!P.dead)S.hp=Math.round(P.hp);saveOk=Store.save(S);}
+function save(){if(NET.on)return;   // online, the server keeps the character
+  S.floor=G?G.n:S.floor;if(P&&!P.dead)S.hp=Math.round(P.hp);saveOk=Store.save(S);}
 // Floors start a beat after the click or key press that asked for them, not inside it.
 let starting=false;
 function startFloor(n){if(starting)return;starting=true;setTimeout(()=>{starting=false;enterFloor(n);},60);}
@@ -64,17 +65,61 @@ function enterFloor(n){
   banner('Floor '+n,n===1?'Find the boss chamber. It is somewhere to the east.':n===2?'The dead here shrug off magic. Bring steel.':'The air is colder here.',n===2?4200:2800);
   save();
 }
-function showTitle(){
+// The title screen: Single player or Online. msg, if given, says why you are back here (a lost connection).
+function showTitle(msg){
+  if(NET.on||NET.ws)NET.close();
   mode='title';
   const sv=Store.load();
   S=sv||newState('Wanderer',{skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0]},'sword',OUTFITS[0]);
   startWorld(S.floor||1);G.enemies=[];G.bossEnt=null;CUSTOM=null;refreshSprites();useCustom(S.char.custom||null);
   atSmith=null;
-  $('#hud').hidden=true;$('#panel').hidden=true;$('#creator').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#travel').hidden=true;$('#title').hidden=false;
+  for(const id of['#hud','#panel','#creator','#dead','#ask','#debug','#pause','#travel','#online','#boss'])$(id).hidden=true;
+  $('#title').hidden=false;
   const b=$('#btnContinue');b.hidden=!sv;
   if(sv)b.textContent=`Continue as ${sv.char.name}, level ${sv.char.level}, floor ${sv.floor}`;
   $('#btnNew').className=sv?'btn':'btn primary';
+  $('#titleMsg').hidden=!msg;$('#titleMsg').textContent=msg||'';
+  $('#modeBtns').hidden=false;$('#soloBtns').hidden=true;
 }
+$('#btnSolo').onclick=()=>{$('#modeBtns').hidden=true;$('#soloBtns').hidden=false;$('#titleMsg').hidden=true;};
+$('#btnSoloBack').onclick=()=>{$('#modeBtns').hidden=false;$('#soloBtns').hidden=true;};
+$('#btnOnline').onclick=()=>openOnline();
+
+/* ---------- online: log in, then play ---------- */
+const onSay=t=>{$('#onTxt').textContent=t;};
+let onChar=null;   // the account's online character, if it has one: {name, level, floor}
+function openOnline(){
+  mode='online';$('#title').hidden=true;$('#online').hidden=false;
+  const sv=NET.saved();$('#onUrl').value=sv.url||NET.defaultUrl();$('#onName').value=sv.name||'';$('#onPw').value='';
+  showLogin('Play with others. Online characters live on the server, separate from your single-player save.');
+  if(sv.token&&sv.url){onSay('Logging in as '+(sv.name||'')+'\u2026');onConnect(sv.url).then(()=>NET.send({t:'resume',token:sv.token})).catch(e=>showLogin(e.message));}
+}
+function showLogin(t){$('#onLogin').hidden=false;$('#onChar').hidden=true;onSay(t);}
+async function onConnect(url){await NET.connect(url);NET.remember({url});}
+function onAuthAsk(kind){
+  const url=$('#onUrl').value.trim(),name=$('#onName').value.trim(),pw=$('#onPw').value;
+  if(!name||!pw){onSay('Enter a name and a password.');return;}
+  onSay(kind==='login'?'Logging in\u2026':'Creating your account\u2026');
+  onConnect(url).then(()=>NET.send({t:kind,name,pw})).catch(e=>onSay(e.message));
+}
+NET.onMsg=o=>{
+  if(o.t==='auth'){
+    if(!o.ok){NET.remember({token:null});NET.close();showLogin(o.error);return;}
+    NET.remember({token:o.token,name:o.name});$('#onPw').value='';onChar=o.char;
+    $('#onLogin').hidden=true;$('#onChar').hidden=false;
+    $('#onPlay').textContent=onChar?`Enter as ${onChar.name}, level ${onChar.level}`:'Create your online character';
+    onSay(`Logged in as ${o.name}.`+(onChar?'':' This account has no character yet.'));
+  }else if(o.t==='created'){
+    if(!o.ok){$('#cMsg').textContent=o.error;return;}
+    onChar=o.char;NET.send({t:'play'});
+  }
+};
+$('#onLoginBtn').onclick=()=>onAuthAsk('login');
+$('#onRegBtn').onclick=()=>onAuthAsk('register');
+$('#onPw').addEventListener('keydown',e=>{if(e.key==='Enter')onAuthAsk('login');});
+$('#onPlay').onclick=()=>{if(onChar)NET.send({t:'play'});else openCreator('online');};
+$('#onLogout').onclick=()=>{const t=NET.saved().token;if(t)NET.send({t:'logout',token:t});NET.remember({token:null});NET.close();showLogin('Logged out.');};
+$('#onBack').onclick=$('#onBack2').onclick=()=>showTitle();
 
 /* ---------- character creator ---------- */
 let armed=false;
@@ -106,9 +151,20 @@ function buildCreator(){
   drawPreview($('#cPrev'),draft,draftEquip(),draftImg);
   $('#cCustomDel').hidden=!draft.custom;
 }
-$('#btnNew').onclick=()=>{armed=false;$('#cGo').textContent='Enter floor 1';$('#title').hidden=true;$('#creator').hidden=false;mode='creator';buildCreator();};
-$('#cBack').onclick=()=>showTitle();
+let creatorFor='solo';   // solo: a new local save; online: a character on the server
+function openCreator(kind){
+  creatorFor=kind;armed=false;$('#cMsg').textContent='';$('#cGo').textContent=kind==='online'?'Create and enter':'Enter floor 1';
+  $('#title').hidden=true;$('#online').hidden=true;$('#creator').hidden=false;mode='creator';buildCreator();
+}
+$('#btnNew').onclick=()=>openCreator('solo');
+$('#cBack').onclick=()=>{if(creatorFor==='online'){$('#creator').hidden=true;$('#online').hidden=false;mode='online';}else showTitle();};
 $('#cGo').onclick=()=>{
+  if(creatorFor==='online'){
+    $('#cMsg').textContent='';
+    NET.send({t:'create',name:($('#cName').value.trim()||'Wanderer').slice(0,14),look:{skin:draft.skin,hair:draft.hair,style:draft.style,eyes:draft.eyes},
+      weapon:draft.weapon,outfit:draft.outfit,custom:draft.custom||null});
+    return;
+  }
   const old=Store.load();
   if(old&&!armed){armed=true;$('#cGo').textContent='Replace '+old.char.name+' and start over';return;}
   armed=false;
@@ -161,11 +217,26 @@ $('#btnRespawn').onclick=respawn;
 /* ---------- pause menu ---------- */
 function openPause(){
   if(mode!=='play')return;mode='pause';inp.atk=false;inp.block=false;for(const k in keys)keys[k]=false;save();
-  $('#pauseTxt').textContent=`${S.char.name}, level ${S.char.level}, floor ${G.n}. `+(saveOk?'Progress is saved.':'This browser is blocking storage, so progress will not survive a reload.');
+  $('#pauseH').textContent=NET.on?'Menu':'Paused';
+  $('#pauseTxt').textContent=`${S.char.name}, level ${S.char.level}, floor ${G.n}. `+(NET.on?'Online, the fight goes on while this is open. Your character is saved on the server.':saveOk?'Progress is saved.':'This browser is blocking storage, so progress will not survive a reload.');
+  $('#btnSaveQuit').textContent=NET.on?'Leave to title':'Save and quit to title';
+  $('#partyBox').hidden=!NET.on;$('#partyMsg').textContent='';if(NET.on)renderParty();
   $('#pause').hidden=false;
 }
+// Online: your party, its code, and joining someone else's.
+function renderParty(){
+  const p=NET.party;if(!p)return;const solo=p.members.length<2;
+  $('#partyTxt').textContent=solo?`Your party code is ${p.code}. Share it so others can join you, or enter theirs below.`:`Party code ${p.code}. The leader chooses the floor at the floor gate.`;
+  const ul=$('#partyList');ul.innerHTML='';
+  for(const m of p.members){const li=document.createElement('li'),n=document.createElement('span'),i=document.createElement('small');
+    n.textContent=m.name+(m.id===P.id?' (you)':'');i.textContent=`Level ${m.level}`+(m.id===p.leader?', leader':'');li.append(n,i);ul.appendChild(li);}
+  $('#partyLeave').hidden=solo;
+}
+$('#partyJoin').onclick=()=>{const c=$('#partyCode').value.trim().toUpperCase();if(c.length===6){$('#partyMsg').textContent='Joining\u2026';NET.send({t:'join',code:c});}else $('#partyMsg').textContent='Party codes are 6 letters and digits.';};
+$('#partyCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#partyJoin').click();});
+$('#partyLeave').onclick=()=>NET.send({t:'leave'});
 function closePause(){if(mode!=='pause')return;$('#pause').hidden=true;mode='play';}
-function quitToTitle(){save();showTitle();}
+function quitToTitle(){save();showTitle();}   // online, showTitle disconnects
 
 /* ---------- E: gates, the floor gate, blacksmiths ---------- */
 function interact(){
@@ -194,13 +265,17 @@ function confirmChamber(){
 function openTravel(){
   if(mode!=='play')return;mode='travel';inp.atk=false;for(const k in keys)keys[k]=false;
   const el=$('#travelList');el.innerHTML='';
-  for(let n=1;n<=S.best;n++){
-    const b=document.createElement('button');b.className='btn'+(n===G.n?'':' primary');b.disabled=n===G.n;
+  // online the party travels together: up to the highest floor anyone in it has reached, and only the leader chooses
+  const best=NET.on?NET.party.best:S.best,leader=!NET.on||NET.party.leader===P.id;
+  for(let n=1;n<=best;n++){
+    const b=document.createElement('button');b.className='btn'+(n===G.n?'':' primary');b.disabled=n===G.n||!leader;
     const beaten=floorState(n).boss>0;
     b.innerHTML=`Floor ${n}<small>${n===G.n?'You are here':beaten?'Boss beaten'+(floorState(n).boss>1?' '+floorState(n).boss+' times':''):'Boss not yet beaten'}</small>`;
-    b.onclick=()=>{closeTravel();S.hp=null;startFloor(n);};el.appendChild(b);
+    b.onclick=()=>{closeTravel();if(NET.on)NET.send({t:'travel',n});else{S.hp=null;startFloor(n);}};el.appendChild(b);
   }
-  $('#travelTxt').textContent=S.best>1?'Step through to any floor you have reached. Enemies and the boss will be back; chests you opened stay empty.':'This gate leads to every floor you reach. Beat this floor\u2019s boss to unlock the next one.';
+  const lead=NET.on&&NET.party.members.find(m=>m.id===NET.party.leader);
+  if(!leader){$('#travelTxt').textContent=`The party travels together. Only the leader, ${lead?lead.name:'someone else'}, chooses the floor.`;$('#travel').hidden=false;return;}
+  $('#travelTxt').textContent=best>1?'Step through to any floor you have reached. Enemies and the boss will be back; chests you opened stay empty.':'This gate leads to every floor you reach. Beat this floor\u2019s boss to unlock the next one.';
   $('#travel').hidden=false;
 }
 function closeTravel(){if(mode!=='travel')return;$('#travel').hidden=true;mode='play';}
@@ -269,7 +344,8 @@ function renderPanel(){
   const g=$('#pGrid');g.innerHTML='';
   for(let i=0;i<BAG_SIZE;i++){const it=S.inv[i],b=cell(it,sel&&sel.from==='bag'&&sel.i===i,'',true);if(it){b.onclick=()=>{sel={from:'bag',i};delete it.isNew;renderPanel();};b.ondblclick=()=>{sel={from:'bag',i};equipSel();};}g.appendChild(b);}
   renderDetail();
-  $('#saveNote').textContent=saveOk?'Progress saves in this browser every 20 seconds and when you close this panel.':'This browser is blocking storage, so progress will not survive a reload.';
+  $('#pDebug').hidden=!DEBUG||NET.on;
+  $('#saveNote').textContent=NET.on?'Your character is saved on the server.':saveOk?'Progress saves in this browser every 20 seconds and when you close this panel.':'This browser is blocking storage, so progress will not survive a reload.';
 }
 function cmp(a,b,dec=0){const d=a-b;if(Math.abs(d)<(dec?.05:.5))return'';return`<i class="${d>0?'up':'down'}">${d>0?'+':''}${d.toFixed(dec)}</i>`;}
 function renderDetail(){
@@ -348,7 +424,7 @@ $('#pClose').onclick=closePanel;
    and the ` key and the Debug button in Gear open it. */
 const DEBUG=new URLSearchParams(location.search).has('debug');
 function openDebug(){
-  if(!DEBUG||mode!=='play')return;mode='debug';inp.atk=false;for(const k in keys)keys[k]=false;
+  if(!DEBUG||mode!=='play'||NET.on)return;mode='debug';inp.atk=false;for(const k in keys)keys[k]=false;
   const el=$('#dbgBtns');el.innerHTML='';
   const add=(t,fn,stay)=>{const b=document.createElement('button');b.className='btn small';b.textContent=t;b.onclick=()=>{fn();if(stay)openDebugRefresh();else closeDebug();};el.appendChild(b);};
   const jump=n=>{S.hp=null;S.cp=0;S.cpFloor=0;startFloor(n);};
@@ -365,7 +441,7 @@ function openDebug(){
 }
 function openDebugRefresh(){mode='play';openDebug();}
 function closeDebug(){if(mode!=='debug')return;$('#debug').hidden=true;mode='play';}
-$('#pDebug').hidden=!DEBUG;
+$('#pDebug').hidden=!DEBUG;   // and hidden online: see renderPanel
 $('#pDebug').onclick=()=>{closePanel();openDebug();};
 $('#pMute').onclick=toggleMute;
 $('#pQuit').onclick=quitToTitle;

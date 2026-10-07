@@ -4,9 +4,20 @@ A web based MMO RPG pixel game: a dark, pixel-art floor climber that runs in the
 
 ## Run it
 
-- **Quickest:** open `index.html` in Chrome, Edge or Firefox.
-- **From a server** (needed for other people to reach it): from this folder run
-  `python3 -m http.server 8000`, then open `http://localhost:8000/`. Any static file server works.
+The title screen offers **Single player** and **Online**.
+
+- **Single player** needs nothing: open `index.html` in Chrome, Edge or Firefox, or serve this folder with any
+  static file server (`python3 -m http.server 8000`, then `http://localhost:8000/`).
+- **Online** needs the game server, which also serves the game, so one address does both. It needs Node 22.5 or
+  newer:
+
+  ```
+  npm install
+  npm start            then open http://localhost:8080/
+  ```
+
+  `PORT` and `DB` (the database file, default `server/data/blackspire.db`) change where it listens and what it
+  writes. `npm test` runs the server's tests.
 
 The only outside request is the pixel font from Google Fonts. Offline, the game falls back to a monospace font.
 
@@ -33,11 +44,14 @@ js/client/            everything on screen, loaded after js/sim in the order ind
   input.js            canvas sizing, light mask, keyboard, mouse, touch, sound
   render.js           drawing the world
   ui.js               HUD, title flow, character creator, gear panel, blacksmith, floor gate, debug menu
+  net.js              online play: the connection, snapshots, smoothing other players and enemies
   main.js             start-up and the main loop
 assets/sprites/       every sprite, as PNG (see assets/README.md)
 assets/templates/     a full-colour character sheet to repaint
 tools/make_sprites.py regenerates the default sprite PNGs (needs Pillow)
-tools/build.py        optional: packs everything into dist/blackspire.html
+tools/build.py        optional: packs single player into dist/blackspire.html
+server/               the online server (Node): index.js (HTTP and WebSocket), game.js (parties, running floors),
+                      db.js (accounts and characters), test/
 ```
 
 ## Controls
@@ -56,6 +70,20 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Respawn after a death | R or Enter |
 | Debug menu (only with `?debug`, see below) | ` (backquote) |
+
+## Online play
+
+- **Accounts:** a name and a password. Passwords are stored only as salted scrypt hashes. A login lasts 30 days
+  in that browser. One account plays from one place at a time.
+- **Characters** live on the server and are separate from single-player saves.
+- **Parties:** everyone starts in a party of their own, with a 6-letter code in the menu (Esc). Up to 4 players
+  join by entering the code. A party shares one copy of the floor: every kill gives everyone experience, while
+  loot, chests and shops are each player's own. The party leader picks the floor at the floor gate; anyone can
+  take the party up the stairs after a boss. Heal reaches everyone nearby.
+- **Who decides what:** the server runs combat, loot, saves, shops and enhancement, using the same rule files as
+  single player (`js/sim`). Your browser moves your character so movement answers at once, and the server checks
+  every reported position against your speed and the walls.
+- The world does not pause online: the menu and the gear panel leave your character standing where it is.
 
 ## Floors
 

@@ -95,8 +95,19 @@ button{font:inherit;color:inherit}
 .titleBlock h1{font-size:clamp(44px,10vw,96px);line-height:.9;white-space:nowrap;margin:0 0 10px;font-weight:700;letter-spacing:-.01em;text-shadow:0 5px 0 #000}
 .titleBlock p{margin:0 0 20px;color:var(--dim);max-width:38ch}
 .titleBtns{display:flex;flex-wrap:wrap;gap:10px}
+.titleMsg{color:var(--amber);margin:0 0 14px}
+.field{display:block;text-align:left;font-size:13px;color:var(--dim);margin:0 0 10px}
+.field input{display:block;margin-top:4px}
+input[type=password]{font:inherit;color:var(--bone);background:#000;border:1px solid var(--line2);padding:7px 9px;width:100%;-webkit-user-select:text;user-select:text;touch-action:auto}
+#partyBox{text-align:left;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 0 10px;margin-bottom:14px}
+#partyBox p{margin:0 0 8px}
+#partyList{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:4px}
+#partyList li{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+#partyList li small{color:var(--dim)}
+.joinRow{display:flex;gap:6px}
+.joinRow input{flex:1;text-transform:uppercase;padding:4px 8px}
 .hint{margin-top:18px;font-size:12px;color:#6a6875}
-#creator,#panel,#dead,#ask,#debug,#pause,#travel{align-items:center;justify-content:center;padding:10px}
+#creator,#panel,#dead,#ask,#debug,#pause,#travel,#online{align-items:center;justify-content:center;padding:10px}
 .sheet{background:var(--panel);border:1px solid var(--line2);width:min(880px,100%);max-height:100%;overflow:auto;
   -webkit-user-select:none;touch-action:pan-y;box-shadow:0 0 0 4px #000}
 .sheet header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:12px 16px;border-bottom:1px solid var(--line)}
@@ -160,13 +171,13 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 .detail .pas{color:var(--cyan);font-size:13px;margin-top:2px}
 .detail .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .muted{color:var(--dim);font-size:13px}
-#dead .sheet,#ask .sheet,#pause .sheet,#travel .sheet{width:min(440px,100%);text-align:center;padding:26px 20px}
-#dead h2,#ask h2,#pause h2,#travel h2{font-size:34px;margin:0 0 6px;color:#f1b0a8}
-#pause h2{color:var(--bone)}
+#dead .sheet,#ask .sheet,#pause .sheet,#travel .sheet,#online .sheet{width:min(440px,100%);text-align:center;padding:26px 20px}
+#dead h2,#ask h2,#pause h2,#travel h2,#online h2{font-size:34px;margin:0 0 6px;color:#f1b0a8}
+#pause h2,#online h2{color:var(--bone)}
 #travel h2{color:var(--amber)}
 #travelList{display:grid;gap:8px;margin-bottom:14px;max-height:50vh;overflow:auto}
 #travelList .btn{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 #travelList small{font-weight:500;font-size:12px;opacity:.75}
-#dead p,#ask p,#pause p,#travel p{color:var(--dim);margin:0 0 18px}
-#ask .titleBtns,#pause .titleBtns,#travel .titleBtns{justify-content:center}
+#dead p,#ask p,#pause p,#travel p,#online p{color:var(--dim);margin:0 0 18px}
+#ask .titleBtns,#pause .titleBtns,#travel .titleBtns,#online .titleBtns{justify-content:center}
 @media (prefers-reduced-motion:reduce){.bar i,#hurt{transition:none}.toast{animation-name:toastfade}}

@@ -21,7 +21,7 @@ const Store={
 };
 
 /* ---------- the client's own state ---------- */
-let mode='title'; // title | creator | play | panel | ask | debug | pause | travel | dead
+let mode='title'; // title | online | creator | play | panel | ask | debug | pause | travel | dead
 let AV=null, WSPR=null; // the character's outlined sprite sheet, and the equipped weapon's sprite
 let muted=false, saveOk=true;
 const NET={on:false};   // online mode replaces this (net.js)

@@ -138,9 +138,8 @@ class Game{
   /* ---------- messages to players ---------- */
   send(m,o){if(m.ws.readyState===1)m.ws.send(JSON.stringify(o));}
   sendFloor(p,m){
-    const G=p.G;
+    const G=p.G;this.sendSave(m,true);   // the save first: the browser needs the character to set up the floor
     this.send(m,{t:'floor',n:p.n,seed:p.seed+p.n*7919,id:m.pid,x:m.pl.x,y:m.pl.y,tp:m.pl.tp,hp:m.pl.hp,gatesOpen:G.gatesOpen,gate:G.gate,boss:G.bossEnt?G.bossEnt.name:null});
-    this.sendSave(m,true);
   }
   // What other players need to draw you: name, level, look and gear (or your own character sheet).
   look(m){const S=m.S,e=S.equip,w=e.weapon;
