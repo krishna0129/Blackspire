@@ -16,10 +16,9 @@ function render(){
   ctx.fillStyle='#060609';ctx.fillRect(0,0,W,H);
   ctx.drawImage(G.mapCv,-camX,-camY);
   const t=G.time;
-  // gate
-  if(G.gate){const gx=G.gate.x-camX,gy=G.gate.y-camY,pu=Math.sin(t*4)*1.5;
-    ctx.globalAlpha=.18;ctx.fillStyle='#6fd6e6';ctx.beginPath();ctx.arc(gx,gy,13+pu,0,TAU);ctx.fill();ctx.globalAlpha=1;
-    dotArc(gx,gy,10+pu,0,TAU,'#6fd6e6');dotArc(gx,gy,6,t*2,t*2+4,'#c8f3fa');dotArc(gx,gy,3,-t*3,-t*3+3,'#fff');}
+  // gates: the way up (cyan, after the boss falls) and the floor gate in the start room (amber)
+  if(G.gate)drawPortal(G.gate,t,'#6fd6e6','#c8f3fa');
+  if(G.home)drawPortal(G.home,t,'#e2b93b','#f5e2a8');
   // telegraphs
   for(const q of G.tele){const p=q.t/q.d;
     if(q.cone){const x=q.x-camX,y=q.y-camY,a0=q.a-q.half,a1=q.a+q.half;ctx.fillStyle='#d9534f';
@@ -70,6 +69,7 @@ function render(){
     if(e.flip){ctx.save();ctx.translate(bx,0);ctx.scale(-1,1);ctx.drawImage(s.eyes,fx,fy,s.fw,s.fh,-Math.ceil(s.fw/2),by,s.fw,s.fh);ctx.restore();}else ctx.drawImage(s.eyes,fx,fy,s.fw,s.fh,bx-Math.floor(s.fw/2),by,s.fw,s.fh);}
   for(const d of G.drops)if(d.k==='item'&&d.item.rarity>=2){const x=Math.round(d.x-camX),y=Math.round(d.y-camY);ctx.fillStyle=RARITY[d.item.rarity].color;for(let i=0;i<10;i++){ctx.globalAlpha=.7*(1-i/10);ctx.fillRect(x,y-4-i,1,1);}ctx.globalAlpha=1;}
   if(G.gate){const gx=G.gate.x-camX,gy=G.gate.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#6fd6e6');}
+  if(G.home){const gx=G.home.x-camX,gy=G.home.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#e2b93b');}
   // forge light: a warm glow that carries through the dark, so a safe room can be spotted from a distance
   for(const q of G.smiths){const x=q.x-camX+17,y=q.y-camY+4;if(x<-70||y<-70||x>W+70||y>H+70)continue;
     const fl=.85+.15*Math.sin(t*7+q.x);ctx.globalCompositeOperation='lighter';ctx.fillStyle='#f08a3c';
@@ -84,6 +84,11 @@ function render(){
   for(const n of G.nums){const col=n.kind==='crit'?'#ffd86a':n.kind==='hurt'?'#ff6a5e':n.kind==='bleed'?'#c05a6a':n.kind==='heal'?'#9be08a':n.kind==='evade'?'#6fd6e6':n.kind==='mana'?'#7fa8ff':n.kind==='resist'?'#8e97b5':'#e6e1d3';
     ctx.globalAlpha=n.t>.5?1-(n.t-.5)/.25:1;drawNum(n.v,n.x-camX,n.y-camY-n.t*18,col);}
   ctx.globalAlpha=1;
+}
+function drawPortal(q,t,col,hi){
+  const gx=q.x-camX,gy=q.y-camY,pu=Math.sin(t*4)*1.5;
+  ctx.globalAlpha=.18;ctx.fillStyle=col;ctx.beginPath();ctx.arc(gx,gy,13+pu,0,TAU);ctx.fill();ctx.globalAlpha=1;
+  dotArc(gx,gy,10+pu,0,TAU,col);dotArc(gx,gy,6,t*2,t*2+4,hi);dotArc(gx,gy,3,-t*3,-t*3+3,'#fff');
 }
 function drawEnemy(e,t){
   const s=enemySprite(e.type,e.elite,e.skin);let x=e.x-camX,y=e.y-camY;
@@ -146,6 +151,7 @@ function drawMini(){
     d[j]=inB?120:92;d[j+1]=inB?56:90;d[j+2]=inB?64:112;d[j+3]=255;}
   mctx.putImageData(id,0,0);
   const px=Math.floor(P.x/TILE),py=Math.floor(P.y/TILE);
+  if(G.home){mctx.fillStyle='#e2b93b';mctx.fillRect(Math.floor(G.home.x/TILE)-1,Math.floor(G.home.y/TILE)-1,3,3);}
   if(G.gate){mctx.fillStyle='#6fd6e6';mctx.fillRect(Math.floor(G.gate.x/TILE)-1,Math.floor(G.gate.y/TILE)-1,3,3);}
   mctx.fillStyle='#fff';mctx.fillRect(px-1,py-1,2,2);
 }

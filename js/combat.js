@@ -90,8 +90,10 @@ function killEnemy(e){
     for(let i=0;i<3;i++)dropItem(e.x+rand(-18,18),e.y+rand(-14,14),randomItem(G.n+1,25,i===0?2:1),e.x,e.y);
     dropPotion(e.x+10,e.y+16,e.x,e.y);dropPotion(e.x-12,e.y+14,e.x,e.y);
     G.gate={x:(G.boss.x+G.boss.w/2)*TILE,y:(G.boss.y+2.5)*TILE};G.shake=8;
-    banner('Floor '+G.n+' cleared','The chamber is open and the way up is waiting.',3600);sfx('gate');
-    S.cleared=G.n;openGates();
+    const fs=floorState(G.n),first=!fs.boss;fs.boss++;S.best=Math.max(S.best,G.n+1);
+    for(const q of G.smiths){q.shop.stock=null;q.shop.potions=5;}   // a fallen boss restocks this floor's blacksmiths
+    banner(first?'Floor '+G.n+' cleared':G.bossEnt.name+' falls again',first?'The chamber is open and the way up is waiting.':'The blacksmiths on this floor have restocked.',3600);sfx('gate');
+    openGates();
     $('#boss').hidden=true;P.hp=ST.maxHp;save();
   }else{
     if(Math.random()<(e.elite?.7:.13))dropItem(e.x,e.y,randomItem(G.n,e.elite?18:0,e.elite?1:0));
@@ -238,6 +240,7 @@ function usePotion(){
 function interact(){
   if(mode!=='play'||P.dead)return;
   if(G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20){S.hp=null;startFloor(G.n+1);return;}
+  if(nearHome()){openTravel();return;}
   const q=nearGate();if(q){askChamber(q);return;}
   const sm=nearSmith();if(sm)openPanel(sm);
 }

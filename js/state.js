@@ -16,7 +16,7 @@ const Store={
       // rapiers were retired when the tank took their place: any that exist become maces
       if(it&&it.slot==='weapon'&&it.type==='rapier'){it.type='mace';it.base.dmg=+(it.base.dmg*2).toFixed(1);it.name=it.name.replace(/rapier/i,'mace');}};
     fix(s.equip.weapon);if(Array.isArray(s.inv))s.inv.forEach(fix);
-    if(!Array.isArray(s.chestsOpen))s.chestsOpen=[];
+    migrateFloors(s);
     return s;}catch(e){return null;}},
   save(s){
     s.t=Date.now();let ok=true;
@@ -33,7 +33,7 @@ let S=null;   // persistent character state (what gets saved)
 let ST=null;  // derived combat stats
 let G=null;   // current floor runtime
 let P=null;   // player runtime
-let mode='title'; // title | creator | play | panel | ask | debug | pause | dead
+let mode='title'; // title | creator | play | panel | ask | debug | pause | travel | dead
 let AV=null, WSPR=null; // the character's outlined sprite sheet, and the equipped weapon's sprite
 let muted=false, saveOk=true;
 
@@ -43,7 +43,20 @@ function newState(name,look,wkey,tint){
     char:{name,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0},
     equip:{weapon:makeWeapon(wt,1,0,school),armor:makeArmor('tunic',1,0,tint),boots:makeBoots('boots',1,0),trinket:null},
     inv:[],shards:0,potions:3,floor:1,best:1,kills:0,deaths:0,hp:null,
-    chestFloor:1,chestsOpen:[],cleared:0};
+    floors:{}};
+}
+// What the save remembers about each floor, by floor number: which chests are opened, what each blacksmith sells,
+// and how many times its boss has fallen. S.best is the highest floor unlocked (beating a boss unlocks the next).
+const floorState=n=>S.floors[n]||(S.floors[n]={chests:[],shops:[],boss:0});
+// Saves from before per-floor state kept one floor's chests and shops, and the last cleared floor as a number.
+function migrateFloors(s){
+  if(s.floors)return;s.floors={};
+  const fl=n=>s.floors[n]||(s.floors[n]={chests:[],shops:[],boss:0});
+  if(s.chestFloor&&Array.isArray(s.chestsOpen))fl(s.chestFloor).chests=s.chestsOpen;
+  if(s.shops&&Array.isArray(s.shops.list))fl(s.shops.floor).shops=s.shops.list;
+  s.best=Math.max(s.best||1,s.floor||1,(s.cleared||0)+1);
+  for(let n=1;n<s.best;n++)fl(n).boss=1;   // every floor below the highest one reached was beaten to get there
+  delete s.chestFloor;delete s.chestsOpen;delete s.shops;delete s.cleared;
 }
 const xpNeed=l=>Math.round(36+22*Math.pow(l,1.55));
 

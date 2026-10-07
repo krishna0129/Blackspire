@@ -67,21 +67,21 @@ function genFloor(n){
     if(rng()<.4)g.chests.push({x:(ri(r.x+1,r.x+r.w-2)+.5)*TILE,y:(ri(r.y+1,r.y+r.h-2)+.5)*TILE,open:false});
   }
   // chests opened earlier on this floor stay empty (enemies come back, loot does not)
-  if(S.chestFloor===n&&S.chestsOpen)for(const i of S.chestsOpen)if(g.chests[i])g.chests[i].open=true;
-  if(S.cleared===n){   // boss already beaten: gates stand open and the way up is there
-    for(const q of gates)for(const t of q.tiles)map[t[1]*MW+t[0]]=1;
-    g.gatesOpen=true;g.gate={x:(boss.x+boss.w/2)*TILE,y:(boss.y+2.5)*TILE};
-  }else{
-    const b=makeEnemy('boss',(cx(boss)+.5)*TILE,(cy(boss)+.5)*TILE,hpM,dmgM,false);
-    b.boss=true;b.name=BOSSES[(n-1)%BOSSES.length];b.atkT=1.5;b.summons=0;g.enemies.push(b);g.bossEnt=b;
-    if(n===2){b.skin='skelknight';b.mres=.5;b.calls='skel';}   // The Bone Regent: half magic resistance, raises bone soldiers
-  }
+  for(const i of floorState(n).chests)if(g.chests[i])g.chests[i].open=true;
+  // The boss is always there, even on a floor you have cleared: a rematch is optional (the floor gate takes you past it)
+  // and it is how boss loot is farmed.
+  const b=makeEnemy('boss',(cx(boss)+.5)*TILE,(cy(boss)+.5)*TILE,hpM,dmgM,false);
+  b.boss=true;b.name=BOSSES[(n-1)%BOSSES.length];b.atkT=1.5;b.summons=0;g.enemies.push(b);g.bossEnt=b;
+  if(n===2){b.skin='skelknight';b.mres=.5;b.calls='skel';}   // The Bone Regent: half magic resistance, raises bone soldiers
+  // The floor gate in the start room travels to any floor you have unlocked.
+  g.home={x:(start.x+start.w-1.8)*TILE,y:(start.y+1.6)*TILE};
   g.mapCv=paintMap(g);
   return g;
 }
 function openGates(){for(const q of G.gates)for(const t of q.tiles)G.map[t[1]*MW+t[0]]=1;G.gatesOpen=true;G.locked=false;G.mapCv=paintMap(G);}
 function safeIndex(x,y){const a=G.safe;for(let i=0;i<a.length;i++){const r=a[i];if(x>=r.x0&&x<r.x1&&y>=r.y0&&y<r.y1)return i;}return -1;}
 const inSafe=(x,y)=>safeIndex(x,y)>=0;
+const nearHome=()=>G.home&&hyp(G.home.x-P.x,G.home.y-P.y)<20;
 function nearSmith(){for(const q of G.smiths)if(hyp(q.x-P.x,q.y-P.y)<26)return q;return null;}
 function nearGate(){
   if(G.gatesOpen||G.locked||!G.bossEnt||G.bossEnt.dead)return null;

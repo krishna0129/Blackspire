@@ -54,6 +54,7 @@ addEventListener('keydown',e=>{
   else if(mode==='debug'){if(is('menu',c)||is('debug',c))closeDebug();}
   else if(mode==='ask'){if(is('interact',c))enterChamber();else if(is('menu',c))closeAsk();}
   else if(mode==='pause'){if(is('menu',c))closePause();}
+  else if(mode==='travel'){if(is('menu',c))closeTravel();}
   else if(mode==='dead'){if(is('respawn',c))respawn();}
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});

@@ -45,11 +45,17 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Block (longsword and mace classes) | hold H or F |
 | Roll | Shift or L |
 | Potion | Q |
-| Interact (gates, blacksmith) | E |
+| Interact (gates, floor gate, blacksmith) | E |
 | Gear | I or Tab |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Respawn after a death | R or Enter |
 | Debug menu (only with `?debug`, see below) | ` (backquote) |
+
+## Floors
+
+Each floor's boss guards the way up. Beating it unlocks the next floor. The amber floor gate in every start room
+travels to any floor you have unlocked. Enemies and the boss are back whenever you arrive, so bosses can be fought
+again for their loot. Chests you opened stay empty, and a floor's blacksmiths restock each time its boss falls.
 
 ## Saves
 

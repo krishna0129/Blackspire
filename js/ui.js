@@ -22,10 +22,11 @@ function updateHud(){
   setStyle('cdd',cdDo,'height',(P.dodgeCd/.9*100).toFixed(0)+'%');
   setStyle('cdp',cdPo,'height',(P.potCd/1.2*100).toFixed(0)+'%');
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
-  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearGate()?'boss':nearSmith()?'smith':'';
+  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':nearSmith()?'smith':'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near==='up')elPrompt.innerHTML='Climb to floor '+(G.n+1)+'<kbd>E</kbd>';
     else if(near==='boss')elPrompt.innerHTML='Boss chamber gate<kbd>E</kbd>';
+    else if(near==='home')elPrompt.innerHTML='Floor gate<kbd>E</kbd>';
     else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>E</kbd>';}
 }
 function refreshHudStatic(){
@@ -57,16 +58,14 @@ let starting=false;
 function startFloor(n){if(starting)return;starting=true;setTimeout(()=>{starting=false;enterFloor(n);},60);}
 function enterFloor(n){
   S.floor=n;S.best=Math.max(S.best||1,n);
-  if(S.chestFloor!==n){S.chestFloor=n;S.chestsOpen=[];}
   G=genFloor(n);calcStats();P=newPlayer();
-  // Shops keep their stock and potions for as long as you are on this floor, through deaths and reloads,
-  // and restock when you reach a new floor. The stock itself is made the first time you open a smith's counter.
-  if(!S.shops||S.shops.floor!==n)S.shops={floor:n,list:[]};
-  G.smiths.forEach((q,i)=>{q.shop=S.shops.list[i]||(S.shops.list[i]={stock:null,potions:5});});
+  // Shops keep their stock and potions through deaths, reloads and trips to other floors, and restock when this
+  // floor's boss falls. The stock itself is made the first time you open a smith's counter.
+  const fs=floorState(n);G.smiths.forEach((q,i)=>{q.shop=fs.shops[i]||(fs.shops[i]={stock:null,potions:5});});
   if(S.hp!=null&&S.hp>0)P.hp=Math.min(ST.maxHp,S.hp);
   refreshSprites();refreshHudStatic();reveal();drawMini();
   for(const k in hc)delete hc[k];
-  $('#boss').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();
+  $('#boss').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#travel').hidden=true;$('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();
   mode='play';inp.atk=false;
   banner('Floor '+n,n===1?'Find the boss chamber. It is somewhere to the east.':n===2?'The dead here shrug off magic. Bring steel.':'The air is colder here.',n===2?4200:2800);
   save();
@@ -77,7 +76,7 @@ function showTitle(){
   S=sv||newState('Wanderer',{skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0]},'sword',OUTFITS[0]);
   G=genFloor(S.floor||1);G.enemies=[];G.bossEnt=null;calcStats();P=newPlayer();CUSTOM=null;refreshSprites();useCustom(S.char.custom||null);
   atSmith=null;
-  $('#hud').hidden=true;$('#panel').hidden=true;$('#creator').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#title').hidden=false;
+  $('#hud').hidden=true;$('#panel').hidden=true;$('#creator').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#travel').hidden=true;$('#title').hidden=false;
   const b=$('#btnContinue');b.hidden=!sv;
   if(sv)b.textContent=`Continue as ${sv.char.name}, level ${sv.char.level}, floor ${sv.floor}`;
   $('#btnNew').className=sv?'btn':'btn primary';
@@ -173,6 +172,24 @@ function openPause(){
 }
 function closePause(){if(mode!=='pause')return;$('#pause').hidden=true;mode='play';}
 function quitToTitle(){save();showTitle();}
+
+/* ---------- floor gate ----------
+   Stands in every start room. It takes you to any floor up to the highest you have unlocked. Enemies and the boss
+   are back when you arrive; opened chests stay empty. */
+function openTravel(){
+  if(mode!=='play')return;mode='travel';inp.atk=false;for(const k in keys)keys[k]=false;
+  const el=$('#travelList');el.innerHTML='';
+  for(let n=1;n<=S.best;n++){
+    const b=document.createElement('button');b.className='btn'+(n===G.n?'':' primary');b.disabled=n===G.n;
+    const beaten=floorState(n).boss>0;
+    b.innerHTML=`Floor ${n}<small>${n===G.n?'You are here':beaten?'Boss beaten'+(floorState(n).boss>1?' '+floorState(n).boss+' times':''):'Boss not yet beaten'}</small>`;
+    b.onclick=()=>{closeTravel();S.hp=null;startFloor(n);};el.appendChild(b);
+  }
+  $('#travelTxt').textContent=S.best>1?'Step through to any floor you have reached. Enemies and the boss will be back; chests you opened stay empty.':'This gate leads to every floor you reach. Beat this floor\u2019s boss to unlock the next one.';
+  $('#travel').hidden=false;
+}
+function closeTravel(){if(mode!=='travel')return;$('#travel').hidden=true;mode='play';}
+$('#travelClose').onclick=closeTravel;
 $('#btnResume').onclick=closePause;
 $('#btnSaveQuit').onclick=quitToTitle;
 $('#btnMenu').addEventListener('click',e=>{e.currentTarget.blur();openPause();});

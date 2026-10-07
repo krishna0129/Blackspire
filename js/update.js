@@ -43,7 +43,7 @@ function update(dt){
   G.drops=G.drops.filter(d=>!d.gone);
   // chests
   for(let ci=0;ci<G.chests.length;ci++){const c=G.chests[ci];if(c.open||hyp(c.x-P.x,c.y-P.y)>=13)continue;
-    c.open=true;S.chestsOpen.push(ci);sfx('pick');burst(c.x,c.y,10,'#dcb65c',50);
+    c.open=true;floorState(G.n).chests.push(ci);sfx('pick');burst(c.x,c.y,10,'#dcb65c',50);
     dropItem(c.x+rand(-10,10),c.y+14,randomItem(G.n,12),c.x,c.y);if(Math.random()<.35)dropItem(c.x+rand(-12,12),c.y+16,randomItem(G.n,6),c.x,c.y);
     dropShards(c.x,c.y+10,Math.round(rand(8,16)*(1+.25*(G.n-1))));if(Math.random()<.5)dropPotion(c.x+12,c.y+10,c.x,c.y);}
   // fx
