@@ -27,10 +27,10 @@ function render(){
     else if(q.line){ctx.save();ctx.translate(q.x-camX,q.y-camY);ctx.rotate(q.a);ctx.globalAlpha=.16+.3*p;ctx.fillStyle='#d9534f';ctx.fillRect(0,-13,q.len,26);ctx.globalAlpha=.8;ctx.fillRect(0,-13,q.len*p,1);ctx.fillRect(0,12,q.len*p,1);ctx.restore();ctx.globalAlpha=1;}
     else{const x=q.x-camX,y=q.y-camY;ctx.globalAlpha=.14;ctx.fillStyle='#d9534f';ctx.beginPath();ctx.arc(x,y,q.r,0,TAU);ctx.fill();ctx.globalAlpha=.34;ctx.beginPath();ctx.arc(x,y,q.r*p,0,TAU);ctx.fill();ctx.globalAlpha=1;dotArc(x,y,q.r,0,TAU,'#d9534f');}}
   // bodies on the floor (floor 3): a Gravecaller can raise them, fire burns them
-  if(G.corpses&&G.corpses.length){const cs=corpseSprite();for(const c of G.corpses)ctx.drawImage(cs,Math.round(c.x-camX-cs.width/2),Math.round(c.y-camY-cs.height/2));}
+  if(G.corpses&&G.corpses.length){const cs=corpseSprite();for(const c of G.corpses)put(ctx,cs,Math.round(c.x-camX-gw(cs)/2),Math.round(c.y-camY-gh(cs)/2));}
   // chests + drops
   const opened=floorState(G.n).chests;   // which chests are open is yours alone
-  G.chests.forEach((c,i)=>ctx.drawImage(chestSheet(),opened.includes(i)?14:0,0,14,11,Math.round(c.x-camX-7),Math.round(c.y-camY-6),14,11));
+  G.chests.forEach((c,i)=>cut(ctx,chestSheet(),opened.includes(i)?14:0,0,14,11,Math.round(c.x-camX-7),Math.round(c.y-camY-6)));
   for(const d of G.drops){if(d.owner!==P.id)continue;const x=Math.round(d.x-camX),y=Math.round(d.y-camY+Math.sin(d.t*5)*1.2);
     if(d.k==='shard'){ctx.fillStyle='#6fd6e6';ctx.fillRect(x,y-1,1,3);ctx.fillRect(x-1,y,3,1);}
     else if(d.k==='mat'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-2,4,4);ctx.fillStyle=MATS[d.id].color;ctx.fillRect(x-1,y-1,2,2);}
@@ -80,7 +80,7 @@ function render(){
   // things that glow through the dark
   for(const e of G.enemies){if((e.state==='idle'&&!e.boss)||e.burrowed)continue;if(e.x-camX<-48||e.x-camX>W+48||e.y-camY<-48||e.y-camY>H+48)continue;const s=enemySprite(e.type,e.elite,e.sprite),bx=Math.round(e.x-camX),by=Math.round(e.y-camY-s.fh/2+e.bobY);
     if(!s.eyes)continue;const fx=e.fx||0,fy=e.fy||0;
-    if(e.flip){ctx.save();ctx.translate(bx,0);ctx.scale(-1,1);ctx.drawImage(s.eyes,fx,fy,s.fw,s.fh,-Math.ceil(s.fw/2),by,s.fw,s.fh);ctx.restore();}else ctx.drawImage(s.eyes,fx,fy,s.fw,s.fh,bx-Math.floor(s.fw/2),by,s.fw,s.fh);}
+    if(e.flip){ctx.save();ctx.translate(bx,0);ctx.scale(-1,1);cut(ctx,s.eyes,fx,fy,s.fw,s.fh,-Math.ceil(s.fw/2),by);ctx.restore();}else cut(ctx,s.eyes,fx,fy,s.fw,s.fh,bx-Math.floor(s.fw/2),by);}
   for(const d of G.drops)if(d.owner===P.id&&d.k==='item'&&d.item.rarity>=2){const x=Math.round(d.x-camX),y=Math.round(d.y-camY);ctx.fillStyle=RARITY[d.item.rarity].color;for(let i=0;i<10;i++){ctx.globalAlpha=.7*(1-i/10);ctx.fillRect(x,y-4-i,1,1);}ctx.globalAlpha=1;}
   if(G.gate){const gx=G.gate.x-camX,gy=G.gate.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#6fd6e6');}
   if(G.home){const gx=G.home.x-camX,gy=G.home.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#e2b93b');}
@@ -133,8 +133,8 @@ function drawEnemy(e,t){
   e.fx=fx;e.fy=fy;e.flip=flip;
   const dx=Math.round(x),dy=Math.round(y-fh/2+bob),img=e.flash>0?s.white:s.c;
   if(e.type!=='wisp'){ctx.globalAlpha=.35;ctx.fillStyle='#000';ctx.fillRect(dx-e.r,Math.round(y+e.r+2),e.r*2,2);ctx.globalAlpha=1;}
-  if(flip){ctx.save();ctx.translate(dx,0);ctx.scale(-1,1);ctx.drawImage(img,fx,fy,fw,fh,-Math.ceil(fw/2),dy,fw,fh);ctx.restore();}
-  else ctx.drawImage(img,fx,fy,fw,fh,dx-Math.floor(fw/2),dy,fw,fh);
+  if(flip){ctx.save();ctx.translate(dx,0);ctx.scale(-1,1);cut(ctx,img,fx,fy,fw,fh,-Math.ceil(fw/2),dy);ctx.restore();}
+  else cut(ctx,img,fx,fy,fw,fh,dx-Math.floor(fw/2),dy);
   if(e.state==='windup'||e.state==='draw'){ctx.fillStyle='#fff';ctx.fillRect(dx,dy-4,1,2);ctx.fillRect(dx,dy-1,1,1);}
   if(e.hurtT>0&&!e.boss){const w=Math.max(8,e.r*2),p=clamp(e.hp/e.maxHp,0,1);ctx.fillStyle='#000';ctx.fillRect(dx-w/2-1,dy-4,w+2,3);ctx.fillStyle=e.elite?'#e8b24a':'#d9534f';ctx.fillRect(dx-w/2,dy-3,Math.ceil(w*p),1);}
 }
@@ -154,19 +154,19 @@ function drawPlayer(pl=P,st=ST,av=AV,wspr=WSPR,bowf=BOWF){
     else if(st.ranged)wa=base;
     else wa=base+(p-.5)*Math.max(100,st.arc)*Math.PI/180;}   // the blade sweeps across the direction faced
   const weapon=st.magic?()=>{   // a grimoire floats by the hand instead of swinging
-      const bx=x+BOOK[d][0],by=Math.round(y+BOOK[d][1]+Math.sin(G.time*3));ctx.drawImage(wspr,bx-6,by-5);
+      const bx=x+BOOK[d][0],by=Math.round(y+BOOK[d][1]+Math.sin(G.time*3));put(ctx,wspr,bx-6,by-5);
       if(sw){ctx.fillStyle='#cfc8ff';ctx.fillRect(bx+Math.round(Math.cos(base)*6),by+Math.round(Math.sin(base)*6),2,2);}}
     :()=>{const spr=bowf&&sw?bowf[sw.hit?2:1]:wspr;   // bow: draw, loose, then back to a nocked arrow
-      ctx.save();ctx.translate(Math.round(hx),Math.round(hy));ctx.rotate(wa);ctx.drawImage(spr,-spr.ox,-spr.oy);ctx.restore();};
+      ctx.save();ctx.translate(Math.round(hx),Math.round(hy));ctx.rotate(wa);put(ctx,spr,-spr.ox,-spr.oy);ctx.restore();};
   ctx.globalAlpha=.4;ctx.fillStyle='#000';ctx.fillRect(x-5,y+9,10,2);ctx.globalAlpha=1;
   const SH=st.shield?SHIELDS[st.shield]:null,sp=SH?(pl.blocking?SHIELD_UP:SHIELD_REST)[d]:null;
-  const shield=()=>{const im=shieldSprite(st.shield);ctx.drawImage(im,sp[2]*SH.w,0,SH.w,SH.h,x+sp[0]-(SH.w>>1),y+sp[1]-(SH.h>>1),SH.w,SH.h);};
+  const shield=()=>{const im=shieldSprite(st.shield);cut(ctx,im,sp[2]*SH.w,0,SH.w,SH.h,x+sp[0]-(SH.w>>1),y+sp[1]-(SH.h>>1));};
   const behind=d===1;if(behind)weapon();   // facing away: the weapon is on the far side of the body
   if(sp&&!sp[3])shield();
   if(pl.inv>0&&!pl.dash&&Math.floor(G.time*24)%2)ctx.globalAlpha=.45;
   const fx=col*FRAME_W,fy=DIR_ROW[d]*FRAME_H;
-  if(d===2){ctx.save();ctx.translate(x,0);ctx.scale(-1,1);ctx.drawImage(av,fx,fy,FRAME_W,FRAME_H,-12,y-13,FRAME_W,FRAME_H);ctx.restore();}
-  else ctx.drawImage(av,fx,fy,FRAME_W,FRAME_H,x-12,y-13,FRAME_W,FRAME_H);
+  if(d===2){ctx.save();ctx.translate(x,0);ctx.scale(-1,1);cut(ctx,av,fx,fy,FRAME_W,FRAME_H,-12,y-13);ctx.restore();}
+  else cut(ctx,av,fx,fy,FRAME_W,FRAME_H,x-12,y-13);
   ctx.globalAlpha=1;if(!behind)weapon();
   if(sp&&sp[3])shield();
   if(pl.guard>0){const t=G.time*3;if(pl.guard>1||Math.floor(G.time*10)%2)for(let k=0;k<3;k++)dotArc(x,y,13,t+k*TAU/3,t+k*TAU/3+1.3,'#e6e1d3');}

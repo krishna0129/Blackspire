@@ -3,12 +3,16 @@
 
 /* ---------- canvas, input ---------- */
 const stage=$('#stage'),cv=$('#game'),ctx=cv.getContext('2d');
-let W=320,H=180,SCALE=3,light=null,camX=0,camY=0;
+// W x H: the view in game pixels; SCALE: CSS pixels per game pixel; RES: canvas pixels per game pixel. RES stays 1
+// with the stock art and only goes up to show sprites drawn finer than the grid (SPR_MAX, sprites.js).
+let W=320,H=180,SCALE=3,RES=1,light=null,camX=0,camY=0;
 function resize(){
   const r=stage.getBoundingClientRect();if(r.width<2||r.height<2)return;
   SCALE=Math.max(2,Math.floor(Math.min(r.width,r.height)/230));
   W=Math.ceil(r.width/SCALE);H=Math.ceil(r.height/SCALE);
-  cv.width=W;cv.height=H;cv.style.width=W*SCALE+'px';cv.style.height=H*SCALE+'px';ctx.imageSmoothingEnabled=false;
+  RES=Math.max(1,Math.min(SPR_MAX,Math.floor(SCALE*(window.devicePixelRatio||1))));
+  cv.width=W*RES;cv.height=H*RES;cv.style.width=W*SCALE+'px';cv.style.height=H*SCALE+'px';
+  ctx.setTransform(RES,0,0,RES,0,0);ctx.imageSmoothingEnabled=false;   // everything is drawn in game pixels
   buildLight();
 }
 function buildLight(){

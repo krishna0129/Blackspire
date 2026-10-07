@@ -3,6 +3,10 @@
 
 /* ---------- data ---------- */
 const TILE=16, MW=120, MH=80;
+// A player's own character sheet: 88 x 78 game pixels. The file may be drawn finer, at a whole-number ratio up to
+// MAX_RATIO (176 x 156 is a ratio of 2). Returns the ratio, or 0 when the size doesn't fit.
+const SHEET_W=88, SHEET_H=78, MAX_RATIO=4;
+function sheetRatio(w,h){const k=w/SHEET_W;return Number.isInteger(k)&&k>=1&&k<=MAX_RATIO&&h===SHEET_H*k?k:0;}
 const RARITY=[
   {name:'Common',color:'#9a98a6',mult:1,aff:0},
   {name:'Uncommon',color:'#7fc46a',mult:1.15,aff:1},

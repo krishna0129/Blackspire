@@ -56,12 +56,14 @@ function loadRules(){
 
 const isNum=v=>typeof v==='number'&&Number.isFinite(v);
 const r1=v=>Math.round(v*10)/10;
-// A character sheet upload: a PNG of exactly 88 x 78, as a data URL, small enough to send to a party.
+// A character sheet upload: a PNG of 88 x 78 game pixels, as a data URL, small enough to send to a party.
+// SHEET_URL_MAX stays under the socket's message limit (maxPayload in index.js).
+const SHEET_URL_MAX=120000,RULES=loadRules();
 function validSheet(url){
   if(url===null)return true;
-  if(typeof url!=='string'||url.length>64000||!url.startsWith('data:image/png;base64,'))return false;
-  const b=Buffer.from(url.slice(22),'base64');
-  return b.length>24&&b.readUInt32BE(0)===0x89504e47&&b.toString('ascii',12,16)==='IHDR'&&b.readUInt32BE(16)===88&&b.readUInt32BE(20)===78;
+  if(typeof url!=='string'||url.length>SHEET_URL_MAX||!url.startsWith('data:image/png;base64,'))return false;
+  const b=Buffer.from(url.slice(22),'base64');   // 88 x 78, or a whole multiple of it for finer art (sheetRatio, data.js)
+  return b.length>24&&b.readUInt32BE(0)===0x89504e47&&b.toString('ascii',12,16)==='IHDR'&&RULES.sheetRatio(b.readUInt32BE(16),b.readUInt32BE(20))>0;
 }
 
 class Game{
@@ -81,7 +83,7 @@ class Game{
     const look=o.look||{};
     if(!ok(L.SKINS,look.skin)||!ok(L.HAIRS,look.hair)||!ok(L.EYES,look.eyes)||!Number.isInteger(look.style)||look.style<0||look.style>=L.STYLES)return'That look is not available.';
     if(!ok(L.START,o.weapon)||!ok(L.OUTFITS,o.outfit))return'That outfit or weapon is not available.';
-    if(o.custom!=null&&!validSheet(o.custom))return'A character sheet must be a PNG of exactly 88 x 78 pixels.';
+    if(o.custom!=null&&!validSheet(o.custom))return'A character sheet must be a PNG of 88 x 78 pixels, or a whole multiple of that up to x4, under 88 KB.';
     const s=R.newState(name,{skin:look.skin,hair:look.hair,style:look.style,eyes:look.eyes},o.weapon,o.outfit);
     s.char.custom=o.custom||null;
     m.S=JSON.parse(JSON.stringify(s));this.db.saveChar(m.account,m.S);return null;
@@ -218,7 +220,7 @@ class Game{
         return;
       case'act':{ // gear, attributes, the blacksmith
         if(!Object.prototype.hasOwnProperty.call(R.__actions(),o.name)||!Array.isArray(o.args)||o.args.length>3)return this.send(m,{t:'ar',id:o.id,r:false});
-        if(o.name==='custom'&&!validSheet(o.args[0]))return this.send(m,{t:'ar',id:o.id,r:false,err:'A character sheet must be a PNG of exactly 88 x 78 pixels.'});
+        if(o.name==='custom'&&!validSheet(o.args[0]))return this.send(m,{t:'ar',id:o.id,r:false,err:'A character sheet must be a PNG of 88 x 78 pixels, or a whole multiple of that up to x4, under 88 KB.'});
         const r=R.runAction(o.name,o.args.map(a=>typeof a==='string'||isNum(a)||a===null?a:null));
         for(const e of R.__take())for(const q of p.members)if(e.to==null||e.to===q.pid)q.out.push([e.k,e.a]);
         this.sendSave(m,true);return this.send(m,{t:'ar',id:o.id,r});}

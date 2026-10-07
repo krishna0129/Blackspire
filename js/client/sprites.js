@@ -1,6 +1,12 @@
 'use strict';
 // Blackspire: sprites. Nothing in this file paints a character, weapon, piece of gear or enemy in code.
 // Every sprite is a PNG file under assets/sprites/ (assets/README.md explains the layout), loaded once at start-up.
+//
+// Pixel ratio. All sizes and positions in the game are in game pixels. A sprite file may be drawn finer than that:
+// its ratio is how many file pixels make one game pixel (SPRITE_RATIO below, 1 when not listed). Every image and
+// canvas here carries its ratio as .r, mk() makes canvases whose context draws in game pixels, and put()/cut() draw
+// any of them at their game size. So finer art drops in without touching a position, and the screen renders finer
+// (RES in input.js) only when some art needs it.
 
 /* ---------- sprites ---------- */
 const SPRITE_DIR='assets/sprites/';
@@ -21,59 +27,85 @@ const SPRITE_NAMES=[
   'enemies/thrall', 'enemies/thrall_eyes', 'enemies/gravecaller', 'enemies/gravecaller_eyes', 'enemies/thornroot', 'enemies/thornroot_eyes',
   'enemies/bloodbloom', 'enemies/bloodbloom_eyes', 'enemies/hermit', 'enemies/hermit_eyes', 'enemies/collector', 'enemies/collector_eyes', 'enemies/corpse'
 ];
+// Sprites drawn finer than the game's pixel grid: 'enemies/thrall':4 means thrall.png is 4 file pixels per game pixel
+// (a 72 x 80 file for an 18 x 20 enemy). Whole numbers from 1 to MAX_RATIO. A sprite's _tint and _eyes files share its
+// ratio unless they are listed themselves.
+const SPRITE_RATIO={};
+function ratioFor(n){const own=SPRITE_RATIO[n];if(own)return own;const base=n.replace(/_(tint|eyes)$/,'');return SPRITE_RATIO[base]||1;}
+let SPR_MAX=1;   // the finest ratio among the loaded art (and an uploaded character sheet)
 const IMG={};   // sprite name -> loaded image, or null if the file is missing
 // window.SPRITE_DATA exists only in the single-file build, where the PNGs are embedded as data URLs.
 function loadSprites(){
   return Promise.all(SPRITE_NAMES.map(n=>new Promise(res=>{const im=new Image();
-    im.onload=()=>{IMG[n]=im;res();};im.onerror=()=>{IMG[n]=null;console.warn('Missing sprite: '+SPRITE_DIR+n+'.png');res();};
+    im.onload=()=>{const r=Math.round(ratioFor(n));
+      if(r>=1&&r<=MAX_RATIO&&im.naturalWidth%r===0&&im.naturalHeight%r===0){im.r=r;SPR_MAX=Math.max(SPR_MAX,r);}
+      else{im.r=1;console.warn(`Sprite ${n}: ratio ${r} does not divide its ${im.naturalWidth} x ${im.naturalHeight} file; drawing it at ratio 1`);}
+      IMG[n]=im;res();};im.onerror=()=>{IMG[n]=null;console.warn('Missing sprite: '+SPRITE_DIR+n+'.png');res();};
     im.src=(window.SPRITE_DATA&&window.SPRITE_DATA[n])||SPRITE_DIR+n+'.png';})));
 }
 function loadImage(url){return new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src=url;});}
-function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingEnabled=false;return[c,x];}
+// A canvas w x h game pixels at ratio r: its context draws in game pixels.
+function mk(w,h,r=1){const c=document.createElement('canvas');c.width=Math.round(w*r);c.height=Math.round(h*r);c.r=r;
+  const x=c.getContext('2d');x.setTransform(r,0,0,r,0,0);x.imageSmoothingEnabled=false;return[c,x];}
+const rat=im=>im&&im.r||1, gw=im=>im.width/rat(im), gh=im=>im.height/rat(im);
+// put: the whole image at (dx,dy), at its game size or dw x dh. cut: a part of it, given in game pixels.
+function put(x,im,dx,dy,dw,dh){x.drawImage(im,dx,dy,dw==null?gw(im):dw,dh==null?gh(im):dh);}
+function cut(x,im,sx,sy,sw,sh,dx,dy,dw=sw,dh=sh){const r=rat(im);x.drawImage(im,sx*r,sy*r,sw*r,sh*r,dx,dy,dw,dh);}
+// the finest ratio among some sprite files, for a canvas that layers them
+const ratioOf=(...names)=>Math.max(1,...names.map(n=>rat(IMG[n])));
+// A small interface canvas (item icons, previews) that is w x h game pixels, drawn at the finest art's ratio. Its CSS size stays.
+function uiCtx(cv,w,h){const r=SPR_MAX;if(cv.width!==w*r||cv.height!==h*r){cv.width=w*r;cv.height=h*r;}
+  const x=cv.getContext('2d');x.setTransform(r,0,0,r,0,0);x.imageSmoothingEnabled=false;x.clearRect(0,0,w,h);return x;}
 
 // Colouring. A file ending in _tint is grey; grey 128 becomes exactly `tint`, darker greys shade it, lighter ones highlight it.
 // Everything below uses canvas blending only and never reads pixels back, so the game also runs straight from disk.
 const TINTED={};
 function tinted(name,tint){
   const im=IMG[name];if(!im)return null;const key=name+'|'+tint;if(TINTED[key])return TINTED[key];
-  const[c,x]=mk(im.width,im.height);x.drawImage(im,0,0);
-  x.globalCompositeOperation='hard-light';x.fillStyle=tint;x.fillRect(0,0,c.width,c.height);
-  x.globalCompositeOperation='destination-in';x.drawImage(im,0,0);x.globalCompositeOperation='source-over';
+  const[c,x]=mk(gw(im),gh(im),rat(im));put(x,im,0,0);
+  x.globalCompositeOperation='hard-light';x.fillStyle=tint;x.fillRect(0,0,gw(im),gh(im));
+  x.globalCompositeOperation='destination-in';put(x,im,0,0);x.globalCompositeOperation='source-over';
   return TINTED[key]=c;
 }
 // Draws sprite `name` onto x: its _tint file coloured with `tint`, then its plain file over that. Either file may be absent.
 function layer(x,name,tint,sx,sy,w,h){
-  for(const im of[tint?tinted(name+'_tint',tint):null,IMG[name]])if(im){if(w)x.drawImage(im,sx,sy,w,h,0,0,w,h);else x.drawImage(im,0,0);}
+  for(const im of[tint?tinted(name+'_tint',tint):null,IMG[name]])if(im){if(w)cut(x,im,sx,sy,w,h,0,0);else put(x,im,0,0);}
 }
-// The one-pixel dark outline every sprite gets. cw/ch is the frame size, so one frame never bleeds into its neighbour.
+// The dark outline every sprite gets, one game pixel wide whatever the art's ratio, so fine and coarse art match.
+// cw/ch is the frame size, so one frame never bleeds into its neighbour.
 function outlined(src,color,cw,ch){
-  const w=src.width,h=src.height,[s,sx]=mk(w,h),[c,x]=mk(w,h);cw=cw||w;ch=ch||h;
-  sx.drawImage(src,0,0);sx.globalCompositeOperation='source-in';sx.fillStyle=color;sx.fillRect(0,0,w,h);
+  const w=gw(src),h=gh(src),r=rat(src),[s,sx]=mk(w,h,r),[c,x]=mk(w,h,r);cw=cw||w;ch=ch||h;
+  put(sx,src,0,0);sx.globalCompositeOperation='source-in';sx.fillStyle=color;sx.fillRect(0,0,w,h);
   for(let fy=0;fy<h;fy+=ch)for(let fx=0;fx<w;fx+=cw){x.save();x.beginPath();x.rect(fx,fy,cw,ch);x.clip();
-    x.drawImage(s,-1,0);x.drawImage(s,1,0);x.drawImage(s,0,-1);x.drawImage(s,0,1);x.restore();}
-  x.drawImage(src,0,0);return c;
+    put(x,s,-1,0);put(x,s,1,0);put(x,s,0,-1);put(x,s,0,1);x.restore();}
+  put(x,src,0,0);return c;
 }
-function whiten(c){const[o,x]=mk(c.width,c.height);x.drawImage(c,0,0);x.globalCompositeOperation='source-in';x.fillStyle='#fff';x.fillRect(0,0,o.width,o.height);return o;}
+function whiten(c){const w=gw(c),h=gh(c),[o,x]=mk(w,h,rat(c));put(x,c,0,0);x.globalCompositeOperation='source-in';x.fillStyle='#fff';x.fillRect(0,0,w,h);return o;}
 
 // Character sheet: 88 x 78 = four 22 x 26 frames across (stand, step A, step B, attack), three rows down
 // (facing down, facing up, facing right). Facing left is the right-facing row mirrored.
-const FRAME_W=22,FRAME_H=26,SHEET_W=88,SHEET_H=78;
+const FRAME_W=22,FRAME_H=26;   // SHEET_W, SHEET_H: data.js
 const HAIR_FILES=['short','spiked','long','tail','bob','buzz'];
 const DIR_ROW=[0,1,2,2];   // sheet row for facing down, up, left, right
 let CUSTOM=null;           // the player's own uploaded character sheet, when they have one
 function buildAvatar(look,eq,custom){
-  const[c,x]=mk(SHEET_W,SHEET_H);
-  if(custom)x.drawImage(custom,0,0);            // an uploaded sheet replaces every layer
-  else{const ar=eq.armor,bt=eq.boots;
+  const ar=eq.armor,bt=eq.boots,hair='character/hair_'+(HAIR_FILES[look.style]||'short'),
+    files=['character/skin','character/base','character/eyes','gear/boots_'+(bt?bt.type:'boots'),'gear/armor_'+(ar?ar.type:'tunic'),hair],
+    [c,x]=mk(SHEET_W,SHEET_H,custom?rat(custom):ratioOf(...files.flatMap(f=>[f,f+'_tint'])));
+  if(custom)put(x,custom,0,0);                  // an uploaded sheet replaces every layer
+  else{
     layer(x,'character/skin',look.skin);layer(x,'character/base');layer(x,'character/eyes',look.eyes);
     layer(x,'gear/boots_'+(bt?bt.type:'boots'),bt?bt.tint:'#2a211b');
     layer(x,'gear/armor_'+(ar?ar.type:'tunic'),ar?ar.tint:'#3a3a44');
-    layer(x,'character/hair_'+(HAIR_FILES[look.style]||'short'),look.hair);}
+    layer(x,hair,look.hair);}
   const o=outlined(c,'#050508',FRAME_W,FRAME_H);o.raw=c;return o;
 }
+// An uploaded sheet with its ratio set, or null when its size doesn't fit. A finer sheet makes the screen render finer.
+function sheetImage(im){const r=im?sheetRatio(im.naturalWidth,im.naturalHeight):0;if(!r)return null;
+  im.r=r;if(r>SPR_MAX){SPR_MAX=r;resize();}return im;}
 async function useCustom(url){
   const im=url?await loadImage(url):null;
-  CUSTOM=im&&im.naturalWidth===SHEET_W&&im.naturalHeight===SHEET_H?im:null;
+  CUSTOM=sheetImage(im);
   if(S&&G)refreshSprites();
 }
 
@@ -81,8 +113,9 @@ async function useCustom(url){
 const WCACHE={};
 function bowFrames(tint){
   const key='bowframes|'+tint;if(WCACHE[key])return WCACHE[key];const out=[];
-  for(let f=0;f<3;f++){const[r,x]=mk(16,17);layer(x,'weapons/bow',tint,f*16,0,16,17);const o=outlined(r,'#050508');
-    if(IMG['weapons/bow_over'])o.getContext('2d').drawImage(IMG['weapons/bow_over'],f*16,0,16,17,0,0,16,17);   // string and arrow stay thin: no outline
+  const k=ratioOf('weapons/bow','weapons/bow_tint','weapons/bow_over');
+  for(let f=0;f<3;f++){const[r,x]=mk(16,17,k);layer(x,'weapons/bow',tint,f*16,0,16,17);const o=outlined(r,'#050508');
+    if(IMG['weapons/bow_over'])cut(o.getContext('2d'),IMG['weapons/bow_over'],f*16,0,16,17,0,0);   // string and arrow stay thin: no outline
     o.ox=9;o.oy=8;out.push(o);}
   return WCACHE[key]=out;
 }
@@ -90,8 +123,8 @@ function buildWeapon(type,tint,school){
   if(type==='bow')return bowFrames(tint)[0];
   if(type==='grimoire'&&!school)school=tint===GRIM.faith.tint?'faith':'magic';
   const key=type+'|'+tint+'|'+(school||'');if(WCACHE[key])return WCACHE[key];
-  const[r,x]=mk(31,11);layer(x,'weapons/'+type,tint);
-  if(type==='grimoire'&&IMG['weapons/grimoire_'+school])x.drawImage(IMG['weapons/grimoire_'+school],0,0);
+  const n='weapons/'+type,[r,x]=mk(31,11,ratioOf(n,n+'_tint','weapons/grimoire_'+school));layer(x,n,tint);
+  if(type==='grimoire'&&IMG['weapons/grimoire_'+school])put(x,IMG['weapons/grimoire_'+school],0,0);
   const c=outlined(r,'#050508');c.ox=4;c.oy=5;return WCACHE[key]=c;
 }
 let BOWF=null;   // bow animation frames when a bow is equipped
@@ -109,11 +142,11 @@ function smithSprites(){
 function drawFlame(x,y,t){for(let i=0;i<4;i++){const h=1+((Math.floor(t*9)+i*3)%3);ctx.fillStyle=i%2?'#ffe9a8':'#f08a3c';ctx.fillRect(x+i*2,y-h,2,h);}}
 function drawSmith(q,t){
   const sp=smithSprites(),x=Math.round(q.x-camX),y=Math.round(q.y-camY);
-  ctx.drawImage(sp.brazier,x+11,y+3);drawFlame(x+13,y+6,t);
-  ctx.drawImage(sp.anvil,x-25,y+2);
+  put(ctx,sp.brazier,x+11,y+3);drawFlame(x+13,y+6,t);
+  put(ctx,sp.anvil,x-25,y+2);
   ctx.globalAlpha=.4;ctx.fillStyle='#000';ctx.fillRect(x-5,y+9,10,2);ctx.globalAlpha=1;
-  ctx.save();ctx.translate(x,0);ctx.scale(-1,1);ctx.drawImage(sp.c,-12,y-13);ctx.restore();   // faces the anvil
-  ctx.save();ctx.translate(x-6,y+3);ctx.rotate(Math.PI+.9-Math.abs(Math.sin(t*2.6))*1.05);ctx.drawImage(sp.hammer,-4,-5);ctx.restore();
+  ctx.save();ctx.translate(x,0);ctx.scale(-1,1);put(ctx,sp.c,-12,y-13);ctx.restore();   // faces the anvil
+  ctx.save();ctx.translate(x-6,y+3);ctx.rotate(Math.PI+.9-Math.abs(Math.sin(t*2.6))*1.05);put(ctx,sp.hammer,-4,-5);ctx.restore();
 }
 let CHESTS=null;
 function chestSheet(){return CHESTS||(CHESTS=IMG['props/chest']?outlined(IMG['props/chest'],'#050508',14,11):mk(28,11)[0]);}
@@ -130,25 +163,25 @@ function enemySprite(type,elite,sprite){
   let src=IMG[name];if(!src){const[p,px]=mk(12,12);px.fillStyle='#f0f';px.fillRect(1,1,10,10);src=p;}   // loud placeholder for a missing file
   const c=outlined(src,elite?'#c9a24a':boss?(B?B.boss.line:'#7a4a52'):(T.line||'#4f4f66')),white=whiten(c);
   let eyes=IMG[name+'_eyes']||null;
-  if(eyes&&elite){const[e,ex]=mk(eyes.width,eyes.height);ex.drawImage(eyes,0,0);ex.globalCompositeOperation='source-in';ex.fillStyle='#ffd86a';ex.fillRect(0,0,e.width,e.height);eyes=e;}
-  if(eyes)c.getContext('2d').drawImage(eyes,0,0);
+  if(eyes&&elite){const[e,ex]=mk(gw(eyes),gh(eyes),rat(eyes));put(ex,eyes,0,0);ex.globalCompositeOperation='source-in';ex.fillStyle='#ffd86a';ex.fillRect(0,0,gw(eyes),gh(eyes));eyes=e;}
+  if(eyes)put(c.getContext('2d'),eyes,0,0);
   // fw, fh: one frame. Most enemies are a single frame; the floor 2 skeletons are sheets (see ETYPES).
   const sheet=!boss&&T.fw;
-  return ESPR[key]={c,white,eyes,w:c.width,h:c.height,fw:sheet?T.fw:c.width,fh:sheet?T.fh:c.height,sheet:!!sheet};
+  return ESPR[key]={c,white,eyes,w:gw(c),h:gh(c),fw:sheet?T.fw:gw(c),fh:sheet?T.fh:gh(c),sheet:!!sheet};
 }
 
 // Item icons are cut from the sprites themselves, so new art shows up in the bag without separate icon files.
 function drawItemIcon(cv,it){
-  const x=cv.getContext('2d');x.imageSmoothingEnabled=false;x.clearRect(0,0,24,24);
+  const x=uiCtx(cv,24,24);
   if(!it)return;
   x.fillStyle='#262630';x.fillRect(0,0,24,24);x.fillStyle=RARITY[it.rarity].color;x.globalAlpha=.16;x.fillRect(0,0,24,24);x.globalAlpha=1;
   x.fillRect(0,22,24,2);
   if(it.slot==='weapon'){const s=buildWeapon(it.type,it.tint,it.school);
-    if(it.type==='grimoire')x.drawImage(s,1,0,10,11,2,0,20,22);
-    else if(it.type==='bow')x.drawImage(s,4,3);
-    else{x.save();x.translate(12,11);x.rotate(-Math.PI/4);const len={sword:16,dagger:11,great:21,mace:17,spear:25}[it.type]||16;x.drawImage(s,-Math.round(len/2)-1,-5);x.restore();}}
+    if(it.type==='grimoire')cut(x,s,1,0,10,11,2,0,20,22);
+    else if(it.type==='bow')put(x,s,4,3);
+    else{x.save();x.translate(12,11);x.rotate(-Math.PI/4);const len={sword:16,dagger:11,great:21,mace:17,spear:25}[it.type]||16;put(x,s,-Math.round(len/2)-1,-5);x.restore();}}
   else if(it.slot==='armor'||it.slot==='boots'){
-    const[r,rx]=mk(FRAME_W,FRAME_H);layer(rx,'gear/'+(it.slot==='armor'?'armor_':'boots_')+it.type,it.tint,0,0,FRAME_W,FRAME_H);const o=outlined(r,'#050508');
-    if(it.slot==='armor')x.drawImage(o,6,11,12,11,0,0,24,22);else x.drawImage(o,8,18,8,6,0,2,24,18);}
-  else{const t=tinted('icons/trinket_tint',it.tint);if(t)x.drawImage(t,0,0);x.fillStyle=RARITY[it.rarity].color;x.fillRect(10,4,4,3);x.fillStyle='#fff';x.fillRect(11,5,1,1);}
+    const n='gear/'+(it.slot==='armor'?'armor_':'boots_')+it.type,[r,rx]=mk(FRAME_W,FRAME_H,ratioOf(n,n+'_tint'));layer(rx,n,it.tint,0,0,FRAME_W,FRAME_H);const o=outlined(r,'#050508');
+    if(it.slot==='armor')cut(x,o,6,11,12,11,0,0,24,22);else cut(x,o,8,18,8,6,0,2,24,18);}
+  else{const t=tinted('icons/trinket_tint',it.tint);if(t)put(x,t,0,0);x.fillStyle=RARITY[it.rarity].color;x.fillRect(10,4,4,3);x.fillStyle='#fff';x.fillRect(11,5,1,1);}
 }

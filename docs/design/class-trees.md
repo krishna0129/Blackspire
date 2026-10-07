@@ -113,6 +113,9 @@ to never leave.
   what you leave out is the build choice.
 - Ultimates **charge from damage dealt and taken** rather than a cooldown, so one can't open a boss fight at full
   strength every time. Exact charge rates come with the first ultimate.
+- Later, **special ultimates** replace the charge with a condition that has to be met before they can be used
+  (for example a number of kills without being hit, or being below a share of health). Each condition is a small
+  check written once, like a rider, so the list of conditions stays short and reviewed.
 - Slots 2–4 get keys of their own when they arrive. Rank, mutation and tree bonuses that say "skill recharge"
   apply to every slotted skill except the ultimate.
 
@@ -316,12 +319,13 @@ Following skill-trees.md, with the decisions above making the early steps smalle
 1. **Changing class costs a hefty fee** (`150 × level` shards and 2 Spire crystals), so players research and
    commit. Points move with you; ranks and mutations wait with the old class.
 2. **Mutagens stay as easy to get as proposed,** but what the first floors' mutagens teach is a minor stat bonus
-   (lesser mutations), so early bosses can't be farmed into one-shots. Behaviour-changing mutations come from
-   deeper floors.
+   (lesser mutations), so early bosses can't be farmed into one-shots. Mutagens from higher floors give different,
+   behaviour-changing effects (greater mutations).
 3. **Rank 5 needs a hidden boss's mutagen.** Until hidden bosses exist, its last material reads "not yet
    discovered".
 4. **No second active skill from the tree.** Instead, a runestone every 10 floors opens a skill slot, up to 4,
-   and the 4th is an ultimate.
+   and the 4th is an ultimate. Ultimates start with the charge meter; special ones with activation conditions
+   come later.
 
 ## Open questions
 

@@ -125,13 +125,13 @@ $('#onBack').onclick=$('#onBack2').onclick=()=>showTitle();
 let armed=false;
 const draft={skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0],outfit:OUTFITS[0],weapon:'sword'};
 function drawPreview(cv,look,eq,custom){
-  const x=cv.getContext('2d');x.imageSmoothingEnabled=false;x.clearRect(0,0,cv.width,cv.height);
+  const x=uiCtx(cv,34,34);
   const w=buildWeapon(eq.weapon.type,eq.weapon.tint,eq.weapon.school),av=buildAvatar(look,eq,custom);
   x.fillStyle='rgba(0,0,0,.45)';x.fillRect(11,28,12,2);
-  x.drawImage(av,0,0,FRAME_W,FRAME_H,5,5,FRAME_W,FRAME_H);   // the front-facing standing frame
-  if(eq.weapon.type==='grimoire')x.drawImage(w,19,11);
-  else if(eq.weapon.type==='bow')x.drawImage(w,15,11);
-  else{x.save();x.translate(22,19);x.rotate(-1.05);x.drawImage(w,-4,-5);x.restore();}
+  cut(x,av,0,0,FRAME_W,FRAME_H,5,5);   // the front-facing standing frame
+  if(eq.weapon.type==='grimoire')put(x,w,19,11);
+  else if(eq.weapon.type==='bow')put(x,w,15,11);
+  else{x.save();x.translate(22,19);x.rotate(-1.05);put(x,w,-4,-5);x.restore();}
 }
 const START=[...Object.keys(WTYPES).filter(k=>!WTYPES[k].magic),'grimoire:magic','grimoire:faith'];
 function draftEquip(){const[t,sc]=draft.weapon.split(':');return{weapon:{type:t,tint:sc?GRIM[sc].tint:BLADES[0]},armor:{type:'tunic',tint:draft.outfit},boots:{type:'boots',tint:'#2a211b'}};}
@@ -174,13 +174,14 @@ $('#cGo').onclick=()=>{
   $('#creator').hidden=true;startFloor(1);
 };
 /* ---------- your own character sheet ----------
-   One PNG, exactly 88 x 78, replaces the layered avatar. It is kept inside the save. */
+   One PNG of 88 x 78 game pixels replaces the layered avatar: 88 x 78, or a whole multiple of it for finer art
+   (176 x 156 is drawn at ratio 2). It is kept inside the save. */
 let draftImg=null;
 async function readSheet(file){
   if(!/\.png$/i.test(file.name)&&file.type!=='image/png')throw new Error(`${file.name} is not a PNG file.`);
   const url=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('The file could not be read.'));r.readAsDataURL(file);});
   const im=await loadImage(url);if(!im)throw new Error(`${file.name} could not be read as a PNG image.`);
-  if(im.naturalWidth!==SHEET_W||im.naturalHeight!==SHEET_H)throw new Error(`That image is ${im.naturalWidth} × ${im.naturalHeight}. A character sheet must be exactly ${SHEET_W} × ${SHEET_H}: four ${FRAME_W} × ${FRAME_H} frames across and three rows down.`);
+  if(!sheetImage(im))throw new Error(`That image is ${im.naturalWidth} × ${im.naturalHeight}. A character sheet must be ${SHEET_W} × ${SHEET_H} (four ${FRAME_W} × ${FRAME_H} frames across, three rows down), or a whole multiple of that up to ×${MAX_RATIO} for finer art.`);
   return{url,im};
 }
 let DL=null;(async()=>{try{DL=window.claude&&window.claude.use?await window.claude.use('downloads'):null;}catch(e){DL=null;}})();
@@ -195,7 +196,7 @@ function saveTemplate(look,eq,say){
   try{c.toBlob(b=>saveFile('character-sheet.png',b,stat).then(say));}
   catch(e){saveFile('character-sheet.png',null,stat).then(say);}   // opened straight from disk: browsers will not export a canvas, so hand over the stock file
 }
-const SHEET_HELP='Optional. A PNG of exactly 88 × 78 pixels replaces the look on the right, whatever gear you wear. Four frames across (stand, step, step, attack), three rows down (facing down, up, right).';
+const SHEET_HELP='Optional. A PNG of 88 × 78 pixels (or 176 × 156, 264 × 234, 352 × 312 for finer art) replaces the look on the right, whatever gear you wear. Four frames across (stand, step, step, attack), three rows down (facing down, up, right).';
 $('#cCustomMsg').textContent=SHEET_HELP;
 $('#cCustomUp').onclick=()=>$('#cCustomFile').click();
 $('#cCustomFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;

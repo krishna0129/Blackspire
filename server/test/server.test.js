@@ -101,7 +101,9 @@ test('online play',async t=>{
   });
 });
 
-test('character sheet uploads must be 88 x 78 PNGs',()=>{
+test('character sheet uploads must be 88 x 78 PNGs, or a whole multiple up to x4 for finer art',()=>{
   const png=(w,h)=>{const b=Buffer.alloc(33);b.writeUInt32BE(0x89504e47,0);b.write('IHDR',12,'ascii');b.writeUInt32BE(w,16);b.writeUInt32BE(h,20);return'data:image/png;base64,'+b.toString('base64');};
-  assert.ok(validSheet(png(88,78)));assert.ok(!validSheet(png(64,64)));assert.ok(!validSheet('data:text/html;base64,AAAA'));assert.ok(validSheet(null));
+  assert.ok(validSheet(png(88,78)));assert.ok(!validSheet(png(64,64)));
+  assert.ok(validSheet(png(176,156)));assert.ok(validSheet(png(352,312)));   // ratio 2 and 4
+  assert.ok(!validSheet(png(440,390)));assert.ok(!validSheet(png(176,78)));assert.ok(!validSheet(png(132,117)));   // x5, stretched, x1.5assert.ok(!validSheet('data:text/html;base64,AAAA'));assert.ok(validSheet(null));
 });

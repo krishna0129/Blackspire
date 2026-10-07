@@ -14,7 +14,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 resize();
-loadSprites().then(()=>{showTitle();requestAnimationFrame(frame);});   // nothing is drawn until every sprite file is in
+loadSprites().then(()=>{resize();showTitle();requestAnimationFrame(frame);});   // nothing is drawn until every sprite file is in
 
 // small hook for testing and for wiring a server later
 window.BLACKSPIRE={Store,get state(){return S;},get stats(){return ST;},get floor(){return G;},get player(){return P;},enterFloor,randomItem,makeWeapon,calcStats};
