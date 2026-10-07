@@ -27,26 +27,36 @@ addEventListener('resize',resize);
 // last swing ends becomes the next swing.
 let atkBuf=0;
 const keys={},inp={mx:0,my:0,atk:false,touch:!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches),jx:0,jy:0,jid:null,jox:0,joy:0};
+// Keys are physical positions (KeyboardEvent.code), so WASD and J/K/H sit in the same place on AZERTY, QWERTZ
+// and every other layout. Every binding lives here, which is all a key-rebinding screen would need to change.
+const BIND={
+  up:['KeyW','ArrowUp'],down:['KeyS','ArrowDown'],left:['KeyA','ArrowLeft'],right:['KeyD','ArrowRight'],
+  attack:['KeyJ'],skill:['KeyK','Space'],block:['KeyH','KeyF'],dodge:['ShiftLeft','ShiftRight','KeyL'],potion:['KeyQ'],
+  interact:['KeyE','Enter','NumpadEnter'],gear:['KeyI','Tab'],menu:['Escape'],mute:['KeyM'],debug:['Backquote'],
+  respawn:['KeyR','Enter','NumpadEnter'],
+};
+const is=(action,code)=>BIND[action].includes(code);
+const held=action=>BIND[action].some(c=>keys[c]);
 addEventListener('keydown',e=>{
   if(e.target&&e.target.tagName==='INPUT')return;
-  const k=e.key.toLowerCase();if(e.repeat&&k!=='tab')return;keys[k]=true;
+  const c=e.code;if(!c)return;if(e.repeat&&!is('gear',c))return;keys[c]=true;
   if(mode==='play'){
-    if(k==='j')atkBuf=.18;
-    if(k===' '||k==='k'){useSkill();e.preventDefault();}
-    else if(k==='shift'||k==='l')dodge();
-    else if(k==='q')usePotion();
-    else if(k==='e'||k==='enter')interact();
-    else if(k==='i'||k==='tab'){openPanel();e.preventDefault();}
-    else if(k==='escape')openPause();
-    else if(k==='m')toggleMute();
-    else if(k==='`')openDebug();
-  }else if(mode==='panel'){if(k==='escape'||k==='i'||k==='tab'){closePanel();e.preventDefault();}}
-  else if(mode==='debug'){if(k==='escape'||k==='`')closeDebug();}
-  else if(mode==='ask'){if(k==='e'||k==='enter')enterChamber();else if(k==='escape')closeAsk();}
-  else if(mode==='pause'){if(k==='escape')closePause();}
-  else if(mode==='dead'){if(k==='r'||k==='enter')respawn();}
+    if(is('attack',c))atkBuf=.18;
+    if(is('skill',c)){useSkill();e.preventDefault();}
+    else if(is('dodge',c))dodge();
+    else if(is('potion',c))usePotion();
+    else if(is('interact',c))interact();
+    else if(is('gear',c)){openPanel();e.preventDefault();}
+    else if(is('menu',c))openPause();
+    else if(is('mute',c))toggleMute();
+    else if(is('debug',c))openDebug();
+  }else if(mode==='panel'){if(is('menu',c)||is('gear',c)){closePanel();e.preventDefault();}}
+  else if(mode==='debug'){if(is('menu',c)||is('debug',c))closeDebug();}
+  else if(mode==='ask'){if(is('interact',c))enterChamber();else if(is('menu',c))closeAsk();}
+  else if(mode==='pause'){if(is('menu',c))closePause();}
+  else if(mode==='dead'){if(is('respawn',c))respawn();}
 });
-addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
+addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;inp.atk=false;inp.block=false;});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{

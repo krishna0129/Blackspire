@@ -2,8 +2,8 @@
 // Blackspire: Per-frame simulation: player, enemies, bosses.
 
 /* ---------- update ---------- */
-const moveX=()=>(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+inp.jx;
-const moveY=()=>(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+inp.jy;
+const moveX=()=>(held('right')?1:0)-(held('left')?1:0)+inp.jx;
+const moveY=()=>(held('down')?1:0)-(held('up')?1:0)+inp.jy;
 let saveT=0,miniT=0;
 function update(dt){
   if(G.hitstop>0){G.hitstop-=dt;return;}   // freeze-frame after a melee hit
@@ -75,7 +75,7 @@ function updatePlayer(dt){
   // Blocking: hold the key to raise the shield. You keep facing the same way (so you can back off or sidestep
   // behind it), you move slowly, and you cannot swing.
   const wasBlocking=P.blocking;
-  P.blocking=!!ST.shield&&(keys.h||keys.f||inp.block)&&!P.swing&&!P.dash&&!P.safe;
+  P.blocking=!!ST.shield&&(held('block')||inp.block)&&!P.swing&&!P.dash&&!P.safe;
   P.blockT=P.blocking?(wasBlocking?P.blockT+dt:0):0;
   if(!P.swing&&!P.dash&&!P.blocking&&m>.2){const ax=Math.abs(mx),ay=Math.abs(my),h=mx>0?3:2,v=my>0?0:1;
     if(ax>.25&&ay>.25){if(P.dir!==h&&P.dir!==v)P.dir=ax>=ay?h:v;}else P.dir=ax>ay?h:v;}
@@ -91,7 +91,7 @@ function updatePlayer(dt){
     moveEnt(P,mx*sp*dt,my*sp*dt);
     P.moving=m>.1;if(P.moving)P.walk+=dt*(sp/64)*7;
     if(atkBuf>0)atkBuf-=dt;
-    if((inp.atk||keys.j||atkBuf>0)&&P.atkCd<=0&&!P.blocking){atkBuf=0;if(P.safe)sheathed();else startSwing();}
+    if((inp.atk||held('attack')||atkBuf>0)&&P.atkCd<=0&&!P.blocking){atkBuf=0;if(P.safe)sheathed();else startSwing();}
   }
   if(P.swing){const s=P.swing;s.t+=dt;
     if(!s.hit&&s.t>=s.d*.4){s.hit=true;
