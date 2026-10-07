@@ -54,9 +54,10 @@ function genFloor(n){
   const hpM=1+.38*(n-1),dmgM=1+.22*(n-1);
   g.hpM=hpM;g.dmgM=dmgM;
   // A blacksmith stands in the start room and in each safe room. g.safe[i] is the rectangle around g.smiths[i]; index 0 is the start.
+  // What each one sells is kept in the save (S.shops), not here, so it survives deaths and reloads: see enterFloor.
   const safeRooms=[start,...rooms.filter(r=>r.kind==='safe')];
   g.safe=safeRooms.map(r=>({x0:r.x*TILE,y0:r.y*TILE,x1:(r.x+r.w)*TILE,y1:(r.y+r.h)*TILE}));
-  g.smiths=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6),stock:null,potions:5}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE,stock:null,potions:5});
+  g.smiths=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
   // floor 1: shadow creatures. floor 2 on: mostly the dead, with a few living things left for spell-casters
   const bag=n<2?['shade','shade','shade','skitter','skitter','skitter','brute','wisp']:['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'];
   for(const r of rooms){

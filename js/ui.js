@@ -59,6 +59,10 @@ function enterFloor(n){
   S.floor=n;S.best=Math.max(S.best||1,n);
   if(S.chestFloor!==n){S.chestFloor=n;S.chestsOpen=[];}
   G=genFloor(n);calcStats();P=newPlayer();
+  // Shops keep their stock and potions for as long as you are on this floor, through deaths and reloads,
+  // and restock when you reach a new floor. The stock itself is made the first time you open a smith's counter.
+  if(!S.shops||S.shops.floor!==n)S.shops={floor:n,list:[]};
+  G.smiths.forEach((q,i)=>{q.shop=S.shops.list[i]||(S.shops.list[i]={stock:null,potions:5});});
   if(S.hp!=null&&S.hp>0)P.hp=Math.min(ST.maxHp,S.hp);
   refreshSprites();refreshHudStatic();reveal();drawMini();
   for(const k in hc)delete hc[k];
@@ -176,7 +180,7 @@ $('#btnMenu').addEventListener('click',e=>{e.currentTarget.blur();openPause();})
 /* ---------- gear panel ---------- */
 let sel=null; // {from:'bag',i} | {from:'eq',slot}
 // The same panel serves as the blacksmith's counter: opened next to a smith it also shows the stock and allows enhancing.
-let atSmith=null;
+let atSmith=null;   // the open smith's shop: {stock:[{it,price}], potions}, stored in S.shops
 function makeStock(){   // one weapon of your own class, then five random pieces, all at this floor's level
   const rar=()=>{const r=Math.random();return r<.03?3:r<.2?2:r<.55?1:0;};   // a shop sells mostly ordinary gear: 45% common, 35% uncommon, 17% rare, 3% epic, never legendary
   const w=S.equip.weapon,st=[makeWeapon(w.type,G.n,Math.max(1,rar()),w.school)];
@@ -185,7 +189,7 @@ function makeStock(){   // one weapon of your own class, then five random pieces
 }
 function openPanel(smith){
   if(mode!=='play')return;mode='panel';inp.atk=false;for(const k in keys)keys[k]=false;sel=null;
-  atSmith=smith||null;if(atSmith&&!atSmith.stock)atSmith.stock=makeStock();
+  atSmith=smith?smith.shop:null;if(atSmith&&!atSmith.stock)atSmith.stock=makeStock();
   $('#panel').hidden=false;renderPanel();
 }
 function closePanel(){if(mode!=='panel')return;atSmith=null;for(const it of S.inv)delete it.isNew;bagBadge();$('#panel').hidden=true;mode='play';save();}
