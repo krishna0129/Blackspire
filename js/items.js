@@ -8,7 +8,7 @@ const ilvlMult=l=>1+0.22*(l-1);
 const itemMult=it=>1+0.08*(it.plus||0);
 function rollRarity(bonus=0){const r=Math.random()*100-bonus;return r<1.5?4:r<7?3:r<22?2:r<52?1:0;}
 function rollAff(pool,n,rar,ilvl){
-  const ids=Object.keys(pool).sort(()=>Math.random()-.5).slice(0,n);
+  const ids=shuffle(Object.keys(pool)).slice(0,n);
   return ids.map(id=>{const d=pool[id];let v=d.range[0]+(d.range[1]-d.range[0])*clamp(Math.random()*.7+rar*.1,0,1);if(d.scale)v*=ilvlMult(ilvl);return{id,v:Math.max(1,Math.round(v))};});
 }
 function makeWeapon(type,ilvl,rar,school){
