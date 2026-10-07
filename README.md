@@ -15,18 +15,24 @@ The only outside request is the pixel font from Google Fonts. Offline, the game 
 ```
 index.html            page markup: HUD, menus, overlays
 css/style.css         all styling
-js/                   plain scripts sharing one global scope, loaded in the order index.html lists them
+js/sim/               the game rules. No page, canvas or sound: the browser runs them for single player and the
+                      server runs the very same files for online play
   util.js             small helpers
-  data.js             tables: weapons, skills, passives, gear, enemies
-  items.js            item generation and prices
-  state.js            save store, character state, derived stats
+  data.js             tables: weapons, skills, passives, gear, enemies, materials
+  items.js            item generation, prices, enhancement, the blacksmith's stock
+  rules.js            players, saves, derived stats, and the list of host functions the rules call
+  world.js            floor generation
+  combat.js           hit detection, damage, skills, spells, loot, the boss chamber
+  update.js           one step of a floor: every player, enemy, shot and drop; enemy and boss AI
+  actions.js          gear, attributes and blacksmith actions, run locally or by the server
+js/client/            everything on screen, loaded after js/sim in the order index.html lists them
+  store.js            the local save store
+  host.js             the browser's host functions: particles, numbers, messages, dialogs
   sprites.js          loads the PNG sprites; colouring, outlines, item icons
-  world.js            floor generation and tile painting
+  paint.js            paints a floor's tiles
   input.js            canvas sizing, light mask, keyboard, mouse, touch, sound
-  combat.js           hit detection, damage, skills, spells, boss chamber
-  update.js           per-frame simulation: player, enemies, bosses
   render.js           drawing the world
-  ui.js               HUD, title flow, character creator, gear panel, blacksmith, debug menu
+  ui.js               HUD, title flow, character creator, gear panel, blacksmith, floor gate, debug menu
   main.js             start-up and the main loop
 assets/sprites/       every sprite, as PNG (see assets/README.md)
 assets/templates/     a full-colour character sheet to repaint

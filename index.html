@@ -131,18 +131,23 @@
   </div>
 </div>
 
-<!-- Scripts are plain files that share one global scope, loaded in this order. No build step is needed. -->
-<script src="js/util.js"></script>
-<script src="js/data.js"></script>
-<script src="js/items.js"></script>
-<script src="js/state.js"></script>
-<script src="js/sprites.js"></script>
-<script src="js/world.js"></script>
-<script src="js/input.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/update.js"></script>
-<script src="js/render.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/main.js"></script>
+<!-- Scripts are plain files that share one global scope, loaded in this order. No build step is needed.
+     js/sim is the game rules (the server runs the same files); js/client is everything on screen. -->
+<script src="js/sim/util.js"></script>
+<script src="js/sim/data.js"></script>
+<script src="js/sim/items.js"></script>
+<script src="js/sim/rules.js"></script>
+<script src="js/sim/world.js"></script>
+<script src="js/sim/combat.js"></script>
+<script src="js/sim/update.js"></script>
+<script src="js/sim/actions.js"></script>
+<script src="js/client/store.js"></script>
+<script src="js/client/host.js"></script>
+<script src="js/client/sprites.js"></script>
+<script src="js/client/paint.js"></script>
+<script src="js/client/input.js"></script>
+<script src="js/client/render.js"></script>
+<script src="js/client/ui.js"></script>
+<script src="js/client/main.js"></script>
 </body>
 </html>

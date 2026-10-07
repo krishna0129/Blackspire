@@ -27,8 +27,9 @@ function render(){
     else if(q.line){ctx.save();ctx.translate(q.x-camX,q.y-camY);ctx.rotate(q.a);ctx.globalAlpha=.16+.3*p;ctx.fillStyle='#d9534f';ctx.fillRect(0,-13,q.len,26);ctx.globalAlpha=.8;ctx.fillRect(0,-13,q.len*p,1);ctx.fillRect(0,12,q.len*p,1);ctx.restore();ctx.globalAlpha=1;}
     else{const x=q.x-camX,y=q.y-camY;ctx.globalAlpha=.14;ctx.fillStyle='#d9534f';ctx.beginPath();ctx.arc(x,y,q.r,0,TAU);ctx.fill();ctx.globalAlpha=.34;ctx.beginPath();ctx.arc(x,y,q.r*p,0,TAU);ctx.fill();ctx.globalAlpha=1;dotArc(x,y,q.r,0,TAU,'#d9534f');}}
   // chests + drops
-  for(const c of G.chests)ctx.drawImage(chestSheet(),c.open?14:0,0,14,11,Math.round(c.x-camX-7),Math.round(c.y-camY-6),14,11);
-  for(const d of G.drops){const x=Math.round(d.x-camX),y=Math.round(d.y-camY+Math.sin(d.t*5)*1.2);
+  const opened=floorState(G.n).chests;   // which chests are open is yours alone
+  G.chests.forEach((c,i)=>ctx.drawImage(chestSheet(),opened.includes(i)?14:0,0,14,11,Math.round(c.x-camX-7),Math.round(c.y-camY-6),14,11));
+  for(const d of G.drops){if(d.owner!==P.id)continue;const x=Math.round(d.x-camX),y=Math.round(d.y-camY+Math.sin(d.t*5)*1.2);
     if(d.k==='shard'){ctx.fillStyle='#6fd6e6';ctx.fillRect(x,y-1,1,3);ctx.fillRect(x-1,y,3,1);}
     else if(d.k==='mat'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-2,4,4);ctx.fillStyle=MATS[d.id].color;ctx.fillRect(x-1,y-1,2,2);}
     else if(d.k==='potion'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,6);ctx.fillStyle='#d9534f';ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#e6e1d3';ctx.fillRect(x,y-2,1,1);}
@@ -68,7 +69,7 @@ function render(){
   for(const e of G.enemies){if(e.state==='idle'&&!e.boss)continue;if(e.x-camX<-48||e.x-camX>W+48||e.y-camY<-48||e.y-camY>H+48)continue;const s=enemySprite(e.type,e.elite,e.skin),bx=Math.round(e.x-camX),by=Math.round(e.y-camY-s.fh/2+e.bobY);
     if(!s.eyes)continue;const fx=e.fx||0,fy=e.fy||0;
     if(e.flip){ctx.save();ctx.translate(bx,0);ctx.scale(-1,1);ctx.drawImage(s.eyes,fx,fy,s.fw,s.fh,-Math.ceil(s.fw/2),by,s.fw,s.fh);ctx.restore();}else ctx.drawImage(s.eyes,fx,fy,s.fw,s.fh,bx-Math.floor(s.fw/2),by,s.fw,s.fh);}
-  for(const d of G.drops)if(d.k==='item'&&d.item.rarity>=2){const x=Math.round(d.x-camX),y=Math.round(d.y-camY);ctx.fillStyle=RARITY[d.item.rarity].color;for(let i=0;i<10;i++){ctx.globalAlpha=.7*(1-i/10);ctx.fillRect(x,y-4-i,1,1);}ctx.globalAlpha=1;}
+  for(const d of G.drops)if(d.owner===P.id&&d.k==='item'&&d.item.rarity>=2){const x=Math.round(d.x-camX),y=Math.round(d.y-camY);ctx.fillStyle=RARITY[d.item.rarity].color;for(let i=0;i<10;i++){ctx.globalAlpha=.7*(1-i/10);ctx.fillRect(x,y-4-i,1,1);}ctx.globalAlpha=1;}
   if(G.gate){const gx=G.gate.x-camX,gy=G.gate.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#6fd6e6');}
   if(G.home){const gx=G.home.x-camX,gy=G.home.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#e2b93b');}
   // forge light: a warm glow that carries through the dark, so a safe room can be spotted from a distance

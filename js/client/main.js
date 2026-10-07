@@ -2,12 +2,14 @@
 // Blackspire: Main loop and start-up.
 
 /* ---------- main loop ---------- */
-let last=performance.now();
+let last=performance.now(),saveT=0,miniT=0;
 function frame(now){
   const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
-  if(mode==='play'){update(dt);if(mode==='play'||mode==='dead')updateHud();}
-  else if(G){G.time+=dt;
-    if(mode==='dead'){for(const p of G.parts){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}G.parts=G.parts.filter(p=>p.t<p.d);for(const n of G.nums)n.t+=dt;G.nums=G.nums.filter(n=>n.t<.75);}}
+  if(NET.on)NET.frame(dt);   // online: the server runs the floor; this draws what it last sent
+  else if(mode==='play'){P.in=readInput();if(!G.hitstop)updateCosmetics(dt);simUpdate(dt);
+    if(mode==='play'){saveT+=dt;if(saveT>20){saveT=0;save();}}}
+  else if(G){G.time+=dt;if(mode==='dead')updateCosmetics(dt);}
+  if(G&&P&&(mode==='play'||mode==='dead')){miniT-=dt;if(miniT<=0){miniT=.15;reveal();drawMini();}updateHud();}
   if(G&&P)render();
   requestAnimationFrame(frame);
 }

@@ -98,3 +98,11 @@ const enhanceCost=it=>Math.round(22*((it.plus||0)+1)*(1+.3*(it.ilvl-1))*RARITY[i
 const BAG_SIZE=30;
 const buyPrice=it=>Math.round([40,70,130,240,450][it.rarity]*(1+.3*(it.ilvl-1)));
 const potionPrice=()=>Math.round(25*(1+.25*(G.n-1)));
+
+// A blacksmith's stock for the current player: one weapon of their own class, then five random pieces, at this floor's level.
+function makeStock(){
+  const rar=()=>{const r=Math.random();return r<.03?3:r<.2?2:r<.55?1:0;};   // a shop sells mostly ordinary gear: 45% common, 35% uncommon, 17% rare, 3% epic, never legendary
+  const w=S.equip.weapon,st=[makeWeapon(w.type,G.n,Math.max(1,rar()),w.school)];
+  for(let i=0;i<5;i++){const it=randomItem(G.n,0),q=rar();st.push(it.slot==='weapon'?makeWeapon(it.type,G.n,q,it.school):it.slot==='armor'?makeArmor(it.type,G.n,q):it.slot==='boots'?makeBoots(it.type,G.n,q):makeTrinket(it.type,G.n,q));}
+  return st.map(it=>({it,price:buyPrice(it)}));
+}

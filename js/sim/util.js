@@ -2,7 +2,6 @@
 // Blackspire: Small helpers used everywhere.
 
 /* ---------- util ---------- */
-const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2;
 // The four facings, in the order used everywhere: 0 down, 1 up, 2 left, 3 right.
 const DIR_ANGLE=[Math.PI/2,-Math.PI/2,Math.PI,0];
