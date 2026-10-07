@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="500" viewBox="0 0 880 500" role="img" aria-label="Example Swordsman tree: three branches of stat nodes leading to two capstones that unlock Circular slash mutations">
+  <rect width="880" height="500" rx="6" fill="#0d0d12"/>
+  <g font-family="system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" fill="#e6e1d3">
+    <text x="20" y="30" font-size="16" font-weight="600">Example: a Swordsman tree</text>
+    <text x="20" y="50" fill="#8d8b98">Drawn from col/row in the data. Lines are prerequisites. Numbers are ranks.</text>
+
+    <g fill="#8d8b98" font-weight="600" text-anchor="middle">
+      <text x="185" y="86">EDGE</text><text x="440" y="86">GUARD</text><text x="695" y="86">TEMPO</text>
+    </g>
+
+    <!-- prerequisite lines (drawn first, under the nodes) -->
+    <g stroke="#55556a" stroke-width="1.5" fill="none">
+      <line x1="185" y1="152" x2="185" y2="182"/><line x1="185" y1="238" x2="185" y2="268"/>
+      <line x1="440" y1="152" x2="440" y2="182"/><line x1="440" y1="238" x2="440" y2="268"/>
+      <line x1="695" y1="152" x2="695" y2="182"/><line x1="695" y1="238" x2="695" y2="268"/>
+      <path d="M185,324 V354 H300 V374"/>
+      <path d="M440,324 V354 H325 V374"/>
+      <path d="M695,324 V354 H580 V374"/>
+      <path d="M440,324 V354 H555 V374"/>
+    </g>
+
+    <!-- stat nodes: cyan edge, closed vocabulary -->
+    <g>
+      <rect x="105" y="96" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="119" y="118" font-weight="600">Keen edge</text><text x="119" y="138" fill="#8d8b98">+2% crit per rank</text><text x="251" y="118" fill="#8d8b98" text-anchor="end">0/3</text>
+      <rect x="105" y="182" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="119" y="204" font-weight="600">Brutal edge</text><text x="119" y="224" fill="#8d8b98">+8% crit damage</text><text x="251" y="204" fill="#8d8b98" text-anchor="end">0/3</text>
+      <rect x="105" y="268" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="119" y="290" font-weight="600">Serrated</text><text x="119" y="310" fill="#8d8b98">+10% bleed</text><text x="251" y="290" fill="#8d8b98" text-anchor="end">0/1</text>
+
+      <rect x="360" y="96" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="374" y="118" font-weight="600">Warded</text><text x="374" y="138" fill="#8d8b98">+3 defense per rank</text><text x="506" y="118" fill="#8d8b98" text-anchor="end">0/3</text>
+      <rect x="360" y="182" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="374" y="204" font-weight="600">Stalwart</text><text x="374" y="224" fill="#8d8b98">+12 health per rank</text><text x="506" y="204" fill="#8d8b98" text-anchor="end">0/3</text>
+      <rect x="360" y="268" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="374" y="290" font-weight="600">Mending</text><text x="374" y="310" fill="#8d8b98">+1 health per second</text><text x="506" y="290" fill="#8d8b98" text-anchor="end">0/1</text>
+
+      <rect x="615" y="96" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="629" y="118" font-weight="600">Adept</text><text x="629" y="138" fill="#8d8b98">+4% skill recharge</text><text x="761" y="118" fill="#8d8b98" text-anchor="end">0/3</text>
+      <rect x="615" y="182" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="629" y="204" font-weight="600">Fleet</text><text x="629" y="224" fill="#8d8b98">+3% move speed</text><text x="761" y="204" fill="#8d8b98" text-anchor="end">0/3</text>
+      <rect x="615" y="268" width="160" height="56" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+      <text x="629" y="290" font-weight="600">Quickening</text><text x="629" y="310" fill="#8d8b98">+4% per hit, 5 stacks</text><text x="761" y="290" fill="#8d8b98" text-anchor="end">0/1</text>
+    </g>
+
+    <!-- capstones: amber edge, each unlocks a mutation of the class skill -->
+    <rect x="195" y="374" width="215" height="62" rx="6" fill="#15151c" stroke="#e2b93b" stroke-width="2"/>
+    <text x="211" y="396" font-weight="600">Razor wind</text><text x="211" y="414" fill="#8d8b98">Circular slash: ×1.6 damage,</text><text x="211" y="428" fill="#8d8b98">rider: bleed</text>
+    <rect x="470" y="374" width="215" height="62" rx="6" fill="#15151c" stroke="#e2b93b" stroke-width="2"/>
+    <text x="486" y="396" font-weight="600">Vortex</text><text x="486" y="414" fill="#8d8b98">Circular slash: knockback −80,</text><text x="486" y="428" fill="#8d8b98">rider: pull</text>
+
+    <!-- legend -->
+    <rect x="20" y="466" width="12" height="12" rx="2" fill="none" stroke="#6fd6e6"/><text x="39" y="476" fill="#8d8b98">Stat node (known stat keys only)</text>
+    <rect x="250" y="466" width="12" height="12" rx="2" fill="none" stroke="#e2b93b" stroke-width="2"/><text x="269" y="476" fill="#8d8b98">Capstone: unlocks a mutation (one equipped per skill)</text>
+  </g>
+</svg>

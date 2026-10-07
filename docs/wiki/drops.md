@@ -9,6 +9,8 @@ their loot can be farmed.
 
 ## What drops from what
 
+On the ground: <img src="img/drop-shard.png" alt="shards" width="36"> shards <img src="img/drop-potion.png" alt="potion" width="36"> potion <img src="img/drop-scrap.png" alt="Iron scrap" width="36"> Iron scrap <img src="img/drop-ember.png" alt="Emberstone" width="36"> Emberstone <img src="img/drop-crystal.png" alt="Spire crystal" width="36"> Spire crystal <img src="img/drop-item.png" alt="item" width="36"> an item (rare and better ones also send a beam of their colour into the dark).
+
 | Source | Shards (floor 1 / 2 / 3) | Items | Potions | Materials |
 |---|---|---|---|---|
 | Ordinary enemy | 1–4 / 1–5 / 2–6 | 13% | 5.5% | Iron scrap: 30% for 1<br>Emberstone: 3.0% for 1 |
@@ -19,6 +21,10 @@ their loot can be farmed.
 Elites are 7.0% of room spawns, marked by gold outlines and eyes. They have 2.4× health and 1.3× damage, and give 3× experience.
 
 ## Item rarity odds
+
+![Item rarity odds by source: Legendary rises from 1.5% to 27% as the rarity bonus grows, while Epic stays at 5.5%](img/rarity-odds.svg)
+
+<img src="img/rarity-0.png" alt="Common longsword" width="48"> Common &nbsp; <img src="img/rarity-1.png" alt="Uncommon longsword" width="48"> Uncommon &nbsp; <img src="img/rarity-2.png" alt="Rare longsword" width="48"> Rare &nbsp; <img src="img/rarity-3.png" alt="Epic longsword" width="48"> Epic &nbsp; <img src="img/rarity-4.png" alt="Legendary longsword" width="48"> Legendary
 
 Each item roll has a rarity bonus that shifts the odds. Rarity multiplies an item's base numbers and sets how many bonuses it carries.
 
@@ -43,10 +49,10 @@ Each item roll has a rarity bonus that shifts the odds. Rarity multiplies an ite
 
 | Slot | Chance | Types (equally likely) |
 |---|---|---|
-| Weapon | 42% | Longsword, Dagger, Greatsword, Mace, Spear, Bow, Grimoire |
-| Armor | 24% | Tunic, Leather jerkin, Longcoat, Plate cuirass |
-| Boots | 17% | Boots, Greaves, Striders |
-| Trinket | 17% | Ring, Charm, Band |
+| Weapon | 42% | <img src="img/item-sword.png" alt="" width="28"> Longsword <img src="img/item-dagger.png" alt="" width="28"> Dagger <img src="img/item-great.png" alt="" width="28"> Greatsword <img src="img/item-mace.png" alt="" width="28"> Mace <img src="img/item-spear.png" alt="" width="28"> Spear <img src="img/item-bow.png" alt="" width="28"> Bow <img src="img/item-grimoire-magic.png" alt="" width="28"><img src="img/item-grimoire-faith.png" alt="" width="28"> Grimoire |
+| Armor | 24% | <img src="img/item-armor-tunic.png" alt="" width="28"> Tunic <img src="img/item-armor-leather.png" alt="" width="28"> Leather jerkin <img src="img/item-armor-coat.png" alt="" width="28"> Longcoat <img src="img/item-armor-plate.png" alt="" width="28"> Plate cuirass |
+| Boots | 17% | <img src="img/item-boots-boots.png" alt="" width="28"> Boots <img src="img/item-boots-greaves.png" alt="" width="28"> Greaves <img src="img/item-boots-striders.png" alt="" width="28"> Striders |
+| Trinket | 17% | <img src="img/item-trinket.png" alt="" width="28"> Ring, Charm, Band |
 
 A grimoire is equally likely to be of embers (Fireball, intelligence) or of grace (Heal, faith). Items drop at the
 floor's item level (bosses: one higher), which raises base numbers by 22% per level.

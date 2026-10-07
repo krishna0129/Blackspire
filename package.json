@@ -5,8 +5,16 @@
   "scripts": {
     "start": "node --no-warnings=ExperimentalWarning server/index.js",
     "test": "node --no-warnings=ExperimentalWarning --test server/test/*.test.js",
-    "wiki": "node --no-warnings=ExperimentalWarning tools/wiki.js"
+    "wiki": "node --no-warnings=ExperimentalWarning tools/wiki.js",
+    "wiki:images": "node tools/wiki-images.js"
   },
-  "engines": { "node": ">=22.5" },
-  "dependencies": { "ws": "^8.18.0" }
+  "engines": {
+    "node": ">=22.5"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
 }

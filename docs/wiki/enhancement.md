@@ -10,6 +10,8 @@ A blacksmith (in every start room and safe room) enhances weapons, armor and boo
 Up to +5 an attempt always works. From +6 it can fail: the level stays, the cost is spent, and that item's next
 attempt gets +10% (shown on the item), until it succeeds.
 
+![Enhancement success chance: 100% for +1 to +5, then 80%, 65%, 50%, 38% and 28% for +6 to +10](img/enhance-odds.svg)
+
 | Level | Materials per attempt | Chance | Average attempts | Materials to get here from +0, on average (scrap / ember / crystal) |
 |---|---|---|---|---|
 | +1 | 1 Iron scrap | 100% | 1 | 1 / 0 / 0 |
@@ -54,13 +56,13 @@ Base rolls vary ±5%.
 
 | Weapon | Class | Attacks/s | Reach | Item level 1 | Item level 2 | Item level 3 | Item level 4 |
 |---|---|---|---|---|---|---|---|
-| Longsword | Swordsman | 1.6 | 26, 110° | 11.4–42.0 | 13.9–51.2 | 16.4–60.4 | 18.9–69.7 |
-| Dagger | Rogue | 3.2 | 19, 80° | 6.2–22.7 | 7.5–27.7 | 8.9–32.7 | 10.3–37.7 |
-| Greatsword | Slayer | 0.85 | 34, 150° | 24.7–90.9 | 30.1–110.9 | 35.6–130.9 | 41.0–150.9 |
-| Mace | Tank | 1.25 | 24, 100° | 15.2–55.9 | 18.5–68.3 | 21.9–80.6 | 25.2–92.9 |
-| Spear | Lancer | 1.4 | 44, thrust | 12.3–45.5 | 15.1–55.5 | 17.8–65.5 | 20.5–75.5 |
-| Bow | Archer | 1.5 | 150 (shot) | 9.5–35.0 | 11.6–42.7 | 13.7–50.3 | 15.8–58.0 |
-| Grimoire | Mage | 1.5 | 135 (shot) | 8.5–31.5 | 10.4–38.4 | 12.3–45.3 | 14.2–52.2 |
+| <img src="img/item-sword.png" alt="" width="32"> Longsword | Swordsman | 1.6 | 26, 110° | 11.4–42.0 | 13.9–51.2 | 16.4–60.4 | 18.9–69.7 |
+| <img src="img/item-dagger.png" alt="" width="32"> Dagger | Rogue | 3.2 | 19, 80° | 6.2–22.7 | 7.5–27.7 | 8.9–32.7 | 10.3–37.7 |
+| <img src="img/item-great.png" alt="" width="32"> Greatsword | Slayer | 0.85 | 34, 150° | 24.7–90.9 | 30.1–110.9 | 35.6–130.9 | 41.0–150.9 |
+| <img src="img/item-mace.png" alt="" width="32"> Mace | Tank | 1.25 | 24, 100° | 15.2–55.9 | 18.5–68.3 | 21.9–80.6 | 25.2–92.9 |
+| <img src="img/item-spear.png" alt="" width="32"> Spear | Lancer | 1.4 | 44, thrust | 12.3–45.5 | 15.1–55.5 | 17.8–65.5 | 20.5–75.5 |
+| <img src="img/item-bow.png" alt="" width="32"> Bow | Archer | 1.5 | 150 (shot) | 9.5–35.0 | 11.6–42.7 | 13.7–50.3 | 15.8–58.0 |
+| <img src="img/item-grimoire-magic.png" alt="" width="32"><img src="img/item-grimoire-faith.png" alt="" width="32"> Grimoire | Mage | 1.5 | 135 (shot) | 8.5–31.5 | 10.4–38.4 | 12.3–45.3 | 14.2–52.2 |
 
 ## Armor and boots range
 
@@ -68,21 +70,21 @@ Same rule: common +0 to legendary +10. Move speed bonuses do not grow with rarit
 
 | Item | Stat | Item level 1 | Item level 2 | Item level 3 | Item level 4 |
 |---|---|---|---|---|---|
-| Tunic | Defense | 4–13 | 5–16 | 6–20 | 7–22 |
+| <img src="img/item-armor-tunic.png" alt="" width="32"> Tunic | Defense | 4–13 | 5–16 | 6–20 | 7–22 |
 | Tunic | Health | 10–34 | 12–41 | 14–49 | 17–56 |
-| Leather jerkin | Defense | 7–23 | 9–29 | 10–34 | 12–38 |
+| <img src="img/item-armor-leather.png" alt="" width="32"> Leather jerkin | Defense | 7–23 | 9–29 | 10–34 | 12–38 |
 | Leather jerkin | Health | 16–54 | 20–65 | 23–77 | 27–88 |
-| Longcoat | Defense | 6–20 | 7–25 | 9–29 | 10–32 |
+| <img src="img/item-armor-coat.png" alt="" width="32"> Longcoat | Defense | 6–20 | 7–25 | 9–29 | 10–32 |
 | Longcoat | Health | 10–34 | 12–41 | 14–49 | 17–56 |
 | Longcoat | Move | +3% | +3% | +3% | +3% |
-| Plate cuirass | Defense | 14–47 | 17–58 | 20–67 | 23–77 |
+| <img src="img/item-armor-plate.png" alt="" width="32"> Plate cuirass | Defense | 14–47 | 17–58 | 20–67 | 23–77 |
 | Plate cuirass | Health | 30–101 | 37–122 | 43–144 | 50–166 |
 | Plate cuirass | Move | -4% | -4% | -4% | -4% |
-| Boots | Defense | 2–7 | 2–9 | 3–9 | 3–11 |
+| <img src="img/item-boots-boots.png" alt="" width="32"> Boots | Defense | 2–7 | 2–9 | 3–9 | 3–11 |
 | Boots | Move | +4% | +4% | +4% | +4% |
-| Greaves | Defense | 5–16 | 6–20 | 7–23 | 8–27 |
+| <img src="img/item-boots-greaves.png" alt="" width="32"> Greaves | Defense | 5–16 | 6–20 | 7–23 | 8–27 |
 | Greaves | Move | +1% | +1% | +1% | +1% |
-| Striders | Defense | 1–4 | 1–4 | 1–5 | 2–5 |
+| <img src="img/item-boots-striders.png" alt="" width="32"> Striders | Defense | 1–4 | 1–4 | 1–5 | 2–5 |
 | Striders | Move | +7% | +7% | +7% | +7% |
 
 ## Bonus (affix) ranges by rarity

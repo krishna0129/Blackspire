@@ -14,6 +14,8 @@ data, and new code should be rare and deliberate.**
 
 Never mix them: no node changes behaviour, no mutation grants flat stats. Every change then has one obvious home.
 
+![Tree nodes and gear feed computeStats, which produces the stats; a capstone unlocks a mutation, which changes the skill's settings and riders](img/systems.svg)
+
 ## Tree nodes: a closed vocabulary
 
 `computeStats` already understands a fixed set of keys: weapon passives in `st.p` (`keen`, `brutal`, `bleed`,
@@ -31,6 +33,8 @@ const TREES={
   }},
 };
 ```
+
+![An example Swordsman tree: three branches of stat nodes (Edge, Guard, Tempo) leading to two capstones that unlock Circular slash mutations](img/tree-example.svg)
 
 `computeStats` folds tree grants into the same maps as gear (about five lines, written once). A new node is then a
 line of data. A genuinely new mechanic must arrive as a new affix or a new rider (below), which is a reviewed code

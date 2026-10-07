@@ -15,6 +15,8 @@ uncommon) and bosses (three items, one item level higher).
 
 ## Shade
 
+<img src="img/enemy-shade.png" alt="Shade"> <img src="img/enemy-shade-elite.png" alt="Shade, elite"><br><sub>Ordinary and elite</sub>
+
 |  | Floor 1 | Floor 2 | Floor 3 |
 |---|---|---|---|
 | Health (elite) | 34 (82) | 47 (113) | 60 (144) |
@@ -28,6 +30,8 @@ uncommon) and bosses (three items, one item level higher).
 - **Recommended attributes:** Strength or the attribute your weapon scales with; Vitality while learning.
 
 ## Skitter
+
+<img src="img/enemy-skitter.png" alt="Skitter"> <img src="img/enemy-skitter-elite.png" alt="Skitter, elite"><br><sub>Ordinary and elite</sub>
 
 |  | Floor 1 | Floor 2 | Floor 3 |
 |---|---|---|---|
@@ -43,6 +47,8 @@ uncommon) and bosses (three items, one item level higher).
 
 ## Brute
 
+<img src="img/enemy-brute.png" alt="Brute"> <img src="img/enemy-brute-elite.png" alt="Brute, elite"><br><sub>Ordinary and elite</sub>
+
 |  | Floor 1 | Floor 2 | Floor 3 |
 |---|---|---|---|
 | Health (elite) | 110 (264) | 152 (364) | 194 (465) |
@@ -56,6 +62,8 @@ uncommon) and bosses (three items, one item level higher).
 - **Recommended attributes:** Vitality, or Dexterity for evasion. Shield classes can block it.
 
 ## Bone soldier
+
+<img src="img/enemy-skel.png" alt="Bone soldier"> <img src="img/enemy-skel-elite.png" alt="Bone soldier, elite"><br><sub>Ordinary and elite</sub>
 
 |  | Floor 1 | Floor 2 | Floor 3 |
 |---|---|---|---|
@@ -71,6 +79,8 @@ uncommon) and bosses (three items, one item level higher).
 
 ## Bone archer
 
+<img src="img/enemy-skelarcher.png" alt="Bone archer"> <img src="img/enemy-skelarcher-elite.png" alt="Bone archer, elite"><br><sub>Ordinary and elite</sub>
+
 |  | Floor 1 | Floor 2 | Floor 3 |
 |---|---|---|---|
 | Health (elite) | 26 (62) | 36 (86) | 46 (110) |
@@ -85,6 +95,8 @@ uncommon) and bosses (three items, one item level higher).
 
 ## Bone knight
 
+<img src="img/enemy-skelknight.png" alt="Bone knight"> <img src="img/enemy-skelknight-elite.png" alt="Bone knight, elite"><br><sub>Ordinary and elite</sub>
+
 |  | Floor 1 | Floor 2 | Floor 3 |
 |---|---|---|---|
 | Health (elite) | 140 (336) | 193 (464) | 246 (591) |
@@ -98,6 +110,8 @@ uncommon) and bosses (three items, one item level higher).
 - **Recommended attributes:** Strength and Agility.
 
 ## Wisp
+
+<img src="img/enemy-wisp.png" alt="Wisp"> <img src="img/enemy-wisp-elite.png" alt="Wisp, elite"><br><sub>Ordinary and elite</sub>
 
 |  | Floor 1 | Floor 2 | Floor 3 |
 |---|---|---|---|
@@ -119,6 +133,8 @@ everyone inside the chamber falls, the boss heals to full.
 
 ### The Gate Warden
 
+<img src="img/boss-warden.png" alt="The Gate Warden" width="150">
+
 *Floor 1 (and every floor from 3 until those get their own bosses)*
 
 - Slam: a red circle around itself when you are close (48 px). Leave the circle.
@@ -129,7 +145,15 @@ everyone inside the chamber falls, the boss heals to full.
 
 Every attack is telegraphed and cannot be evaded by Dexterity, but it can be dodge-rolled. Clear the skitters with wide swings.
 
+What each warning looks like, just before it lands:
+
+| Slam | Targeted burst | Charge lane |
+|---|---|---|
+| <img src="img/attack-warden-slam.png" alt="Slam: the red warning before it lands" width="230"> | <img src="img/attack-warden-burst.png" alt="Targeted burst: the red warning before it lands" width="230"> | <img src="img/attack-warden-charge.png" alt="Charge lane: the red warning before it lands" width="230"> |
+
 ### The Bone Regent
+
+<img src="img/boss-regent.png" alt="The Bone Regent" width="150">
 
 *Floor 2*
 
@@ -141,3 +165,9 @@ Every attack is telegraphed and cannot be evaded by Dexterity, but it can be dod
 - Never uses the same attack twice in a row.
 
 Takes half damage from magic. Its own shield blocks nothing, so any steel weapon works.
+
+What each warning looks like, just before it lands:
+
+| Slam | Rib volley | Grave spikes (one burst) | Bone cross (diagonal) |
+|---|---|---|---|
+| <img src="img/attack-regent-slam.png" alt="Slam: the red warning before it lands" width="230"> | <img src="img/attack-regent-fan.png" alt="Rib volley: the red warning before it lands" width="230"> | <img src="img/attack-regent-spikes.png" alt="Grave spikes (one burst): the red warning before it lands" width="230"> | <img src="img/attack-regent-cross.png" alt="Bone cross (diagonal): the red warning before it lands" width="230"> |

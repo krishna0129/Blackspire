@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="330" viewBox="0 0 880 330" role="img" aria-label="Skill trees change numbers through computeStats; mutations change a skill's settings and riders">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#8d8b98"/></marker>
+  </defs>
+  <rect width="880" height="330" rx="6" fill="#0d0d12"/>
+  <g font-family="system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" fill="#e6e1d3">
+    <text x="20" y="30" font-size="16" font-weight="600">Two systems, two jobs</text>
+    <text x="20" y="50" fill="#8d8b98">Tree nodes only change numbers. Mutations only change how the one active skill behaves.</text>
+
+    <!-- lane 1: numbers -->
+    <text x="20" y="92" fill="#6fd6e6" font-weight="600">NUMBERS</text>
+    <rect x="20" y="104" width="170" height="64" rx="6" fill="#15151c" stroke="#6fd6e6"/>
+    <text x="34" y="128" font-weight="600">Tree nodes</text>
+    <text x="34" y="146" fill="#8d8b98">data: give {crit: 2}</text>
+    <text x="34" y="160" fill="#8d8b98">known stat keys only</text>
+    <rect x="20" y="180" width="170" height="44" rx="6" fill="#15151c" stroke="#2e2e3a"/>
+    <text x="34" y="200">Gear and weapon</text>
+    <text x="34" y="214" fill="#8d8b98">the same stat keys</text>
+    <line x1="190" y1="136" x2="296" y2="136" stroke="#8d8b98" stroke-width="1.5" marker-end="url(#a)"/>
+    <path d="M190,202 C240,202 250,150 296,146" fill="none" stroke="#8d8b98" stroke-width="1.5" marker-end="url(#a)"/>
+    <rect x="300" y="110" width="170" height="52" rx="6" fill="#15151c" stroke="#2e2e3a"/>
+    <text x="314" y="132" font-weight="600">computeStats</text>
+    <text x="314" y="150" fill="#8d8b98">adds each kind once</text>
+    <line x1="470" y1="136" x2="566" y2="136" stroke="#8d8b98" stroke-width="1.5" marker-end="url(#a)"/>
+    <rect x="570" y="110" width="290" height="52" rx="6" fill="#15151c" stroke="#2e2e3a"/>
+    <text x="584" y="132" font-weight="600">Stats (ST)</text>
+    <text x="584" y="150" fill="#8d8b98">health, defense, crit, cooldowns, damage</text>
+
+    <!-- lane 2: behaviour -->
+    <text x="20" y="252" fill="#e2b93b" font-weight="600">BEHAVIOUR</text>
+    <rect x="20" y="262" width="170" height="52" rx="6" fill="#15151c" stroke="#e2b93b"/>
+    <text x="34" y="284" font-weight="600">Capstone node</text>
+    <text x="34" y="302" fill="#8d8b98">unlocks a mutation</text>
+    <line x1="190" y1="288" x2="296" y2="288" stroke="#8d8b98" stroke-width="1.5" marker-end="url(#a)"/>
+    <rect x="300" y="262" width="170" height="52" rx="6" fill="#15151c" stroke="#e2b93b"/>
+    <text x="314" y="284" font-weight="600">Mutation</text>
+    <text x="314" y="302" fill="#8d8b98">set {…} + riders [pull]</text>
+    <line x1="470" y1="288" x2="566" y2="288" stroke="#8d8b98" stroke-width="1.5" marker-end="url(#a)"/>
+    <rect x="570" y="262" width="290" height="52" rx="6" fill="#15151c" stroke="#2e2e3a"/>
+    <text x="584" y="284" font-weight="600">skillParams(id) → useSkill</text>
+    <text x="584" y="302" fill="#8d8b98">base settings, overridden; riders from a fixed list</text>
+    <line x1="715" y1="162" x2="715" y2="258" stroke="#2e2e3a" stroke-width="1" stroke-dasharray="0"/>
+    <text x="722" y="214" fill="#8d8b98">damage, crit and</text>
+    <text x="722" y="228" fill="#8d8b98">range feed the skill</text>
+  </g>
+</svg>
