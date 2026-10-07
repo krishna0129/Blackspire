@@ -23,56 +23,59 @@ const PAL={
   't':'#ddd6c0',                                   // thorns
   'p':'#4e1520','P':'#8e2a38','Q':'#c44a58','R':'#e9838b',   // petals
   'y':'#d9a441',                                   // pollen
-  's':'#14232b','S':'#24505a','T':'#3f8a84','U':'#a6e0cf',   // beetle shell
+  's':'#14232b','S':'#24505a','T':'#3f8a84','U':'#a6e0cf',   // the hermit's chitin
   'm':'#7c7789','M':'#b3afc0','N':'#e3dfec',       // the Collector's pale skin and bone
   'k':'#a0782c','l':'#5e4620',                     // lantern brass
   'o':'#0d0d13','O':'#283320','L':'#c99a3a','Y':'#5e4620',   // glowing parts: base colour under the glow
 };
 const CAST={
   thrall:{name:'Rotting thrall',eye:'#d6f07a',glow:{},line:'#4d5a36',r:6,map:[
-    '......vX.........',
-    '...v..XVv..BBB...',
-    '...Xv.vV..BKKKB..',
-    '....VvvV.+BoBoB..',
-    '.....vVv.+BBBBB..',
-    '....aabvb+B#K#+..',
-    '...abbcbb++KBK...',
-    '..abcbbcbba++....',
-    '..ab+B+B+bcbb....',
-    '.abc#+#+#bbcca...',
-    '.ab.+B+B+bb.cb...',
-    '.bc.abbbba..bc...',
-    '.bc.deeeed..cC...',
-    '.cb.defeed..b....',
-    'bcc.dedded..ab...',
-    'bb..ded.ed.......',
-    '.b..bba.bb.......',
-    '....bba.abb......',
-    '...abb...bbb.....',
-    '...##....###.....']},
+    '.....vX...........',
+    '..v..XVv..........',
+    '..Xv.vVv..........',
+    '...VvvVbbbb.......',
+    '....vVbcccbb......',
+    '....abcCcc+Bb.....',
+    '....abo#cc#ob.....',
+    '....abcc#cB+b.....',
+    '.....ab#K#Kba.....',
+    '.....abK#K#b......',
+    '...aabbcbbbcbba...',
+    '..abcbbcbbcbbcba..',
+    '..ab+B+Bbcbcbbcb..',
+    '.abc#+#+bbbbb.cba.',
+    '.ab.+B+Bbbcb..bcb.',
+    '.bc.abbbbbba..bcb.',
+    '.bc.deeeeed...cC..',
+    '.cb.defeeed..ab...',
+    'bcc.dedded........',
+    '.b..bba.bb........',
+    '....bba.abb.......',
+    '...abb...bbb......',
+    '...##....###......']},
   gravecaller:{name:'Gravecaller',eye:'#9be08a',glow:{O:'#9be08a'},line:'#3f3452',r:6,map:[
-    '.W.....W.....O..',
-    '.wW...Ww....OOO.',
-    '..ww.ww....OBKO.',
-    '...wdww.....B+B.',
-    '..ddeeedd....W..',
-    '..de###ed....W..',
-    '.dde#o#oed...W..',
-    '.def##+##ed..W..',
-    '.def#+B+#fd.MW..',
-    'ddfed+K+defdNM..',
-    'deffedddeffeW...',
-    'defeffeffefeW...',
-    '.defefeffefdW...',
-    '.ddeffefefdd.W..',
-    '..defefefed..W..',
-    '..ddefefedd..W..',
-    '...deefeed...W..',
-    '...dd.dd.dd..W..',
-    '...v..vX..v.....',
-    '..X...v....V....',
-    '.v....X.........',
-    '......v.........']},
+    '......e..........O.',
+    '.....eee........OOO',
+    '....eefee.......OKO',
+    '...eefffee......BWB',
+    '...edd#ddde......W.',
+    '..eed#BBB#de.....W.',
+    '..ed#BoBoB#d.....W.',
+    '..ed#BBKBB#de....W.',
+    '..ede#K#K#ede....W.',
+    '.eeedd#K#ddeee..BW.',
+    'eefeeeddddeefee.BW.',
+    'efffeefeeeeeeffBB..',
+    'eB.feeeffeeeeff.W..',
+    'eB.efeefeefeefe.W..',
+    '.B.efeefeefeefe.W..',
+    'BB.effeefeefeefe.W.',
+    '...eefeefeefeefe.W.',
+    '...eeffeeffeeffe.W.',
+    '..eefeeffeeffeeee.W',
+    '..ee.ee.eee.ee.ee.W',
+    '..e..e...e...e..e..',
+    '.....d.......d.....']},
   thornroot:{name:'Thornroot',eye:'#f2a03c',glow:{},line:'#33421f',r:8,map:[
     '..........tPQQPt....',
     '.........tPRRRRPt...',
@@ -108,59 +111,66 @@ const CAST={
     '...v..v.v.v..v...',
     '..v...v.v.v...v..',
     '..v..v..v..v..v..']},
-  beetle:{name:'Carrion beetle',eye:'#f2a03c',glow:{},line:'#1c3a40',r:4,map:[
-    '.......K........',
-    '......BKB.......',
-    '....sSTUTSs.....',
-    '...sSTTUTTSs....',
-    '..sSTTTsTTTSs...',
-    '..sSTTTsTTTSs...',
-    '.s.sSSSsSSSs.s..',
-    's..s#o###o#s..s.',
-    '...sB#####Bs....',
-    '..s.B.#.#.B.s...',
-    '.s..........s...']},
+  hermit:{name:'Ossuary hermit',eye:'#f2a03c',glow:{},line:'#2b261c',r:9,map:[
+    '........+BBBB+.........',
+    '......+BBKKBBBB+.......',
+    '.....+BKKBBVXBBBB+.....',
+    '....+BKBBBBVBB#BBB+....',
+    '....+BB###BBB#B###B+...',
+    '...+BB#####BB#####BB+..',
+    '...+B##o###BB##o###B+..',
+    '...+BB####B#B#####BB+..',
+    '...++BB##BB#BB###BB++..',
+    '....++BBBB###BBBBB++...',
+    '.....++BB+#+#+BB++.....',
+    '..ss..+B#B#B#B#B+..ss..',
+    '.sS.sSS++++++++SSs..Ss.',
+    'sS.sS.sSTTTTTTSs.Ss..Ss',
+    'S.sS.s.sS#B.B#Ss.s.Ss.S',
+    '.sS.s...s.B.B.s...s.Ss.',
+    'sS.s.....s...s.....s.Ss']},
   collector:{name:'The Pale Collector',eye:'#9be08a',glow:{O:'#9be08a',L:'#ffe9a8'},line:'#8a8698',r:15,map:[
-    '....................wW....',
-    '...................wWWw...',
-    '......dddd.........w..wk..',
-    '.....ddddddd...........k..',
-    '....dddNNNNdd.........lkl.',
-    '....ddNMMMMNdd.......lLLLl',
-    '...ddNMMMMMMNd.......kLLLk',
-    '...ddMo#MMMMMd.......lLLLl',
-    '...dMM##MMMMNd........lkl.',
-    '...dMMMMMMMNMN.........w..',
-    '....dMMMMMMMMNN........w..',
-    '....ddMMMmMMMmNN.......w..',
-    '.....ddmMm.mmMmN.......w..',
-    '....ddddmm...mm........w..',
-    '...dddeeddd............w..',
-    '..ddeeeeeeedd.........Mw..',
-    '.ddeN+N+N+Need.......NMw..',
-    '.deeN.O..O.Needd...NM..w..',
-    'ddeeN+N+N+Neeeedd.mM...w..',
-    'deeeN..O...Neeeedmm....w..',
-    'deeeN+N+N+Neeeed.......w..',
-    'deeeeeeeeeeeeeed.......w..',
-    'dMeeefeeeeefeeed.......w..',
-    'dMeeefeeeeefeeed.......w..',
-    '.Meeefeeeeefeeed.......w..',
-    '.Meeefeeeeefeeedd......w..',
-    '.Mdeefeeeeefeeeed......w..',
-    '.Mdeefeeeeefeeeed......w..',
-    '.NddeefeeeefeeeedW.....w..',
-    '.N.deefeeeefeeeeed.....w..',
-    '.NNdeefeeeefeeeeeed....w..',
-    'MN.deeefeeefeeeeeed....w..',
-    '...deeefeeefeeeeeed....w..',
-    '..ddeeefeeefeeeeeedd...w..',
-    '..deeeefeeefeeeeeeed...w..',
-    '.ddeeeffeeeffeeeeeedd..w..',
-    '.deeeefeefeeefeeeeeed..w..',
-    'dde.edd.dde.ddeed.edd..w..',
-    'dd..dd..dd..dd.dd..dd..w..',
-    'd...d...d...d...d...d..w..']},
+    '.....dddd.................',
+    '....dddddd.........wW.....',
+    '...ddeeeedd.......wWWw....',
+    '..ddeNNNNedd......w..wk...',
+    '..deNMmMNNNed.........k...',
+    '..deMMMmMMMNNd.......lkl..',
+    '.ddNM##MMMMMNNd.....lLLLl.',
+    '.deM#oo#MmMMMMNN....kLLLk.',
+    '.deM#o##MMMMMMMNN...lLLLl.',
+    '.deMM##MMMMMMMMMNNN..lkl..',
+    '.ddeMMMMMMMMNNNNNNNN..w...',
+    '..ddeMMMMMm#########..w...',
+    '...ddemMMMmmmmmmmm....w...',
+    '....dddmmm............w...',
+    '...dddeeddd...........w...',
+    '..ddeeeeeeedd........Mw...',
+    '.ddleeeeeeeeedd.....NMw...',
+    '.deelleeeeeeeeedd..NM.w...',
+    'ddeekelleeeeeeeedd.mM.w...',
+    'deeeOOeelleeeeeeedmm..w...',
+    'deefOOeeekelleeeeed...w...',
+    'deefeeeeeOOeelleeed...w...',
+    'dMefeeeeeOOeeekeled...w...',
+    'dMefeeefeeeeeeOOeld...w...',
+    '.MefeeefeeeeeeOOeed...w...',
+    '.Mefeeefeeeefeeeedd...w...',
+    '.Mdefeefeeeefeeeeed...w...',
+    '.Mdefeefeeeefeeeeed...w...',
+    '.NddefefeeeefeeeeedW..w...',
+    '.N.deefeeeefeeeeeeed..w...',
+    '.NNdeefeeeefeeeeeeed..w...',
+    'MN.deeefeeefeeeeeeed..w...',
+    'MN.deeefeeefeeeeeeed..w...',
+    '...deeefeeefeeeeeeed..w...',
+    '..ddeeefeeefeeeeeeedd.w...',
+    '..deeeefeeefeeeeeeeed.w...',
+    '.ddeeeffeeeffeeeeeedd.w...',
+    '.deeeefeefeeefeeeeeed.w...',
+    'dde.edd.dde.ddeed.edd.w...',
+    'dd..dd..dd..dd.dd..dd.w...',
+    'd...d...d...d...d...d.w...']},
   corpse:{name:'Corpse',eye:'#000000',glow:{},line:'#3a4630',r:5,map:[
     '.....V.v........',
     '..ab+BB+.vXv....',
@@ -199,7 +209,7 @@ const CAST={
 
   // ---- 1. the line-up
   const lineup=await page.evaluate(()=>{
-    const order=[['thrall',6],['gravecaller',6],['thornroot',6],['bloodbloom',6],['beetle',6],['collector',5]],pad=24,gap=26,top=56;
+    const order=[['thrall',6],['gravecaller',6],['thornroot',6],['bloodbloom',6],['hermit',5],['collector',5]],pad=24,gap=26,top=56;
     const items=order.map(([t,s])=>{const sp=enemySprite(t,false,null);const[c,x]=mk(sp.fw,sp.fh);x.drawImage(sp.c,0,0);if(sp.eyes)x.drawImage(sp.eyes,0,0);return{t,s,c,w:sp.fw*s,h:sp.fh*s};});
     const W=pad*2+items.reduce((a,i)=>a+i.w+gap,-gap),H=top+Math.max(...items.map(i=>i.h))+58;
     const [cv,x]=mk(W,H);x.fillStyle='#0d0d12';x.fillRect(0,0,W,H);
@@ -209,7 +219,7 @@ const CAST={
     for(const i of items){x.imageSmoothingEnabled=false;x.drawImage(i.c,px,base-i.h,i.w,i.h);
       x.font='600 12px system-ui,Segoe UI,Helvetica,Arial,sans-serif';x.fillStyle='#e6e1d3';x.textAlign='center';x.fillText(ETYPES[i.t].name,px+i.w/2,base+22);
       x.font='11px system-ui,Segoe UI,Helvetica,Arial,sans-serif';x.fillStyle='#8d8b98';
-      x.fillText({thrall:'slow tank, rises again',gravecaller:'raises the dead',thornroot:'grows from walls',bloodbloom:'heals its allies',beetle:'swarms the fallen',collector:'floor 3 boss'}[i.t],px+i.w/2,base+38);
+      x.fillText({thrall:'slow tank, rises again',gravecaller:'raises the dead',thornroot:'grows from walls',bloodbloom:'heals its allies',hermit:'burrows, bursts up beneath you',collector:'floor 3 boss'}[i.t],px+i.w/2,base+38);
       x.textAlign='left';px+=i.w+gap;}
     return cv.toDataURL('image/png');
   });
@@ -246,9 +256,10 @@ const CAST={
     const c=E('corpse',62,26,{state:'idle',face:1});
     const g=E('gravecaller',86,-6,{face:-1,state:'windup'});
     E('thrall',30,-10);E('thrall',38,16,{ph:1});E('thrall',58,-30,{ph:2,elite:true});
-    E('bloodbloom',72,50,{state:'idle'});E('beetle',-22,34,{face:1});E('beetle',-34,24,{face:1,ph:2});
+    E('bloodbloom',72,50,{state:'idle'});E('hermit',-40,30,{face:1,state:'idle'});
     const t=E('thornroot',-6,-((r.h/2-0.5)*TILE)+2,{state:'idle'});
-    G.tele=[{line:true,x:t.x,y:t.y+6,a:Math.PI/2+.12,len:52,t:.55,d:1}];
+    // a second hermit is under the floor, about to burst up where the circle is
+    G.tele=[{line:true,x:t.x,y:t.y+6,a:Math.PI/2+.12,len:52,t:.55,d:1},{x:P.x-6,y:P.y+44,r:16,t:.6,d:1}];
     draw();reveal();drawMini();updateHud();
     // magic drawn over the dark: the Gravecaller's channel into the corpse, the Bloodbloom's healing pulse
     const sx=x=>Math.round(x-camX),sy=y=>Math.round(y-camY);
