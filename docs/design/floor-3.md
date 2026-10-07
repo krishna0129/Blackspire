@@ -40,12 +40,12 @@ floor 2 was hard on them: plants burn, and fire stops the dead from rising again
 | **Gravecaller** | priority caster | Keeps its distance and channels for 1.2 s to raise a corpse. A hit interrupts the channel. Blinks away when you close in (on a cooldown). Low health. | Rush it, or interrupt with ranged hits. |
 | **Thornroot** | stationary hazard | Grows from wall faces next to rooms and corridors. Lashes along a telegraphed line. Cannot be knocked back. Takes double damage from fire. | Read the line, burn it, or go around. |
 | **Bloodbloom** | healer | A rooted flower that pulses a visible green ring every 4 s, healing nearby enemies. Fragile. | Kill it first, or the fight drags on. |
-| Carried over | filler | Bone archers (fewer than floor 2), and skitters recoloured as carrion beetles. | As before. |
+| **Carrion beetle** | swarm | Horned beetles with iridescent shells that pour in around the fallen: fast, in groups, fragile. | Wide swings; keep moving so they come in a line. |
+| Carried over | filler | Bone archers, fewer than on floor 2. | As before. |
 
-<img src="../wiki/img/enemy-skitter.png" alt="Skitter as it is today" height="96"> → <img src="img/concept-beetle.png" alt="Carrion beetle concept: the skitter recoloured" height="96"><br><sub>The skitter today, and a carrion beetle made by recolouring it (concept)</sub>
-
-The beetles are a colour swap of an existing sprite (the tint system does this for free). That's the cheap way to
-fill out a roster.
+Every floor 3 enemy has its own design rather than a recolour of floors 1 and 2. A new floor should look new the
+moment you arrive, and the shared roots tie the cast to the floor's story. Recolours remain the cheap way to make
+*elite* or later "heavenly" variants of these designs.
 
 Elite Gravecallers raise two corpses at once.
 
@@ -107,7 +107,8 @@ farms forever. Uniques are never sold in shops.
    wall-face tiles next to floor), healing pulses.
 5. **The thorn tile.**
 6. **The Pale Collector.**
-7. **Art:** four enemies, the boss and a tileset, via `tools/make_sprites.py`. Beetles are a recolour.
+7. **Art:** five enemies, the boss, the corpse and a tileset, via `tools/make_sprites.py`. The concept maps in
+   `tools/concept-floor3.js` are the starting point; the game versions also need walk and attack frames.
 
 Steps 1 to 3 are worth doing before any content: every later floor needs them. Rough size: steps 1 to 3 take
 about a week; steps 4 to 7 another one to two, with the art as the long pole.

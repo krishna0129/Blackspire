@@ -39,9 +39,6 @@ const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','wiki','img'),DES
       return frame(c,0,0,s.fw,s.fh,scale);};
     for(const t of Object.keys(ETYPES))if(t!=='boss'){out['enemy-'+t]=enemy(t,false,null,6);out['enemy-'+t+'-elite']=enemy(t,true,null,6);}
     out['boss-warden']=enemy('boss',false,null,5);out['boss-regent']=enemy('boss',false,'skelknight',5);
-    // the floor 3 concept: a carrion beetle is a skitter in new colours
-    {const s=enemySprite('skitter',false,null),c=document.createElement('canvas');c.width=s.fw;c.height=s.fh;const x=c.getContext('2d');
-      x.filter='hue-rotate(95deg) saturate(1.6) brightness(1.15)';x.drawImage(s.c,0,0);x.filter='none';x.drawImage(s.eyes,0,0);out['concept-beetle']=frame(c,0,0,s.fw,s.fh,6);}
     // item icons, as the bag shows them
     const icon=it=>{const c=document.createElement('canvas');c.width=c.height=24;drawItemIcon(c,it);return frame(c,0,0,24,24,4,0);};
     for(const t of Object.keys(WTYPES))if(t!=='grimoire')out['item-'+t]=icon({slot:'weapon',type:t,tint:WTYPES[t].ranged?BOWS[0]:BLADES[0],rarity:0});
@@ -59,7 +56,7 @@ const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','wiki','img'),DES
     out['drop-item']=ground((x,X,Y)=>{x.fillStyle='#050508';x.fillRect(X-3,Y-1,7,3);x.fillRect(X-1,Y-3,3,7);x.fillStyle=RARITY[2].color;x.fillRect(X-2,Y,5,1);x.fillRect(X,Y-2,1,5);x.fillRect(X-1,Y-1,3,3);x.fillStyle='#fff';x.fillRect(X,Y,1,1);});
     return out;
   });
-  for(const [k,v] of Object.entries(art))save(k.startsWith('concept-')?DESIGN:OUT,k+'.png',v);
+  for(const [k,v] of Object.entries(art))save(OUT,k+'.png',v);
 
   // ---- boss attacks: set up a fight, force one attack, stop while its red warning is on screen, and photograph it
   async function bossShot(name,floor,setup){
