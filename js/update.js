@@ -23,7 +23,7 @@ function update(dt){
       const ox=p.x,oy=p.y;p.x+=p.vx*dt/2;p.y+=p.vy*dt/2;
       if(solid(p.x,p.y)){p.life=0;if(fire)explode(ox,oy);else burst(ox,oy,3,p.k==='arrow'?'#8d8b98':'#cfc8ff',30);break;}
       for(const e of G.enemies){if(e.dead||hyp(e.x-p.x,e.y-p.y)>e.r+(fire?4:3))continue;
-        p.life=0;if(fire)explode(p.x,p.y);else damageEnemy(e,p.mult||1,{fx:ox-p.vx,fy:oy-p.vy});break;}
+        p.life=0;if(fire)explode(p.x,p.y);else if(damageEnemy(e,p.mult||1,{fx:ox-p.vx,fy:oy-p.vy}))gainMomentum();break;}
     }
     if(p.life>0){p.life-=dt;if(p.life<=0&&fire)explode(p.x,p.y);}
     if(fire&&p.life>0)G.parts.push({x:p.x+rand(-1,1),y:p.y+rand(-1,1),vx:rand(-6,6),vy:-10,t:0,d:.3,c:pick(['#f08a3c','#d9534f','#ffe9a8'])});

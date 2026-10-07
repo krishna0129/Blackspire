@@ -22,7 +22,8 @@ function hitArc(ang,arcDeg,range,mult,o){
   let n=0;const half=arcDeg/2*Math.PI/180;
   for(const e of G.enemies){if(e.dead)continue;const dx=e.x-P.x,dy=e.y-P.y,d=hyp(dx,dy)-e.r;if(d>range||!los(P.x,P.y,e.x,e.y))continue;
     if(arcDeg<360&&d>2&&Math.abs(angDiff(Math.atan2(dy,dx),ang))>half+Math.atan2(e.r,Math.max(4,d+e.r))*.8)continue;
-    damageEnemy(e,mult,o);n++;}
+    if(damageEnemy(e,mult,o))n++;}
+  if(n)gainMomentum();
   // break incoming shots
   for(const p of G.proj){const dx=p.x-P.x,dy=p.y-P.y;if(hyp(dx,dy)<range+2&&(arcDeg>=360||Math.abs(angDiff(Math.atan2(dy,dx),ang))<half)){p.life=0;burst(p.x,p.y,4,'#6fd6e6',30);}}
   return n;
@@ -30,17 +31,21 @@ function hitArc(ang,arcDeg,range,mult,o){
 function hitLine(ang,len,wid,mult,o){
   const c=Math.cos(ang),s=Math.sin(ang);let n=0;
   for(const e of G.enemies){if(e.dead)continue;const dx=e.x-P.x,dy=e.y-P.y,al=dx*c+dy*s,pe=Math.abs(-dx*s+dy*c);
-    if(al>-e.r&&al<len+e.r&&pe<wid+e.r&&los(P.x,P.y,e.x,e.y)){damageEnemy(e,mult,o);n++;}}
+    if(al>-e.r&&al<len+e.r&&pe<wid+e.r&&los(P.x,P.y,e.x,e.y)&&damageEnemy(e,mult,o))n++;}
+  if(n)gainMomentum();
   return n;
 }
+// Quickening: one stack per attack that lands (a swing, a shot, a skill), however many enemies it hits.
+function gainMomentum(){if(ST.p.momentum){P.mom=Math.min(5,P.mom+1);P.momT=3;}}
+// Returns true if the blow landed, false if it was blocked or the target was already dead.
 function damageEnemy(e,mult,o={}){
-  if(e.dead)return;
+  if(e.dead)return false;
   // A bone knight's shield stops anything that comes from the side it faces, unless it is mid-swing or reeling.
   if(ETYPES[e.type].shield&&!e.boss&&e.stun<=0&&(e.state==='chase'||e.state==='idle')){
     const fa=DIR_ANGLE[e.dir||0];
     if(Math.abs(angDiff(Math.atan2((o.fy??P.y)-e.y,(o.fx??P.x)-e.x),fa))<1.05){
       const now=performance.now();if(now-(e.blkT||0)>600){e.blkT=now;addNum(e.x,e.y-e.r-13,'BLOCK','resist');sfx('block');}
-      burst(e.x+Math.cos(fa)*7,e.y+Math.sin(fa)*7,3,'#c3cad6',40);if(e.state==='idle')e.state='chase';return;}
+      burst(e.x+Math.cos(fa)*7,e.y+Math.sin(fa)*7,3,'#c3cad6',40);if(e.state==='idle')e.state='chase';return false;}
   }
   let d=ST.dmg*mult*rand(.9,1.1);const crit=o.crit||Math.random()*100<ST.crit;
   if(crit)d*=ST.critDmg/100;
@@ -59,7 +64,6 @@ function damageEnemy(e,mult,o={}){
   if(ST.p.lifesteal)heal(d*ST.p.lifesteal/100);
   if(!o.noProc){
     if(ST.p.bleed){e.bleedT=3;e.bleedDps=ST.dmg*ST.p.bleed/100/3;}
-    if(ST.p.momentum){P.mom=Math.min(5,P.mom+1);P.momT=3;}
     if(ST.p.stagger&&Math.random()*100<ST.p.stagger)e.stun=Math.max(e.stun,e.boss?.2:.8);
     if(ST.p.spark&&Math.random()*100<ST.p.spark){let best=null,bd=64;for(const q of G.enemies){if(q===e||q.dead)continue;const dd=hyp(q.x-e.x,q.y-e.y);if(dd<bd){bd=dd;best=q;}}
       if(best){G.fx.push({k:'bolt',x:e.x,y:e.y,x2:best.x,y2:best.y,t:0,d:.14});damageEnemy(best,mult*.5,{noProc:true,kb:0});}}
@@ -69,6 +73,7 @@ function damageEnemy(e,mult,o={}){
   if(o.burn&&ST.p.ember){e.bleedT=3;e.bleedDps=ST.dmg*ST.p.ember/100/3*(1-e.mres);}
   if(!e.boss){const a=Math.atan2(e.y-(o.fy??P.y),e.x-(o.fx??P.x)),k=(o.kb??ST.kb)*(o.melee?1.5:1)*(ETYPES[e.type].heavy?.4:1);e.kx+=Math.cos(a)*k;e.ky+=Math.sin(a)*k;}
   if(e.hp<=0)killEnemy(e);
+  return true;
 }
 function wakeBoss(){
   const b=G.bossEnt;if(!b||b.dead||G.bossAwake)return;
@@ -174,7 +179,7 @@ function useSkill(){
     if(best){const dir=Math.atan2(best.y-P.y,best.x-P.x);let tx=best.x+Math.cos(dir)*(best.r+9),ty=best.y+Math.sin(dir)*(best.r+9);
       if(boxSolid(tx,ty,P.cr)){tx=best.x-Math.cos(dir)*(best.r+9);ty=best.y-Math.sin(dir)*(best.r+9);}
       if(!boxSolid(tx,ty,P.cr)){P.x=tx;P.y=ty;}
-      P.dir=dirOf(Math.atan2(best.y-P.y,best.x-P.x));P.aim=DIR_ANGLE[P.dir];P.inv=Math.max(P.inv,.35);damageEnemy(best,3,{crit:true,melee:true});slashFx(P.aim,120,ST.range+6);}
+      P.dir=dirOf(Math.atan2(best.y-P.y,best.x-P.x));P.aim=DIR_ANGLE[P.dir];P.inv=Math.max(P.inv,.35);if(damageEnemy(best,3,{crit:true,melee:true}))gainMomentum();slashFx(P.aim,120,ST.range+6);}
     else{P.dash={t:.12,vx:Math.cos(a)*300,vy:Math.sin(a)*300,mult:0,hit:new Set()};P.inv=Math.max(P.inv,.2);}
   }
   else if(id==='sunder'){hitArc(a,170,ST.range*1.35,2.8,{sunder:4,kb:90});slashFx(a,170,ST.range*1.35,1,.22);G.shake=6;}
@@ -189,7 +194,8 @@ function castBolt(){const a=P.aim,v=190;G.pproj.push({k:'bolt',mult:1,x:P.x+Math
 function fireArrow(a,mult){const v=260;G.pproj.push({k:'arrow',a,mult,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
 function explode(x,y){
   const R=30*(1+(ST.p.blast||0)/100);
-  for(const e of G.enemies){if(!e.dead&&hyp(e.x-x,e.y-y)<R+e.r&&los(x,y,e.x,e.y))damageEnemy(e,2.6,{kb:70,fx:x,fy:y,burn:true});}
+  let n=0;for(const e of G.enemies){if(!e.dead&&hyp(e.x-x,e.y-y)<R+e.r&&los(x,y,e.x,e.y)&&damageEnemy(e,2.6,{kb:70,fx:x,fy:y,burn:true}))n++;}
+  if(n)gainMomentum();
   G.fx.push({k:'boom',x,y,r:R,t:0,d:.34});burst(x,y,22,'#f08a3c',110);burst(x,y,10,'#ffe9a8',60);G.shake=Math.max(G.shake,4);sfx('boom');
 }
 // Heal is an area effect around the caster. It only ever walks the list of allies, so enemies
