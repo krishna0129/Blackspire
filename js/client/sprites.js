@@ -16,7 +16,10 @@ const SPRITE_NAMES=[
   'props/brazier', 'props/chest', 'weapons/bow', 'weapons/bow_over', 'weapons/bow_tint',
   'weapons/dagger', 'weapons/dagger_tint', 'weapons/great', 'weapons/great_tint', 'weapons/grimoire_faith',
   'weapons/grimoire_magic', 'weapons/grimoire_tint', 'weapons/mace', 'weapons/mace_tint', 'weapons/buckler',
-  'weapons/shield', 'weapons/spear', 'weapons/spear_tint', 'weapons/sword', 'weapons/sword_tint'
+  'weapons/shield', 'weapons/spear', 'weapons/spear_tint', 'weapons/sword', 'weapons/sword_tint',
+  // floor 3
+  'enemies/thrall', 'enemies/thrall_eyes', 'enemies/gravecaller', 'enemies/gravecaller_eyes', 'enemies/thornroot', 'enemies/thornroot_eyes',
+  'enemies/bloodbloom', 'enemies/bloodbloom_eyes', 'enemies/hermit', 'enemies/hermit_eyes', 'enemies/collector', 'enemies/collector_eyes', 'enemies/corpse'
 ];
 const IMG={};   // sprite name -> loaded image, or null if the file is missing
 // window.SPRITE_DATA exists only in the single-file build, where the PNGs are embedded as data URLs.
@@ -120,11 +123,12 @@ function shieldSprite(kind){return SHSPR[kind]||(SHSPR[kind]=IMG['weapons/'+kind
 
 // Enemies: a body file plus an _eyes file. The eyes are redrawn after the darkness so they glow.
 const ESPR={};
-function enemySprite(type,elite,skin){   // skin marks the floor 2 boss
-  const key=type+(elite?'E':'')+(skin||'');if(ESPR[key])return ESPR[key];
-  const boss=type==='boss',name='enemies/'+(boss?(skin?'boneboss':'boss'):type),T=ETYPES[skin||type]||ETYPES[type];
+// sprite: a boss's own sprite file (FLOORS[].boss.sprite); ordinary enemies use their type's file
+function enemySprite(type,elite,sprite){
+  const key=type+(elite?'E':'')+(sprite||'');if(ESPR[key])return ESPR[key];
+  const boss=type==='boss',name='enemies/'+(boss?(sprite||'boss'):type),T=ETYPES[type],B=boss&&FLOORS.find(f=>f.boss.sprite===(sprite||'boss'));
   let src=IMG[name];if(!src){const[p,px]=mk(12,12);px.fillStyle='#f0f';px.fillRect(1,1,10,10);src=p;}   // loud placeholder for a missing file
-  const c=outlined(src,elite?'#c9a24a':boss?(skin?'#9a8f6a':'#7a4a52'):(T.line||'#4f4f66')),white=whiten(c);
+  const c=outlined(src,elite?'#c9a24a':boss?(B?B.boss.line:'#7a4a52'):(T.line||'#4f4f66')),white=whiten(c);
   let eyes=IMG[name+'_eyes']||null;
   if(eyes&&elite){const[e,ex]=mk(eyes.width,eyes.height);ex.drawImage(eyes,0,0);ex.globalCompositeOperation='source-in';ex.fillStyle='#ffd86a';ex.fillRect(0,0,e.width,e.height);eyes=e;}
   if(eyes)c.getContext('2d').drawImage(eyes,0,0);

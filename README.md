@@ -29,12 +29,13 @@ css/style.css         all styling
 js/sim/               the game rules. No page, canvas or sound: the browser runs them for single player and the
                       server runs the very same files for online play
   util.js             small helpers
-  data.js             tables: weapons, skills, passives, gear, enemies, materials
+  data.js             tables: floors, weapons, skills, passives, gear, enemies, materials, loot
   items.js            item generation, prices, enhancement, the blacksmith's stock
   rules.js            players, saves, derived stats, and the list of host functions the rules call
   world.js            floor generation
   combat.js           hit detection, damage, skills, spells, loot, the boss chamber
   update.js           one step of a floor: every player, enemy, shot and drop; enemy and boss AI
+  floor3.js           floor 3's enemies (Gravecaller, Thornroot, Bloodbloom, Ossuary hermit) and the Pale Collector
   actions.js          gear, attributes and blacksmith actions, run locally or by the server
 js/client/            everything on screen, loaded after js/sim in the order index.html lists them
   store.js            the local save store

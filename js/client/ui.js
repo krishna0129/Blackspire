@@ -62,7 +62,7 @@ function enterFloor(n){
   for(const k in hc)delete hc[k];
   $('#boss').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#travel').hidden=true;$('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();
   mode='play';inp.atk=false;
-  banner('Floor '+n,n===1?'Find the boss chamber. It is somewhere to the east.':n===2?'The dead here shrug off magic. Bring steel.':'The air is colder here.',n===2?4200:2800);
+  const FL=floorDef(n);banner('Floor '+n,FL.intro,FL.introMs);
   save();
 }
 // The title screen: Single player or Online. msg, if given, says why you are back here (a lost connection).

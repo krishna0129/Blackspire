@@ -10,13 +10,23 @@
 
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {loadRules}=require('../server/game.js');
-const R=loadRules(),D=vm.runInContext(`({ETYPES,RARITY,WTYPES,ATYPES,BTYPES,TTYPES,PASSIVES,GEAR_AFFIX,GRIM,MATS,LOOT,SPAWNS,ELITE_CHANCE,BOSSES,
+const R=loadRules(),D=vm.runInContext(`({ETYPES,RARITY,WTYPES,ATYPES,BTYPES,TTYPES,PASSIVES,GEAR_AFFIX,GRIM,MATS,LOOT,FLOORS,ELITE_CHANCE,
   ENH_CHANCE,ENH_MAX,SKILLS,ilvlMult,itemMult,enhanceRecipe,enhanceCost,salvageValue,salvageMats})`,R);
 const OUT=path.join(__dirname,'..','docs','wiki');
-const FLOORS=[1,2,3];   // floors the tables show
+const SHOWN=[1,2,3];   // floors the tables show
 
 /* ---------- hand-written notes ---------- */
 const NOTES={
+  thrall:{fights:'Shambles in with a slow, heavy swing (0.6 s wind-up) that hits do not interrupt. When it dies it leaves its body for 6 s, and a Gravecaller nearby can raise it again at half health.',
+    beat:'Kill the Gravecaller first, or burn the body (any Fireball blast). Raised thralls give no experience and no loot.',stats:'Strength or Vitality; fire for the bodies.'},
+  gravecaller:{fights:'Keeps 64 to 110 px away and throws slow grave-fire. Stops to raise a body within reach: a 1.2 s channel, shown as a green line to the body. Blinks away when you get close (every 5 s). An elite raises two at once.',
+    beat:'Any hit breaks the channel, so ranged attacks are perfect. Rush it after it blinks. It has little health: always kill it first.',stats:'Dexterity or Intelligence (ranged), or Agility to catch it.'},
+  thornroot:{fights:'Grows from the top wall of a room and never moves. Marks a lane toward you for 0.7 s, then lashes along it.',
+    beat:'Step out of the lane, then hit it while it recovers. Takes double damage from fire; cannot be knocked back.',stats:'Any; Fireball melts it.'},
+  bloodbloom:{fights:'A rooted flower. Every 4 s a green ring pulses out and heals every other enemy nearby by 12% of its health.',
+    beat:'Fragile: kill it first, or the fight drags on.',stats:'Any.'},
+  hermit:{fights:'Burrows under the floor, where nothing can hit it, and moves toward you. A red circle marks where it will burst up; it hits hard and no shield stops it. Then it lies dazed for 1.6 s, then fights inside its skull shell (taking 40% damage) for 2.6 s before burrowing again.',
+    beat:'Step off the circle, then hit it hard while it is dazed: that is the only time it takes full damage.',stats:'Agility (move speed) to leave the circle; burst damage for the opening.'},
   shade:{fights:'Walks straight at you, winds up for 0.38 s, then swipes. Any hit during the wind-up cancels it.',
     beat:'The baseline enemy. Hit it while it winds up and it never lands a blow.',stats:'Strength or the attribute your weapon scales with; Vitality while learning.'},
   skitter:{fights:'Fast (74 speed) and fragile, with a short 0.22 s wind-up. Comes in groups, and the Gate Warden summons them.',
@@ -33,7 +43,7 @@ const NOTES={
     beat:'Hit it from the side or behind, or during its recovery. Shadowstep (Dagger) lands behind it with a guaranteed critical. Ignores 85% of magic damage.',stats:'Strength and Agility.'},
 };
 const BOSS_NOTES=[
-  {name:'The Gate Warden',img:'boss-warden',shots:[['attack-warden-slam','Slam'],['attack-warden-burst','Targeted burst'],['attack-warden-charge','Charge lane']],floors:'Floor 1 (and every floor from 3 until those get their own bosses)',
+  {name:'The Gate Warden',img:'boss-warden',shots:[['attack-warden-slam','Slam'],['attack-warden-burst','Targeted burst'],['attack-warden-charge','Charge lane']],floors:'Floor 1',
     attacks:['Slam: a red circle around itself when you are close (48 px). Leave the circle.','Targeted burst: a red circle where you stand, from range. Move off it.',
       'Charge: a red lane, then it runs along it. Step sideways.','Calls skitters at 66% and 33% health: 3, plus 1 per floor above 1 (6 at most).','Below 30% health everything comes faster.'],
     tips:'Every attack is telegraphed and cannot be evaded by Dexterity, but it can be dodge-rolled. Clear the skitters with wide swings.'},
@@ -43,6 +53,13 @@ const BOSS_NOTES=[
       'Bone cross: four lanes through the boss; the gaps between them are safe. Below 30% health a diagonal cross follows.',
       'Raises two bone soldiers at 66% and 33% health.','Never uses the same attack twice in a row.'],
     tips:'Takes half damage from magic. Its own shield blocks nothing, so any steel weapon works.'},
+  {name:'The Pale Collector',img:'boss-collector',shots:[['attack-collector-bolts','Soul bolts'],['attack-collector-raise','Raising the dead'],['attack-collector-sweep','Lantern sweep']],floors:'Floor 3 (and every floor above until they get their own)',
+    attacks:['Soul bolts: three green shots in a spread. Ordinary shots: they can be evaded, blocked and knocked down.',
+      'Raises thralls from the six bodies in its chamber (two at a time, three from two thirds of its health). They ignore you and walk to it; each one that arrives heals it by 8% (12% below a third).',
+      'Lantern sweep, from two thirds of its health: a red lane, then a beam that turns half way around it. The beam stops at walls.',
+      'Below a third: blinks between the corners of the chamber, and roots erupt under its target five times in a row (no shield stops them).',
+      'If everyone in the chamber falls, it heals and its bodies return.'],
+    tips:'Burn the bodies with Fireball before it can use them, and kill thralls on their way to it. Parties split naturally: one intercepts thralls while the others fight.'},
 ];
 
 /* ---------- helpers ---------- */
@@ -118,7 +135,7 @@ their loot can be farmed.`,
 `## What drops from what`,
 `On the ground: ${IMG('drop-shard','shards',36)} shards ${IMG('drop-potion','potion',36)} potion ${IMG('drop-scrap','Iron scrap',36)} Iron scrap ${IMG('drop-ember','Emberstone',36)} Emberstone ${IMG('drop-crystal','Spire crystal',36)} Spire crystal ${IMG('drop-item','item',36)} an item (rare and better ones also send a beam of their colour into the dark).`,
 table(['Source','Shards (floor 1 / 2 / 3)','Items','Potions','Materials'],Object.keys(L).map(k=>{const q=L[k];
-  return[src[k],FLOORS.map(n=>{const m=floorMult(n).shards,a=Math.round(q.shards[0]*m),b=Math.round(q.shards[1]*m);return a===b?a:a+'–'+b;}).join(' / '),
+  return[src[k],SHOWN.map(n=>{const m=floorMult(n).shards,a=Math.round(q.shards[0]*m),b=Math.round(q.shards[1]*m);return a===b?a:a+'–'+b;}).join(' / '),
     q.items.map(i=>`${i.chance<1?pct(i.chance):'1'}${i.ilvl?' (item level +'+i.ilvl+')':''}${i.minRar?', at least '+D.RARITY[i.minRar].name.toLowerCase():''}`).join('<br>'),
     q.potions.length>1?q.potions.length+' potions':pct(q.potions[0]),matText(q.mats)];})),
 `Elites are ${pct(D.ELITE_CHANCE)} of room spawns, marked by gold outlines and eyes. They have 2.4× health and 1.3× damage, and give 3× experience.`,
@@ -138,8 +155,9 @@ floor's item level (bosses: one higher), which raises base numbers by 22% per le
 table(['Source','Shards (floor 1)','Items','Iron scrap','Emberstone','Spire crystal'],Object.keys(L).map(k=>{const q=L[k];
   return[src[k],fx((q.shards[0]+q.shards[1])/2),fx(q.items.reduce((a,i)=>a+i.chance,0),2),...['scrap','ember','crystal'].map(m=>q.mats[m]?fx(matAvg(q.mats[m]),2):'–')];})),
 `## Where each enemy appears`,
-table(['Floor','Enemies (share of room spawns)'],D.SPAWNS.map((bag,i)=>{const c={};for(const t of bag)c[t]=(c[t]||0)+1;
-  return[i===D.SPAWNS.length-1?`${i+1} and up`:String(i+1),Object.keys(c).map(t=>`${D.ETYPES[t].name} ${pct(c[t]/bag.length)}`).join(', ')];})),
+table(['Floor','Enemies (share of room spawns)','Also','Boss'],D.FLOORS.map((f,i)=>{const bag=f.spawns,c={};for(const t of bag)c[t]=(c[t]||0)+1;
+  return[i===D.FLOORS.length-1?`${i+1} and up`:String(i+1),Object.keys(c).map(t=>`${D.ETYPES[t].name} ${pct(c[t]/bag.length)}`).join(', '),
+    [f.wall?`${D.ETYPES[f.wall.type].name} on the top wall of ${pct(f.wall.chance)} of rooms`:'',f.thorns?'thorn patches':''].filter(Boolean).join('; ')||'–',f.boss.name];})),
 `## Unique drops
 
 **Not in the game yet.** Today every enemy rolls from the same pool above, so the type of enemy only changes how
@@ -200,30 +218,34 @@ A bonus's value is rolled when the item drops; a higher rarity raises both ends.
 }
 
 function monstersPage(){
-  const where=t=>D.SPAWNS.map((b,i)=>b.includes(t)?(i===D.SPAWNS.length-1?`${i+1}+`:String(i+1)):null).filter(Boolean).join(', ');
+  const where=t=>D.FLOORS.map((f,i)=>f.spawns.includes(t)||(f.wall&&f.wall.type===t)?(i===D.FLOORS.length-1?`${i+1}+`:String(i+1)):null).filter(Boolean).join(', ');
   const out=[HEADER('Monsters'),
 `Enemies get tougher on every floor: health +38%, damage +22% and experience +30% per floor above the first.
 Elites (gold) have 2.4× health and 1.3× damage. Damage shown is before your defense, which removes
 \`defense / (100 + defense)\` of each blow.
 
+**Floor 3** adds three rules: thralls leave bodies that a Gravecaller can raise (fire burns them for good); thorn
+patches at the edges of rooms slow everything but plants by 40% and prick for small damage; and Thornroots take
+double damage from fire.
+
 **Weapons with a bonus against a monster type: none yet.** The only targeted bonus today is the weapon affix
-*Giant-slaying* (extra damage to elites and bosses), and the dead take less magic damage (below). Monster-type
+*Giant-slaying* (extra damage to elites and bosses); the dead take less magic damage and Thornroots more fire (below). Monster-type
 bonuses are planned (see [docs/design/floor-3.md](../design/floor-3.md)); this page will list them and where they
 drop. Until then, any source can drop any weapon: the best odds of a good one are elites (70% item chance, at least
 uncommon) and bosses (three items, one item level higher).`];
   for(const [t,E] of Object.entries(D.ETYPES)){if(t==='boss')continue;const n=NOTES[t]||{};
     out.push(`## ${E.name}`,`${IMG('enemy-'+t,E.name)} ${IMG('enemy-'+t+'-elite',E.name+', elite')}<br><sub>Ordinary and elite</sub>`,
-table(['','Floor 1','Floor 2','Floor 3'],[['Health (elite)',...FLOORS.map(f=>`${Math.round(E.hp*floorMult(f).hp)} (${Math.round(E.hp*floorMult(f).hp*2.4)})`)],
-  ['Damage per hit (elite)',...FLOORS.map(f=>`${(E.dmg*floorMult(f).dmg).toFixed(1)} (${(E.dmg*floorMult(f).dmg*1.3).toFixed(1)})`)],
-  ['Experience (elite)',...FLOORS.map(f=>`${Math.round(E.xp*floorMult(f).xp)} (${Math.round(E.xp*floorMult(f).xp*3)})`)]]),
+table(['','Floor 1','Floor 2','Floor 3'],[['Health (elite)',...SHOWN.map(f=>`${Math.round(E.hp*floorMult(f).hp)} (${Math.round(E.hp*floorMult(f).hp*2.4)})`)],
+  ['Damage per hit (elite)',...SHOWN.map(f=>`${(E.dmg*floorMult(f).dmg).toFixed(1)} (${(E.dmg*floorMult(f).dmg*1.3).toFixed(1)})`)],
+  ['Experience (elite)',...SHOWN.map(f=>`${Math.round(E.xp*floorMult(f).xp)} (${Math.round(E.xp*floorMult(f).xp*3)})`)]]),
 `- **Found on floors:** ${where(t)||'(summoned only)'}
-- **Speed:** ${E.speed}${E.ranged?' · **ranged**':''}${E.heavy?' · **heavy** (not staggered by hits)':''}${E.mres?` · **ignores ${pct(E.mres)} of magic damage**`:''}${E.shield?' · **shield**':''}
+- **Speed:** ${E.speed}${E.ranged?' · **ranged**':''}${E.heavy?' · **heavy** (not staggered by hits)':''}${E.mres?` · **ignores ${pct(E.mres)} of magic damage**`:''}${E.shield?' · **shield**':''}${E.rooted?' · **rooted** (never moves, no knockback)':''}${E.weak&&E.weak.fire?` · **takes ${E.weak.fire}× fire damage**`:''}${E.corpse?' · **leaves a body**':''}
 - **How it fights:** ${n.fights||'—'}
 - **How to beat it:** ${n.beat||'—'}
 - **Recommended attributes:** ${n.stats||'—'}`);}
   const B=D.ETYPES.boss;
   out.push(`## Floor bosses`,
-`Base health ${B.hp} and damage ${B.dmg}, scaled by floor like everything else (floor 2: ${Math.round(B.hp*floorMult(2).hp)} health).
+`Base health ${B.hp} and damage ${B.dmg}, scaled by floor like everything else (floor 2: ${Math.round(B.hp*floorMult(2).hp)} health, floor 3: ${Math.round(B.hp*floorMult(3).hp)}).
 Telegraphed attacks (red markings) cannot be evaded by Dexterity; shields cut them by less than ordinary blows. If
 everyone inside the chamber falls, the boss heals to full.`);
   for(const b of BOSS_NOTES)out.push(`### ${b.name}\n\n${IMG(b.img,b.name,150)}\n\n*${b.floors}*\n\n${b.attacks.map(a=>'- '+a).join('\n')}\n\n${b.tips}`,

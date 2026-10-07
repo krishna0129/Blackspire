@@ -5,9 +5,11 @@
 const THEMES=[
   {f:['#1a1a22','#1c1c25','#181820'],grid:'#131319',speck:'#262631',crack:'#0c0c11',face:'#2c2c39',brick:'#1e1e28',top:'#404051',wall:'#1a1a22',edge:'#262631'},
   {f:['#181d1c','#1a201f','#161a19'],grid:'#111514',speck:'#252c2a',crack:'#0b0e0d',face:'#283230',brick:'#1b2322',top:'#3b4946',wall:'#171b1a',edge:'#232b29',bones:'#55513f'},
+  // floor 3: older, rootbound stone. roots: tendrils creeping in from the walls
+  {f:['#1b1a15','#1d1c16','#191812'],grid:'#14130f',speck:'#2b2a20',crack:'#0d0c09',face:'#2c2a20',brick:'#211f17',top:'#4a4433',wall:'#1a1913',edge:'#29271d',bones:'#55513f',roots:true},
 ];
 function paintMap(g){
-  const[c,x]=mk(MW*TILE,MH*TILE),m=g.map,TH=THEMES[Math.min(g.n,THEMES.length)-1];
+  const[c,x]=mk(MW*TILE,MH*TILE),m=g.map,TH=THEMES[floorDef(g.n).theme];
   x.fillStyle='#060609';x.fillRect(0,0,c.width,c.height);
   for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){
     const t=m[ty*MW+tx],px=tx*TILE,py=ty*TILE,h=hash2(tx,ty,g.n);
@@ -37,6 +39,15 @@ function paintMap(g){
       }
     }
   }
+  // roots creeping in along the walls, and thorn patches (see onThorns)
+  if(TH.roots)for(let ty=1;ty<MH-1;ty++)for(let tx=1;tx<MW-1;tx++){if(m[ty*MW+tx]!==1)continue;const h=hash2(tx,ty,33);
+    const nearWall=m[(ty-1)*MW+tx]===2||m[ty*MW+tx-1]===2||m[ty*MW+tx+1]===2;
+    if(nearWall&&h<.35){x.fillStyle=h<.17?'#2f3d22':'#3b4a2a';const px=tx*TILE,py=ty*TILE;
+      for(let i=0;i<9;i++)x.fillRect(px+((h*97+i*5)%14|0),py+((h*53+i*3)%6|0)+i,1+(i%3===0),1);
+      if(h<.08){x.fillStyle='#b9b4a6';x.fillRect(px+(h*700%12|0),py+5,1,1);}}}
+  if(g.thorns)for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(!g.thorns[ty*MW+tx])continue;
+    for(let j=0;j<TILE;j+=2)for(let i=0;i<TILE;i+=2){const q=hash2(tx*16+i,ty*16+j,7);
+      if(q<.45){x.fillStyle=q<.2?'#2f3d22':'#4d6233';x.fillRect(tx*TILE+i,ty*TILE+j,2,1);}else if(q>.93){x.fillStyle='#b9b4a6';x.fillRect(tx*TILE+i,ty*TILE+j,1,1);}}}
   const ring=(r,rad,col,gap)=>{const X=(r.x+r.w/2)*TILE,Y=(r.y+r.h/2)*TILE;x.fillStyle=col;const n=Math.floor(rad*5);for(let i=0;i<n;i++){if(gap&&i%gap===0)continue;const a=i/n*TAU;x.fillRect(Math.round(X+Math.cos(a)*rad),Math.round(Y+Math.sin(a)*rad),1,1);}};
   x.fillStyle='rgba(140,30,45,.07)';x.fillRect(g.boss.x*TILE,g.boss.y*TILE,g.boss.w*TILE,g.boss.h*TILE);
   ring(g.boss,62,'#3a1d25',0);ring(g.boss,56,'#2c171d',3);ring(g.boss,20,'#3a1d25',2);

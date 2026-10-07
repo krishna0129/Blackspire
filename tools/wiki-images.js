@@ -38,7 +38,7 @@ const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','wiki','img'),DES
       const c=document.createElement('canvas');c.width=s.fw;c.height=s.fh;const x=c.getContext('2d');x.drawImage(s.c,0,0,s.fw,s.fh,0,0,s.fw,s.fh);if(s.eyes)x.drawImage(s.eyes,0,0,s.fw,s.fh,0,0,s.fw,s.fh);
       return frame(c,0,0,s.fw,s.fh,scale);};
     for(const t of Object.keys(ETYPES))if(t!=='boss'){out['enemy-'+t]=enemy(t,false,null,6);out['enemy-'+t+'-elite']=enemy(t,true,null,6);}
-    out['boss-warden']=enemy('boss',false,null,5);out['boss-regent']=enemy('boss',false,'skelknight',5);
+    out['boss-warden']=enemy('boss',false,'boss',5);out['boss-regent']=enemy('boss',false,'boneboss',5);out['boss-collector']=enemy('boss',false,'collector',5);
     // item icons, as the bag shows them
     const icon=it=>{const c=document.createElement('canvas');c.width=c.height=24;drawItemIcon(c,it);return frame(c,0,0,24,24,4,0);};
     for(const t of Object.keys(WTYPES))if(t!=='grimoire')out['item-'+t]=icon({slot:'weapon',type:t,tint:WTYPES[t].ranged?BOWS[0]:BLADES[0],rarity:0});
@@ -59,8 +59,9 @@ const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','wiki','img'),DES
   for(const [k,v] of Object.entries(art))save(OUT,k+'.png',v);
 
   // ---- boss attacks: set up a fight, force one attack, stop while its red warning is on screen, and photograph it
-  async function bossShot(name,floor,setup){
-    await page.evaluate(([floor,setup])=>{
+  // frames: how long to let it play on after the warning appears (for attacks shown in flight rather than as a warning)
+  async function bossShot(name,floor,setup,frames=0){
+    await page.evaluate(([floor,setup,frames])=>{
       mode='shot';for(const id of['#title','#hud','#banner','#toasts'])$(id).hidden=true;
       S=newState('Wiki',{skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0]},'sword',OUTFITS[0]);S.char.level=20;
       startWorld(floor);god=true;const b=G.bossEnt,r=G.boss;
@@ -71,9 +72,10 @@ const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','wiki','img'),DES
       const real=Math.random;Math.random=()=>window.__r;
       for(let i=0;i<3&&!G.tele.length;i++)simUpdate(1/60);
       Math.random=real;
-      const t0=G.tele.map(t=>t.d);for(let i=0;i<200&&G.tele.length&&G.tele[0].t<G.tele[0].d*.6;i++){simUpdate(1/60);}
+      for(let i=0;i<200&&G.tele.length&&G.tele[0].t<G.tele[0].d*.6;i++){simUpdate(1/60);}
+      for(let i=0;i<frames;i++)simUpdate(1/60);
       G.parts=[];G.nums=[];render();
-    },[floor,setup]);
+    },[floor,setup,frames]);
     // the player is at the centre of the view: keep the chamber around them, not the void past the map's edge
     await page.screenshot({path:path.join(OUT,name+'.png'),clip:{x:250,y:40,width:460,height:440}});
   }
@@ -86,7 +88,11 @@ const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','wiki','img'),DES
   await bossShot('attack-warden-slam',1,'window.__r=.1;P.y=b.y+30;');
   await bossShot('attack-warden-burst',1,'window.__r=.1;P.y=b.y+90;');
   await bossShot('attack-warden-charge',1,'window.__r=.9;P.y=b.y+90;');
+  // The Pale Collector (floor 3): bolts and the beam are shown in flight; raising is shown during its channel
+  await bossShot('attack-collector-bolts',3,'window.__r=.9;b.raiseT=99;P.y=b.y+80;',22);
+  await bossShot('attack-collector-raise',3,'window.__r=.9;b.raiseT=0;P.y=b.y+60;',30);
+  await bossShot('attack-collector-sweep',3,'window.__r=.1;b.raiseT=99;b.hp=b.maxHp*.5;P.y=b.y+70;',70);
   await browser.close();server.close();
   if(errors.length){console.error(errors.join('\n'));process.exit(1);}
-  console.log('wrote',Object.keys(art).length+7,'images to docs/wiki/img and docs/design/img');
+  console.log('wrote',Object.keys(art).length+10,'images to docs/wiki/img and docs/design/img');
 })();

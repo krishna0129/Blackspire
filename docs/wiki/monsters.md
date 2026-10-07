@@ -7,8 +7,12 @@ Enemies get tougher on every floor: health +38%, damage +22% and experience +30%
 Elites (gold) have 2.4× health and 1.3× damage. Damage shown is before your defense, which removes
 `defense / (100 + defense)` of each blow.
 
+**Floor 3** adds three rules: thralls leave bodies that a Gravecaller can raise (fire burns them for good); thorn
+patches at the edges of rooms slow everything but plants by 40% and prick for small damage; and Thornroots take
+double damage from fire.
+
 **Weapons with a bonus against a monster type: none yet.** The only targeted bonus today is the weapon affix
-*Giant-slaying* (extra damage to elites and bosses), and the dead take less magic damage (below). Monster-type
+*Giant-slaying* (extra damage to elites and bosses); the dead take less magic damage and Thornroots more fire (below). Monster-type
 bonuses are planned (see [docs/design/floor-3.md](../design/floor-3.md)); this page will list them and where they
 drop. Until then, any source can drop any weapon: the best odds of a good one are elites (70% item chance, at least
 uncommon) and bosses (three items, one item level higher).
@@ -39,7 +43,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 5.0 (6.5) | 6.1 (7.9) | 7.2 (9.4) |
 | Experience (elite) | 5 (15) | 7 (20) | 8 (24) |
 
-- **Found on floors:** 1, 2+
+- **Found on floors:** 1, 2
 - **Speed:** 74
 - **How it fights:** Fast (74 speed) and fragile, with a short 0.22 s wind-up. Comes in groups, and the Gate Warden summons them.
 - **How to beat it:** Wide arcs (Greatsword, Longsword, Circular slash) clear a group in one swing. Keep moving so they come to you in a line.
@@ -71,7 +75,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 11.0 (14.3) | 13.4 (17.4) | 15.8 (20.6) |
 | Experience (elite) | 12 (36) | 16 (47) | 19 (58) |
 
-- **Found on floors:** 2+
+- **Found on floors:** 2
 - **Speed:** 46 · **ignores 75% of magic damage**
 - **How it fights:** Moves along one axis at a time and lunges in a straight line when lined up with you. Half the time it hops back out of a melee swing aimed at it.
 - **How to beat it:** Step off its line before the lunge, then punish the recovery. Ignores 75% of magic damage: bring steel.
@@ -87,7 +91,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 10.0 (13.0) | 12.2 (15.9) | 14.4 (18.7) |
 | Experience (elite) | 13 (39) | 17 (51) | 21 (62) |
 
-- **Found on floors:** 2+
+- **Found on floors:** 2, 3+
 - **Speed:** 40 · **ranged** · **ignores 75% of magic damage**
 - **How it fights:** Sidesteps onto your row or column, draws for 0.45 s, then looses an arrow along that line. Hops away if you get within 46 px.
 - **How to beat it:** Never stand on its row or column for long. Rush it between shots; corners break its line. Ignores 75% of magic damage.
@@ -103,11 +107,91 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 21.0 (27.3) | 25.6 (33.3) | 30.2 (39.3) |
 | Experience (elite) | 26 (78) | 34 (101) | 42 (125) |
 
-- **Found on floors:** 2+
+- **Found on floors:** 2
 - **Speed:** 30 · **heavy** (not staggered by hits) · **ignores 85% of magic damage** · **shield**
 - **How it fights:** Its shield stops everything from the side it faces while it walks or stands, but it only re-faces you every 0.75 s. Heavy 0.7 s wind-up, then a long 1.1 s recovery.
 - **How to beat it:** Hit it from the side or behind, or during its recovery. Shadowstep (Dagger) lands behind it with a guaranteed critical. Ignores 85% of magic damage.
 - **Recommended attributes:** Strength and Agility.
+
+## Rotting thrall
+
+<img src="img/enemy-thrall.png" alt="Rotting thrall"> <img src="img/enemy-thrall-elite.png" alt="Rotting thrall, elite"><br><sub>Ordinary and elite</sub>
+
+|  | Floor 1 | Floor 2 | Floor 3 |
+|---|---|---|---|
+| Health (elite) | 70 (168) | 97 (232) | 123 (296) |
+| Damage per hit (elite) | 15.0 (19.5) | 18.3 (23.8) | 21.6 (28.1) |
+| Experience (elite) | 16 (48) | 21 (62) | 26 (77) |
+
+- **Found on floors:** 3+
+- **Speed:** 30 · **heavy** (not staggered by hits) · **leaves a body**
+- **How it fights:** Shambles in with a slow, heavy swing (0.6 s wind-up) that hits do not interrupt. When it dies it leaves its body for 6 s, and a Gravecaller nearby can raise it again at half health.
+- **How to beat it:** Kill the Gravecaller first, or burn the body (any Fireball blast). Raised thralls give no experience and no loot.
+- **Recommended attributes:** Strength or Vitality; fire for the bodies.
+
+## Gravecaller
+
+<img src="img/enemy-gravecaller.png" alt="Gravecaller"> <img src="img/enemy-gravecaller-elite.png" alt="Gravecaller, elite"><br><sub>Ordinary and elite</sub>
+
+|  | Floor 1 | Floor 2 | Floor 3 |
+|---|---|---|---|
+| Health (elite) | 38 (91) | 52 (126) | 67 (161) |
+| Damage per hit (elite) | 12.0 (15.6) | 14.6 (19.0) | 17.3 (22.5) |
+| Experience (elite) | 24 (72) | 31 (94) | 38 (115) |
+
+- **Found on floors:** 3+
+- **Speed:** 38 · **ranged**
+- **How it fights:** Keeps 64 to 110 px away and throws slow grave-fire. Stops to raise a body within reach: a 1.2 s channel, shown as a green line to the body. Blinks away when you get close (every 5 s). An elite raises two at once.
+- **How to beat it:** Any hit breaks the channel, so ranged attacks are perfect. Rush it after it blinks. It has little health: always kill it first.
+- **Recommended attributes:** Dexterity or Intelligence (ranged), or Agility to catch it.
+
+## Thornroot
+
+<img src="img/enemy-thornroot.png" alt="Thornroot"> <img src="img/enemy-thornroot-elite.png" alt="Thornroot, elite"><br><sub>Ordinary and elite</sub>
+
+|  | Floor 1 | Floor 2 | Floor 3 |
+|---|---|---|---|
+| Health (elite) | 80 (192) | 110 (265) | 141 (338) |
+| Damage per hit (elite) | 16.0 (20.8) | 19.5 (25.4) | 23.0 (30.0) |
+| Experience (elite) | 18 (54) | 23 (70) | 29 (86) |
+
+- **Found on floors:** 3+
+- **Speed:** 0 · **heavy** (not staggered by hits) · **rooted** (never moves, no knockback) · **takes 2× fire damage**
+- **How it fights:** Grows from the top wall of a room and never moves. Marks a lane toward you for 0.7 s, then lashes along it.
+- **How to beat it:** Step out of the lane, then hit it while it recovers. Takes double damage from fire; cannot be knocked back.
+- **Recommended attributes:** Any; Fireball melts it.
+
+## Bloodbloom
+
+<img src="img/enemy-bloodbloom.png" alt="Bloodbloom"> <img src="img/enemy-bloodbloom-elite.png" alt="Bloodbloom, elite"><br><sub>Ordinary and elite</sub>
+
+|  | Floor 1 | Floor 2 | Floor 3 |
+|---|---|---|---|
+| Health (elite) | 30 (72) | 41 (99) | 53 (127) |
+| Damage per hit (elite) | 0.0 (0.0) | 0.0 (0.0) | 0.0 (0.0) |
+| Experience (elite) | 14 (42) | 18 (55) | 22 (67) |
+
+- **Found on floors:** 3+
+- **Speed:** 0 · **rooted** (never moves, no knockback)
+- **How it fights:** A rooted flower. Every 4 s a green ring pulses out and heals every other enemy nearby by 12% of its health.
+- **How to beat it:** Fragile: kill it first, or the fight drags on.
+- **Recommended attributes:** Any.
+
+## Ossuary hermit
+
+<img src="img/enemy-hermit.png" alt="Ossuary hermit"> <img src="img/enemy-hermit-elite.png" alt="Ossuary hermit, elite"><br><sub>Ordinary and elite</sub>
+
+|  | Floor 1 | Floor 2 | Floor 3 |
+|---|---|---|---|
+| Health (elite) | 120 (288) | 166 (397) | 211 (507) |
+| Damage per hit (elite) | 20.0 (26.0) | 24.4 (31.7) | 28.8 (37.4) |
+| Experience (elite) | 30 (90) | 39 (117) | 48 (144) |
+
+- **Found on floors:** 3+
+- **Speed:** 52 · **heavy** (not staggered by hits)
+- **How it fights:** Burrows under the floor, where nothing can hit it, and moves toward you. A red circle marks where it will burst up; it hits hard and no shield stops it. Then it lies dazed for 1.6 s, then fights inside its skull shell (taking 40% damage) for 2.6 s before burrowing again.
+- **How to beat it:** Step off the circle, then hit it hard while it is dazed: that is the only time it takes full damage.
+- **Recommended attributes:** Agility (move speed) to leave the circle; burst damage for the opening.
 
 ## Wisp
 
@@ -119,7 +203,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 8.0 (10.4) | 9.8 (12.7) | 11.5 (15.0) |
 | Experience (elite) | 11 (33) | 14 (43) | 18 (53) |
 
-- **Found on floors:** 1, 2+
+- **Found on floors:** 1, 2
 - **Speed:** 32 · **ranged**
 - **How it fights:** Floats at 52 to 92 px, firing a slow orb every 2 to 2.6 s. Its shots stop at walls and safe rooms.
 - **How to beat it:** Close in. A melee swing knocks its shots out of the air, and a raised shield blocks them.
@@ -127,7 +211,7 @@ uncommon) and bosses (three items, one item level higher).
 
 ## Floor bosses
 
-Base health 520 and damage 22, scaled by floor like everything else (floor 2: 718 health).
+Base health 520 and damage 22, scaled by floor like everything else (floor 2: 718 health, floor 3: 915).
 Telegraphed attacks (red markings) cannot be evaded by Dexterity; shields cut them by less than ordinary blows. If
 everyone inside the chamber falls, the boss heals to full.
 
@@ -135,7 +219,7 @@ everyone inside the chamber falls, the boss heals to full.
 
 <img src="img/boss-warden.png" alt="The Gate Warden" width="150">
 
-*Floor 1 (and every floor from 3 until those get their own bosses)*
+*Floor 1*
 
 - Slam: a red circle around itself when you are close (48 px). Leave the circle.
 - Targeted burst: a red circle where you stand, from range. Move off it.
@@ -171,3 +255,23 @@ What each warning looks like, just before it lands:
 | Slam | Rib volley | Grave spikes (one burst) | Bone cross (diagonal) |
 |---|---|---|---|
 | <img src="img/attack-regent-slam.png" alt="Slam: the red warning before it lands" width="230"> | <img src="img/attack-regent-fan.png" alt="Rib volley: the red warning before it lands" width="230"> | <img src="img/attack-regent-spikes.png" alt="Grave spikes (one burst): the red warning before it lands" width="230"> | <img src="img/attack-regent-cross.png" alt="Bone cross (diagonal): the red warning before it lands" width="230"> |
+
+### The Pale Collector
+
+<img src="img/boss-collector.png" alt="The Pale Collector" width="150">
+
+*Floor 3 (and every floor above until they get their own)*
+
+- Soul bolts: three green shots in a spread. Ordinary shots: they can be evaded, blocked and knocked down.
+- Raises thralls from the six bodies in its chamber (two at a time, three from two thirds of its health). They ignore you and walk to it; each one that arrives heals it by 8% (12% below a third).
+- Lantern sweep, from two thirds of its health: a red lane, then a beam that turns half way around it. The beam stops at walls.
+- Below a third: blinks between the corners of the chamber, and roots erupt under its target five times in a row (no shield stops them).
+- If everyone in the chamber falls, it heals and its bodies return.
+
+Burn the bodies with Fireball before it can use them, and kill thralls on their way to it. Parties split naturally: one intercepts thralls while the others fight.
+
+What each warning looks like, just before it lands:
+
+| Soul bolts | Raising the dead | Lantern sweep |
+|---|---|---|
+| <img src="img/attack-collector-bolts.png" alt="Soul bolts: the red warning before it lands" width="230"> | <img src="img/attack-collector-raise.png" alt="Raising the dead: the red warning before it lands" width="230"> | <img src="img/attack-collector-sweep.png" alt="Lantern sweep: the red warning before it lands" width="230"> |

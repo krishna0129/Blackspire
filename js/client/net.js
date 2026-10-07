@@ -84,7 +84,7 @@ Object.assign(NET,{
     Object.assign(P,{hp:me.hp,mp:me.mp,dead:me.dead,safe:me.safe,locked:me.locked,inv:me.inv,guard:me.guard,skillCd:me.skillCd,skillMax:me.skillMax,potCd:me.potCd,mom:me.mom});
     if(!P.dash)P.dodgeCd=Math.max(P.dodgeCd,me.dodgeCd);
     P.swing=me.swing?{t:me.swing[0],d:me.swing[1],a:P.aim,hit:!!me.swing[2]}:null;
-    G.proj=o.pr;G.pproj=o.pp;G.tele=o.te;
+    G.proj=o.pr;G.pproj=o.pp;G.tele=o.te;G.corpses=o.co||[];G.beams=o.be||[];
     G.drops=o.dr.map(d=>({k:d.k,x:d.x,y:d.y,t:d.t,id:d.id,uid:d.uid,owner:P.id,item:{rarity:d.r}}));
     const g=o.g;if(g.open&&!G.gatesOpen)openGates();G.gate=g.gate;G.bossAwake=g.awake;
     G.bossEnt=g.boss?Object.assign(G.bossEnt||{},g.boss,{name:this.bossName}):null;
@@ -98,7 +98,7 @@ Object.assign(NET,{
     if(!P.dead){setPlayer(P);steerPlayer(dt);if(P.swing)P.swing.t+=dt;}
     this.sendT+=dt;if(this.sendT>=1/30){this.sendT=0;this.send({t:'in',mx:P.in.mx,my:P.in.my,atk:P.in.atk,block:P.in.block,x:Math.round(P.x*10)/10,y:Math.round(P.y*10)/10,tp:P.tp});}
     for(const p of G.proj){p.x+=p.vx*dt;p.y+=p.vy*dt;}for(const p of G.pproj){p.x+=p.vx*dt;p.y+=p.vy*dt;}
-    for(const t of G.tele)t.t+=dt;for(const d of G.drops)d.t+=dt;
+    for(const t of G.tele)t.t+=dt;for(const d of G.drops)d.t+=dt;if(G.beams)for(const B of G.beams)B.a+=B.va*dt;
     const n=this.snaps.length;if(!n)return;
     const at=performance.now()-DELAY;let a=this.snaps[0],b=this.snaps[n-1];
     for(let i=0;i<n-1;i++)if(this.snaps[i].at<=at&&this.snaps[i+1].at>=at){a=this.snaps[i];b=this.snaps[i+1];break;}

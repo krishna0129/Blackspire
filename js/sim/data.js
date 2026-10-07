@@ -112,6 +112,13 @@ const ETYPES={
   skel:{name:'Bone soldier',hp:46,dmg:11,speed:46,r:6,reach:6,windup:.3,recover:.55,xp:12,eye:'#9be08a',mres:.75,line:'#8d8674',ai:'stalfos',fw:20,fh:23},
   skelarcher:{name:'Bone archer',hp:26,dmg:10,speed:40,r:5,ranged:true,pspeed:150,pcol:'#d9d4c4',xp:13,eye:'#9be08a',mres:.75,line:'#8d8674',ai:'archer',fw:18,fh:21},
   skelknight:{name:'Bone knight',hp:140,dmg:21,speed:30,r:8,reach:8,windup:.7,recover:1.1,xp:26,eye:'#9be08a',mres:.85,heavy:true,line:'#8d8674',ai:'darknut',shield:true,fw:24,fh:24},
+  // Floor 3: roots and the restless dead (docs/design/floor-3.md). rooted: never moves or gets knocked back.
+  // weak: damage taken from a kind of attack is multiplied (fire = Fireball and its burn). corpse: leaves a body behind.
+  thrall:{name:'Rotting thrall',hp:70,dmg:15,speed:30,r:6,reach:7,windup:.6,recover:.9,xp:16,eye:'#d6f07a',line:'#4d5a36',heavy:true,corpse:true},
+  gravecaller:{name:'Gravecaller',hp:38,dmg:12,speed:38,r:6,ranged:true,pspeed:105,pcol:'#9be08a',xp:24,eye:'#9be08a',line:'#3f3452',ai:'gravecaller'},
+  thornroot:{name:'Thornroot',hp:80,dmg:16,speed:0,r:8,xp:18,eye:'#f2a03c',line:'#33421f',ai:'thornroot',rooted:true,heavy:true,plant:true,weak:{fire:2}},
+  bloodbloom:{name:'Bloodbloom',hp:30,dmg:0,speed:0,r:6,xp:14,eye:'#9be08a',line:'#4e1520',ai:'bloodbloom',rooted:true,plant:true},
+  hermit:{name:'Ossuary hermit',hp:120,dmg:20,speed:52,r:9,xp:30,eye:'#f2a03c',line:'#2b261c',ai:'hermit',heavy:true},
   wisp:{name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
   boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d'},
 };
@@ -121,12 +128,27 @@ const MATS={
   ember:{name:'Emberstone',color:'#f08a3c'},
   crystal:{name:'Spire crystal',color:'#a98be0'},
 };
-// What each floor spawns in its ordinary rooms, as a bag drawn from evenly (repeats make a type more common).
-// Floors past the end of this list use the last entry.
-const SPAWNS=[
-  ['shade','shade','shade','skitter','skitter','skitter','brute','wisp'],                   // floor 1: shadow creatures
-  ['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'],            // floor 2 on: the dead
+// Everything that makes one floor different from another. Floors past the end of the list repeat the last one.
+//   theme: index into THEMES (client/paint.js), the floor's stone
+//   spawns: what ordinary rooms spawn, as a bag drawn from evenly (repeats make a type more common)
+//   wall: a stationary enemy that may grow from a room's top wall, and the chance per room
+//   thorns: thorn patches at the edges of rooms (slow and prick everything but plants)
+//   boss: name, sprite file (assets/sprites/enemies/<sprite>.png), behaviour (update.js), outline colour, and extras:
+//         mres = share of magic damage ignored, calls = what it summons, corpses = corpses lying in its chamber
+const FLOORS=[
+  {theme:0,intro:'Find the boss chamber. It is somewhere to the east.',introMs:2800,
+    spawns:['shade','shade','shade','skitter','skitter','skitter','brute','wisp'],
+    boss:{name:'The Gate Warden',sprite:'boss',ai:'warden',line:'#7a4a52',calls:'skitter'}},
+  {theme:1,intro:'The dead here shrug off magic. Bring steel.',introMs:4200,
+    spawns:['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'],
+    boss:{name:'The Bone Regent',sprite:'boneboss',ai:'regent',line:'#9a8f6a',mres:.5,calls:'skel'}},
+  {theme:2,intro:'Roots have broken into the crypt. Kill whatever raises the dead.',introMs:4200,
+    spawns:['thrall','thrall','thrall','gravecaller','gravecaller','hermit','bloodbloom','skelarcher'],
+    wall:{type:'thornroot',chance:.55},thorns:true,
+    boss:{name:'The Pale Collector',sprite:'collector',ai:'collector',line:'#8a8698',corpses:true}},
 ];
+const floorDef=n=>FLOORS[Math.min(n,FLOORS.length)-1];
+const THORN_SLOW=.6,THORN_DMG=3;   // thorn patches: speed multiplier, and damage every 0.7 s (scaled by floor, through defense)
 const ELITE_CHANCE=.07;   // share of room spawns that are elites: 2.4x health, 1.3x damage, 3x experience, better loot
 // Loot, rolled separately for every player who gets credit. shards: [min,max], scaled by +25% per floor above 1.
 // items: one roll each: chance, rarity bonus (see rollRarity), lowest rarity, item level above the floor's.
@@ -138,4 +160,4 @@ const LOOT={
     mats:{scrap:[1,4,6],ember:[1,2,3],crystal:[1,1,1]}},
   chest:{shards:[8,16],items:[{chance:1,bonus:12,minRar:0,ilvl:0},{chance:.35,bonus:6,minRar:0,ilvl:0}],potions:[.5],mats:{scrap:[1,1,2],ember:[.25,1,1]}},
 };
-const BOSSES=['The Gate Warden','The Bone Regent','The Pale Collector','Ash Regent','The Unlit King','Keeper of the Ninth Stair','Old Hunger','The Bell Below'];
+// Names kept for floors still to be designed: 'Ash Regent', 'The Unlit King', 'Keeper of the Ninth Stair', 'Old Hunger', 'The Bell Below'.

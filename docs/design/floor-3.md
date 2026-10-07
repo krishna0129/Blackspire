@@ -1,6 +1,8 @@
 # Floor 3: The Rootbound Ossuary
 
-Status: proposal for discussion. Nothing here is in the game yet.
+Status: **the enemies, the boss, thorn patches and the floor's stone are in the game** (`js/sim/floor3.js`, the
+`FLOORS` table in `js/sim/data.js`; how to fight each one is in [the monster wiki](../wiki/monsters.md)). Still a
+proposal: unique drops and monster-type bonuses (below).
 
 ## Concept art
 
@@ -116,7 +118,14 @@ about a week; steps 4 to 7 another one to two, with the art as the long pole.
 
 ## Open questions
 
-- Do raised thralls keep coming as long as a Gravecaller lives, or does each corpse rise at most once?
+Decided while building it (each is one value to change in the data):
+
+- Raised thralls keep coming while a Gravecaller lives, but each raise is a 1.2 s channel that any hit breaks, and
+  **the raised give no experience and no loot**, so the loop cannot be farmed.
+- Thorn patches slow (to 60%) and prick everything but plants, so enemies can be pulled through them.
+- Floor 3 keeps the normal light radius.
+- Floors past 3 repeat floor 3 until they are designed.
+
+Still open:
+
 - Unique drop rates and pity speed: rare chase item, or reachable in an evening?
-- Thorn tiles: do they hurt enemies too (so you can pull enemies through them)?
-- Should floor 3 also cap the light radius (a darker floor), or is that saved for a later one?

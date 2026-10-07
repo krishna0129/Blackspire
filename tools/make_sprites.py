@@ -274,6 +274,187 @@ def skeleton(name):
             ex=extras[row][col] if extras[row][col] is not None else extras[row][0]
             for (x,y,w,h,ch) in ex: rect(body,ox+x,oy+y,w,h,COL[ch],0,0)
     return body,ey
+
+# ---- floor 3: roots and the restless dead. Its own look: three or four shades per material, roots through the cast.
+# Each map is one frame. Characters are colours from F3PAL; 'o' (in the enemy's eye colour) and the enemy's glow
+# characters also go on the _eyes layer, so they show through the dark. Designs: docs/design/floor-3.md.
+F3PAL={"#":"#0d0d13","a":"#283320","b":"#465434","c":"#6f8050","C":"#98a86a","+":"#6f6a5a","B":"#b9b4a6","K":"#e4dfcf","d":"#211b2a","e":"#352c42","f":"#4b3f5c","v":"#26331c","V":"#43592c","X":"#6c8c42","w":"#3e2c1e","W":"#6b4a2c","t":"#ddd6c0","p":"#4e1520","P":"#8e2a38","Q":"#c44a58","R":"#e9838b","y":"#d9a441","s":"#14232b","S":"#24505a","T":"#3f8a84","U":"#a6e0cf","m":"#7c7789","M":"#b3afc0","N":"#e3dfec","k":"#a0782c","l":"#5e4620","o":"#0d0d13","O":"#283320","L":"#c99a3a","Y":"#5e4620"}
+F3={
+  "thrall":("#d6f07a",{},[
+    ".....vX...........",
+    "..v..XVv..........",
+    "..Xv.vVv..........",
+    "...VvvVbbbb.......",
+    "....vVbcccbb......",
+    "....abcCcc+Bb.....",
+    "....abo#cc#ob.....",
+    "....abcc#cB+b.....",
+    ".....ab#K#Kba.....",
+    ".....abK#K#b......",
+    "...aabbcbbbcbba...",
+    "..abcbbcbbcbbcba..",
+    "..ab+B+Bbcbcbbcb..",
+    ".abc#+#+bbbbb.cba.",
+    ".ab.+B+Bbbcb..bcb.",
+    ".bc.abbbbbba..bcb.",
+    ".bc.deeeeed...cC..",
+    ".cb.defeeed..ab...",
+    "bcc.dedded........",
+    ".b..bba.bb........",
+    "....bba.abb.......",
+    "...abb...bbb......",
+    "...##....###......",
+  ]),
+  "gravecaller":("#9be08a",{"O":"#9be08a"},[
+    "......e..........O.",
+    ".....eee........OOO",
+    "....eefee.......OKO",
+    "...eefffee......BWB",
+    "...edd#ddde......W.",
+    "..eed#BBB#de.....W.",
+    "..ed#BoBoB#d.....W.",
+    "..ed#BBKBB#de....W.",
+    "..ede#K#K#ede....W.",
+    ".eeedd#K#ddeee..BW.",
+    "eefeeeddddeefee.BW.",
+    "efffeefeeeeeeffBB..",
+    "eB.feeeffeeeeff.W..",
+    "eB.efeefeefeefe.W..",
+    ".B.efeefeefeefe.W..",
+    "BB.effeefeefeefe.W.",
+    "...eefeefeefeefe.W.",
+    "...eeffeeffeeffe.W.",
+    "..eefeeffeeffeeee.W",
+    "..ee.ee.eee.ee.ee.W",
+    "..e..e...e...e..e..",
+    ".....d.......d.....",
+  ]),
+  "thornroot":("#f2a03c",{},[
+    "..........tPQQPt....",
+    ".........tPRRRRPt...",
+    "........pQt.tt.tQp..",
+    "........P..oooo..P..",
+    "........pQt.tt.tQp..",
+    ".........tPQQQQPt...",
+    "..........pVXXVp....",
+    "...t.......vXVv.....",
+    "..vVv.....vXVv..t...",
+    ".vXVXv...vXVv..vV...",
+    "vVvtvXvvvXVv..vXv...",
+    "vXv..vVXVVv..vXv....",
+    "vVv...vVXVvvvVv...t.",
+    "vvVv..vVXXVVv..vvVv.",
+    ".vvVvvVvvVvvvvVvXVv.",
+    "..vvvvvvvvvvvvvvvvv.",
+  ]),
+  "bloodbloom":("#9be08a",{"O":"#9be08a"},[
+    ".......yty.......",
+    "......y.t.y......",
+    ".......PRP.......",
+    ".....pPQOQPp.....",
+    "...pPPQOOOQPPp...",
+    "..pPQRPOOOPRQPp..",
+    ".pPQp.pPQPp.pQPp.",
+    ".pQp...pPp...pQp.",
+    ".pP.....V.....Pp.",
+    ".p......X......p.",
+    "........V........",
+    ".......vXv.......",
+    ".....VvvVvvV.....",
+    "....V.v.V.v.V....",
+    "...v..v.v.v..v...",
+    "..v...v.v.v...v..",
+    "..v..v..v..v..v..",
+  ]),
+  "hermit":("#f2a03c",{},[
+    "........+BBBB+.........",
+    "......+BBKKBBBB+.......",
+    ".....+BKKBBVXBBBB+.....",
+    "....+BKBBBBVBB#BBB+....",
+    "....+BB###BBB#B###B+...",
+    "...+BB#####BB#####BB+..",
+    "...+B##o###BB##o###B+..",
+    "...+BB####B#B#####BB+..",
+    "...++BB##BB#BB###BB++..",
+    "....++BBBB###BBBBB++...",
+    ".....++BB+#+#+BB++.....",
+    "..ss..+B#B#B#B#B+..ss..",
+    ".sS.sSS++++++++SSs..Ss.",
+    "sS.sS.sSTTTTTTSs.Ss..Ss",
+    "S.sS.s.sS#B.B#Ss.s.Ss.S",
+    ".sS.s...s.B.B.s...s.Ss.",
+    "sS.s.....s...s.....s.Ss",
+  ]),
+  "collector":("#9be08a",{"O":"#9be08a","L":"#ffe9a8"},[
+    "...................wW.....",
+    "..................wWWw....",
+    "..................w..wk...",
+    "......................k...",
+    ".....................lkl..",
+    ".....ddeedd.........lLLLl.",
+    "....deeeeeed........kLLLk.",
+    "...deNNNNmNe........lLLLl.",
+    "..deNNMMMMmN.........lkl..",
+    "..deNM###MMN..........w...",
+    "..deN##o##MN..........w...",
+    "..deN#oo##MMN.........w...",
+    "..deNM###MMMM#N.......w...",
+    "..deNNMMMMmMMMMNN.....w...",
+    "...deNNNmmmmmMMMMN....w...",
+    "....deeeeee##mmmMMNN..w...",
+    ".....ddeeddmm###mmmmN.w...",
+    ".............mm.....m.w...",
+    "...................mm.w...",
+    "...dddeeddd.......mN..w...",
+    "..ddeeeeeeedd.....m..Mw...",
+    ".ddleeeeeeeeedd.....NMw...",
+    ".deelleeeeeeeeedd..NM.w...",
+    "ddeekelleeeeeeeedd.mM.w...",
+    "deeeOOeelleeeeeeedmm..w...",
+    "deefOOeeekelleeeeed...w...",
+    "deefeeeeeOOeelleeed...w...",
+    "dMefeeeeeOOeeekeled...w...",
+    "dMefeeefeeeeeeOOeld...w...",
+    ".MefeeefeeeeeeOOeed...w...",
+    ".Mefeeefeeeefeeeedd...w...",
+    ".Mdefeefeeeefeeeeed...w...",
+    ".Mdefeefeeeefeeeeed...w...",
+    ".NddefefeeeefeeeeedW..w...",
+    ".N.deefeeeefeeeeeeed..w...",
+    ".NNdeefeeeefeeeeeeed..w...",
+    "MN.deeefeeefeeeeeeed..w...",
+    "MN.deeefeeefeeeeeeed..w...",
+    "...deeefeeefeeeeeeed..w...",
+    "..ddeeefeeefeeeeeeedd.w...",
+    "..deeeefeeefeeeeeeeed.w...",
+    ".ddeeeffeeeffeeeeeedd.w...",
+    ".deeeefeefeeefeeeeeed.w...",
+    "dde.edd.dde.ddeed.edd.w...",
+    "dd..dd..dd..dd.dd..dd.w...",
+    "d...d...d...d...d...d.w...",
+  ]),
+  "corpse":("#000000",{},[
+    ".....V.v........",
+    "..ab+BB+.vXv....",
+    ".abbB#B+bbbbaa..",
+    ".abb+BB+bbcbbbc.",
+    "..aa..aaab.bb.b.",
+    ".....v...v..V...",
+  ]),
+}
+def floor3():
+    for name,(eye,glow,rows) in F3.items():
+        w,h=len(rows[0])+2,len(rows)+2
+        body,ey=canvas(w,h),canvas(w,h)
+        for y,row in enumerate(rows):
+            for x,ch in enumerate(row):
+                if ch=='.': continue
+                body.putpixel((1+x,1+y),hx(F3PAL[ch]))
+                g=eye if ch=='o' else glow.get(ch)
+                if g: ey.putpixel((1+x,1+y),hx(g))
+        save(body,'enemies/'+name)
+        if name!='corpse': save(ey,'enemies/'+name+'_eyes')
+
 def enemies():
     for name,rows in EMAPS.items():
         if name in SKEL: b,e=skeleton(name)
@@ -339,7 +520,7 @@ def main():
     for k in ('boots','greaves','striders'):
         t,o=boots(k); save(t,'gear/boots_'+k+'_tint'); layers[k]=t
         if o: save(o,'gear/boots_'+k)
-    weapons(); shields(); enemies(); props(layers)
+    weapons(); shields(); enemies(); floor3(); props(layers)
     # a ready-made full-colour character sheet people can open in a pixel editor and repaint
     tpl=canvas(4*CW,3*CH)
     for name,t in (('skin','#e0b08a'),('base',None),('eyes','#1c1c24'),('boots','#4a3524'),('tunic','#2b3350'),('short','#1b1b22')):

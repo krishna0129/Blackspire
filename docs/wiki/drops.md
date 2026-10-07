@@ -68,10 +68,11 @@ floor's item level (bosses: one higher), which raises base numbers by 22% per le
 
 ## Where each enemy appears
 
-| Floor | Enemies (share of room spawns) |
-|---|---|
-| 1 | Shade 38%, Skitter 38%, Brute 13%, Wisp 13% |
-| 2 and up | Bone soldier 38%, Bone archer 25%, Bone knight 13%, Skitter 13%, Wisp 13% |
+| Floor | Enemies (share of room spawns) | Also | Boss |
+|---|---|---|---|
+| 1 | Shade 38%, Skitter 38%, Brute 13%, Wisp 13% | – | The Gate Warden |
+| 2 | Bone soldier 38%, Bone archer 25%, Bone knight 13%, Skitter 13%, Wisp 13% | – | The Bone Regent |
+| 3 and up | Rotting thrall 38%, Gravecaller 25%, Ossuary hermit 13%, Bloodbloom 13%, Bone archer 13% | Thornroot on the top wall of 55% of rooms; thorn patches | The Pale Collector |
 
 ## Unique drops
 
