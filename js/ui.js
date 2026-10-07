@@ -273,6 +273,7 @@ function renderDetail(){
     if(it.base.hp)h+=ln('Health','+'+Math.round(it.base.hp*m),other?cmp(it.base.hp*m,(other.base.hp||0)*om):'');
     if(it.base.move)h+=ln('Move speed',(it.base.move>0?'+':'')+it.base.move+'%',other?cmp(it.base.move,other.base.move||0):'');
     for(const a of it.aff)h+=`<div class="pas">${GEAR_AFFIX[a.id].fmt(a.v)}</div>`;
+    if(sel.from==='bag'||sel.from==='shop')h+=equipDiff(it);
   }
   el.innerHTML=h;
   const acts=document.createElement('div');acts.className='acts';
@@ -288,6 +289,15 @@ function renderDetail(){
   if(sel.from==='bag')btn(`Salvage for ${salvageValue(it)} shards`,'',()=>{S.shards+=salvageValue(it);S.inv.splice(sel.i,1);sel=null;sfx('pick');renderPanel();});
   if(sel.from==='eq'&&it.slot==='trinket')btn('Unequip','',()=>{if(S.inv.length<BAG_SIZE){S.inv.push(it);S.equip.trinket=null;sel=null;afterGearChange();}},S.inv.length>=BAG_SIZE);
   el.appendChild(acts);
+}
+// For armor, boots and trinkets: every total that would change if you wore this instead, affixes included.
+const DIFF=[['Health',s=>s.maxHp,0],['Defense',s=>s.def,0],['Evade chance',s=>s.evade,0,'%'],['Move speed',s=>s.move,0],['Critical chance',s=>s.crit,0,'%'],
+  ['Health per second',s=>s.regen,1],['Mana',s=>s.maxMp,0],['Mana per second',s=>s.mpRegen,2],['Skill recharge',s=>s.cdr,0,'% faster'],
+  ['Damage reflected',s=>s.g.thorns||0,0,'%'],['Experience',s=>s.g.xp||0,0,'% more']];
+function equipDiff(it){
+  const now=computeStats(S.char,S.equip),alt=computeStats(S.char,{...S.equip,[it.slot]:it});
+  const rows=DIFF.filter(([,f,dec])=>Math.abs(f(alt)-f(now))>=(dec?.05:.5)).map(([l,f,dec,u=''])=>`<div class="ln"><span>${l}</span><span>${f(alt).toFixed(dec)}${u}${cmp(f(alt),f(now),dec)}</span></div>`);
+  return`<div class="sub" style="margin-top:8px">${S.equip[it.slot]?'If you wear this instead':'If you wear this'}</div>`+(rows.join('')||'<div class="muted">No change to your totals.</div>');
 }
 function equipSel(){
   const it=selItem();if(!it||sel.from!=='bag')return;

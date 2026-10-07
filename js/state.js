@@ -47,8 +47,9 @@ function newState(name,look,wkey,tint){
 }
 const xpNeed=l=>Math.round(36+22*Math.pow(l,1.55));
 
-function calcStats(){
-  const c=S.char,e=S.equip,w=e.weapon,WT=WTYPES[w.type];
+// Derived stats for a character wearing `e`. Pure: it changes nothing, so it can also answer "what if I wore this?".
+function computeStats(c,e){
+  const w=e.weapon,WT=WTYPES[w.type];
   // strength: melee. dexterity: bows, crit, evade. agility: move + attack speed. vitality: health.
   // intelligence: mage damage. faith: healing and healer damage. mind: max mana. spirit: mana regen.
   const st={maxHp:100+c.vit*14+(c.level-1)*6,def:WT.def||0,movePct:c.agi*.6,crit:5+c.dex*.5+(WT.crit||0),critDmg:175,regen:.4+c.vit*.06,p:{},g:{}};
@@ -71,6 +72,7 @@ function calcStats(){
   st.cdr=Math.min(60,(st.p.focus||0)+(st.g.cdr||0));
   st.move=64*(1+st.movePct/100);
   st.maxHp=Math.round(st.maxHp);st.def=Math.round(st.def);
-  ST=st;if(P){P.hp=Math.min(P.hp,st.maxHp);P.mp=Math.min(P.mp,st.maxMp);}
+  return st;
 }
+function calcStats(){ST=computeStats(S.char,S.equip);if(P){P.hp=Math.min(P.hp,ST.maxHp);P.mp=Math.min(P.mp,ST.maxMp);}}
 const healAmount=()=>Math.round((24+ST.maxHp*.1)*ST.healPow);

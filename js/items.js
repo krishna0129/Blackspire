@@ -24,13 +24,27 @@ function makeWeapon(type,ilvl,rar,school){
   }
   return it;
 }
-// Is this bag item better than what is equipped? Only compares like with like.
+// Is this bag item better than what is equipped? It is tried on (computeStats with the item swapped in) and
+// the real totals are compared, so affixes count, not just the base numbers.
+//   weapons: damage per second, with crits and rough values for the damage passives. Lifesteal, reach and skill
+//            cooldown cannot be ranked against damage, so they are left out. A different weapon type is a class
+//            change, never an "upgrade".
+//   armor, boots: effective health (health through defense and evasion), nudged by move speed.
+//   trinkets: all affixes, which cannot honestly be ranked, so only an empty slot counts. The detail view
+//            lists what would change.
+function weaponScore(st){
+  const p=st.p,crit=Math.min(100,st.crit)/100,hit=st.dmg*(1+crit*(st.critDmg/100-1));
+  let dps=hit*st.aspd*(1+(p.momentum||0)*3/100);                          // about three Quickening stacks in a fight
+  dps*=1+(p.execute||0)/100*.3+(p.giant||0)/100*.25+(p.spark||0)/100*.5;  // share of damage each one applies to
+  return dps+st.dmg*(p.bleed||0)/100/3;                                    // bleed refreshes, it does not stack
+}
+const defScore=st=>st.maxHp*(100+st.def)/100/(1-st.evade/100)*(1+st.movePct/200);
 function isUpgrade(it){
   const cur=S.equip[it.slot];if(!cur)return true;
-  if(it.slot==='weapon'){const A=WTYPES[it.type],B=WTYPES[cur.type];if(it.type!==cur.type||it.school!==cur.school)return false;return it.base.dmg*itemMult(it)*A.aspd>cur.base.dmg*itemMult(cur)*B.aspd*1.02;}
   if(it.slot==='trinket')return false;
-  const sc=q=>((q.base.def||0)+(q.base.hp||0)/3)*itemMult(q)+(q.base.move||0)*1.5;
-  return sc(it)>sc(cur)*1.02;
+  if(it.slot==='weapon'&&(it.type!==cur.type||it.school!==cur.school))return false;
+  const now=computeStats(S.char,S.equip),alt=computeStats(S.char,{...S.equip,[it.slot]:it}),score=it.slot==='weapon'?weaponScore:defScore;
+  return score(alt)>score(now)*1.02;
 }
 function gearName(it,base){return (it.aff[0]?GEAR_AFFIX[it.aff[0].id].name:(it.rarity===0?'Plain':'Fine'))+' '+base.toLowerCase();}
 function makeArmor(type,ilvl,rar,tint){
