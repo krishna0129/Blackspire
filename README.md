@@ -47,6 +47,8 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Potion | Q |
 | Interact (gates, blacksmith) | E |
 | Gear | I or Tab |
+| Pause menu (resume, save and quit) | Esc, or the Menu button |
+| Respawn after a death | R or Enter |
 | Debug menu | ` (backquote) |
 
 ## Saves

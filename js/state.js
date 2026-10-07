@@ -33,7 +33,7 @@ let S=null;   // persistent character state (what gets saved)
 let ST=null;  // derived combat stats
 let G=null;   // current floor runtime
 let P=null;   // player runtime
-let mode='title'; // title | creator | play | panel | dead
+let mode='title'; // title | creator | play | panel | ask | debug | pause | dead
 let AV=null, WSPR=null; // the character's outlined sprite sheet, and the equipped weapon's sprite
 let muted=false, saveOk=true;
 

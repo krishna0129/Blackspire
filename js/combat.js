@@ -139,7 +139,9 @@ function hurtPlayer(dmg,src,sure,from){   // sure = telegraphed boss attack, whi
 }
 function die(){
   P.dead=true;P.hp=0;mode='dead';S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;save();
-  $('#deadTxt').textContent=`You lose ${lost} shards and wake at the last safe room you reached. Enemies on floor ${G.n} return, so you can fight them again for experience. Chests you opened stay empty. Gear and levels stay.`;
+  const cp=S.cpFloor===G.n&&S.cp>0;   // the same rule newPlayer() uses to pick where you wake
+  $('#deadTxt').textContent=`You lose ${lost} shard${lost===1?'':'s'}. You wake ${cp?'in the last safe room you reached':'at the entrance of floor '+G.n}. Enemies on this floor return, so you can fight them again for experience. Chests you opened stay empty. Gear and levels stay.`;
+  $('#respawnTxt').textContent=cp?'Respawn at the safe room':'Respawn at the entrance';
   setTimeout(()=>{if(mode==='dead')$('#dead').hidden=false;},700);
 }
 

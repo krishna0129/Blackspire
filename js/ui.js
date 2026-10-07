@@ -62,7 +62,7 @@ function enterFloor(n){
   if(S.hp!=null&&S.hp>0)P.hp=Math.min(ST.maxHp,S.hp);
   refreshSprites();refreshHudStatic();reveal();drawMini();
   for(const k in hc)delete hc[k];
-  $('#boss').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();
+  $('#boss').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();
   mode='play';inp.atk=false;
   banner('Floor '+n,n===1?'Find the boss chamber. It is somewhere to the east.':n===2?'The dead here shrug off magic. Bring steel.':'The air is colder here.',n===2?4200:2800);
   save();
@@ -72,7 +72,8 @@ function showTitle(){
   const sv=Store.load();
   S=sv||newState('Wanderer',{skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0]},'sword',OUTFITS[0]);
   G=genFloor(S.floor||1);G.enemies=[];G.bossEnt=null;calcStats();P=newPlayer();CUSTOM=null;refreshSprites();useCustom(S.char.custom||null);
-  $('#hud').hidden=true;$('#panel').hidden=true;$('#creator').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#title').hidden=false;
+  atSmith=null;
+  $('#hud').hidden=true;$('#panel').hidden=true;$('#creator').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#title').hidden=false;
   const b=$('#btnContinue');b.hidden=!sv;
   if(sv)b.textContent=`Continue as ${sv.char.name}, level ${sv.char.level}, floor ${sv.floor}`;
   $('#btnNew').className=sv?'btn':'btn primary';
@@ -156,7 +157,21 @@ $('#pCustomFile').onchange=async e=>{const f=e.target.files[0];e.target.value=''
 $('#pCustomDel').onclick=()=>{S.char.custom=null;CUSTOM=null;$('#pCustomMsg').textContent='';refreshSprites();save();renderPanel();};
 $('#pCustomTpl').onclick=()=>saveTemplate(S.char.look,S.equip,m=>{$('#pCustomMsg').textContent=m;});
 $('#btnContinue').onclick=()=>{$('#title').hidden=true;startFloor(S.floor||1);};
-$('#btnRespawn').onclick=()=>{S.hp=null;$('#dead').hidden=true;startFloor(G.n);};
+// Only once the "You fell" dialog is showing, so a key still held from the fight does not skip it.
+function respawn(){if(mode!=='dead'||$('#dead').hidden)return;S.hp=null;$('#dead').hidden=true;startFloor(G.n);}
+$('#btnRespawn').onclick=respawn;
+
+/* ---------- pause menu ---------- */
+function openPause(){
+  if(mode!=='play')return;mode='pause';inp.atk=false;inp.block=false;for(const k in keys)keys[k]=false;save();
+  $('#pauseTxt').textContent=`${S.char.name}, level ${S.char.level}, floor ${G.n}. `+(saveOk?'Progress is saved.':'This browser is blocking storage, so progress will not survive a reload.');
+  $('#pause').hidden=false;
+}
+function closePause(){if(mode!=='pause')return;$('#pause').hidden=true;mode='play';}
+function quitToTitle(){save();showTitle();}
+$('#btnResume').onclick=closePause;
+$('#btnSaveQuit').onclick=quitToTitle;
+$('#btnMenu').addEventListener('click',e=>{e.currentTarget.blur();openPause();});
 
 /* ---------- gear panel ---------- */
 let sel=null; // {from:'bag',i} | {from:'eq',slot}
@@ -302,11 +317,13 @@ function closeDebug(){if(mode!=='debug')return;$('#debug').hidden=true;mode='pla
 $('#pDebug').hidden=!DEBUG;
 $('#pDebug').onclick=()=>{closePanel();openDebug();};
 $('#pMute').onclick=toggleMute;
-$('#pQuit').onclick=()=>{save();$('#panel').hidden=true;showTitle();};
+$('#pQuit').onclick=quitToTitle;
 $('#btnBag').addEventListener('click',e=>{e.currentTarget.blur();openPanel();});
 holdBtn($('#slAtk'),()=>{inp.atk=true;atkBuf=.18;},()=>{inp.atk=false;});
 holdBtn($('#slSkill'),useSkill);holdBtn($('#slBlock'),()=>{inp.block=true;},()=>{inp.block=false;});
 $('#askGo').onclick=enterChamber;$('#askNo').onclick=closeAsk;holdBtn($('#slDodge'),dodge);holdBtn($('#slPot'),usePotion);
 elPrompt.addEventListener('click',e=>{e.currentTarget.blur();interact();});
-addEventListener('pagehide',()=>{if(mode==='play'||mode==='panel')save();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&(mode==='play'||mode==='panel'))save();});
+// Save whenever the page goes away mid-run, whatever menu is open. Hiding the tab during play also pauses the game.
+const inRun=()=>!!G&&mode!=='title'&&mode!=='creator';
+addEventListener('pagehide',()=>{if(inRun())save();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)return;if(mode==='play')openPause();else if(inRun())save();});

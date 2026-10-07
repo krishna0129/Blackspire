@@ -25,7 +25,10 @@
     <div class="topRight">
       <canvas id="mini"></canvas>
       <div class="shards"><span class="gem"></span><span id="hShards">0</span></div>
-      <button class="btn small" id="btnBag" tabindex="-1">Gear<b id="bagNew"></b><kbd>I</kbd></button>
+      <div class="hudBtns">
+        <button class="btn small" id="btnBag" tabindex="-1">Gear<b id="bagNew"></b><kbd>I</kbd></button>
+        <button class="btn small" id="btnMenu" tabindex="-1">Menu<kbd>Esc</kbd></button>
+      </div>
     </div>
     <div id="boss" hidden><div id="bossName"></div><div class="bar"><i id="bossFill"></i></div></div>
     <div id="banner" hidden><div id="banMain"></div><div id="banSub"></div></div>
@@ -50,7 +53,7 @@
         <button class="btn primary" id="btnContinue" hidden></button>
         <button class="btn" id="btnNew">Create a character</button>
       </div>
-      <div class="hint">Move with WASD or the arrow keys. You attack the way you face: J or a click to strike, K or Space for your skill, Shift to roll, and hold H to block if you carry a shield. On a phone, drag the left side of the screen. In game, the ` key (or the Debug button in Gear) opens the debug menu.</div>
+      <div class="hint">Move with WASD or the arrow keys. You attack the way you face: J or a click to strike, K or Space for your skill, Shift to roll, and hold H to block if you carry a shield. Esc pauses. On a phone, drag the left side of the screen. In game, the ` key (or the Debug button in Gear) opens the debug menu.</div>
     </div>
   </div>
 
@@ -113,8 +116,13 @@
     <div class="sheet"><h2>Debug</h2><p>Testing shortcuts. The game is paused while this is open.</p><div id="dbgBtns"></div></div>
   </div>
 
+  <div id="pause" class="overlay" hidden>
+    <div class="sheet"><h2>Paused</h2><p id="pauseTxt"></p>
+      <div class="titleBtns"><button class="btn primary" id="btnResume">Resume<kbd>Esc</kbd></button><button class="btn" id="btnSaveQuit">Save and quit to title</button></div></div>
+  </div>
+
   <div id="dead" class="overlay" hidden>
-    <div class="sheet"><h2>You fell</h2><p id="deadTxt"></p><button class="btn primary" id="btnRespawn">Wake at the last safe room</button></div>
+    <div class="sheet"><h2>You fell</h2><p id="deadTxt"></p><button class="btn primary" id="btnRespawn"><span id="respawnTxt">Respawn</span><kbd>R</kbd></button></div>
   </div>
 </div>
 

@@ -36,12 +36,15 @@ addEventListener('keydown',e=>{
     else if(k==='shift'||k==='l')dodge();
     else if(k==='q')usePotion();
     else if(k==='e'||k==='enter')interact();
-    else if(k==='i'||k==='tab'||k==='escape'){openPanel();e.preventDefault();}
+    else if(k==='i'||k==='tab'){openPanel();e.preventDefault();}
+    else if(k==='escape')openPause();
     else if(k==='m')toggleMute();
     else if(k==='`')openDebug();
   }else if(mode==='panel'){if(k==='escape'||k==='i'||k==='tab'){closePanel();e.preventDefault();}}
   else if(mode==='debug'){if(k==='escape'||k==='`')closeDebug();}
   else if(mode==='ask'){if(k==='e'||k==='enter')enterChamber();else if(k==='escape')closeAsk();}
+  else if(mode==='pause'){if(k==='escape')closePause();}
+  else if(mode==='dead'){if(k==='r'||k==='enter')respawn();}
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;inp.atk=false;inp.block=false;});
