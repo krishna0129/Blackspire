@@ -25,10 +25,14 @@ floor 2 was hard on them: plants burn, and fire stops the dead from rising again
 | **Bloodbloom** | healer | A rooted flower that pulses a visible green ring every 4 s, healing nearby enemies. Fragile. | Kill it first, or the fight drags on. |
 | Carried over | filler | Bone archers (fewer than floor 2), and skitters recoloured as carrion beetles. | As before. |
 
+<img src="../wiki/img/enemy-skitter.png" alt="Skitter as it is today" height="96"> → <img src="img/concept-beetle.png" alt="Carrion beetle concept: the skitter recoloured" height="96"><br><sub>The skitter today, and a carrion beetle made by recolouring it (concept)</sub>
+
 The beetles are a colour swap of an existing sprite (the tint system does this for free). That's the cheap way to
 fill out a roster.
 
 Elite Gravecallers raise two corpses at once.
+
+![A rotting thrall that is killed lies as a corpse for 6 seconds and rises again at half health if a Gravecaller is alive nearby; fire, or no Gravecaller, ends it](img/thrall-loop.svg)
 
 ### Environment
 
@@ -40,6 +44,8 @@ Elite Gravecallers raise two corpses at once.
 
 `BOSSES` already names floor 3's boss: *The Pale Collector*, a gaunt necromancer carrying a lantern of souls. The
 arena starts with six corpses on the floor.
+
+![Concept map of the chamber: six corpses, thralls walking to the boss, the rotating lantern beam and four corner blink points](img/pale-collector-arena.svg)
 
 1. **100 to 66%:** soul bolts (a three-shot spread; ordinary shots, so they can be evaded and knocked down). Raises
    two thralls from the arena's corpses. **Collection:** living thralls walk to the boss, and each one that reaches it

@@ -50,7 +50,8 @@ assets/sprites/       every sprite, as PNG (see assets/README.md)
 assets/templates/     a full-colour character sheet to repaint
 tools/make_sprites.py regenerates the default sprite PNGs (needs Pillow)
 tools/build.py        optional: packs single player into dist/blackspire.html
-tools/wiki.js         writes docs/wiki from the game's data
+tools/wiki.js         writes docs/wiki (pages and charts) from the game's data
+tools/wiki-images.js  renders the wiki's game pictures with the game's own drawing code (needs Playwright)
 server/               the online server (Node): index.js (HTTP and WebSocket), game.js (parties, running floors),
                       db.js (accounts and characters), test/
 ```
@@ -102,7 +103,9 @@ fail (80%, 65%, 50%, 38%, 28%): the level stays, the cost is spent, and each fai
 ## Docs
 
 - [docs/wiki](docs/wiki/README.md): the player wiki (drops, enhancement, monsters), generated from the game's data
-  by `npm run wiki`. `npm test` fails if it is out of date.
+  by `npm run wiki`. `npm test` fails if it is out of date. Its pictures (monsters, items, boss attacks) are
+  rendered by the game itself with `npm run wiki:images`, which needs Playwright and a Chromium
+  (`npx playwright install chromium`); rerun it after changing sprites.
 - [docs/design](docs/design): design proposals: [skill trees and mutations](docs/design/skill-trees.md),
   [floor 3](docs/design/floor-3.md).
 

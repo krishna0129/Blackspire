@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="500" viewBox="0 0 880 500" role="img" aria-label="Concept map of the Pale Collector's chamber: corpses, thralls walking to the boss, the rotating lantern beam and the corner blinks">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#8fd14f"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#d9534f"/></marker>
+  </defs>
+  <rect width="880" height="500" rx="6" fill="#0d0d12"/>
+  <g font-family="system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" fill="#e6e1d3">
+    <text x="20" y="30" font-size="16" font-weight="600">The Pale Collector's chamber (concept)</text>
+    <text x="20" y="50" fill="#8d8b98">14 × 12 tiles, the same size as today's boss chambers, sealed by its three gates.</text>
+
+    <!-- the chamber -->
+    <rect x="40" y="70" width="448" height="384" fill="#1a1820" stroke="#2c2c39" stroke-width="6"/>
+    <g fill="#b0464d"><rect x="228" y="64" width="40" height="8"/><rect x="34" y="246" width="8" height="40"/><rect x="292" y="450" width="40" height="8"/></g>
+
+    <!-- lantern sweep: a beam that turns around the boss -->
+    <path d="M264,262 L476,190 L476,236 Z" fill="#d9534f" fill-opacity=".22" stroke="#d9534f" stroke-opacity=".7"/>
+    <path d="M420,148 A170,170 0 0 1 456,196" fill="none" stroke="#d9534f" stroke-width="1.5" marker-end="url(#b)"/>
+    <text x="368" y="138" fill="#8d8b98">beam turns</text>
+
+    <!-- corpses -->
+    <g stroke="#8d8674" stroke-width="2.5" stroke-linecap="round">
+      <path d="M90,110 l12,12 m0,-12 l-12,12"/><path d="M420,110 l12,12 m0,-12 l-12,12"/>
+      <path d="M70,250 l12,12 m0,-12 l-12,12"/><path d="M440,320 l12,12 m0,-12 l-12,12"/>
+      <path d="M110,400 l12,12 m0,-12 l-12,12"/><path d="M380,410 l12,12 m0,-12 l-12,12"/>
+    </g>
+
+    <!-- thralls walking to the boss -->
+    <g fill="#55513f" stroke="#8fd14f" stroke-width="1.5">
+      <circle cx="120" cy="140" r="9"/><circle cx="100" cy="370" r="9"/><circle cx="410" cy="390" r="9"/>
+    </g>
+    <g stroke="#8fd14f" stroke-width="1.5" stroke-dasharray="5 4" fill="none">
+      <path d="M128,148 L238,240" marker-end="url(#a)"/><path d="M108,362 L236,284" marker-end="url(#a)"/><path d="M402,382 L290,290" marker-end="url(#a)"/>
+    </g>
+
+    <!-- the boss -->
+    <circle cx="264" cy="262" r="26" fill="#0a0a0e" stroke="#c9c6d4" stroke-width="2"/>
+    <circle cx="282" cy="250" r="6" fill="#e2b93b"/>
+    <text x="230" y="266" text-anchor="end" font-weight="600">Collector</text>
+
+    <!-- corner blinks, last phase -->
+    <g fill="none" stroke="#a98be0" stroke-width="1.5">
+      <path d="M64,94 l8,-8 l8,8 l-8,8z"/><path d="M448,94 l8,-8 l8,8 l-8,8z"/><path d="M64,430 l8,-8 l8,8 l-8,8z"/><path d="M448,430 l8,-8 l8,8 l-8,8z"/>
+    </g>
+
+    <!-- notes -->
+    <g>
+      <text x="520" y="88" font-weight="600">Phase 1 · 100 to 66%</text>
+      <text x="520" y="106" fill="#8d8b98">Soul bolts (3-shot spread). Raises 2 thralls</text>
+      <text x="520" y="122" fill="#8d8b98">from corpses.</text>
+      <text x="520" y="152" font-weight="600">Phase 2 · 66 to 33%</text>
+      <text x="520" y="170" fill="#8d8b98">Lantern sweep: a beam that turns around it.</text>
+      <text x="520" y="186" fill="#8d8b98">Stay behind the beam. Raises 3 thralls.</text>
+      <text x="520" y="216" font-weight="600">Phase 3 · below 33%</text>
+      <text x="520" y="234" fill="#8d8b98">Blinks between the corners; roots erupt under</text>
+      <text x="520" y="250" fill="#8d8b98">its target (like grave spikes, faster).</text>
+      <text x="520" y="280" font-weight="600">Collection, all phases</text>
+      <text x="520" y="298" fill="#8d8b98">A thrall that reaches it heals it 8% (12% in</text>
+      <text x="520" y="314" fill="#8d8b98">phase 3). Kill or burn them on the way.</text>
+
+      <g transform="translate(520,350)">
+        <path d="M4,0 l10,10 m0,-10 l-10,10" stroke="#8d8674" stroke-width="2.5" stroke-linecap="round"/><text x="24" y="10" fill="#8d8b98">Corpse</text>
+        <circle cx="150" cy="5" r="6" fill="#55513f" stroke="#8fd14f" stroke-width="1.5"/><text x="164" y="10" fill="#8d8b98">Thrall, path to the boss</text>
+        <rect x="0" y="26" width="14" height="10" fill="#d9534f" fill-opacity=".3" stroke="#d9534f"/><text x="24" y="35" fill="#8d8b98">Warning (beam)</text>
+        <path d="M144,31 l6,-6 l6,6 l-6,6z" fill="none" stroke="#a98be0" stroke-width="1.5"/><text x="164" y="35" fill="#8d8b98">Blink point</text>
+        <rect x="0" y="52" width="14" height="6" fill="#b0464d"/><text x="24" y="59" fill="#8d8b98">Sealed gate</text>
+      </g>
+    </g>
+  </g>
+</svg>
