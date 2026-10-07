@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Blackspire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+  <div id="hurt"></div>
+
+  <div id="hud" class="layer" hidden>
+    <div class="vitals">
+      <div class="who"><span id="hName"></span><span id="hLv"></span></div>
+      <div class="bar"><i id="hpFill"></i><b id="hpTxt"></b></div>
+      <div class="bar mp"><i id="mpFill"></i><b id="mpTxt"></b></div>
+      <div class="bar xp"><i id="xpFill"></i></div>
+      <div id="hFloor"></div>
+    </div>
+    <div class="topRight">
+      <canvas id="mini"></canvas>
+      <div class="shards"><span class="gem"></span><span id="hShards">0</span></div>
+      <div class="hudBtns">
+        <button class="btn small" id="btnBag" tabindex="-1">Gear<b id="bagNew"></b><kbd>I</kbd></button>
+        <button class="btn small" id="btnMenu" tabindex="-1">Menu<kbd>Esc</kbd></button>
+      </div>
+    </div>
+    <div id="boss" hidden><div id="bossName"></div><div class="bar"><i id="bossFill"></i></div></div>
+    <div id="banner" hidden><div id="banMain"></div><div id="banSub"></div></div>
+    <div id="log"></div>
+    <div class="slots">
+      <button class="slot" id="slAtk" tabindex="-1" aria-label="Attack"><canvas width="24" height="24"></canvas><kbd>J</kbd></button>
+      <button class="slot" id="slSkill" tabindex="-1"><em id="skCost"></em><span class="nm" id="skName"></span><i class="cd"></i><kbd>K</kbd></button>
+      <button class="slot" id="slBlock" tabindex="-1" hidden><span class="nm">Block</span><kbd>H</kbd></button>
+      <button class="slot" id="slDodge" tabindex="-1"><span class="nm">Dodge</span><i class="cd"></i><kbd>Shift</kbd></button>
+      <button class="slot" id="slPot" tabindex="-1"><span class="nm">Potion</span><b id="potN">0</b><i class="cd"></i><kbd>Q</kbd></button>
+    </div>
+    <button class="btn primary" id="prompt" tabindex="-1" hidden></button>
+    <div id="toasts"></div>
+    <div id="stick" hidden><i></i></div>
+  </div>
+
+  <div id="title" class="overlay">
+    <div class="titleBlock">
+      <h1>Blackspire</h1>
+      <p>A hundred floors, each held by a boss. Find the chamber, kill what is inside, climb.</p>
+      <div class="titleBtns">
+        <button class="btn primary" id="btnContinue" hidden></button>
+        <button class="btn" id="btnNew">Create a character</button>
+      </div>
+      <div class="hint">Move with WASD or the arrow keys. You attack the way you face: J or a click to strike, K or Space for your skill, Shift to roll, and hold H to block if you carry a shield. Esc pauses. On a phone, drag the left side of the screen.</div>
+    </div>
+  </div>
+
+  <div id="creator" class="overlay" hidden>
+    <div class="sheet">
+      <header><h2>Create a character</h2><span>Everything here shows on your avatar in the dungeon.</span></header>
+      <div class="cols">
+        <section>
+          <canvas class="pv" id="cPrev" width="34" height="34" style="width:204px;height:204px"></canvas>
+          <h3>Name</h3>
+          <input type="text" id="cName" maxlength="14" value="Wanderer" autocomplete="off" spellcheck="false">
+          <h3>Your own sprite</h3>
+          <p class="muted" id="cCustomMsg" style="margin:0 0 8px"></p>
+          <div class="opts"><button id="cCustomUp">Upload a PNG</button><button id="cCustomTpl">Save a template</button><button id="cCustomDel" hidden>Remove it</button></div>
+          <input type="file" id="cCustomFile" accept="image/png" hidden>
+        </section>
+        <section>
+          <h3>Skin</h3><div class="sw" id="cSkin"></div>
+          <h3>Hair</h3><div class="opts" id="cStyle"></div>
+          <h3>Hair colour</h3><div class="sw" id="cHair"></div>
+          <h3>Eyes</h3><div class="sw" id="cEyes"></div>
+          <h3>Outfit</h3><div class="sw" id="cOutfit"></div>
+          <h3>First weapon</h3><div class="wpick" id="cWeapon"></div>
+        </section>
+      </div>
+      <div class="foot"><button class="btn" id="cBack">Back</button><button class="btn primary" id="cGo">Enter floor 1</button></div>
+    </div>
+  </div>
+
+  <div id="panel" class="overlay" hidden>
+    <div class="sheet">
+      <header><h2 id="pTitle"></h2><span id="pSub"></span><button class="btn small" id="pClose">Close<kbd>Esc</kbd></button></header>
+      <div class="cols">
+        <section>
+          <canvas class="pv" id="pPrev" width="34" height="34" style="width:136px;height:136px"></canvas>
+          <div class="opts" style="justify-content:center"><button id="pCustomUp">Use my own sprite</button><button id="pCustomTpl">Save a template</button><button id="pCustomDel" hidden>Remove it</button></div>
+          <input type="file" id="pCustomFile" accept="image/png" hidden>
+          <p class="muted" id="pCustomMsg" style="margin:6px 0 0;text-align:center"></p>
+          <h3>Equipped</h3><div class="eq" id="pEquip"></div>
+          <h3 id="pPts">Attributes</h3><div id="pAttrs"></div>
+          <h3>Stats</h3><dl class="stats" id="pStats"></dl>
+        </section>
+        <section>
+          <div id="shopBox" hidden><h3>Blacksmith's stock</h3><div class="grid" id="sGrid"></div></div>
+          <div class="bagHead"><span id="bagN"></span><span><span class="gem"></span> <span id="pShards"></span> shards</span></div>
+          <div class="grid" id="pGrid"></div>
+          <div class="detail" id="pDetail"></div>
+        </section>
+      </div>
+      <div class="foot"><span class="muted" id="saveNote" style="flex:1"></span><button class="btn small" id="pDebug">Debug</button><button class="btn small" id="pMute">Sound: on</button><button class="btn small" id="pQuit">Save and quit to title</button></div>
+    </div>
+  </div>
+
+  <div id="ask" class="overlay" hidden>
+    <div class="sheet"><h2>Boss chamber</h2><p id="askTxt"></p>
+      <div class="titleBtns"><button class="btn primary" id="askGo">Enter the chamber<kbd>E</kbd></button><button class="btn" id="askNo">Stay outside<kbd>Esc</kbd></button></div></div>
+  </div>
+
+  <div id="debug" class="overlay" hidden>
+    <div class="sheet"><h2>Debug</h2><p>Testing shortcuts. The game is paused while this is open.</p><div id="dbgBtns"></div></div>
+  </div>
+
+  <div id="pause" class="overlay" hidden>
+    <div class="sheet"><h2>Paused</h2><p id="pauseTxt"></p>
+      <div class="titleBtns"><button class="btn primary" id="btnResume">Resume<kbd>Esc</kbd></button><button class="btn" id="btnSaveQuit">Save and quit to title</button></div></div>
+  </div>
+
+  <div id="dead" class="overlay" hidden>
+    <div class="sheet"><h2>You fell</h2><p id="deadTxt"></p><button class="btn primary" id="btnRespawn"><span id="respawnTxt">Respawn</span><kbd>R</kbd></button></div>
+  </div>
+</div>
+
+<!-- Scripts are plain files that share one global scope, loaded in this order. No build step is needed. -->
+<script src="js/util.js"></script>
+<script src="js/data.js"></script>
+<script src="js/items.js"></script>
+<script src="js/state.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/world.js"></script>
+<script src="js/input.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/update.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
