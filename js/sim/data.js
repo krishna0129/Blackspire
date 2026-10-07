@@ -115,4 +115,27 @@ const ETYPES={
   wisp:{name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
   boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d'},
 };
+// Enhancement materials, from common to rare. Enemies, chests and bosses drop them; salvaging gear gives them back.
+const MATS={
+  scrap:{name:'Iron scrap',color:'#b9b4c8'},
+  ember:{name:'Emberstone',color:'#f08a3c'},
+  crystal:{name:'Spire crystal',color:'#a98be0'},
+};
+// What each floor spawns in its ordinary rooms, as a bag drawn from evenly (repeats make a type more common).
+// Floors past the end of this list use the last entry.
+const SPAWNS=[
+  ['shade','shade','shade','skitter','skitter','skitter','brute','wisp'],                   // floor 1: shadow creatures
+  ['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'],            // floor 2 on: the dead
+];
+const ELITE_CHANCE=.07;   // share of room spawns that are elites: 2.4x health, 1.3x damage, 3x experience, better loot
+// Loot, rolled separately for every player who gets credit. shards: [min,max], scaled by +25% per floor above 1.
+// items: one roll each: chance, rarity bonus (see rollRarity), lowest rarity, item level above the floor's.
+// potions: one chance each. mats: [chance, min, max] per material.
+const LOOT={
+  normal:{shards:[1,4],items:[{chance:.13,bonus:0,minRar:0,ilvl:0}],potions:[.055],mats:{scrap:[.3,1,1],ember:[.03,1,1]}},
+  elite:{shards:[14,14],items:[{chance:.7,bonus:18,minRar:1,ilvl:0}],potions:[.3],mats:{scrap:[1,1,3],ember:[.4,1,1],crystal:[.04,1,1]}},
+  boss:{shards:[60,60],items:[{chance:1,bonus:25,minRar:2,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1}],potions:[1,1],
+    mats:{scrap:[1,4,6],ember:[1,2,3],crystal:[1,1,1]}},
+  chest:{shards:[8,16],items:[{chance:1,bonus:12,minRar:0,ilvl:0},{chance:.35,bonus:6,minRar:0,ilvl:0}],potions:[.5],mats:{scrap:[1,1,2],ember:[.25,1,1]}},
+};
 const BOSSES=['The Gate Warden','The Bone Regent','The Pale Collector','Ash Regent','The Unlit King','Keeper of the Ninth Stair','Old Hunger','The Bell Below'];

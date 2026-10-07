@@ -49,11 +49,31 @@
     <div class="titleBlock">
       <h1>Blackspire</h1>
       <p>A hundred floors, each held by a boss. Find the chamber, kill what is inside, climb.</p>
-      <div class="titleBtns">
+      <p class="titleMsg" id="titleMsg" hidden></p>
+      <div class="titleBtns" id="modeBtns">
+        <button class="btn primary" id="btnSolo">Single player</button>
+        <button class="btn" id="btnOnline">Online</button>
+      </div>
+      <div class="titleBtns" id="soloBtns" hidden>
         <button class="btn primary" id="btnContinue" hidden></button>
         <button class="btn" id="btnNew">Create a character</button>
+        <button class="btn" id="btnSoloBack">Back</button>
       </div>
       <div class="hint">Move with WASD or the arrow keys. You attack the way you face: J or a click to strike, K or Space for your skill, Shift to roll, and hold H to block if you carry a shield. Esc pauses. On a phone, drag the left side of the screen.</div>
+    </div>
+  </div>
+
+  <div id="online" class="overlay" hidden>
+    <div class="sheet"><h2>Online</h2><p id="onTxt"></p>
+      <div id="onLogin">
+        <label class="field">Server<input type="text" id="onUrl" autocomplete="off" spellcheck="false"></label>
+        <label class="field">Name<input type="text" id="onName" maxlength="16" autocomplete="username" spellcheck="false"></label>
+        <label class="field">Password<input type="password" id="onPw" maxlength="200" autocomplete="current-password"></label>
+        <div class="titleBtns"><button class="btn primary" id="onLoginBtn">Log in</button><button class="btn" id="onRegBtn">Create account</button><button class="btn" id="onBack">Back</button></div>
+      </div>
+      <div id="onChar" hidden>
+        <div class="titleBtns"><button class="btn primary" id="onPlay"></button><button class="btn" id="onLogout">Log out</button><button class="btn" id="onBack2">Back</button></div>
+      </div>
     </div>
   </div>
 
@@ -79,7 +99,7 @@
           <h3>First weapon</h3><div class="wpick" id="cWeapon"></div>
         </section>
       </div>
-      <div class="foot"><button class="btn" id="cBack">Back</button><button class="btn primary" id="cGo">Enter floor 1</button></div>
+      <div class="foot"><span class="muted" id="cMsg" style="flex:1"></span><button class="btn" id="cBack">Back</button><button class="btn primary" id="cGo">Enter floor 1</button></div>
     </div>
   </div>
 
@@ -98,7 +118,7 @@
         </section>
         <section>
           <div id="shopBox" hidden><h3>Blacksmith's stock</h3><div class="grid" id="sGrid"></div></div>
-          <div class="bagHead"><span id="bagN"></span><span><span class="gem"></span> <span id="pShards"></span> shards</span></div>
+          <div class="bagHead"><span id="bagN"></span><span id="pMats"></span><span><span class="gem"></span> <span id="pShards"></span> shards</span></div>
           <div class="grid" id="pGrid"></div>
           <div class="detail" id="pDetail"></div>
         </section>
@@ -117,8 +137,18 @@
   </div>
 
   <div id="pause" class="overlay" hidden>
-    <div class="sheet"><h2>Paused</h2><p id="pauseTxt"></p>
+    <div class="sheet"><h2 id="pauseH">Paused</h2><p id="pauseTxt"></p>
+      <div id="partyBox" hidden>
+        <h3>Party</h3><p class="muted" id="partyTxt"></p><ul id="partyList"></ul>
+        <div class="joinRow"><input type="text" id="partyCode" maxlength="6" placeholder="Party code" autocomplete="off" spellcheck="false"><button class="btn small" id="partyJoin">Join</button><button class="btn small" id="partyLeave">Leave party</button></div>
+        <p class="muted" id="partyMsg"></p>
+      </div>
       <div class="titleBtns"><button class="btn primary" id="btnResume">Resume<kbd>Esc</kbd></button><button class="btn" id="btnSaveQuit">Save and quit to title</button></div></div>
+  </div>
+
+  <div id="travel" class="overlay" hidden>
+    <div class="sheet"><h2>Floor gate</h2><p id="travelTxt"></p><div id="travelList"></div>
+      <div class="titleBtns"><button class="btn" id="travelClose">Stay here<kbd>Esc</kbd></button></div></div>
   </div>
 
   <div id="dead" class="overlay" hidden>
@@ -126,18 +156,24 @@
   </div>
 </div>
 
-<!-- Scripts are plain files that share one global scope, loaded in this order. No build step is needed. -->
-<script src="js/util.js"></script>
-<script src="js/data.js"></script>
-<script src="js/items.js"></script>
-<script src="js/state.js"></script>
-<script src="js/sprites.js"></script>
-<script src="js/world.js"></script>
-<script src="js/input.js"></script>
-<script src="js/combat.js"></script>
-<script src="js/update.js"></script>
-<script src="js/render.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/main.js"></script>
+<!-- Scripts are plain files that share one global scope, loaded in this order. No build step is needed.
+     js/sim is the game rules (the server runs the same files); js/client is everything on screen. -->
+<script src="js/sim/util.js"></script>
+<script src="js/sim/data.js"></script>
+<script src="js/sim/items.js"></script>
+<script src="js/sim/rules.js"></script>
+<script src="js/sim/world.js"></script>
+<script src="js/sim/combat.js"></script>
+<script src="js/sim/update.js"></script>
+<script src="js/sim/actions.js"></script>
+<script src="js/client/store.js"></script>
+<script src="js/client/host.js"></script>
+<script src="js/client/sprites.js"></script>
+<script src="js/client/paint.js"></script>
+<script src="js/client/input.js"></script>
+<script src="js/client/render.js"></script>
+<script src="js/client/ui.js"></script>
+<script src="js/client/net.js"></script>
+<script src="js/client/main.js"></script>
 </body>
 </html>

@@ -22,10 +22,11 @@ function updateHud(){
   setStyle('cdd',cdDo,'height',(P.dodgeCd/.9*100).toFixed(0)+'%');
   setStyle('cdp',cdPo,'height',(P.potCd/1.2*100).toFixed(0)+'%');
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
-  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearGate()?'boss':nearSmith()?'smith':'';
+  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':nearSmith()?'smith':'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near==='up')elPrompt.innerHTML='Climb to floor '+(G.n+1)+'<kbd>E</kbd>';
     else if(near==='boss')elPrompt.innerHTML='Boss chamber gate<kbd>E</kbd>';
+    else if(near==='home')elPrompt.innerHTML='Floor gate<kbd>E</kbd>';
     else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>E</kbd>';}
 }
 function refreshHudStatic(){
@@ -46,42 +47,79 @@ function toast(it){
 function bagBadge(){const n=S.inv.filter(i=>i.isNew).length;$('#bagNew').textContent=n?n+' new':'';$('#btnBag').classList.toggle('has',n>0);}
 
 /* ---------- flow ---------- */
-function save(){S.floor=G?G.n:S.floor;if(P&&!P.dead)S.hp=Math.round(P.hp);saveOk=Store.save(S);}
-function newPlayer(){
-  const s=G.start,cp=S.cpFloor===G.n&&S.cp>0&&G.smiths[S.cp]?G.smiths[S.cp]:null;
-  return{x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,r:5,cr:4,hp:ST.maxHp,aim:0,face:1,atkCd:0,skillCd:0,skillMax:0,dodgeCd:0,potCd:0,inv:0,
-    dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,mp:ST.maxMp,guard:0,hot:null,ward:0};
-}
+function save(){if(NET.on)return;   // online, the server keeps the character
+  S.floor=G?G.n:S.floor;if(P&&!P.dead)S.hp=Math.round(P.hp);saveOk=Store.save(S);}
 // Floors start a beat after the click or key press that asked for them, not inside it.
 let starting=false;
 function startFloor(n){if(starting)return;starting=true;setTimeout(()=>{starting=false;enterFloor(n);},60);}
+// Single player: build floor n with you as its only player.
+function startWorld(n){G=genFloor(n,S.seed);G.mapCv=paintMap(G);P=makePlayer(1,S);G.players=[P];setPlayer(P);}
 function enterFloor(n){
   S.floor=n;S.best=Math.max(S.best||1,n);
-  if(S.chestFloor!==n){S.chestFloor=n;S.chestsOpen=[];}
-  G=genFloor(n);calcStats();P=newPlayer();
-  // Shops keep their stock and potions for as long as you are on this floor, through deaths and reloads,
-  // and restock when you reach a new floor. The stock itself is made the first time you open a smith's counter.
-  if(!S.shops||S.shops.floor!==n)S.shops={floor:n,list:[]};
-  G.smiths.forEach((q,i)=>{q.shop=S.shops.list[i]||(S.shops.list[i]={stock:null,potions:5});});
+  startWorld(n);
   if(S.hp!=null&&S.hp>0)P.hp=Math.min(ST.maxHp,S.hp);
   refreshSprites();refreshHudStatic();reveal();drawMini();
   for(const k in hc)delete hc[k];
-  $('#boss').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();
+  $('#boss').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#travel').hidden=true;$('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();
   mode='play';inp.atk=false;
   banner('Floor '+n,n===1?'Find the boss chamber. It is somewhere to the east.':n===2?'The dead here shrug off magic. Bring steel.':'The air is colder here.',n===2?4200:2800);
   save();
 }
-function showTitle(){
+// The title screen: Single player or Online. msg, if given, says why you are back here (a lost connection).
+function showTitle(msg){
+  if(NET.on||NET.ws)NET.close();
   mode='title';
   const sv=Store.load();
   S=sv||newState('Wanderer',{skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0]},'sword',OUTFITS[0]);
-  G=genFloor(S.floor||1);G.enemies=[];G.bossEnt=null;calcStats();P=newPlayer();CUSTOM=null;refreshSprites();useCustom(S.char.custom||null);
+  startWorld(S.floor||1);G.enemies=[];G.bossEnt=null;CUSTOM=null;refreshSprites();useCustom(S.char.custom||null);
   atSmith=null;
-  $('#hud').hidden=true;$('#panel').hidden=true;$('#creator').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#title').hidden=false;
+  for(const id of['#hud','#panel','#creator','#dead','#ask','#debug','#pause','#travel','#online','#boss'])$(id).hidden=true;
+  $('#title').hidden=false;
   const b=$('#btnContinue');b.hidden=!sv;
   if(sv)b.textContent=`Continue as ${sv.char.name}, level ${sv.char.level}, floor ${sv.floor}`;
   $('#btnNew').className=sv?'btn':'btn primary';
+  $('#titleMsg').hidden=!msg;$('#titleMsg').textContent=msg||'';
+  $('#modeBtns').hidden=false;$('#soloBtns').hidden=true;
 }
+$('#btnSolo').onclick=()=>{$('#modeBtns').hidden=true;$('#soloBtns').hidden=false;$('#titleMsg').hidden=true;};
+$('#btnSoloBack').onclick=()=>{$('#modeBtns').hidden=false;$('#soloBtns').hidden=true;};
+$('#btnOnline').onclick=()=>openOnline();
+
+/* ---------- online: log in, then play ---------- */
+const onSay=t=>{$('#onTxt').textContent=t;};
+let onChar=null;   // the account's online character, if it has one: {name, level, floor}
+function openOnline(){
+  mode='online';$('#title').hidden=true;$('#online').hidden=false;
+  const sv=NET.saved();$('#onUrl').value=sv.url||NET.defaultUrl();$('#onName').value=sv.name||'';$('#onPw').value='';
+  showLogin('Play with others. Online characters live on the server, separate from your single-player save.');
+  if(sv.token&&sv.url){onSay('Logging in as '+(sv.name||'')+'\u2026');onConnect(sv.url).then(()=>NET.send({t:'resume',token:sv.token})).catch(e=>showLogin(e.message));}
+}
+function showLogin(t){$('#onLogin').hidden=false;$('#onChar').hidden=true;onSay(t);}
+async function onConnect(url){await NET.connect(url);NET.remember({url});}
+function onAuthAsk(kind){
+  const url=$('#onUrl').value.trim(),name=$('#onName').value.trim(),pw=$('#onPw').value;
+  if(!name||!pw){onSay('Enter a name and a password.');return;}
+  onSay(kind==='login'?'Logging in\u2026':'Creating your account\u2026');
+  onConnect(url).then(()=>NET.send({t:kind,name,pw})).catch(e=>onSay(e.message));
+}
+NET.onMsg=o=>{
+  if(o.t==='auth'){
+    if(!o.ok){NET.remember({token:null});NET.close();showLogin(o.error);return;}
+    NET.remember({token:o.token,name:o.name});$('#onPw').value='';onChar=o.char;
+    $('#onLogin').hidden=true;$('#onChar').hidden=false;
+    $('#onPlay').textContent=onChar?`Enter as ${onChar.name}, level ${onChar.level}`:'Create your online character';
+    onSay(`Logged in as ${o.name}.`+(onChar?'':' This account has no character yet.'));
+  }else if(o.t==='created'){
+    if(!o.ok){$('#cMsg').textContent=o.error;return;}
+    onChar=o.char;NET.send({t:'play'});
+  }
+};
+$('#onLoginBtn').onclick=()=>onAuthAsk('login');
+$('#onRegBtn').onclick=()=>onAuthAsk('register');
+$('#onPw').addEventListener('keydown',e=>{if(e.key==='Enter')onAuthAsk('login');});
+$('#onPlay').onclick=()=>{if(onChar)NET.send({t:'play'});else openCreator('online');};
+$('#onLogout').onclick=()=>{const t=NET.saved().token;if(t)NET.send({t:'logout',token:t});NET.remember({token:null});NET.close();showLogin('Logged out.');};
+$('#onBack').onclick=$('#onBack2').onclick=()=>showTitle();
 
 /* ---------- character creator ---------- */
 let armed=false;
@@ -113,9 +151,20 @@ function buildCreator(){
   drawPreview($('#cPrev'),draft,draftEquip(),draftImg);
   $('#cCustomDel').hidden=!draft.custom;
 }
-$('#btnNew').onclick=()=>{armed=false;$('#cGo').textContent='Enter floor 1';$('#title').hidden=true;$('#creator').hidden=false;mode='creator';buildCreator();};
-$('#cBack').onclick=()=>showTitle();
+let creatorFor='solo';   // solo: a new local save; online: a character on the server
+function openCreator(kind){
+  creatorFor=kind;armed=false;$('#cMsg').textContent='';$('#cGo').textContent=kind==='online'?'Create and enter':'Enter floor 1';
+  $('#title').hidden=true;$('#online').hidden=true;$('#creator').hidden=false;mode='creator';buildCreator();
+}
+$('#btnNew').onclick=()=>openCreator('solo');
+$('#cBack').onclick=()=>{if(creatorFor==='online'){$('#creator').hidden=true;$('#online').hidden=false;mode='online';}else showTitle();};
 $('#cGo').onclick=()=>{
+  if(creatorFor==='online'){
+    $('#cMsg').textContent='';
+    NET.send({t:'create',name:($('#cName').value.trim()||'Wanderer').slice(0,14),look:{skin:draft.skin,hair:draft.hair,style:draft.style,eyes:draft.eyes},
+      weapon:draft.weapon,outfit:draft.outfit,custom:draft.custom||null});
+    return;
+  }
   const old=Store.load();
   if(old&&!armed){armed=true;$('#cGo').textContent='Replace '+old.char.name+' and start over';return;}
   armed=false;
@@ -156,23 +205,81 @@ $('#cCustomDel').onclick=()=>{draft.custom=null;draftImg=null;$('#cCustomMsg').t
 $('#cCustomTpl').onclick=()=>saveTemplate(draft,draftEquip(),m=>{$('#cCustomMsg').textContent=m+' Repaint it, keep the size, and upload it here.';});
 $('#pCustomUp').onclick=()=>$('#pCustomFile').click();
 $('#pCustomFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
-  try{const r=await readSheet(f);S.char.custom=r.url;CUSTOM=r.im;$('#pCustomMsg').textContent=`Using ${f.name} as your character.`;refreshSprites();save();}catch(err){$('#pCustomMsg').textContent=err.message;}
+  try{const r=await readSheet(f);CUSTOM=r.im;$('#pCustomMsg').textContent=`Using ${f.name} as your character.`;act('custom',[r.url],()=>{refreshSprites();save();renderPanel();});}catch(err){$('#pCustomMsg').textContent=err.message;}
   renderPanel();};
-$('#pCustomDel').onclick=()=>{S.char.custom=null;CUSTOM=null;$('#pCustomMsg').textContent='';refreshSprites();save();renderPanel();};
+$('#pCustomDel').onclick=()=>{CUSTOM=null;$('#pCustomMsg').textContent='';act('custom',[null],()=>{refreshSprites();save();renderPanel();});};
 $('#pCustomTpl').onclick=()=>saveTemplate(S.char.look,S.equip,m=>{$('#pCustomMsg').textContent=m;});
 $('#btnContinue').onclick=()=>{$('#title').hidden=true;startFloor(S.floor||1);};
 // Only once the "You fell" dialog is showing, so a key still held from the fight does not skip it.
-function respawn(){if(mode!=='dead'||$('#dead').hidden)return;S.hp=null;$('#dead').hidden=true;startFloor(G.n);}
+function respawn(){if(mode!=='dead'||$('#dead').hidden)return;$('#dead').hidden=true;if(NET.on){NET.send({t:'respawn'});return;}S.hp=null;startFloor(G.n);}
 $('#btnRespawn').onclick=respawn;
 
 /* ---------- pause menu ---------- */
 function openPause(){
   if(mode!=='play')return;mode='pause';inp.atk=false;inp.block=false;for(const k in keys)keys[k]=false;save();
-  $('#pauseTxt').textContent=`${S.char.name}, level ${S.char.level}, floor ${G.n}. `+(saveOk?'Progress is saved.':'This browser is blocking storage, so progress will not survive a reload.');
+  $('#pauseH').textContent=NET.on?'Menu':'Paused';
+  $('#pauseTxt').textContent=`${S.char.name}, level ${S.char.level}, floor ${G.n}. `+(NET.on?'Online, the fight goes on while this is open. Your character is saved on the server.':saveOk?'Progress is saved.':'This browser is blocking storage, so progress will not survive a reload.');
+  $('#btnSaveQuit').textContent=NET.on?'Leave to title':'Save and quit to title';
+  $('#partyBox').hidden=!NET.on;$('#partyMsg').textContent='';if(NET.on)renderParty();
   $('#pause').hidden=false;
 }
+// Online: your party, its code, and joining someone else's.
+function renderParty(){
+  const p=NET.party;if(!p)return;const solo=p.members.length<2;
+  $('#partyTxt').textContent=solo?`Your party code is ${p.code}. Share it so others can join you, or enter theirs below.`:`Party code ${p.code}. The leader chooses the floor at the floor gate.`;
+  const ul=$('#partyList');ul.innerHTML='';
+  for(const m of p.members){const li=document.createElement('li'),n=document.createElement('span'),i=document.createElement('small');
+    n.textContent=m.name+(m.id===P.id?' (you)':'');i.textContent=`Level ${m.level}`+(m.id===p.leader?', leader':'');li.append(n,i);ul.appendChild(li);}
+  $('#partyLeave').hidden=solo;
+}
+$('#partyJoin').onclick=()=>{const c=$('#partyCode').value.trim().toUpperCase();if(c.length===6){$('#partyMsg').textContent='Joining\u2026';NET.send({t:'join',code:c});}else $('#partyMsg').textContent='Party codes are 6 letters and digits.';};
+$('#partyCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#partyJoin').click();});
+$('#partyLeave').onclick=()=>NET.send({t:'leave'});
 function closePause(){if(mode!=='pause')return;$('#pause').hidden=true;mode='play';}
-function quitToTitle(){save();showTitle();}
+function quitToTitle(){save();showTitle();}   // online, showTitle disconnects
+
+/* ---------- E: gates, the floor gate, blacksmiths ---------- */
+function interact(){
+  if(mode!=='play'||P.dead)return;
+  if(G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20){if(NET.on)NET.send({t:'climb'});else{S.hp=null;startFloor(G.n+1);}return;}
+  if(nearHome()){openTravel();return;}
+  const q=nearGate();if(q){askChamber(q);return;}
+  const sm=nearSmith();if(sm)openPanel(sm);
+}
+// The boss chamber asks first: once inside, the gate seals until the boss dies.
+let askGate=null;
+function askChamber(q){
+  askGate=q;mode='ask';inp.atk=false;for(const k in keys)keys[k]=false;
+  $('#askTxt').textContent=`The gate seals behind you. The only ways out are killing ${G.bossEnt.name} or dying. You have ${Math.ceil(P.hp)} of ${ST.maxHp} health and ${S.potions} potion${S.potions===1?'':'s'}.`;
+  $('#ask').hidden=false;
+}
+function closeAsk(){if(mode!=='ask')return;$('#ask').hidden=true;mode='play';askGate=null;}
+function confirmChamber(){
+  if(mode!=='ask'||!askGate)return;const q=askGate;closeAsk();
+  if(NET.on)NET.send({t:'chamber',g:G.gates.indexOf(q)});else enterChamber(q);
+}
+
+/* ---------- floor gate ----------
+   Stands in every start room. It takes you to any floor up to the highest you have unlocked. Enemies and the boss
+   are back when you arrive; opened chests stay empty. */
+function openTravel(){
+  if(mode!=='play')return;mode='travel';inp.atk=false;for(const k in keys)keys[k]=false;
+  const el=$('#travelList');el.innerHTML='';
+  // online the party travels together: up to the highest floor anyone in it has reached, and only the leader chooses
+  const best=NET.on?NET.party.best:S.best,leader=!NET.on||NET.party.leader===P.id;
+  for(let n=1;n<=best;n++){
+    const b=document.createElement('button');b.className='btn'+(n===G.n?'':' primary');b.disabled=n===G.n||!leader;
+    const beaten=floorState(n).boss>0;
+    b.innerHTML=`Floor ${n}<small>${n===G.n?'You are here':beaten?'Boss beaten'+(floorState(n).boss>1?' '+floorState(n).boss+' times':''):'Boss not yet beaten'}</small>`;
+    b.onclick=()=>{closeTravel();if(NET.on)NET.send({t:'travel',n});else{S.hp=null;startFloor(n);}};el.appendChild(b);
+  }
+  const lead=NET.on&&NET.party.members.find(m=>m.id===NET.party.leader);
+  if(!leader){$('#travelTxt').textContent=`The party travels together. Only the leader, ${lead?lead.name:'someone else'}, chooses the floor.`;$('#travel').hidden=false;return;}
+  $('#travelTxt').textContent=best>1?'Step through to any floor you have reached. Enemies and the boss will be back; chests you opened stay empty.':'This gate leads to every floor you reach. Beat this floor\u2019s boss to unlock the next one.';
+  $('#travel').hidden=false;
+}
+function closeTravel(){if(mode!=='travel')return;$('#travel').hidden=true;mode='play';}
+$('#travelClose').onclick=closeTravel;
 $('#btnResume').onclick=closePause;
 $('#btnSaveQuit').onclick=quitToTitle;
 $('#btnMenu').addEventListener('click',e=>{e.currentTarget.blur();openPause();});
@@ -180,19 +287,17 @@ $('#btnMenu').addEventListener('click',e=>{e.currentTarget.blur();openPause();})
 /* ---------- gear panel ---------- */
 let sel=null; // {from:'bag',i} | {from:'eq',slot}
 // The same panel serves as the blacksmith's counter: opened next to a smith it also shows the stock and allows enhancing.
-let atSmith=null;   // the open smith's shop: {stock:[{it,price}], potions}, stored in S.shops
-function makeStock(){   // one weapon of your own class, then five random pieces, all at this floor's level
-  const rar=()=>{const r=Math.random();return r<.03?3:r<.2?2:r<.55?1:0;};   // a shop sells mostly ordinary gear: 45% common, 35% uncommon, 17% rare, 3% epic, never legendary
-  const w=S.equip.weapon,st=[makeWeapon(w.type,G.n,Math.max(1,rar()),w.school)];
-  for(let i=0;i<5;i++){const it=randomItem(G.n,0),q=rar();st.push(it.slot==='weapon'?makeWeapon(it.type,G.n,q,it.school):it.slot==='armor'?makeArmor(it.type,G.n,q):it.slot==='boots'?makeBoots(it.type,G.n,q):makeTrinket(it.type,G.n,q));}
-  return st.map(it=>({it,price:buyPrice(it)}));
-}
+let atSmith=null;   // index of the blacksmith whose counter is open, or null
+const shopNow=()=>atSmith==null?null:shopOf(atSmith);
+// Runs a player action (js/sim/actions.js). Single player: right here. Online: on the server, which answers with the
+// result and the updated save (net.js), and then done(result) runs.
+function act(name,args,done){if(NET.on)return NET.act(name,args,done);const r=runAction(name,args);if(done)done(r);}
 function openPanel(smith){
   if(mode!=='play')return;mode='panel';inp.atk=false;for(const k in keys)keys[k]=false;sel=null;
-  atSmith=smith?smith.shop:null;if(atSmith&&!atSmith.stock)atSmith.stock=makeStock();
-  $('#panel').hidden=false;renderPanel();
+  atSmith=smith?G.smiths.indexOf(smith):null;
+  $('#panel').hidden=false;renderPanel();if(atSmith!=null)act('openShop',[atSmith],()=>{if(mode==='panel')renderPanel();});
 }
-function closePanel(){if(mode!=='panel')return;atSmith=null;for(const it of S.inv)delete it.isNew;bagBadge();$('#panel').hidden=true;mode='play';save();}
+function closePanel(){if(mode!=='panel')return;atSmith=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
 function cell(it,on,label,bag){
   const b=document.createElement('button');b.className='cell'+(on?' on':'')+(it?'':' empty');
   if(it){const c=document.createElement('canvas');c.width=c.height=24;drawItemIcon(c,it);b.appendChild(c);b.style.borderColor=RARITY[it.rarity].color;b.title=it.name;
@@ -203,7 +308,7 @@ function cell(it,on,label,bag){
   return b;
 }
 const SLOTL={weapon:'Weapon',armor:'Armor',boots:'Boots',trinket:'Trinket'};
-function selItem(){if(!sel||sel.from==='potion')return null;if(sel.from==='shop')return atSmith&&atSmith.stock[sel.i]?atSmith.stock[sel.i].it:null;return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
+function selItem(){if(!sel||sel.from==='potion')return null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
 function renderPanel(){
   calcStats();const c=S.char;
   $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, floor ${G.n}. ${c.xp} / ${xpNeed(c.level)} experience`;
@@ -217,7 +322,7 @@ function renderPanel(){
     const row=document.createElement('div');row.className='attr';const bonus=k==='int'?ST.int-c.int:k==='fai'?ST.fai-c.fai:0;
     row.innerHTML=`<b>${n} ${c[k]}${bonus?` <i>+${bonus}</i>`:''}</b><span>${d}</span>`;
     const b=document.createElement('button');b.className='btn small';b.textContent='+';b.disabled=!c.pts;b.setAttribute('aria-label','Add a point to '+n);
-    b.onclick=()=>{if(c.pts>0){c.pts--;c[k]++;const full=P.hp>=ST.maxHp;calcStats();if(full||k==='vit')P.hp=Math.min(ST.maxHp,P.hp+14);if(k==='mnd')P.mp=Math.min(ST.maxMp,P.mp+10);renderPanel();}};
+    b.onclick=()=>act('spend',[k],()=>renderPanel());
     row.appendChild(b);at.appendChild(row);});
   const dps=ST.dmg*ST.aspd*(1+ST.crit/100*(ST.critDmg/100-1));
   $('#pStats').innerHTML=[['Health',ST.maxHp],['Damage per hit',ST.dmg.toFixed(1)],['Attacks per second',ST.aspd.toFixed(2)],['Damage per second',dps.toFixed(1)],
@@ -226,28 +331,31 @@ function renderPanel(){
     ['Mana',ST.maxMp],['Mana per second',ST.mpRegen.toFixed(2)],
     ...(ST.skill==='fireball'?[['Fireball damage',(ST.dmg*2.6).toFixed(0)]]:ST.skill==='heal'?[['Heal restores',healAmount()]]:[]),['Kills',S.kills],['Deaths',S.deaths]].map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
   $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;$('#pShards').textContent=S.shards;
-  $('#pTitle').textContent=atSmith?'Blacksmith':c.name;
-  $('#shopBox').hidden=!atSmith;
-  if(atSmith){const sg=$('#sGrid');sg.innerHTML='';
-    atSmith.stock.forEach((e,i)=>{const b=cell(e.it,sel&&sel.from==='shop'&&sel.i===i,'',true);b.dataset.p=e.price;b.title=e.it.name+', '+e.price+' shards';b.onclick=()=>{sel={from:'shop',i};renderPanel();};sg.appendChild(b);});
+  $('#pMats').innerHTML=Object.keys(MATS).map(k=>`<span title="${MATS[k].name}"><i class="mat" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('');
+  const shop=shopNow();
+  $('#pTitle').textContent=shop?'Blacksmith':c.name;
+  $('#shopBox').hidden=!shop;
+  if(shop){const sg=$('#sGrid');sg.innerHTML='';
+    (shop.stock||[]).forEach((e,i)=>{const b=cell(e.it,sel&&sel.from==='shop'&&sel.i===i,'',true);b.dataset.p=e.price;b.title=e.it.name+', '+e.price+' shards';b.onclick=()=>{sel={from:'shop',i};renderPanel();};sg.appendChild(b);});
     const pb=document.createElement('button');pb.className='cell'+(sel&&sel.from==='potion'?' on':'');pb.dataset.p=potionPrice();pb.title='Potion';
     const pc=document.createElement('canvas');pc.width=pc.height=24;const px=pc.getContext('2d');
     px.fillStyle='#262630';px.fillRect(0,0,24,24);px.fillStyle='#050508';px.fillRect(8,3,8,3);px.fillRect(6,6,12,13);px.fillStyle='#e6e1d3';px.fillRect(10,4,4,2);px.fillStyle='#d9534f';px.fillRect(7,9,10,9);px.fillStyle='#f1b0a8';px.fillRect(8,10,2,3);
-    pb.appendChild(pc);const pe=document.createElement('em');pe.textContent='x'+atSmith.potions;pb.appendChild(pe);pb.onclick=()=>{sel={from:'potion'};renderPanel();};sg.appendChild(pb);}
+    pb.appendChild(pc);const pe=document.createElement('em');pe.textContent='x'+shop.potions;pb.appendChild(pe);pb.onclick=()=>{sel={from:'potion'};renderPanel();};sg.appendChild(pb);}
   const g=$('#pGrid');g.innerHTML='';
   for(let i=0;i<BAG_SIZE;i++){const it=S.inv[i],b=cell(it,sel&&sel.from==='bag'&&sel.i===i,'',true);if(it){b.onclick=()=>{sel={from:'bag',i};delete it.isNew;renderPanel();};b.ondblclick=()=>{sel={from:'bag',i};equipSel();};}g.appendChild(b);}
   renderDetail();
-  $('#saveNote').textContent=saveOk?'Progress saves in this browser every 20 seconds and when you close this panel.':'This browser is blocking storage, so progress will not survive a reload.';
+  $('#pDebug').hidden=!DEBUG||NET.on;
+  $('#saveNote').textContent=NET.on?'Your character is saved on the server.':saveOk?'Progress saves in this browser every 20 seconds and when you close this panel.':'This browser is blocking storage, so progress will not survive a reload.';
 }
 function cmp(a,b,dec=0){const d=a-b;if(Math.abs(d)<(dec?.05:.5))return'';return`<i class="${d>0?'up':'down'}">${d>0?'+':''}${d.toFixed(dec)}</i>`;}
 function renderDetail(){
-  const el=$('#pDetail'),it=selItem();
-  if(sel&&sel.from==='potion'&&atSmith){const pr=potionPrice();
-    el.innerHTML=`<h4>Potion</h4><div class="sub">Restores 45% of your health. You carry ${S.potions}. The smith has ${atSmith.potions} left.</div>`;
+  const el=$('#pDetail'),it=selItem(),shop=shopNow();
+  if(sel&&sel.from==='potion'&&shop){const pr=potionPrice();
+    el.innerHTML=`<h4>Potion</h4><div class="sub">Restores 45% of your health. You carry ${S.potions}. The smith has ${shop.potions} left.</div>`;
     const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Buy for ${pr} shards`;
-    b.disabled=S.shards<pr||atSmith.potions<=0;b.onclick=()=>{if(S.shards>=pr&&atSmith.potions>0){S.shards-=pr;atSmith.potions--;S.potions++;sfx('pick');renderPanel();}};
+    b.disabled=S.shards<pr||shop.potions<=0;b.onclick=()=>act('buyPotion',[atSmith],r=>{if(r)sfx('pick');renderPanel();});
     a.appendChild(b);el.appendChild(a);return;}
-  if(!it&&atSmith){el.innerHTML='<p class="muted">Pick something from the stock to see it against what you are wearing, or pick one of your own pieces to enhance it. Prices are in shards.</p>';return;}
+  if(!it&&shop){el.innerHTML='<p class="muted">Pick something from the stock to see it against what you are wearing, or pick one of your own pieces to enhance it. Prices are in shards.</p>';return;}
   if(!it){el.innerHTML=`<p class="muted">${S.inv.length?'Select an item to compare it with what you are wearing. Double-click an item in the bag to equip it.':'Your bag is empty. Enemies and chests drop weapons, armor, boots and trinkets.'}</p>`;return;}
   const R=RARITY[it.rarity],cur=S.equip[it.slot],other=(sel.from==='bag'||sel.from==='shop')&&cur?cur:null,m=itemMult(it);
   let h=`<h4 style="color:${R.color}">${esc(it.name)}${it.plus?' +'+it.plus:''}</h4>`;
@@ -278,16 +386,22 @@ function renderDetail(){
   el.innerHTML=h;
   const acts=document.createElement('div');acts.className='acts';
   const btn=(t,cls,fn,dis)=>{const b=document.createElement('button');b.className='btn small '+cls;b.textContent=t;b.disabled=!!dis;b.onclick=fn;acts.appendChild(b);};
-  if(sel.from==='shop'){const e=atSmith.stock[sel.i],full=S.inv.length>=BAG_SIZE;
-    btn(full?'Bag is full':`Buy for ${e.price} shards`,'primary',()=>{if(S.shards>=e.price&&S.inv.length<BAG_SIZE){S.shards-=e.price;S.inv.push(e.it);atSmith.stock.splice(sel.i,1);sel={from:'bag',i:S.inv.length-1};sfx('pick');renderPanel();}},full||S.shards<e.price);
+  if(sel.from==='shop'){const e=shop.stock[sel.i],full=S.inv.length>=BAG_SIZE;
+    btn(full?'Bag is full':`Buy for ${e.price} shards`,'primary',()=>act('buy',[atSmith,sel.i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();}),full||S.shards<e.price);
     el.appendChild(acts);return;}
   if(sel.from==='bag')btn('Equip','primary',equipSel);
-  if(it.slot!=='trinket'&&!atSmith){const n=document.createElement('span');n.className='muted';n.style.alignSelf='center';n.textContent='Enhancing is done at a blacksmith.';acts.appendChild(n);}
-  if(it.slot!=='trinket'&&atSmith){const cost=enhanceCost(it);
-    if((it.plus||0)>=10)btn('Fully enhanced','',()=>{},true);
-    else btn(`Enhance to +${(it.plus||0)+1} for ${cost} shards`,'',()=>{if(S.shards>=cost){S.shards-=cost;it.plus=(it.plus||0)+1;sfx('lvl');afterGearChange();}},S.shards<cost);}
-  if(sel.from==='bag')btn(`Salvage for ${salvageValue(it)} shards`,'',()=>{S.shards+=salvageValue(it);S.inv.splice(sel.i,1);sel=null;sfx('pick');renderPanel();});
-  if(sel.from==='eq'&&it.slot==='trinket')btn('Unequip','',()=>{if(S.inv.length<BAG_SIZE){S.inv.push(it);S.equip.trinket=null;sel=null;afterGearChange();}},S.inv.length>=BAG_SIZE);
+  if(it.slot!=='trinket'&&!shop){const n=document.createElement('span');n.className='muted';n.style.alignSelf='center';n.textContent='Enhancing is done at a blacksmith.';acts.appendChild(n);}
+  if(it.slot!=='trinket'&&shop){
+    if((it.plus||0)>=ENH_MAX)btn('Fully enhanced','',()=>{},true);
+    else{const r=enhanceRecipe(it),can=S.shards>=r.shards&&hasMats(S.mats,r.mats),pct=Math.round(r.chance*100);
+      btn(`Enhance to +${r.to}`+(pct<100?` (${pct}%)`:''),'',()=>act('enhance',sel.from==='eq'?['eq',sel.slot]:['bag',sel.i],res=>{
+        if(res==='up')sfx('lvl');else if(res==='fail')sfx('lock');save();afterGearChange();}),!can);
+      const need=document.createElement('div');need.className='muted';need.style.width='100%';
+      need.innerHTML=`Costs ${r.shards} shards and ${matsText(r.mats)}.`+(pct<100?` From +6 an attempt can fail: the level stays, the cost is spent, and each failure adds 10% to the next try.`:'')+
+        (it.pity?` <span style="color:var(--cyan)">+${Math.round(it.pity*100)}% from earlier failures.</span>`:'');
+      acts.appendChild(need);}}
+  if(sel.from==='bag')btn(`Salvage for ${salvageValue(it)} shards, ${matsText(salvageMats(it))}`,'',()=>act('salvage',[sel.i],r=>{sel=null;if(r)sfx('pick');renderPanel();}));
+  if(sel.from==='eq'&&it.slot==='trinket')btn('Unequip','',()=>act('unequip',['trinket'],r=>{if(r)sel=null;afterGearChange();}),S.inv.length>=BAG_SIZE);
   el.appendChild(acts);
 }
 // For armor, boots and trinkets: every total that would change if you wore this instead, affixes included.
@@ -301,9 +415,7 @@ function equipDiff(it){
 }
 function equipSel(){
   const it=selItem();if(!it||sel.from!=='bag')return;
-  const old=S.equip[it.slot];S.equip[it.slot]=it;
-  if(old)S.inv[sel.i]=old;else S.inv.splice(sel.i,1);
-  sel={from:'eq',slot:it.slot};sfx('pick');afterGearChange();
+  act('equip',[sel.i],slot=>{if(slot){sel={from:'eq',slot};sfx('pick');}afterGearChange();});
 }
 function afterGearChange(){calcStats();refreshSprites();refreshHudStatic();renderPanel();}
 $('#pClose').onclick=closePanel;
@@ -312,7 +424,7 @@ $('#pClose').onclick=closePanel;
    and the ` key and the Debug button in Gear open it. */
 const DEBUG=new URLSearchParams(location.search).has('debug');
 function openDebug(){
-  if(!DEBUG||mode!=='play')return;mode='debug';inp.atk=false;for(const k in keys)keys[k]=false;
+  if(!DEBUG||mode!=='play'||NET.on)return;mode='debug';inp.atk=false;for(const k in keys)keys[k]=false;
   const el=$('#dbgBtns');el.innerHTML='';
   const add=(t,fn,stay)=>{const b=document.createElement('button');b.className='btn small';b.textContent=t;b.onclick=()=>{fn();if(stay)openDebugRefresh();else closeDebug();};el.appendChild(b);};
   const jump=n=>{S.hp=null;S.cp=0;S.cpFloor=0;startFloor(n);};
@@ -329,14 +441,14 @@ function openDebug(){
 }
 function openDebugRefresh(){mode='play';openDebug();}
 function closeDebug(){if(mode!=='debug')return;$('#debug').hidden=true;mode='play';}
-$('#pDebug').hidden=!DEBUG;
+$('#pDebug').hidden=!DEBUG;   // and hidden online: see renderPanel
 $('#pDebug').onclick=()=>{closePanel();openDebug();};
 $('#pMute').onclick=toggleMute;
 $('#pQuit').onclick=quitToTitle;
 $('#btnBag').addEventListener('click',e=>{e.currentTarget.blur();openPanel();});
-holdBtn($('#slAtk'),()=>{inp.atk=true;atkBuf=.18;},()=>{inp.atk=false;});
-holdBtn($('#slSkill'),useSkill);holdBtn($('#slBlock'),()=>{inp.block=true;},()=>{inp.block=false;});
-$('#askGo').onclick=enterChamber;$('#askNo').onclick=closeAsk;holdBtn($('#slDodge'),dodge);holdBtn($('#slPot'),usePotion);
+holdBtn($('#slAtk'),()=>{inp.atk=true;press('atk');},()=>{inp.atk=false;});
+holdBtn($('#slSkill'),()=>press('skill'));holdBtn($('#slBlock'),()=>{inp.block=true;},()=>{inp.block=false;});
+$('#askGo').onclick=confirmChamber;$('#askNo').onclick=closeAsk;holdBtn($('#slDodge'),()=>press('dodge'));holdBtn($('#slPot'),()=>press('potion'));
 elPrompt.addEventListener('click',e=>{e.currentTarget.blur();interact();});
 // Save whenever the page goes away mid-run, whatever menu is open. Hiding the tab during play also pauses the game.
 const inRun=()=>!!G&&mode!=='title'&&mode!=='creator';

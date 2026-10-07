@@ -72,7 +72,37 @@ function randomItem(ilvl,bonus=0,minRar=0){
   return makeTrinket(pick(Object.keys(TTYPES)),ilvl,rar);
 }
 const salvageValue=it=>Math.round(6*ilvlMult(it.ilvl)*RARITY[it.rarity].mult**3*(1+.5*(it.plus||0)));
+// Salvaging also returns materials: scrap from anything, emberstone from epics up, a crystal from a legendary.
+const salvageMats=it=>{const m={scrap:1+it.rarity};if(it.rarity>=3)m.ember=it.rarity-2;if(it.rarity>=4)m.crystal=1;return m;};
+/* Enhancement. Each step costs shards plus materials: scrap for +1 to +3, emberstone joins from +4,
+   spire crystals from +7. Up to +5 it always works. From +6 it can fail: a failure keeps the level but uses the
+   cost, and adds 10 points to the item's next chance (it.pity), which resets on success. */
+const ENH_CHANCE=[1,1,1,1,1,.8,.65,.5,.38,.28],ENH_MAX=10;
+function enhanceRecipe(it){
+  const k=(it.plus||0)+1;
+  return{to:k,shards:enhanceCost(it),mats:k<=3?{scrap:k}:k<=6?{scrap:3,ember:k-3}:{ember:3,crystal:k-6},
+    chance:Math.min(1,ENH_CHANCE[k-1]+(it.pity||0))};
+}
+const hasMats=(have,need)=>Object.keys(need).every(k=>(have[k]||0)>=need[k]);
+// One enhancement attempt on item `it`, paid from save `s`. Returns null if it cannot be afforded, else whether it worked.
+function enhanceItem(s,it){
+  if((it.plus||0)>=ENH_MAX)return null;const r=enhanceRecipe(it);
+  if(s.shards<r.shards||!hasMats(s.mats,r.mats))return null;
+  s.shards-=r.shards;for(const k in r.mats)s.mats[k]-=r.mats[k];
+  if(Math.random()<r.chance){it.plus=r.to;delete it.pity;return true;}
+  it.pity=+((it.pity||0)+.1).toFixed(2);return false;
+}
+function salvageItem(s,i){const it=s.inv[i];if(!it)return;s.inv.splice(i,1);s.shards+=salvageValue(it);const m=salvageMats(it);for(const k in m)s.mats[k]=(s.mats[k]||0)+m[k];}
+const matsText=m=>Object.keys(m).map(k=>m[k]+' '+MATS[k].name).join(', ');
 const enhanceCost=it=>Math.round(22*((it.plus||0)+1)*(1+.3*(it.ilvl-1))*RARITY[it.rarity].mult);
 const BAG_SIZE=30;
 const buyPrice=it=>Math.round([40,70,130,240,450][it.rarity]*(1+.3*(it.ilvl-1)));
 const potionPrice=()=>Math.round(25*(1+.25*(G.n-1)));
+
+// A blacksmith's stock for the current player: one weapon of their own class, then five random pieces, at this floor's level.
+function makeStock(){
+  const rar=()=>{const r=Math.random();return r<.03?3:r<.2?2:r<.55?1:0;};   // a shop sells mostly ordinary gear: 45% common, 35% uncommon, 17% rare, 3% epic, never legendary
+  const w=S.equip.weapon,st=[makeWeapon(w.type,G.n,Math.max(1,rar()),w.school)];
+  for(let i=0;i<5;i++){const it=randomItem(G.n,0),q=rar();st.push(it.slot==='weapon'?makeWeapon(it.type,G.n,q,it.school):it.slot==='armor'?makeArmor(it.type,G.n,q):it.slot==='boots'?makeBoots(it.type,G.n,q):makeTrinket(it.type,G.n,q));}
+  return st.map(it=>({it,price:buyPrice(it)}));
+}

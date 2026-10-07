@@ -23,9 +23,6 @@ function buildLight(){
 }
 addEventListener('resize',resize);
 
-// A press of attack is remembered for a moment, so a quick tap always lands and a press just before the
-// last swing ends becomes the next swing.
-let atkBuf=0;
 const keys={},inp={mx:0,my:0,atk:false,touch:!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches),jx:0,jy:0,jid:null,jox:0,joy:0};
 // Keys are physical positions (KeyboardEvent.code), so WASD and J/K/H sit in the same place on AZERTY, QWERTZ
 // and every other layout. Every binding lives here, which is all a key-rebinding screen would need to change.
@@ -41,10 +38,10 @@ addEventListener('keydown',e=>{
   if(e.target&&e.target.tagName==='INPUT')return;
   const c=e.code;if(!c)return;if(e.repeat&&!is('gear',c))return;keys[c]=true;
   if(mode==='play'){
-    if(is('attack',c))atkBuf=.18;
-    if(is('skill',c)){useSkill();e.preventDefault();}
-    else if(is('dodge',c))dodge();
-    else if(is('potion',c))usePotion();
+    if(is('attack',c))press('atk');
+    if(is('skill',c)){press('skill');e.preventDefault();}
+    else if(is('dodge',c))press('dodge');
+    else if(is('potion',c))press('potion');
     else if(is('interact',c))interact();
     else if(is('gear',c)){openPanel();e.preventDefault();}
     else if(is('menu',c))openPause();
@@ -52,8 +49,9 @@ addEventListener('keydown',e=>{
     else if(is('debug',c))openDebug();
   }else if(mode==='panel'){if(is('menu',c)||is('gear',c)){closePanel();e.preventDefault();}}
   else if(mode==='debug'){if(is('menu',c)||is('debug',c))closeDebug();}
-  else if(mode==='ask'){if(is('interact',c))enterChamber();else if(is('menu',c))closeAsk();}
+  else if(mode==='ask'){if(is('interact',c))confirmChamber();else if(is('menu',c))closeAsk();}
   else if(mode==='pause'){if(is('menu',c))closePause();}
+  else if(mode==='travel'){if(is('menu',c))closeTravel();}
   else if(mode==='dead'){if(is('respawn',c))respawn();}
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
@@ -68,7 +66,7 @@ cv.addEventListener('pointerdown',e=>{
     return;
   }
   inp.touch=false;setMouse(e);
-  if(e.button===0){inp.atk=true;atkBuf=.18;}else if(e.button===2)useSkill();
+  if(e.button===0){inp.atk=true;press('atk');}else if(e.button===2)press('skill');
 });
 addEventListener('pointermove',e=>{
   if(e.pointerType==='touch'){
@@ -87,13 +85,24 @@ function holdBtn(el,down,up){
   el.addEventListener('click',e=>e.currentTarget.blur());
 }
 
+// What the player is asking for this frame. A press of attack is also remembered for a moment (P.atkBuf), so a
+// quick tap always lands and a press just before the last swing ends becomes the next swing.
+const moveX=()=>(held('right')?1:0)-(held('left')?1:0)+inp.jx;
+const moveY=()=>(held('down')?1:0)-(held('up')?1:0)+inp.jy;
+// One-off presses go to the rules directly in single player, and to the server online.
+const PRESS={atk:()=>{P.atkBuf=.18;},skill:()=>useSkill(),dodge:()=>dodge(),potion:()=>usePotion()};
+function press(a){if(NET.on)NET.press(a);else PRESS[a]();}
+const readInput=()=>({mx:moveX(),my:moveY(),atk:inp.atk||held('attack'),block:held('block')||!!inp.block});
+
 /* ---------- sound ---------- */
-let AC=null,lastHit=0;
+let AC=null;
 const SFX={block:[320,170,.07,'square',.06],swing:[220,90,.06,'triangle',.05],hit:[170,60,.08,'square',.05],crit:[520,140,.12,'square',.06],hurt:[110,40,.18,'sawtooth',.09],
   pick:[660,990,.08,'square',.035],lvl:[440,880,.35,'triangle',.08],skill:[330,660,.16,'sawtooth',.05],kill:[200,50,.14,'square',.045],boss:[70,38,.7,'sawtooth',.1],gate:[300,900,.5,'triangle',.07],
   cast:[720,420,.07,'sine',.04],boom:[150,40,.32,'sawtooth',.09],heal:[520,1040,.42,'sine',.07],rare:[620,1480,.5,'triangle',.08],lock:[95,45,.5,'square',.07]};
+const sfxLast={};
 function sfx(k){
   if(muted)return;const d=SFX[k];if(!d)return;
+  const now=performance.now();if((k==='hit'||k==='crit')&&now-(sfxLast[k]||0)<45)return;sfxLast[k]=now;   // a wide swing is one sound, not ten
   try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
     const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=d[3];
     o.frequency.setValueAtTime(d[0],t);o.frequency.exponentialRampToValueAtTime(d[1],t+d[2]);
