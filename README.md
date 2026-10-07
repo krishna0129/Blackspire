@@ -49,7 +49,7 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Gear | I or Tab |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Respawn after a death | R or Enter |
-| Debug menu | ` (backquote) |
+| Debug menu (only with `?debug`, see below) | ` (backquote) |
 
 ## Saves
 
@@ -58,4 +58,6 @@ posting saves to your own server.
 
 ## Debug menu
 
-`DEBUG` near the bottom of `js/ui.js` switches it on or off.
+Testing shortcuts: jump to a floor, add levels or shards, god mode, teleport to the boss gate or a blacksmith.
+It is off for players. Add `?debug` to the address to switch it on, for example `index.html?debug` or
+`http://localhost:8000/?debug`. The ` key and the Debug button in the Gear panel then open it.

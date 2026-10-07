@@ -294,8 +294,9 @@ function equipSel(){
 function afterGearChange(){calcStats();refreshSprites();refreshHudStatic();renderPanel();}
 $('#pClose').onclick=closePanel;
 /* ---------- debug menu ----------
-   Set DEBUG to false to remove it for players. */
-const DEBUG=true;
+   Off for players. Open the game with ?debug in the address (index.html?debug, or localhost:8000/?debug)
+   and the ` key and the Debug button in Gear open it. */
+const DEBUG=new URLSearchParams(location.search).has('debug');
 function openDebug(){
   if(!DEBUG||mode!=='play')return;mode='debug';inp.atk=false;for(const k in keys)keys[k]=false;
   const el=$('#dbgBtns');el.innerHTML='';
