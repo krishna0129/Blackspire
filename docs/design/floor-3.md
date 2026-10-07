@@ -2,6 +2,23 @@
 
 Status: proposal for discussion. Nothing here is in the game yet.
 
+## Concept art
+
+Drawn as pixel art in the game's sprite style, then outlined and lit by the game's own drawing code. The scenes are
+staged in the real renderer with a concept version of the floor 3 stone (roots creeping from the walls, thorn
+patches). None of this is final art or in the game; `tools/concept-floor3.js` regenerates it.
+
+![The floor 3 cast: rotting thrall, Gravecaller, Thornroot, Bloodbloom, carrion beetle and the Pale Collector](img/floor3-cast.png)
+
+![A floor 3 room: a Thornroot's lash lane at the top, thralls (one elite) closing in, a Gravecaller channelling into a corpse behind them, a Bloodbloom's healing ring, carrion beetles](img/floor3-scene-room.png)
+
+*A floor 3 room. The red lane is a Thornroot about to lash from the wall. Behind the thralls, the Gravecaller
+channels into a corpse; the green ring is the Bloodbloom's heal. Kill order: Gravecaller, Bloodbloom, then the rest.*
+
+![The Pale Collector's chamber in phase 2: the lantern sweep beam, thralls walking in to feed it, corpses on the floor](img/floor3-scene-boss.png)
+
+*The Pale Collector in phase 2: the lantern sweep (red beam) turns around it while thralls walk in to heal it.*
+
 ## Why this theme
 
 Each floor should teach one new thing and favour a different playstyle than the last:

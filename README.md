@@ -52,6 +52,7 @@ tools/make_sprites.py regenerates the default sprite PNGs (needs Pillow)
 tools/build.py        optional: packs single player into dist/blackspire.html
 tools/wiki.js         writes docs/wiki (pages and charts) from the game's data
 tools/wiki-images.js  renders the wiki's game pictures with the game's own drawing code (needs Playwright)
+tools/concept-floor3.js  concept art for docs/design/floor-3.md, drawn through the game's renderer (needs Playwright)
 server/               the online server (Node): index.js (HTTP and WebSocket), game.js (parties, running floors),
                       db.js (accounts and characters), test/
 ```
