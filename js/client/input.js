@@ -3,12 +3,16 @@
 
 /* ---------- canvas, input ---------- */
 const stage=$('#stage'),cv=$('#game'),ctx=cv.getContext('2d');
-let W=320,H=180,SCALE=3,light=null,camX=0,camY=0;
+// W x H: the view in game pixels; SCALE: CSS pixels per game pixel; RES: canvas pixels per game pixel. RES stays 1
+// with the stock art and only goes up to show sprites drawn finer than the grid (SPR_MAX, sprites.js).
+let W=320,H=180,SCALE=3,RES=1,light=null,camX=0,camY=0;
 function resize(){
   const r=stage.getBoundingClientRect();if(r.width<2||r.height<2)return;
   SCALE=Math.max(2,Math.floor(Math.min(r.width,r.height)/230));
   W=Math.ceil(r.width/SCALE);H=Math.ceil(r.height/SCALE);
-  cv.width=W;cv.height=H;cv.style.width=W*SCALE+'px';cv.style.height=H*SCALE+'px';ctx.imageSmoothingEnabled=false;
+  RES=Math.max(1,Math.min(SPR_MAX,Math.floor(SCALE*(window.devicePixelRatio||1))));
+  cv.width=W*RES;cv.height=H*RES;cv.style.width=W*SCALE+'px';cv.style.height=H*SCALE+'px';
+  ctx.setTransform(RES,0,0,RES,0,0);ctx.imageSmoothingEnabled=false;   // everything is drawn in game pixels
   buildLight();
 }
 function buildLight(){
@@ -28,7 +32,7 @@ const keys={},inp={mx:0,my:0,atk:false,touch:!!(window.matchMedia&&matchMedia('(
 // and every other layout. Every binding lives here, which is all a key-rebinding screen would need to change.
 const BIND={
   up:['KeyW','ArrowUp'],down:['KeyS','ArrowDown'],left:['KeyA','ArrowLeft'],right:['KeyD','ArrowRight'],
-  attack:['KeyJ'],skill:['KeyK','Space'],block:['KeyH','KeyF'],dodge:['ShiftLeft','ShiftRight','KeyL'],potion:['KeyQ'],
+  attack:['KeyJ'],skill:['KeyK','Space'],block:['KeyH','KeyF'],dodge:['ShiftLeft','ShiftRight','KeyL'],potion:['KeyQ'],eat:['KeyR'],drink:['KeyT'],
   interact:['KeyE','Enter','NumpadEnter'],gear:['KeyI','Tab'],menu:['Escape'],mute:['KeyM'],debug:['Backquote'],
   respawn:['KeyR','Enter','NumpadEnter'],
 };
@@ -42,6 +46,8 @@ addEventListener('keydown',e=>{
     if(is('skill',c)){press('skill');e.preventDefault();}
     else if(is('dodge',c))press('dodge');
     else if(is('potion',c))press('potion');
+    else if(is('eat',c))press('eat');
+    else if(is('drink',c))press('drink');
     else if(is('interact',c))interact();
     else if(is('gear',c)){openPanel();e.preventDefault();}
     else if(is('menu',c))openPause();
@@ -90,7 +96,7 @@ function holdBtn(el,down,up){
 const moveX=()=>(held('right')?1:0)-(held('left')?1:0)+inp.jx;
 const moveY=()=>(held('down')?1:0)-(held('up')?1:0)+inp.jy;
 // One-off presses go to the rules directly in single player, and to the server online.
-const PRESS={atk:()=>{P.atkBuf=.18;},skill:()=>useSkill(),dodge:()=>dodge(),potion:()=>usePotion()};
+const PRESS={atk:()=>{P.atkBuf=.18;},skill:()=>useSkill(),dodge:()=>dodge(),potion:()=>usePotion(),eat:()=>eat(),drink:()=>drink()};
 function press(a){if(NET.on)NET.press(a);else PRESS[a]();}
 const readInput=()=>({mx:moveX(),my:moveY(),atk:inp.atk||held('attack'),block:held('block')||!!inp.block});
 

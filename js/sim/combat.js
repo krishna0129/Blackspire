@@ -34,7 +34,7 @@ function hitLine(ang,len,wid,mult,o){
 function gainMomentum(){if(ST.p.momentum){P.mom=Math.min(5,P.mom+1);P.momT=3;}}
 // Returns true if the blow landed, false if it was blocked or the target was already dead.
 function damageEnemy(e,mult,o={}){
-  if(e.dead)return false;
+  if(e.dead||e.burrowed)return false;   // an Ossuary hermit under the floor is out of reach
   // A bone knight's shield stops anything that comes from the side it faces, unless it is mid-swing or reeling.
   if(ETYPES[e.type].shield&&!e.boss&&e.stun<=0&&(e.state==='chase'||e.state==='idle')){
     const fa=DIR_ANGLE[e.dir||0];
@@ -47,6 +47,9 @@ function damageEnemy(e,mult,o={}){
   if(ST.p.execute&&e.hp/e.maxHp<.3)d*=1+ST.p.execute/100;
   if(ST.p.giant&&(e.boss||e.elite))d*=1+ST.p.giant/100;
   if(e.sunder>0)d*=1.25;
+  const T=ETYPES[e.type];
+  if(o.burn&&T.weak&&T.weak.fire)d*=T.weak.fire;   // fire: Fireball's blast (its burn is scaled the same way below)
+  if(e.state==='shell')d*=.4;                       // a hermit's skull shell
   // melee hits land with a beat of freeze-frame and stagger whatever they hit
   if(o.melee){hitstop(crit?.075:.045);if(!e.boss&&!ETYPES[e.type].heavy){e.stun=Math.max(e.stun,.2);if(e.state==='windup'||e.state==='draw')e.state='chase';}}   // a hit breaks a light enemy's attack
   const resisted=ST.magic&&e.mres>0;if(resisted)d*=1-e.mres;
@@ -65,8 +68,9 @@ function damageEnemy(e,mult,o={}){
   }
   if(o.stun)e.stun=Math.max(e.stun,e.boss?o.stun*.25:o.stun);
   if(o.sunder)e.sunder=o.sunder;
-  if(o.burn&&ST.p.ember){e.bleedT=3;e.bleedDps=ST.dmg*ST.p.ember/100/3*(1-e.mres);}
-  if(!e.boss){const a=Math.atan2(e.y-(o.fy??P.y),e.x-(o.fx??P.x)),k=(o.kb??ST.kb)*(o.melee?1.5:1)*(ETYPES[e.type].heavy?.4:1);e.kx+=Math.cos(a)*k;e.ky+=Math.sin(a)*k;}
+  if(o.burn&&ST.p.ember){e.bleedT=3;e.bleedDps=ST.dmg*ST.p.ember/100/3*(1-e.mres)*(T.weak&&T.weak.fire||1);}
+  if(e.state==='channel'){e.state='chase';e.chan=null;e.raiseCd=1.5;burst(e.x,e.y-8,6,'#9be08a',40);sfx('block');}   // any hit breaks a Gravecaller's channel
+  if(!e.boss&&!T.rooted){const a=Math.atan2(e.y-(o.fy??P.y),e.x-(o.fx??P.x)),k=(o.kb??ST.kb)*(o.melee?1.5:1)*(ETYPES[e.type].heavy?.4:1);e.kx+=Math.cos(a)*k;e.ky+=Math.sin(a)*k;}
   if(e.hp<=0)killEnemy(e);
   return true;
 }
@@ -79,13 +83,15 @@ function killEnemy(e){
   if(e.dead)return;e.dead=true;sfx('kill');
   burst(e.x,e.y,e.boss?40:10,'#3a3a4c',e.boss?120:60);burst(e.x,e.y,e.boss?14:3,ETYPES[e.type].eye,70);
   const T=ETYPES[e.type];
+  if(T.corpse&&!e.collect)G.corpses.push({x:e.x,y:e.y,t:6});   // a thrall leaves its body behind, for a Gravecaller to raise
   forPlayers(pl=>{
-    S.kills++;gainXp(T.xp*(1+.3*(G.n-1))*(e.elite?3:1));
+    S.kills++;if(e.raised)return;   // the raised dead give nothing: no experience, no loot, so raising cannot be farmed
+    gainXp(T.xp*(1+.3*(G.n-1))*(e.elite?3:1));
     dropLoot(e.boss?'boss':e.elite?'elite':'normal',e.x,e.y);
     if(e.boss){
       const fs=floorState(G.n),first=!fs.boss;fs.boss++;S.best=Math.max(S.best,G.n+1);
-      fs.shops=[];   // a fallen boss restocks this floor's blacksmiths
-      bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'The blacksmiths on this floor have restocked.',3600);
+      fs.shops=[];   // a fallen boss restocks this floor's traders
+      bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'The traders on this floor have restocked.',3600);
       if(!P.dead)P.hp=ST.maxHp;persist();
     }
   });
@@ -107,11 +113,10 @@ function dropLoot(kind,x,y){
   dropShards(x,y,Math.round(rand(L.shards[0],L.shards[1])*(1+.25*(G.n-1))));
   const m={};for(const k in L.mats){const[c,lo,hi]=L.mats[k];m[k]=Math.random()<c?Math.round(rand(lo,hi)):0;}dropMats(x,y,m);
   for(const q of L.items)if(Math.random()<q.chance)dropItem(x+rand(-sp,sp),y+rand(-sp,sp),randomItem(G.n+q.ilvl,q.bonus,q.minRar),x,y);
-  for(const c of L.potions)if(Math.random()<c)dropPotion(x+rand(-sp,sp),y+rand(-sp,sp),x,y);
+  for(const k in SUPPLIES)for(const c of L[SUPPLIES[k].key]||[])if(Math.random()<c)drop({k,x:x+rand(-sp,sp),y:y+rand(-sp,sp)},x,y);
 }
 function dropMats(x,y,m){for(const id in m)if(m[id]>0)drop({k:'mat',id,amt:m[id],x:x+rand(-9,9),y:y+rand(-9,9)},x,y);}
 function dropItem(x,y,it,ox=x,oy=y){drop({k:'item',item:it,x,y},ox,oy);}
-const dropPotion=(x,y,ox,oy)=>drop({k:'potion',x,y},ox,oy);
 function gainXp(v){
   const c=S.char;c.xp+=Math.round(v*(1+(ST.g.xp||0)/100));
   while(c.xp>=xpNeed(c.level)){c.xp-=xpNeed(c.level);c.level++;c.pts+=3;calcStats();P.hp=ST.maxHp;P.mp=ST.maxMp;
@@ -144,7 +149,8 @@ function hurtPlayer(dmg,src,sure,from,ground){
   if(P.hp<=0)die();
 }
 function die(){
-  P.dead=true;P.hp=0;P.swing=P.dash=null;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;persist();
+  P.dead=true;P.hp=0;P.swing=P.dash=null;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;
+  S.food=Math.max(50,Math.round(P.food));S.drink=Math.max(50,Math.round(P.drink));persist();   // you wake up at least half fed
   onDeath(lost,S.cpFloor===G.n&&S.cp>0);   // cp: whether they wake in a safe room (true) or at the entrance
 }
 
@@ -189,10 +195,13 @@ function useSkill(){
 /* ---------- shots and spells ---------- */
 function castBolt(){const a=P.aim,v=190;G.pproj.push({k:'bolt',owner:P.id,mult:1,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
 function fireArrow(a,mult){const v=260;G.pproj.push({k:'arrow',owner:P.id,a,mult,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
+// Fire burns bodies to ash: they can no longer be raised.
+function burnCorpses(x,y,R){G.corpses=G.corpses.filter(c=>{if(hyp(c.x-x,c.y-y)>R+4)return true;burst(c.x,c.y,10,'#f08a3c',50);burst(c.x,c.y,6,'#3a3a3a',30);return false;});}
 function explode(x,y){
   const R=30*(1+(ST.p.blast||0)/100);
   let n=0;for(const e of G.enemies){if(!e.dead&&hyp(e.x-x,e.y-y)<R+e.r&&los(x,y,e.x,e.y)&&damageEnemy(e,2.6,{kb:70,fx:x,fy:y,burn:true}))n++;}
   if(n)gainMomentum();
+  burnCorpses(x,y,R);
   vfx({k:'boom',x,y,r:R,t:0,d:.34});burst(x,y,22,'#f08a3c',110);burst(x,y,10,'#ffe9a8',60);shake(4);sfx('boom');
 }
 // Heal is an area effect around the caster. It only ever walks the list of allies, so enemies
@@ -225,3 +234,12 @@ function usePotion(){
   if(P.dead||P.potCd>0||S.potions<=0||P.hp>=ST.maxHp)return;
   S.potions--;P.potCd=1.2;heal(ST.maxHp*.45);burst(P.x,P.y,12,'#d9534f',50);sfx('pick');
 }
+// Eating a ration or drinking from a flask: refills its meter. Nothing happens when the meter is already full.
+function useSupply(k){
+  const s=SUPPLIES[k];if(P.dead||P.eatCd>0||!s.need||(S[s.key]||0)<=0||P[s.need]>=99)return;
+  S[s.key]--;if(k==='flask')S.empties=(S.empties||0)+1;   // the flask is kept, empty
+  P.eatCd=.6;P[s.need]=Math.min(100,P[s.need]+s.gives);burst(P.x,P.y,8,s.color,40);sfx('pick');
+}
+// declared as functions so the server can call them on its sandbox (R.eat, R.drink)
+function eat(){useSupply('ration');}
+function drink(){useSupply('flask');}

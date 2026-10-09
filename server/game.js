@@ -9,7 +9,7 @@
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 
 const ROOT=path.join(__dirname,'..');
-const SIM_FILES=['util','data','items','rules','world','combat','update','actions'];
+const SIM_FILES=['util','data','items','rules','world','village','combat','update','floor3','actions'];
 const TICK=1/30;          // the rules run 30 times a second
 const SNAP_EVERY=2;       // each player gets a snapshot every second tick (15 a second)
 const VIEW=360;           // enemies and shots further than this from a player are left out of their snapshot
@@ -56,12 +56,14 @@ function loadRules(){
 
 const isNum=v=>typeof v==='number'&&Number.isFinite(v);
 const r1=v=>Math.round(v*10)/10;
-// A character sheet upload: a PNG of exactly 88 x 78, as a data URL, small enough to send to a party.
+// A character sheet upload: a PNG of 88 x 78 game pixels, as a data URL, small enough to send to a party.
+// SHEET_URL_MAX stays under the socket's message limit (maxPayload in index.js).
+const SHEET_URL_MAX=120000,RULES=loadRules();
 function validSheet(url){
   if(url===null)return true;
-  if(typeof url!=='string'||url.length>64000||!url.startsWith('data:image/png;base64,'))return false;
-  const b=Buffer.from(url.slice(22),'base64');
-  return b.length>24&&b.readUInt32BE(0)===0x89504e47&&b.toString('ascii',12,16)==='IHDR'&&b.readUInt32BE(16)===88&&b.readUInt32BE(20)===78;
+  if(typeof url!=='string'||url.length>SHEET_URL_MAX||!url.startsWith('data:image/png;base64,'))return false;
+  const b=Buffer.from(url.slice(22),'base64');   // 88 x 78, or a whole multiple of it for finer art (sheetRatio, data.js)
+  return b.length>24&&b.readUInt32BE(0)===0x89504e47&&b.toString('ascii',12,16)==='IHDR'&&RULES.sheetRatio(b.readUInt32BE(16),b.readUInt32BE(20))>0;
 }
 
 class Game{
@@ -81,13 +83,13 @@ class Game{
     const look=o.look||{};
     if(!ok(L.SKINS,look.skin)||!ok(L.HAIRS,look.hair)||!ok(L.EYES,look.eyes)||!Number.isInteger(look.style)||look.style<0||look.style>=L.STYLES)return'That look is not available.';
     if(!ok(L.START,o.weapon)||!ok(L.OUTFITS,o.outfit))return'That outfit or weapon is not available.';
-    if(o.custom!=null&&!validSheet(o.custom))return'A character sheet must be a PNG of exactly 88 x 78 pixels.';
+    if(o.custom!=null&&!validSheet(o.custom))return'A character sheet must be a PNG of 88 x 78 pixels, or a whole multiple of that up to x4, under 88 KB.';
     const s=R.newState(name,{skin:look.skin,hair:look.hair,style:look.style,eyes:look.eyes},o.weapon,o.outfit);
     s.char.custom=o.custom||null;
     m.S=JSON.parse(JSON.stringify(s));this.db.saveChar(m.account,m.S);return null;
   }
   charSummary(m){return m.S?{name:m.S.char.name,level:m.S.char.level,floor:m.S.floor||1}:null;}
-  store(m){if(m.S){if(m.pl&&!m.pl.dead)m.S.hp=Math.round(m.pl.hp);const j=JSON.stringify(m.S);if(j!==m.lastStored){this.db.saveChar(m.account,m.S);m.lastStored=j;}}}
+  store(m){if(m.S){if(m.pl&&!m.pl.dead){m.S.hp=Math.round(m.pl.hp);this.R.storeNeeds(m.pl);}const j=JSON.stringify(m.S);if(j!==m.lastStored){this.db.saveChar(m.account,m.S);m.lastStored=j;}}}
 
   /* ---------- parties ---------- */
   newCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c;do{c='';for(let i=0;i<6;i++)c+=A[crypto.randomInt(A.length)];}while(this.byCode.has(c));return c;}
@@ -121,7 +123,7 @@ class Game{
   leave(m){if(!m.party||m.party.members.length<2)return'You are not in a party with anyone.';const n=m.party.n;this.removeMember(m);m.S.floor=n;this.play(m);return null;}
   partyBest(p){return Math.max(...p.members.map(m=>m.S.best||1));}
   // The whole party moves to floor n: a fresh copy of it, enemies and boss included.
-  travel(p,n){p.n=n;for(const m of p.members){m.S.floor=n;m.S.hp=m.pl&&!m.pl.dead?Math.round(m.pl.hp):null;}this.buildWorld(p);}
+  travel(p,n){p.n=n;for(const m of p.members){m.S.floor=n;m.S.hp=m.pl&&!m.pl.dead?Math.round(m.pl.hp):null;this.R.storeNeeds(m.pl);}this.buildWorld(p);}
   buildWorld(p){
     const R=this.R;p.G=R.genFloor(p.n,p.seed+p.n*7919);R.setWorld(p.G);
     for(const m of p.members)this.placePlayer(p,m);
@@ -153,15 +155,17 @@ class Game{
   snapshot(p,m){
     const G=p.G,me=m.pl,near=e=>Math.abs(e.x-me.x)<VIEW&&Math.abs(e.y-me.y)<VIEW*.7;
     return{t:'s',time:r1(G.time),
-      me:{hp:r1(me.hp),mp:r1(me.mp),x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
+      me:{hp:r1(me.hp),mp:r1(me.mp),food:r1(me.food),drink:r1(me.drink),x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
         swing:me.swing?[r1(me.swing.t),r1(me.swing.d),me.swing.hit?1:0]:0,skillCd:r1(me.skillCd),skillMax:r1(me.skillMax),potCd:r1(me.potCd),dodgeCd:r1(me.dodgeCd),mom:me.mom,blocking:!!me.blocking},
       pl:G.players.filter(q=>q!==me&&!q.gone).map(q=>({id:q.id,x:r1(q.x),y:r1(q.y),dir:q.dir,moving:q.moving,dead:q.dead,inv:r1(q.inv),guard:r1(q.guard),hp:Math.ceil(q.hp),maxHp:q.ST.maxHp,
         swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,blocking:!!q.blocking,dash:!!q.dash})),
       en:G.enemies.filter(e=>!e.dead&&(e.boss||near(e))).map(e=>({id:e.id,type:e.type,x:r1(e.x),y:r1(e.y),dir:e.dir,face:e.face,state:e.state,t:r1(e.t||0),hopT:e.hopT,
-        flash:e.flash>0?1:0,stun:e.stun>0?1:0,hurtT:e.hurtT>0?1:0,hp:Math.ceil(e.hp),maxHp:e.maxHp,elite:e.elite,boss:!!e.boss,skin:e.skin||null,name:e.name||null,moving:!!e.moving,lunge:e.lunge>0?1:0,ph:r1(e.ph)})),
+        flash:e.flash>0?1:0,stun:e.stun>0?1:0,hurtT:e.hurtT>0?1:0,hp:Math.ceil(e.hp),maxHp:e.maxHp,elite:e.elite,boss:!!e.boss,sprite:e.sprite||null,name:e.name||null,moving:!!e.moving,lunge:e.lunge>0?1:0,ph:r1(e.ph),burrowed:!!e.burrowed,cx:e.state==='channel'?e.cx:undefined,cy:e.state==='channel'?e.cy:undefined})),
       pr:G.proj.filter(near).map(q=>({x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),c:q.c,arrow:!!q.arrow,a:q.a})),
       pp:G.pproj.filter(near).map(q=>({k:q.k,x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),a:q.a})),
       dr:G.drops.filter(d=>d.owner===me.id).map(d=>({uid:d.uid,k:d.k,x:r1(d.x),y:r1(d.y),t:r1(d.t),r:d.item?d.item.rarity:0,id:d.k==='mat'?d.id:undefined})),
+      co:G.corpses.filter(near).map(c=>({x:r1(c.x),y:r1(c.y)})),
+      be:(G.beams||[]).map(B=>({x:r1(B.x),y:r1(B.y),a:B.a,va:B.va,len:B.len,t:r1(B.t)})),
       te:G.tele.map(q=>({x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,line:!!q.line,cone:!!q.cone,a:q.a,len:q.len,half:q.half})),
       g:{open:G.gatesOpen,gate:G.gate,awake:G.bossAwake,boss:G.bossEnt?{hp:Math.ceil(G.bossEnt.hp),maxHp:G.bossEnt.maxHp,dead:G.bossEnt.dead}:null},
       ev:m.out.splice(0)};
@@ -212,11 +216,11 @@ class Game{
         return;
       case'p':    // a one-off press
         pl.in=m.in;
-        if(o.a==='atk')pl.atkBuf=.18;else if(o.a==='skill')R.useSkill();else if(o.a==='dodge')R.dodge();else if(o.a==='potion')R.usePotion();
+        if(o.a==='atk')pl.atkBuf=.18;else if(o.a==='skill')R.useSkill();else if(o.a==='dodge')R.dodge();else if(o.a==='potion')R.usePotion();else if(o.a==='eat')R.eat();else if(o.a==='drink')R.drink();
         return;
       case'act':{ // gear, attributes, the blacksmith
         if(!Object.prototype.hasOwnProperty.call(R.__actions(),o.name)||!Array.isArray(o.args)||o.args.length>3)return this.send(m,{t:'ar',id:o.id,r:false});
-        if(o.name==='custom'&&!validSheet(o.args[0]))return this.send(m,{t:'ar',id:o.id,r:false,err:'A character sheet must be a PNG of exactly 88 x 78 pixels.'});
+        if(o.name==='custom'&&!validSheet(o.args[0]))return this.send(m,{t:'ar',id:o.id,r:false,err:'A character sheet must be a PNG of 88 x 78 pixels, or a whole multiple of that up to x4, under 88 KB.'});
         const r=R.runAction(o.name,o.args.map(a=>typeof a==='string'||isNum(a)||a===null?a:null));
         for(const e of R.__take())for(const q of p.members)if(e.to==null||e.to===q.pid)q.out.push([e.k,e.a]);
         this.sendSave(m,true);return this.send(m,{t:'ar',id:o.id,r});}

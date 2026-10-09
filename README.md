@@ -29,12 +29,14 @@ css/style.css         all styling
 js/sim/               the game rules. No page, canvas or sound: the browser runs them for single player and the
                       server runs the very same files for online play
   util.js             small helpers
-  data.js             tables: weapons, skills, passives, gear, enemies, materials
+  data.js             tables: floors, weapons, skills, passives, gear, enemies, materials, loot
   items.js            item generation, prices, enhancement, the blacksmith's stock
   rules.js            players, saves, derived stats, and the list of host functions the rules call
   world.js            floor generation
+  village.js          the root village (floor 0): its map, stalls, people and scenery
   combat.js           hit detection, damage, skills, spells, loot, the boss chamber
   update.js           one step of a floor: every player, enemy, shot and drop; enemy and boss AI
+  floor3.js           floor 3's enemies (Gravecaller, Thornroot, Bloodbloom, Ossuary hermit) and the Pale Collector
   actions.js          gear, attributes and blacksmith actions, run locally or by the server
 js/client/            everything on screen, loaded after js/sim in the order index.html lists them
   store.js            the local save store
@@ -68,7 +70,8 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Block (longsword and mace classes) | hold H or F |
 | Roll | Shift or L |
 | Potion | Q |
-| Interact (gates, floor gate, blacksmith) | E |
+| Eat a ration / drink water | R / T |
+| Interact (gates, the Teleport Gate, traders, the stash, the forge, the well, villagers) | E |
 | Gear | I or Tab |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Respawn after a death | R or Enter |
@@ -108,7 +111,8 @@ fail (80%, 65%, 50%, 38%, 28%): the level stays, the cost is spent, and each fai
   rendered by the game itself with `npm run wiki:images`, which needs Playwright and a Chromium
   (`npx playwright install chromium`); rerun it after changing sprites.
 - [docs/design](docs/design): design proposals: [skill trees and mutations](docs/design/skill-trees.md),
-  [floor 3](docs/design/floor-3.md).
+  [class trees and skill ranks](docs/design/class-trees.md),
+  [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md).
 
 ## Saves
 

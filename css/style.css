@@ -37,6 +37,16 @@ button{font:inherit;color:inherit}
 .bar.mp b{font-size:9px;color:#e8eeff;text-shadow:0 1px 0 #000}
 .bar.xp{height:5px;width:78%;border-color:var(--line)}
 .bar.xp i{background:var(--cyan)}
+/* hunger and thirst: two short meters side by side; they flash once they run low */
+.needs{display:flex;gap:6px;width:78%}
+.slot .empties{position:absolute;left:4px;bottom:3px;font-style:normal;font-size:10px;color:var(--dim)}
+.slot .empties:empty{display:none}
+#sGrid.tall{max-height:160px;overflow-y:auto;padding-right:4px}   /* the stash's 60 slots scroll, so the details stay in view */
+.needs .bar{flex:1;height:6px;border-color:var(--line)}
+.bar.food i{background:#d9a441}
+.bar.drink i{background:#5aa7e6}
+.needs .bar.low{animation:needlow 1s steps(2) infinite}
+@keyframes needlow{50%{border-color:var(--red)}}
 #hFloor{margin-top:6px;font-size:13px;color:var(--dim);text-shadow:0 2px 0 #000}
 #hud .topRight{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 #mini{width:180px;height:120px;image-rendering:pixelated;border:1px solid var(--line);background:rgba(0,0,0,.55);pointer-events:none}
@@ -178,6 +188,9 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #travelList{display:grid;gap:8px;margin-bottom:14px;max-height:50vh;overflow:auto}
 #travelList .btn{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 #travelList small{font-weight:500;font-size:12px;opacity:.75}
+#travelList .trow{display:flex;gap:6px;align-items:stretch}
+#travelList .trow .btn:first-child{flex:1}
+#travelList .trow .btn.small{white-space:nowrap}
 #dead p,#ask p,#pause p,#travel p,#online p{color:var(--dim);margin:0 0 18px}
 #ask .titleBtns,#pause .titleBtns,#travel .titleBtns,#online .titleBtns{justify-content:center}
 @media (prefers-reduced-motion:reduce){.bar i,#hurt{transition:none}.toast{animation-name:toastfade}}

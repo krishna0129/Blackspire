@@ -274,6 +274,187 @@ def skeleton(name):
             ex=extras[row][col] if extras[row][col] is not None else extras[row][0]
             for (x,y,w,h,ch) in ex: rect(body,ox+x,oy+y,w,h,COL[ch],0,0)
     return body,ey
+
+# ---- floor 3: roots and the restless dead. Its own look: three or four shades per material, roots through the cast.
+# Each map is one frame. Characters are colours from F3PAL; 'o' (in the enemy's eye colour) and the enemy's glow
+# characters also go on the _eyes layer, so they show through the dark. Designs: docs/design/floor-3.md.
+F3PAL={"#":"#0d0d13","a":"#283320","b":"#465434","c":"#6f8050","C":"#98a86a","+":"#6f6a5a","B":"#b9b4a6","K":"#e4dfcf","d":"#211b2a","e":"#352c42","f":"#4b3f5c","v":"#26331c","V":"#43592c","X":"#6c8c42","w":"#3e2c1e","W":"#6b4a2c","t":"#ddd6c0","p":"#4e1520","P":"#8e2a38","Q":"#c44a58","R":"#e9838b","y":"#d9a441","s":"#14232b","S":"#24505a","T":"#3f8a84","U":"#a6e0cf","m":"#7c7789","M":"#b3afc0","N":"#e3dfec","k":"#a0782c","l":"#5e4620","o":"#0d0d13","O":"#283320","L":"#c99a3a","Y":"#5e4620"}
+F3={
+  "thrall":("#d6f07a",{},[
+    ".....vX...........",
+    "..v..XVv..........",
+    "..Xv.vVv..........",
+    "...VvvVbbbb.......",
+    "....vVbcccbb......",
+    "....abcCcc+Bb.....",
+    "....abo#cc#ob.....",
+    "....abcc#cB+b.....",
+    ".....ab#K#Kba.....",
+    ".....abK#K#b......",
+    "...aabbcbbbcbba...",
+    "..abcbbcbbcbbcba..",
+    "..ab+B+Bbcbcbbcb..",
+    ".abc#+#+bbbbb.cba.",
+    ".ab.+B+Bbbcb..bcb.",
+    ".bc.abbbbbba..bcb.",
+    ".bc.deeeeed...cC..",
+    ".cb.defeeed..ab...",
+    "bcc.dedded........",
+    ".b..bba.bb........",
+    "....bba.abb.......",
+    "...abb...bbb......",
+    "...##....###......",
+  ]),
+  "gravecaller":("#9be08a",{"O":"#9be08a"},[
+    "......e..........O.",
+    ".....eee........OOO",
+    "....eefee.......OKO",
+    "...eefffee......BWB",
+    "...edd#ddde......W.",
+    "..eed#BBB#de.....W.",
+    "..ed#BoBoB#d.....W.",
+    "..ed#BBKBB#de....W.",
+    "..ede#K#K#ede....W.",
+    ".eeedd#K#ddeee..BW.",
+    "eefeeeddddeefee.BW.",
+    "efffeefeeeeeeffBB..",
+    "eB.feeeffeeeeff.W..",
+    "eB.efeefeefeefe.W..",
+    ".B.efeefeefeefe.W..",
+    "BB.effeefeefeefe.W.",
+    "...eefeefeefeefe.W.",
+    "...eeffeeffeeffe.W.",
+    "..eefeeffeeffeeee.W",
+    "..ee.ee.eee.ee.ee.W",
+    "..e..e...e...e..e..",
+    ".....d.......d.....",
+  ]),
+  "thornroot":("#f2a03c",{},[
+    "..........tPQQPt....",
+    ".........tPRRRRPt...",
+    "........pQt.tt.tQp..",
+    "........P..oooo..P..",
+    "........pQt.tt.tQp..",
+    ".........tPQQQQPt...",
+    "..........pVXXVp....",
+    "...t.......vXVv.....",
+    "..vVv.....vXVv..t...",
+    ".vXVXv...vXVv..vV...",
+    "vVvtvXvvvXVv..vXv...",
+    "vXv..vVXVVv..vXv....",
+    "vVv...vVXVvvvVv...t.",
+    "vvVv..vVXXVVv..vvVv.",
+    ".vvVvvVvvVvvvvVvXVv.",
+    "..vvvvvvvvvvvvvvvvv.",
+  ]),
+  "bloodbloom":("#9be08a",{"O":"#9be08a"},[
+    ".......yty.......",
+    "......y.t.y......",
+    ".......PRP.......",
+    ".....pPQOQPp.....",
+    "...pPPQOOOQPPp...",
+    "..pPQRPOOOPRQPp..",
+    ".pPQp.pPQPp.pQPp.",
+    ".pQp...pPp...pQp.",
+    ".pP.....V.....Pp.",
+    ".p......X......p.",
+    "........V........",
+    ".......vXv.......",
+    ".....VvvVvvV.....",
+    "....V.v.V.v.V....",
+    "...v..v.v.v..v...",
+    "..v...v.v.v...v..",
+    "..v..v..v..v..v..",
+  ]),
+  "hermit":("#f2a03c",{},[
+    "........+BBBB+.........",
+    "......+BBKKBBBB+.......",
+    ".....+BKKBBVXBBBB+.....",
+    "....+BKBBBBVBB#BBB+....",
+    "....+BB###BBB#B###B+...",
+    "...+BB#####BB#####BB+..",
+    "...+B##o###BB##o###B+..",
+    "...+BB####B#B#####BB+..",
+    "...++BB##BB#BB###BB++..",
+    "....++BBBB###BBBBB++...",
+    ".....++BB+#+#+BB++.....",
+    "..ss..+B#B#B#B#B+..ss..",
+    ".sS.sSS++++++++SSs..Ss.",
+    "sS.sS.sSTTTTTTSs.Ss..Ss",
+    "S.sS.s.sS#B.B#Ss.s.Ss.S",
+    ".sS.s...s.B.B.s...s.Ss.",
+    "sS.s.....s...s.....s.Ss",
+  ]),
+  "collector":("#9be08a",{"O":"#9be08a","L":"#ffe9a8"},[
+    "...................wW.....",
+    "..................wWWw....",
+    "..................w..wk...",
+    "......................k...",
+    ".....................lkl..",
+    ".....ddeedd.........lLLLl.",
+    "....deeeeeed........kLLLk.",
+    "...deNNNNmNe........lLLLl.",
+    "..deNNMMMMmN.........lkl..",
+    "..deNM###MMN..........w...",
+    "..deN##o##MN..........w...",
+    "..deN#oo##MMN.........w...",
+    "..deNM###MMMM#N.......w...",
+    "..deNNMMMMmMMMMNN.....w...",
+    "...deNNNmmmmmMMMMN....w...",
+    "....deeeeee##mmmMMNN..w...",
+    ".....ddeeddmm###mmmmN.w...",
+    ".............mm.....m.w...",
+    "...................mm.w...",
+    "...dddeeddd.......mN..w...",
+    "..ddeeeeeeedd.....m..Mw...",
+    ".ddleeeeeeeeedd.....NMw...",
+    ".deelleeeeeeeeedd..NM.w...",
+    "ddeekelleeeeeeeedd.mM.w...",
+    "deeeOOeelleeeeeeedmm..w...",
+    "deefOOeeekelleeeeed...w...",
+    "deefeeeeeOOeelleeed...w...",
+    "dMefeeeeeOOeeekeled...w...",
+    "dMefeeefeeeeeeOOeld...w...",
+    ".MefeeefeeeeeeOOeed...w...",
+    ".Mefeeefeeeefeeeedd...w...",
+    ".Mdefeefeeeefeeeeed...w...",
+    ".Mdefeefeeeefeeeeed...w...",
+    ".NddefefeeeefeeeeedW..w...",
+    ".N.deefeeeefeeeeeeed..w...",
+    ".NNdeefeeeefeeeeeeed..w...",
+    "MN.deeefeeefeeeeeeed..w...",
+    "MN.deeefeeefeeeeeeed..w...",
+    "...deeefeeefeeeeeeed..w...",
+    "..ddeeefeeefeeeeeeedd.w...",
+    "..deeeefeeefeeeeeeeed.w...",
+    ".ddeeeffeeeffeeeeeedd.w...",
+    ".deeeefeefeeefeeeeeed.w...",
+    "dde.edd.dde.ddeed.edd.w...",
+    "dd..dd..dd..dd.dd..dd.w...",
+    "d...d...d...d...d...d.w...",
+  ]),
+  "corpse":("#000000",{},[
+    ".....V.v........",
+    "..ab+BB+.vXv....",
+    ".abbB#B+bbbbaa..",
+    ".abb+BB+bbcbbbc.",
+    "..aa..aaab.bb.b.",
+    ".....v...v..V...",
+  ]),
+}
+def floor3():
+    for name,(eye,glow,rows) in F3.items():
+        w,h=len(rows[0])+2,len(rows)+2
+        body,ey=canvas(w,h),canvas(w,h)
+        for y,row in enumerate(rows):
+            for x,ch in enumerate(row):
+                if ch=='.': continue
+                body.putpixel((1+x,1+y),hx(F3PAL[ch]))
+                g=eye if ch=='o' else glow.get(ch)
+                if g: ey.putpixel((1+x,1+y),hx(g))
+        save(body,'enemies/'+name)
+        if name!='corpse': save(ey,'enemies/'+name+'_eyes')
+
 def enemies():
     for name,rows in EMAPS.items():
         if name in SKEL: b,e=skeleton(name)
@@ -301,6 +482,40 @@ def colour(im,tint):
             if px[x,y][3]: px[x,y]=hard_light(px[x,y],t)
     return im
 def cell(im,col,row): return im.crop((col*CW,row*CH,(col+1)*CW,(row+1)*CH))
+# The trader: side view, facing right, under a pack almost as tall as they are, with a bedroll on top, a pan and a
+# lantern hanging off it, a wide hat and a walking stick. Painted as shapes on a character grid, then coloured.
+TRADER_PAL={"W":"#7a5a34","w":"#4a3320","L":"#a07844","r":"#8e2a38","R":"#c44a58","g":"#3a2a18","B":"#d9a441","m":"#6f6a5a",
+    "M":"#b3afc0","y":"#f5c86a","h":"#4a3324","H":"#6b4a2c","s":"#c68d62","S":"#9a6a48","e":"#1c1c24","c":"#3e5a3a",
+    "C":"#5a7a4a","b":"#2b2018","p":"#3a3440","k":"#2a211b","t":"#8a6a3a","T":"#c9a46a"}
+def trader():
+    W,H=24,27; gd=[['.']*W for _ in range(H)]
+    def fill(c,x,y,w,h):
+        for yy in range(y,y+h):
+            for xx in range(x,x+w): gd[yy][xx]=c
+    # the pack
+    fill('W',2,3,13,19); fill('w',2,3,1,19); fill('w',14,3,1,19); fill('w',2,3,13,1); fill('w',2,21,13,1)
+    fill('L',3,4,11,4); fill('w',3,8,11,1)                         # the flap
+    fill('g',8,4,1,9); fill('B',8,7,1,1)                           # strap and buckle
+    fill('L',3,13,4,6); fill('w',3,13,4,1); fill('w',6,13,1,6)     # side pocket
+    fill('r',4,0,10,3); fill('R',4,0,10,1); fill('g',6,0,1,3); fill('g',11,0,1,3)   # bedroll
+    fill('g',1,9,1,1); fill('m',0,10,3,3); fill('M',1,10,1,1)      # a pan
+    fill('g',1,15,1,1); fill('m',0,16,2,4); fill('y',0,17,2,2)     # a lantern
+    # the trader
+    fill('t',23,6,1,21); fill('T',23,5,1,1)                        # walking stick
+    fill('c',15,12,7,8); fill('C',20,12,1,8)                       # coat
+    fill('g',15,10,2,8)                                            # pack strap over the shoulder
+    fill('b',15,15,7,1); fill('B',19,15,1,1)                       # belt
+    fill('C',21,12,1,5); fill('s',22,16,1,1)                       # arm, hand on the stick
+    fill('r',16,11,6,1)                                            # scarf
+    fill('s',17,8,5,3); fill('S',17,8,1,3); fill('e',20,9,1,1); fill('s',22,9,1,1)   # face, looking right
+    fill('h',17,4,4,3); fill('H',17,5,4,1); fill('h',15,7,8,1)     # hat
+    fill('p',16,20,2,5); fill('p',19,20,2,5)                       # legs
+    fill('k',16,25,3,2); fill('k',19,25,3,2)                       # boots
+    im=canvas(W+2,H+2)
+    for y,row in enumerate(gd):
+        for x,ch in enumerate(row):
+            if ch!='.': im.putpixel((1+x,1+y),hx(TRADER_PAL[ch]))
+    save(im,'npc/trader')
 def props(layers):
     # the blacksmith is the side-view body, bald, bearded and aproned, in fixed colours
     sm=canvas(CW,CH)
@@ -309,6 +524,7 @@ def props(layers):
     for r in [(3,6,6,2,'#9a9484'),(4,8,4,1,'#9a9484'),(5,6,2,1,'#c68d62'),(2,9,6,5,'#2b2b33'),(2,9,6,1,'#3d3d48'),(3,8,1,1,'#2b2b33'),(6,8,1,1,'#2b2b33')]:
         rect(sm,*r[:4],hx(r[4]),OX,OY)
     save(sm,'npc/smith')
+    trader()
     a=canvas(16,11)
     for r in [(1,0,12,3,'#5a5e6b'),(1,0,12,1,'#8d93a0'),(0,1,1,1,'#5a5e6b'),(13,1,1,1,'#5a5e6b'),(4,3,6,2,'#3d4152'),(2,5,10,3,'#4a4e5c'),(2,7,10,1,'#2b2e3a')]: rect(a,*r[:4],hx(r[4]))
     save(a,'props/anvil')
@@ -321,12 +537,165 @@ def props(layers):
         for r in [(0,2,12,7,'#3a2c22'),(0,2,12,1,'#55402f'),(0,5,12,1,'#6f6a5c'),(5,4,2,3,'#1a1a1a' if op else '#dcb65c')]: rect(c,*r[:4],hx(r[4]),ox)
         for r in ([(1,0,10,2,'#0a0a0d'),(0,0,12,1,'#2a2019')] if op else [(0,0,12,2,'#4a382b'),(0,0,12,1,'#6b5340')]): rect(c,*r[:4],hx(r[4]),ox)
     save(c,'props/chest')
+    st=canvas(20,16)                                                   # the stash: an iron-bound chest with a blue lock
+    for r in [(0,4,18,10,'#2b2e3a'),(0,4,18,1,'#3c4152'),(0,0,18,4,'#3a3f50'),(0,0,18,1,'#5a6070'),(3,0,2,14,'#8d93a0'),(13,0,2,14,'#8d93a0'),
+              (0,6,18,1,'#5a6070'),(7,5,4,4,'#14141c'),(8,6,2,2,'#6fd6e6')]: rect(st,*r[:4],hx(r[4]),1,1)
+    save(st,'props/stash')
     t=canvas(24,24)                                                    # trinket icon (tinted) and potion icon
     for r in [(9,7,6,1,B),(8,8,1,1,B),(15,8,1,1,B),(7,9,1,6,B),(16,9,1,6,B),(8,15,1,1,DK),(15,15,1,1,DK),(9,16,6,1,DK)]: rect(t,*r,0,0)
     save(t,'icons/trinket_tint')
     p=canvas(24,24)
     for r in [(8,3,8,3,'#050508'),(6,6,12,13,'#050508'),(10,4,4,2,'#e6e1d3'),(7,9,10,9,'#d9534f'),(8,10,2,3,'#f1b0a8')]: rect(p,*r[:4],hx(r[4]),0,0)
     save(p,'icons/potion')
+
+# ---------------- the root village ----------------
+# Buildings, stalls and scenery for the village (js/sim/village.js places them). Each is drawn from simple shapes.
+# Sizes are in game pixels; a building's bottom edge is where its footprint ends.
+from PIL import ImageDraw
+def V(w,h): im=canvas(w,h); return im,ImageDraw.Draw(im)
+def R2(d,x,y,w,h,c): d.rectangle([x,y,x+w-1,y+h-1],fill=hx(c))
+def shingles(d,x0,y0,x1,y1,dark,mid,light,step=4):
+    """a sloped roof face: rows of shingles between two edges given as (x0..x1) at the top and bottom row"""
+    for y in range(y0,y1):
+        c=dark if (y-y0)%step==0 else mid if (y-y0)%step<step-1 else light
+        d.line([x0,y,x1,y],fill=hx(c))
+def tree(name,dark,mid,light,top):
+    im,d=V(46,54)
+    R2(d,20,36,6,16,'#3e2c1e'); R2(d,21,36,2,16,'#5a4028'); R2(d,17,49,12,3,'#3e2c1e')   # trunk and roots
+    for (cx,cy,r,c) in [(23,24,18,dark),(14,26,11,dark),(32,26,11,dark),(23,20,15,mid),(16,20,9,mid),(30,19,9,mid),(20,14,8,light),(28,13,6,light),(top[0],top[1],4,top[2])]:
+        d.ellipse([cx-r,cy-r,cx+r,cy+r],fill=hx(c))
+    for i in range(14):   # leaf texture
+        x,y=8+(i*37)%30,8+(i*23)%28
+        if im.getpixel((x,y))[3]: d.point((x,y),fill=hx(light if i%3 else dark))
+    save(im,'village/'+name)
+def building(name,w,h,wall,trim,roof,roofd,roofl,door,deco):
+    im,d=V(w,h)
+    rh=int(h*.48)
+    R2(d,4,rh-2,w-8,h-rh+2,wall)                                   # walls
+    for y in range(rh+6,h-2,7): d.line([4,y,w-5,y],fill=hx(trim))  # courses of stone or planks
+    R2(d,4,h-6,w-8,6,trim)                                         # footing
+    d.polygon([(0,rh),(w//2,2),(w-1,rh)],fill=hx(roof))            # the roof, seen from the front
+    for y in range(4,rh,4):
+        half=int((w//2)*(y-2)/(rh-2)); d.line([w//2-half,y,w//2+half,y],fill=hx(roofd))
+    d.line([0,rh,w//2,2],fill=hx(roofl)); d.line([w//2,2,w-1,rh],fill=hx(roofd)); R2(d,0,rh,w,2,roofd)
+    dw=18; R2(d,w//2-dw//2,h-30,dw,24,'#2a1d12'); R2(d,w//2-dw//2+2,h-28,dw-4,22,door); R2(d,w//2+3,h-18,2,2,'#d9a441')   # door
+    deco(im,d)
+    save(im,'village/'+name)
+def windows(d,w,h,ys,col='#f5c86a'):
+    for x in (14,w-30):
+        for y in ys: R2(d,x,y,16,12,'#2a1d12'); R2(d,x+2,y+2,12,8,col); R2(d,x+7,y+2,2,8,'#2a1d12'); R2(d,x+2,y+6,12,1,'#2a1d12')
+def inn_deco(im,d):
+    w,h=im.size; windows(d,w,h,[h-44,h-26] if False else [h-40])
+    R2(d,w-36,8,10,26,'#4a4a52'); R2(d,w-38,6,14,4,'#5e5e68')      # chimney
+    R2(d,24,h-62,26,14,'#3e2c1e'); R2(d,26,h-60,22,10,'#a07844'); R2(d,33,h-58,8,7,'#e6e1d3'); R2(d,41,h-57,2,4,'#e6e1d3')   # sign: a mug
+    R2(d,36,h-66,2,4,'#2a1d12')
+def guild_deco(im,d):
+    w,h=im.size; windows(d,w,h,[h-40],'#9fd0f5')
+    cx=w//2; R2(d,cx-12,h-66,24,26,'#2b3350'); R2(d,cx-10,h-64,20,22,'#3c4a72')            # a shield over the door
+    for i in range(14): d.point((cx-7+i,h-62+i),fill=hx('#c3cad6')); d.point((cx+6-i,h-62+i),fill=hx('#c3cad6'))   # crossed swords
+    for x in (10,w-16):                                                                   # banners
+        R2(d,x,h-70,6,26,'#6fd6e6'); R2(d,x+1,h-68,4,22,'#2b3350'); d.polygon([(x,h-44),(x+3,h-40),(x+6,h-44)],fill=hx('#6fd6e6'))
+    R2(d,cx-14,h-6,28,4,'#5e5e68')                                                        # step
+def stall_back():
+    im,d=V(84,58)
+    for x in (4,76): R2(d,x,10,4,48,'#4a3324'); R2(d,x+1,10,1,48,'#6b4a2c')               # posts
+    R2(d,8,22,68,34,'#2a2018'); R2(d,8,22,68,2,'#3e2c1e')                                 # back wall
+    for y in (32,44): R2(d,10,y,64,2,'#5e4620')                                           # shelves
+    save(im,'village/stall')
+    t,td=V(84,58)                                                                         # the awning, grey for tinting
+    for i in range(0,84,12):
+        R2(td,i,0,6,16,'#a0a0a0'); R2(td,i+6,0,6,16,'#e8e8e8')
+    for i in range(0,84,12): td.polygon([(i,16),(i+6,16),(i+3,21)],fill=g(110)); td.polygon([(i+6,16),(i+12,16),(i+9,21)],fill=g(200))
+    R2(td,0,0,84,2,'#606060')
+    save(t,'village/stall_tint')
+def goods(name,items):
+    im,d=V(84,58)
+    for f in items: f(d)
+    save(im,'village/goods_'+name)
+def counter():
+    im,d=V(84,16); R2(d,2,0,80,4,'#8a6a3a'); R2(d,2,0,80,1,'#c9a46a'); R2(d,4,4,76,12,'#5e4620')
+    for x in range(10,80,14): R2(d,x,6,2,10,'#3e2c1e')
+    save(im,'village/counter')
+def forge():
+    im,d=V(84,66)
+    R2(d,22,0,16,30,'#4a4a52'); R2(d,20,0,20,4,'#5e5e68')                                 # chimney
+    R2(d,6,26,72,40,'#3d3d48'); 
+    for y in range(30,66,6):
+        for x in range(6+(y//6%2)*6,78,12): R2(d,x,y,11,5,'#4a4a56')                      # stone blocks
+    R2(d,14,40,26,20,'#1a1a20'); R2(d,16,46,22,12,'#f08a3c'); R2(d,18,50,18,6,'#ffd86a')  # hearth and coals
+    R2(d,48,36,22,3,'#6b4a2c')                                                            # tool rack
+    for x,c in ((50,'#8d93a0'),(56,'#c3cad6'),(62,'#8d93a0')): R2(d,x,39,3,12,c)
+    R2(d,2,22,80,6,'#3e2c1e'); R2(d,2,22,80,2,'#5a4028')                                  # lintel
+    save(im,'village/forge')
+def witch():
+    im,d=V(84,62)
+    d.polygon([(0,20),(42,0),(83,20)],fill=hx('#3a2850')); 
+    for y in range(4,20,4): half=int(42*y/20); d.line([42-half,y,42+half,y],fill=hx('#2a1d3a'))
+    R2(d,6,20,72,42,'#1d1a2a'); R2(d,6,20,72,2,'#2a2538')
+    for y in (30,42): R2(d,10,y,64,2,'#4a3a5a')
+    for i,(x,c) in enumerate([(12,'#9be08a'),(20,'#cfc8ff'),(30,'#e9838b'),(40,'#9be08a'),(50,'#5aa7e6'),(60,'#d9a441'),(66,'#cfc8ff')]):
+        R2(d,x,24+(i%2),5,6,'#14141c'); R2(d,x+1,25+(i%2),3,4,c)
+        R2(d,x+2,36,4,6,'#14141c'); R2(d,x+3,37,2,4,c)
+    for x in (16,34,58): R2(d,x,20,1,8,'#43592c'); R2(d,x-2,27,5,4,'#6c8c42')            # hanging herbs
+    R2(d,70,46,6,6,'#d9d4c4'); R2(d,71,48,1,1,'#14141c'); R2(d,74,48,1,1,'#14141c')        # a skull
+    save(im,'village/witch')
+    im,d=V(28,22); d.ellipse([2,6,25,21],fill=hx('#2b2b33')); d.ellipse([3,4,24,10],fill=hx('#9be08a')); d.ellipse([7,5,20,8],fill=hx('#c8f0b8'))
+    R2(d,4,19,3,3,'#1a1a20'); R2(d,21,19,3,3,'#1a1a20')
+    save(im,'village/cauldron')
+def tent():
+    im,d=V(52,42)
+    d.polygon([(2,40),(26,8),(50,40)],fill=g(128)); d.polygon([(26,8),(50,40),(38,40)],fill=g(96)); d.polygon([(2,40),(26,8),(10,40)],fill=g(150))
+    d.polygon([(20,40),(26,24),(32,40)],fill=g(40))
+    R2(d,25,0,2,10,'#6b4a2c')
+    save(im,'village/tent_tint')
+    f,fd=V(52,42); R2(fd,27,1,12,7,'#808080'); fd.polygon([(39,1),(42,4),(39,8)],fill=g(128))
+    save(f,'village/flag_tint')
+def small():
+    im,d=V(28,32)                                                                         # the well
+    R2(d,2,4,24,3,'#4a3324'); R2(d,0,2,28,3,'#6b4a2c'); R2(d,4,6,2,14,'#4a3324'); R2(d,22,6,2,14,'#4a3324')
+    R2(d,10,8,8,6,'#7a5a34'); R2(d,13,7,2,2,'#b3afc0')
+    d.ellipse([2,16,25,31],fill=hx('#5e5e68')); d.ellipse([5,18,22,26],fill=hx('#24505a')); d.ellipse([8,19,19,23],fill=hx('#5aa7e6'))
+    for x in range(3,25,5): R2(d,x,26,4,4,'#4a4a52')
+    save(im,'village/well')
+    im,d=V(12,34); R2(d,1,4,10,30,'#3c4452'); R2(d,0,0,12,5,'#5e6878'); R2(d,0,30,12,4,'#5e6878')   # a gate pillar
+    for y in (10,16,22): R2(d,5,y,2,3,'#6fd6e6')
+    save(im,'village/pillar')
+    im,d=V(26,28); R2(d,4,12,2,16,'#4a3324'); R2(d,20,12,2,16,'#4a3324'); R2(d,1,2,24,16,'#3e2c1e'); R2(d,2,3,22,14,'#6b4a2c')   # notice board
+    for (x,y,w,h) in [(4,5,6,7),(12,4,6,5),(12,11,8,5),(5,13,5,3)]: R2(d,x,y,w,h,'#e6e1d3'); R2(d,x+1,y+1,w-2,1,'#8d8b98')
+    R2(d,0,0,26,3,'#4a3324')
+    save(im,'village/board')
+    im,d=V(8,24); R2(d,3,6,2,18,'#3a3a44'); R2(d,1,0,6,7,'#2a2a30'); R2(d,2,2,4,4,'#f5c86a'); R2(d,2,22,4,2,'#3a3a44')   # a lamp
+    save(im,'village/lamp')
+    im,d=V(22,32); R2(d,10,6,2,26,'#6b4a2c'); R2(d,1,12,20,2,'#6b4a2c')                   # a scarecrow
+    d.polygon([(5,13),(17,13),(15,26),(7,26)],fill=hx('#8a6a3a')); R2(d,9,15,4,4,'#6b4a2c')
+    d.ellipse([6,3,15,12],fill=hx('#d9c08a')); R2(d,8,6,1,1,'#2a1d12'); R2(d,13,6,1,1,'#2a1d12'); R2(d,9,9,4,1,'#6b4a2c')
+    d.polygon([(4,4),(11,0),(18,4)],fill=hx('#4a3324')); R2(d,2,4,18,2,'#4a3324')
+    for x in (0,19): R2(d,x,11,3,6,'#d9a441')
+    save(im,'village/scarecrow')
+    im,d=V(12,16); R2(d,5,6,2,10,'#6b4a2c'); R2(d,0,0,12,8,'#d9a441'); R2(d,1,1,10,6,'#e2b93b'); R2(d,3,3,6,1,'#5e4620'); R2(d,3,5,4,1,'#5e4620')   # "for sale"
+    save(im,'village/sign')
+def trunk():
+    im,d=V(300,96)
+    d.polygon([(30,95),(60,40),(70,0),(230,0),(240,40),(270,95)],fill=hx('#1e1824'))
+    for x in range(78,226,14): d.line([x,0,x+(x-150)//10,95],fill=hx('#151019'),width=3)
+    for x in range(85,226,28): d.line([x+4,0,x+4+(x-150)//12,90],fill=hx('#2c2434'),width=1)
+    for (a,b) in [((30,95),(0,95)),((60,70),(10,92)),((240,70),(292,93)),((270,95),(299,95))]:   # roots spreading out
+        d.line([a,b],fill=hx('#1e1824'),width=12)
+    d.polygon([(130,95),(150,62),(170,95)],fill=hx('#0d0a12'))                            # a hollow at its foot
+    save(im,'village/trunk')
+def village_art():
+    tree('tree_a','#1f3a1c','#2c4f25','#3d6630',(18,10,'#4d7a3a'))
+    tree('tree_b','#22301a','#34482a','#4d6233',(27,10,'#6f8050'))
+    building('inn',152,124,'#4a3a2c','#3a2c20','#5e2a24','#43201c','#7a3a30','#5e4620',inn_deco)
+    building('guild',168,132,'#3d3d48','#2e2e38','#2b3350','#1e2440','#3c4a72','#4a3324',guild_deco)
+    stall_back(); counter(); forge(); witch(); tent(); small(); trunk()
+    swords=lambda d:[(R2(d,x,26,2,12,'#c3cad6'),R2(d,x-2,36,6,2,'#8d8674')) for x in (14,24,34,44,54,64)]
+    goods('weapons',[swords,lambda d:[R2(d,x,47,10,6,'#8d93a0') for x in (14,32,50)]])
+    goods('gear',[lambda d:[(R2(d,x,26,10,10,'#5a6070'),R2(d,x+2,28,6,6,'#8d93a0')) for x in (14,30,46,62)],lambda d:[R2(d,x,47,8,6,'#4a3524') for x in (14,26,38,50,62)]])
+    goods('potions',[lambda d:[(R2(d,x,26,6,8,'#14141c'),R2(d,x+1,28,4,5,c)) for x,c in ((12,'#d9534f'),(22,'#5aa7e6'),(32,'#d9534f'),(42,'#9be08a'),(52,'#d9534f'),(62,'#cfc8ff'))],
+                     lambda d:[(R2(d,x,46,6,8,'#14141c'),R2(d,x+1,48,4,5,'#d9534f')) for x in (14,26,38,50,62)]])
+    goods('food',[lambda d:[d.ellipse([x,27,x+10,34],fill=hx('#b07a3a')) for x in (12,26,40)],lambda d:[(R2(d,x,44,7,10,'#7a5a3a'),R2(d,x+1,48,5,4,'#5aa7e6')) for x in (56,66)],
+                  lambda d:[d.ellipse([x,46,x+8,53],fill=hx('#c9a46a')) for x in (12,22,32,42)]])
 
 def main():
     layers={'skin':skin(),'eyes':eyes(),'base':base()}
@@ -339,7 +708,7 @@ def main():
     for k in ('boots','greaves','striders'):
         t,o=boots(k); save(t,'gear/boots_'+k+'_tint'); layers[k]=t
         if o: save(o,'gear/boots_'+k)
-    weapons(); shields(); enemies(); props(layers)
+    weapons(); shields(); enemies(); floor3(); props(layers); village_art()
     # a ready-made full-colour character sheet people can open in a pixel editor and repaint
     tpl=canvas(4*CW,3*CH)
     for name,t in (('skin','#e0b08a'),('base',None),('eyes','#1c1c24'),('boots','#4a3524'),('tunic','#2b3350'),('short','#1b1b22')):

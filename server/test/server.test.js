@@ -56,6 +56,16 @@ test('online play',async t=>{
     const sa=await A.wait(o=>o.t==='s'&&o.pl.length===1);assert.strictEqual(sa.pl[0].id,fl.id);
   });
 
+  await t.test('hunger and thirst come down in the snapshot, and eating is a key the server runs',async()=>{
+    const s0=A.last('s').me;assert.strictEqual(typeof s0.food,'number');assert.strictEqual(typeof s0.drink,'number');
+    await A.wait(o=>o.t==='s'&&o.me.drink<s0.drink,4000);
+    // a full meter refuses food, so make Alpha hungry on the server first
+    for(const p of s.game.parties.values())for(const m of p.members)if(m.pid===A.floor.id)m.pl.food=10;
+    const r0=A.last('save').s.rations;A.send({t:'p',a:'eat'});
+    await A.wait(o=>o.t==='save'&&o.s.rations===r0-1,4000);
+    await A.wait(o=>o.t==='s'&&o.me.food>=49,4000);   // 10 + a ration's 40
+  });
+
   await t.test('a reachable position is accepted, a teleport is refused',async()=>{
     const me=A.last('s').me;
     A.send({t:'in',mx:1,my:0,x:me.x+1.5,y:me.y,tp:me.tp});
@@ -101,7 +111,9 @@ test('online play',async t=>{
   });
 });
 
-test('character sheet uploads must be 88 x 78 PNGs',()=>{
+test('character sheet uploads must be 88 x 78 PNGs, or a whole multiple up to x4 for finer art',()=>{
   const png=(w,h)=>{const b=Buffer.alloc(33);b.writeUInt32BE(0x89504e47,0);b.write('IHDR',12,'ascii');b.writeUInt32BE(w,16);b.writeUInt32BE(h,20);return'data:image/png;base64,'+b.toString('base64');};
-  assert.ok(validSheet(png(88,78)));assert.ok(!validSheet(png(64,64)));assert.ok(!validSheet('data:text/html;base64,AAAA'));assert.ok(validSheet(null));
+  assert.ok(validSheet(png(88,78)));assert.ok(!validSheet(png(64,64)));
+  assert.ok(validSheet(png(176,156)));assert.ok(validSheet(png(352,312)));   // ratio 2 and 4
+  assert.ok(!validSheet(png(440,390)));assert.ok(!validSheet(png(176,78)));assert.ok(!validSheet(png(132,117)));   // x5, stretched, x1.5assert.ok(!validSheet('data:text/html;base64,AAAA'));assert.ok(validSheet(null));
 });

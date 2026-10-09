@@ -54,33 +54,56 @@ function genFloor(n,seed){
     players:[],did:0,seen:new Uint8Array(MW*MH),gate:null,bossAwake:false,bossEnt:null,shake:0,time:0};
   const hpM=1+.38*(n-1),dmgM=1+.22*(n-1);
   g.hpM=hpM;g.dmgM=dmgM;
-  // A blacksmith stands in the start room and in each safe room. g.safe[i] is the rectangle around g.smiths[i]; index 0 is the start.
-  // What each one sells is kept in each player's save, not here: see shopOf().
+  // The start room and each safe room hold a trader and a stash chest. g.points[i] is where the trader stands in safe
+  // room i (index 0 is the start room), and g.safe[i] is its rectangle. What each trader sells is kept in each
+  // player's save, not here: see shopOf(). The blacksmith works in the village's forge, not in the tower.
   const safeRooms=[start,...rooms.filter(r=>r.kind==='safe')];
   g.safe=safeRooms.map(r=>({x0:r.x*TILE,y0:r.y*TILE,x1:(r.x+r.w)*TILE,y1:(r.y+r.h)*TILE}));
-  g.smiths=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
-  // floor 1: shadow creatures. floor 2 on: mostly the dead, with a few living things left for spell-casters
-  const bag=SPAWNS[Math.min(n,SPAWNS.length)-1];
+  g.points=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
+  g.smiths=[];
+  g.traders=g.points.map(q=>({x:q.x,y:q.y+5,name:'Trader',sells:'all'}));
+  g.stashes=g.points.map((q,i)=>{const r=safeRooms[i];return{x:Math.min(q.x+30,(r.x+r.w-.8)*TILE),y:q.y+6};});
+  const FL=floorDef(n),bag=FL.spawns;g.corpses=[];
+  if(FL.thorns)g.thorns=new Uint8Array(MW*MH);
   for(const r of rooms){
     if(r.kind!=='room')continue;
     const cnt=2+Math.floor(r.w*r.h/24)+ri(0,1)+Math.min(2,Math.floor((n-1)/2));
     for(let i=0;i<cnt;i++)g.enemies.push(makeEnemy(bag[ri(0,bag.length-1)],(ri(r.x+1,r.x+r.w-2)+.5)*TILE,(ri(r.y+1,r.y+r.h-2)+.5)*TILE,hpM,dmgM,rng()<ELITE_CHANCE));
     if(rng()<.4)g.chests.push({x:(ri(r.x+1,r.x+r.w-2)+.5)*TILE,y:(ri(r.y+1,r.y+r.h-2)+.5)*TILE});   // opened or not is per player: floorState(n).chests
+    // Only floors that have these roll for them, so earlier floors keep their layouts.
+    if(FL.wall&&rng()<FL.wall.chance){   // something growing from the top wall, on a tile with wall above it
+      const xs=[];for(let X=r.x+1;X<r.x+r.w-1;X++)if(map[(r.y-1)*MW+X]===2)xs.push(X);
+      if(xs.length)g.enemies.push(makeEnemy(FL.wall.type,(xs[ri(0,xs.length-1)]+.5)*TILE,(r.y+.45)*TILE,hpM,dmgM,false));
+    }
+    if(FL.thorns)for(let k=ri(1,2);k>0;k--){   // a thorn patch along one edge of the room
+      const w=ri(2,3),h=ri(1,2),side=ri(0,3);
+      const X=side===2?r.x:side===3?r.x+r.w-w:ri(r.x,r.x+r.w-w),Y=side===0?r.y:side===1?r.y+r.h-h:ri(r.y,r.y+r.h-h);
+      for(let y=Y;y<Y+h;y++)for(let x=X;x<X+w;x++)if(map[y*MW+x]===1)g.thorns[y*MW+x]=1;
+    }
   }
   // The boss is always there, even on a floor you have cleared: a rematch is optional (the floor gate takes you past it)
-  // and it is how boss loot is farmed.
-  const b=makeEnemy('boss',(cx(boss)+.5)*TILE,(cy(boss)+.5)*TILE,hpM,dmgM,false);
-  b.boss=true;b.name=BOSSES[(n-1)%BOSSES.length];b.atkT=1.5;b.summons=0;g.enemies.push(b);g.bossEnt=b;
-  if(n===2){b.skin='skelknight';b.mres=.5;b.calls='skel';}   // The Bone Regent: half magic resistance, raises bone soldiers
+  // and it is how boss loot is farmed. Its looks and behaviour come from the floor's entry in FLOORS.
+  const b=makeEnemy('boss',(cx(boss)+.5)*TILE,(cy(boss)+.5)*TILE,hpM,dmgM,false),B=FL.boss;
+  Object.assign(b,{boss:true,name:B.name,sprite:B.sprite,ai:B.ai,mres:B.mres||0,calls:B.calls||null,atkT:1.5,summons:0});g.enemies.push(b);g.bossEnt=b;
+  if(B.corpses){   // bodies lying in the chamber, for the boss to raise
+    const pts=[[2,2],[boss.w-3,2],[2,boss.h-3],[boss.w-3,boss.h-3],[boss.w>>1,2],[boss.w>>1,boss.h-3]];
+    g.arena=pts.map(([i,j])=>({x:(boss.x+i+.5)*TILE,y:(boss.y+j+.5)*TILE}));
+    for(const q of g.arena)g.corpses.push({x:q.x,y:q.y,t:1e9,arena:true});
+  }
   // The floor gate in the start room travels to any floor you have unlocked.
   g.home={x:(start.x+start.w-1.8)*TILE,y:(start.y+1.6)*TILE};
   return g;
 }
 function openGates(){for(const q of G.gates)for(const t of q.tiles)G.map[t[1]*MW+t[0]]=1;G.gatesOpen=true;for(const pl of G.players)pl.locked=false;mapChanged();}
+// Thorn patches: slow and prick everything that is not a plant.
+const onThorns=(x,y)=>!!G.thorns&&G.thorns[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]===1;
 function safeIndex(x,y){const a=G.safe;for(let i=0;i<a.length;i++){const r=a[i];if(x>=r.x0&&x<r.x1&&y>=r.y0&&y<r.y1)return i;}return -1;}
 const inSafe=(x,y)=>safeIndex(x,y)>=0;
 const nearHome=()=>G.home&&hyp(G.home.x-P.x,G.home.y-P.y)<20;
 function nearSmith(){for(const q of G.smiths)if(hyp(q.x-P.x,q.y-P.y)<26)return q;return null;}
+function nearTrader(){for(const q of G.traders)if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;}
+function nearStash(r=20){for(const q of G.stashes||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
+function nearWell(r=26){for(const q of G.wells||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
 function nearGate(){
   if(G.gatesOpen||P.locked||!G.bossEnt||G.bossEnt.dead)return null;
   for(const q of G.gates)if(hyp(q.x-P.x,q.y-P.y)<27)return q;

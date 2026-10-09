@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="470" viewBox="0 0 880 470" role="img" aria-label="Anatomy of a class tree: two class branches and the shared Survival branch, four tiers gated by level, points spent and a key attribute, and capstones that need a boss mutagen">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#8d8b98"/></marker>
+  </defs>
+  <rect width="880" height="470" rx="6" fill="#0d0d12"/>
+  <g font-family="system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" fill="#e6e1d3">
+    <text x="20" y="30" font-size="16" font-weight="600">Anatomy of a class tree</text>
+    <text x="20" y="50" fill="#8d8b98">Every class has the same shape. Gates on the left; branches across; capstones at the bottom.</text>
+
+    <!-- gates column -->
+    <g fill="#8d8b98">
+      <text x="20" y="96" font-weight="600" fill="#e6e1d3">Tier 1</text><text x="20" y="112">level 2</text>
+      <text x="20" y="176" font-weight="600" fill="#e6e1d3">Tier 2</text><text x="20" y="192">level 8 · 3 points</text>
+      <text x="20" y="256" font-weight="600" fill="#e6e1d3">Tier 3</text><text x="20" y="272">level 15 · 7 points</text><text x="20" y="288">key attribute 15</text>
+      <text x="20" y="372" font-weight="600" fill="#e2b93b">Capstone</text><text x="20" y="388">level 20 · 10 points</text><text x="20" y="404">+ one mutagen</text>
+    </g>
+    <line x1="160" y1="74" x2="160" y2="430" stroke="#2e2e3a"/>
+
+    <!-- branch headers -->
+    <g font-weight="600" text-anchor="middle" fill="#8d8b98">
+      <text x="270" y="74">CLASS BRANCH A</text><text x="480" y="74">CLASS BRANCH B</text><text x="730" y="74">SURVIVAL (every class)</text>
+    </g>
+    <line x1="625" y1="62" x2="625" y2="330" stroke="#2e2e3a" stroke-dasharray="4 4"/>
+
+    <!-- prerequisite lines -->
+    <g stroke="#55556a" stroke-width="1.5">
+      <line x1="270" y1="126" x2="270" y2="160"/><line x1="270" y1="206" x2="270" y2="240"/>
+      <line x1="480" y1="126" x2="480" y2="160"/><line x1="480" y1="206" x2="480" y2="240"/>
+      <line x1="730" y1="126" x2="730" y2="160"/><line x1="730" y1="206" x2="730" y2="240"/>
+    </g>
+    <g stroke="#55556a" stroke-width="1.5" fill="none">
+      <path d="M270,296 V330 H335 V352"/><path d="M480,296 V330 H415 V352"/><path d="M480,296 V330 H545 V352"/>
+    </g>
+
+    <!-- nodes -->
+    <g>
+      <rect x="200" y="86" width="140" height="40" rx="6" fill="#15151c" stroke="#6fd6e6"/><text x="214" y="105">stat node</text><text x="326" y="105" fill="#8d8b98" text-anchor="end">0/3</text><text x="214" y="119" fill="#8d8b98" font-size="11">e.g. +2% crit</text>
+      <rect x="200" y="166" width="140" height="40" rx="6" fill="#15151c" stroke="#6fd6e6"/><text x="214" y="185">stat node</text><text x="326" y="185" fill="#8d8b98" text-anchor="end">0/3</text><text x="214" y="199" fill="#8d8b98" font-size="11">e.g. +8% crit damage</text>
+      <rect x="200" y="246" width="140" height="50" rx="6" fill="#15151c" stroke="#6fd6e6" stroke-width="2"/><text x="214" y="266">big stat node</text><text x="326" y="266" fill="#8d8b98" text-anchor="end">0/1</text><text x="214" y="282" fill="#8d8b98" font-size="11">e.g. +10% bleed</text>
+
+      <rect x="410" y="86" width="140" height="40" rx="6" fill="#15151c" stroke="#6fd6e6"/><text x="424" y="105">stat node</text><text x="536" y="105" fill="#8d8b98" text-anchor="end">0/3</text><text x="424" y="119" fill="#8d8b98" font-size="11">e.g. +3 defense</text>
+      <rect x="410" y="166" width="140" height="40" rx="6" fill="#15151c" stroke="#6fd6e6"/><text x="424" y="185">stat node</text><text x="536" y="185" fill="#8d8b98" text-anchor="end">0/2</text><text x="424" y="199" fill="#8d8b98" font-size="11">e.g. +6% stagger</text>
+      <rect x="410" y="246" width="140" height="50" rx="6" fill="#15151c" stroke="#6fd6e6" stroke-width="2"/><text x="424" y="266">big stat node</text><text x="536" y="266" fill="#8d8b98" text-anchor="end">0/1</text><text x="424" y="282" fill="#8d8b98" font-size="11">e.g. +8% recharge</text>
+
+      <rect x="660" y="86" width="140" height="40" rx="6" fill="#15151c" stroke="#8fd14f"/><text x="674" y="105">Hardy</text><text x="786" y="105" fill="#8d8b98" text-anchor="end">0/3</text><text x="674" y="119" fill="#8d8b98" font-size="11">+12 health</text>
+      <rect x="660" y="166" width="140" height="40" rx="6" fill="#15151c" stroke="#8fd14f"/><text x="674" y="185">Iron skin</text><text x="786" y="185" fill="#8d8b98" text-anchor="end">0/3</text><text x="674" y="199" fill="#8d8b98" font-size="11">+3 defense</text>
+      <rect x="660" y="246" width="140" height="40" rx="6" fill="#15151c" stroke="#8fd14f"/><text x="674" y="265">Second wind</text><text x="786" y="265" fill="#8d8b98" text-anchor="end">0/2</text><text x="674" y="279" fill="#8d8b98" font-size="11">+1 health per second</text>
+    </g>
+
+    <!-- capstones -->
+    <rect x="270" y="352" width="140" height="58" rx="6" fill="#15151c" stroke="#e2b93b" stroke-width="2"/>
+    <text x="284" y="372" font-weight="600">Capstone A</text><text x="284" y="388" fill="#8d8b98" font-size="11">unlocks 1 mutation</text><text x="284" y="402" fill="#8d8b98" font-size="11">needs both branches</text>
+    <rect x="480" y="352" width="140" height="58" rx="6" fill="#15151c" stroke="#e2b93b" stroke-width="2"/>
+    <text x="494" y="372" font-weight="600">Capstone B</text><text x="494" y="388" fill="#8d8b98" font-size="11">unlocks 2 mutations</text><text x="494" y="402" fill="#8d8b98" font-size="11">needs branch B</text>
+
+    <!-- mutagens -->
+    <g transform="translate(660,350)">
+      <text x="0" y="0" font-weight="600" fill="#e2b93b">Mutagens</text>
+      <circle cx="6" cy="18" r="5" fill="#55556a"/><text x="18" y="22" fill="#8d8b98">Shadow: Gate Warden</text>
+      <circle cx="6" cy="38" r="5" fill="#b9b4a6"/><text x="18" y="42" fill="#8d8b98">Bone: Bone Regent</text>
+      <circle cx="6" cy="58" r="5" fill="#6c8c42"/><text x="18" y="62" fill="#8d8b98">Root: Pale Collector</text>
+    </g>
+
+    <text x="20" y="455" fill="#8d8b98">Skill points: 1 every other level + 1 per first boss kill = 18 at level 30. A full tree plus Survival costs about 34, so a build fills about half.</text>
+  </g>
+</svg>

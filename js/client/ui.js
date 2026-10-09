@@ -13,24 +13,33 @@ function updateHud(){
   setTxt('hpTxt',Math.ceil(Math.max(0,P.hp))+' / '+ST.maxHp);
   setStyle('xpw',elXp,'width',(S.char.xp/xpNeed(S.char.level)*100).toFixed(1)+'%');
   setTxt('hLv','Level '+S.char.level+(S.char.pts?' (+'+S.char.pts+')':''));
-  setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));
+  setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));setTxt('foodN',String(S.rations||0));setTxt('drinkN',String(S.flasks||0));setTxt('emptyN',S.empties?S.empties+' empty':'');
+  for(const k of['food','drink']){const v=clamp((P[k]==null?100:P[k])/100,0,1);setStyle(k+'w',$('#'+k+'Fill'),'width',(v*100).toFixed(1)+'%');
+    const low=v*100<NEED_LOW;if(hc[k+'low']!==low){hc[k+'low']=low;$('#'+k+'Fill').parentNode.classList.toggle('low',low);}}
   setStyle('cds',cdSk,'height',(P.skillMax?P.skillCd/P.skillMax*100:0).toFixed(0)+'%');
   setStyle('mpw',elMp,'width',(clamp(P.mp/ST.maxMp,0,1)*100).toFixed(1)+'%');setTxt('mpTxt',Math.floor(P.mp)+' / '+ST.maxMp);
   const lack=P.mp<SKILLS[ST.skill].mp||P.safe;if(hc.lack!==lack){hc.lack=lack;elSk.classList.toggle('lack',lack);}
   if(hc.safe!==P.safe){hc.safe=P.safe;$('#slAtk').classList.toggle('lack',!!P.safe);}
-  setTxt('hFloor','Floor '+G.n+(P.safe?', safe room':''));
+  setTxt('hFloor',G.village?'The root village':'Floor '+G.n+(P.safe?', safe room':''));
   setStyle('cdd',cdDo,'height',(P.dodgeCd/.9*100).toFixed(0)+'%');
   setStyle('cdp',cdPo,'height',(P.potCd/1.2*100).toFixed(0)+'%');
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
-  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':nearSmith()?'smith':'';
+  const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
+  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
+    wl?'well'+(S.empties>0?S.empties:''):tk?'talk:'+tk.name:'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
+    if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>E</kbd>';
+    else if(near.startsWith('talk:'))elPrompt.innerHTML='Talk to the '+esc(tk.name.toLowerCase().startsWith('captain')?tk.name.replace('Captain','captain'):tk.name.toLowerCase())+'<kbd>E</kbd>';
     if(near==='up')elPrompt.innerHTML='Climb to floor '+(G.n+1)+'<kbd>E</kbd>';
     else if(near==='boss')elPrompt.innerHTML='Boss chamber gate<kbd>E</kbd>';
-    else if(near==='home')elPrompt.innerHTML='Floor gate<kbd>E</kbd>';
-    else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>E</kbd>';}
+    else if(near==='home')elPrompt.innerHTML=(G.village?'Teleport Gate':'Floor gate')+'<kbd>E</kbd>';
+    else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>E</kbd>';
+    else if(near==='stash')elPrompt.innerHTML='Stash<kbd>E</kbd>';
+    else if(near.startsWith('well'))elPrompt.innerHTML=(S.empties>0?`Fill ${S.empties} empty flask${S.empties>1?'s':''} at the well`:'The well')+'<kbd>E</kbd>';
+}
 }
 function refreshHudStatic(){
-  $('#hName').textContent=S.char.name;setTxt('hFloor','Floor '+G.n);
+  $('#hName').textContent=S.char.name;setTxt('hFloor',G.village?'The root village':'Floor '+G.n);
   $('#skName').textContent=SKILLS[ST.skill].name;$('#skCost').textContent=SKILLS[ST.skill].mp;
   drawItemIcon($('#slAtk canvas'),S.equip.weapon);$('#slBlock').hidden=!ST.shield;
 }
@@ -48,13 +57,18 @@ function bagBadge(){const n=S.inv.filter(i=>i.isNew).length;$('#bagNew').textCon
 
 /* ---------- flow ---------- */
 function save(){if(NET.on)return;   // online, the server keeps the character
-  S.floor=G?G.n:S.floor;if(P&&!P.dead)S.hp=Math.round(P.hp);saveOk=Store.save(S);}
+  S.floor=G?G.n:S.floor;if(P&&!P.dead)S.hp=Math.round(P.hp);if(P&&P.S===S)storeNeeds(P);saveOk=Store.save(S);}
 // Floors start a beat after the click or key press that asked for them, not inside it.
 let starting=false;
-function startFloor(n){if(starting)return;starting=true;setTimeout(()=>{starting=false;enterFloor(n);},60);}
+// cp: arrive at that safe point of floor n (0 is its entrance); left out, you arrive where you last stood on it.
+function startFloor(n,cp){if(starting)return;starting=true;setTimeout(()=>{starting=false;enterFloor(n,cp);},60);}
 // Single player: build floor n with you as its only player.
-function startWorld(n){G=genFloor(n,S.seed);G.mapCv=paintMap(G);P=makePlayer(1,S);G.players=[P];setPlayer(P);}
-function enterFloor(n){
+// Floor 0 is the root village.
+function startWorld(n){G=n===0?genVillage():genFloor(n,S.seed);G.mapCv=G.village?paintVillage(G):paintMap(G);P=makePlayer(1,S);G.players=[P];setPlayer(P);}
+const placeName=n=>n===0?'the root village':'floor '+n;
+function enterFloor(n,cp){
+  if(P&&P.S===S)storeNeeds(P);   // hunger and thirst carry over from the floor you leave
+  if(cp!=null){S.cp=cp;S.cpFloor=n;}
   S.floor=n;S.best=Math.max(S.best||1,n);
   startWorld(n);
   if(S.hp!=null&&S.hp>0)P.hp=Math.min(ST.maxHp,S.hp);
@@ -62,7 +76,8 @@ function enterFloor(n){
   for(const k in hc)delete hc[k];
   $('#boss').hidden=true;$('#dead').hidden=true;$('#ask').hidden=true;$('#debug').hidden=true;$('#pause').hidden=true;$('#travel').hidden=true;$('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();
   mode='play';inp.atk=false;
-  banner('Floor '+n,n===1?'Find the boss chamber. It is somewhere to the east.':n===2?'The dead here shrug off magic. Bring steel.':'The air is colder here.',n===2?4200:2800);
+  if(n===0)banner('The root village','Home, at the foot of the Blackspire. Step into the Teleport Gate to climb.',3400);
+  else{const FL=floorDef(n);banner('Floor '+n,FL.intro,FL.introMs);}
   save();
 }
 // The title screen: Single player or Online. msg, if given, says why you are back here (a lost connection).
@@ -71,8 +86,8 @@ function showTitle(msg){
   mode='title';
   const sv=Store.load();
   S=sv||newState('Wanderer',{skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0]},'sword',OUTFITS[0]);
-  startWorld(S.floor||1);G.enemies=[];G.bossEnt=null;CUSTOM=null;refreshSprites();useCustom(S.char.custom||null);
-  atSmith=null;
+  startWorld(S.floor==null?1:S.floor);G.enemies=[];G.bossEnt=null;CUSTOM=null;refreshSprites();useCustom(S.char.custom||null);
+  atSmith=atWho=null;
   for(const id of['#hud','#panel','#creator','#dead','#ask','#debug','#pause','#travel','#online','#boss'])$(id).hidden=true;
   $('#title').hidden=false;
   const b=$('#btnContinue');b.hidden=!sv;
@@ -125,13 +140,13 @@ $('#onBack').onclick=$('#onBack2').onclick=()=>showTitle();
 let armed=false;
 const draft={skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0],outfit:OUTFITS[0],weapon:'sword'};
 function drawPreview(cv,look,eq,custom){
-  const x=cv.getContext('2d');x.imageSmoothingEnabled=false;x.clearRect(0,0,cv.width,cv.height);
+  const x=uiCtx(cv,34,34);
   const w=buildWeapon(eq.weapon.type,eq.weapon.tint,eq.weapon.school),av=buildAvatar(look,eq,custom);
   x.fillStyle='rgba(0,0,0,.45)';x.fillRect(11,28,12,2);
-  x.drawImage(av,0,0,FRAME_W,FRAME_H,5,5,FRAME_W,FRAME_H);   // the front-facing standing frame
-  if(eq.weapon.type==='grimoire')x.drawImage(w,19,11);
-  else if(eq.weapon.type==='bow')x.drawImage(w,15,11);
-  else{x.save();x.translate(22,19);x.rotate(-1.05);x.drawImage(w,-4,-5);x.restore();}
+  cut(x,av,0,0,FRAME_W,FRAME_H,5,5);   // the front-facing standing frame
+  if(eq.weapon.type==='grimoire')put(x,w,19,11);
+  else if(eq.weapon.type==='bow')put(x,w,15,11);
+  else{x.save();x.translate(22,19);x.rotate(-1.05);put(x,w,-4,-5);x.restore();}
 }
 const START=[...Object.keys(WTYPES).filter(k=>!WTYPES[k].magic),'grimoire:magic','grimoire:faith'];
 function draftEquip(){const[t,sc]=draft.weapon.split(':');return{weapon:{type:t,tint:sc?GRIM[sc].tint:BLADES[0]},armor:{type:'tunic',tint:draft.outfit},boots:{type:'boots',tint:'#2a211b'}};}
@@ -171,16 +186,17 @@ $('#cGo').onclick=()=>{
   const name=($('#cName').value.trim()||'Wanderer').slice(0,14);
   S=newState(name,{skin:draft.skin,hair:draft.hair,style:draft.style,eyes:draft.eyes},draft.weapon,draft.outfit);
   S.char.custom=draft.custom||null;CUSTOM=draft.custom?draftImg:null;
-  $('#creator').hidden=true;startFloor(1);
+  $('#creator').hidden=true;startFloor(0);   // everyone starts in the root village
 };
 /* ---------- your own character sheet ----------
-   One PNG, exactly 88 x 78, replaces the layered avatar. It is kept inside the save. */
+   One PNG of 88 x 78 game pixels replaces the layered avatar: 88 x 78, or a whole multiple of it for finer art
+   (176 x 156 is drawn at ratio 2). It is kept inside the save. */
 let draftImg=null;
 async function readSheet(file){
   if(!/\.png$/i.test(file.name)&&file.type!=='image/png')throw new Error(`${file.name} is not a PNG file.`);
   const url=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('The file could not be read.'));r.readAsDataURL(file);});
   const im=await loadImage(url);if(!im)throw new Error(`${file.name} could not be read as a PNG image.`);
-  if(im.naturalWidth!==SHEET_W||im.naturalHeight!==SHEET_H)throw new Error(`That image is ${im.naturalWidth} × ${im.naturalHeight}. A character sheet must be exactly ${SHEET_W} × ${SHEET_H}: four ${FRAME_W} × ${FRAME_H} frames across and three rows down.`);
+  if(!sheetImage(im))throw new Error(`That image is ${im.naturalWidth} × ${im.naturalHeight}. A character sheet must be ${SHEET_W} × ${SHEET_H} (four ${FRAME_W} × ${FRAME_H} frames across, three rows down), or a whole multiple of that up to ×${MAX_RATIO} for finer art.`);
   return{url,im};
 }
 let DL=null;(async()=>{try{DL=window.claude&&window.claude.use?await window.claude.use('downloads'):null;}catch(e){DL=null;}})();
@@ -195,7 +211,7 @@ function saveTemplate(look,eq,say){
   try{c.toBlob(b=>saveFile('character-sheet.png',b,stat).then(say));}
   catch(e){saveFile('character-sheet.png',null,stat).then(say);}   // opened straight from disk: browsers will not export a canvas, so hand over the stock file
 }
-const SHEET_HELP='Optional. A PNG of exactly 88 × 78 pixels replaces the look on the right, whatever gear you wear. Four frames across (stand, step, step, attack), three rows down (facing down, up, right).';
+const SHEET_HELP='Optional. A PNG of 88 × 78 pixels (or 176 × 156, 264 × 234, 352 × 312 for finer art) replaces the look on the right, whatever gear you wear. Four frames across (stand, step, step, attack), three rows down (facing down, up, right).';
 $('#cCustomMsg').textContent=SHEET_HELP;
 $('#cCustomUp').onclick=()=>$('#cCustomFile').click();
 $('#cCustomFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
@@ -209,7 +225,7 @@ $('#pCustomFile').onchange=async e=>{const f=e.target.files[0];e.target.value=''
   renderPanel();};
 $('#pCustomDel').onclick=()=>{CUSTOM=null;$('#pCustomMsg').textContent='';act('custom',[null],()=>{refreshSprites();save();renderPanel();});};
 $('#pCustomTpl').onclick=()=>saveTemplate(S.char.look,S.equip,m=>{$('#pCustomMsg').textContent=m;});
-$('#btnContinue').onclick=()=>{$('#title').hidden=true;startFloor(S.floor||1);};
+$('#btnContinue').onclick=()=>{$('#title').hidden=true;startFloor(S.floor==null?1:S.floor);};
 // Only once the "You fell" dialog is showing, so a key still held from the fight does not skip it.
 function respawn(){if(mode!=='dead'||$('#dead').hidden)return;$('#dead').hidden=true;if(NET.on){NET.send({t:'respawn'});return;}S.hp=null;startFloor(G.n);}
 $('#btnRespawn').onclick=respawn;
@@ -218,7 +234,7 @@ $('#btnRespawn').onclick=respawn;
 function openPause(){
   if(mode!=='play')return;mode='pause';inp.atk=false;inp.block=false;for(const k in keys)keys[k]=false;save();
   $('#pauseH').textContent=NET.on?'Menu':'Paused';
-  $('#pauseTxt').textContent=`${S.char.name}, level ${S.char.level}, floor ${G.n}. `+(NET.on?'Online, the fight goes on while this is open. Your character is saved on the server.':saveOk?'Progress is saved.':'This browser is blocking storage, so progress will not survive a reload.');
+  $('#pauseTxt').textContent=`${S.char.name}, level ${S.char.level}, ${placeName(G.n)}. `+(NET.on?'Online, the fight goes on while this is open. Your character is saved on the server.':saveOk?'Progress is saved.':'This browser is blocking storage, so progress will not survive a reload.');
   $('#btnSaveQuit').textContent=NET.on?'Leave to title':'Save and quit to title';
   $('#partyBox').hidden=!NET.on;$('#partyMsg').textContent='';if(NET.on)renderParty();
   $('#pause').hidden=false;
@@ -244,7 +260,12 @@ function interact(){
   if(G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20){if(NET.on)NET.send({t:'climb'});else{S.hp=null;startFloor(G.n+1);}return;}
   if(nearHome()){openTravel();return;}
   const q=nearGate();if(q){askChamber(q);return;}
-  const sm=nearSmith();if(sm)openPanel(sm);
+  const tr=nearTrader();if(tr){openPanel(tr,'trader');return;}
+  const st=nearStash();if(st){openPanel(st,'stash');return;}
+  const sm=nearSmith();if(sm){openPanel(sm,'smith');return;}
+  if(nearWell()){act('fillFlasks',[],n=>{if(n){sfx('pick');log(`Filled ${n} flask${n>1?'s':''} at the well.`);}
+    else log('You have no empty flasks to fill. The food and drink stall sells water flasks; drink one and the flask is yours to refill.');hc.near=null;});return;}
+  const tk=nearTalker();if(tk){tk.sayUntil=G.time+6;sfx('pick');}
 }
 // The boss chamber asks first: once inside, the gate seals until the boss dies.
 let askGate=null;
@@ -265,17 +286,30 @@ function confirmChamber(){
 function openTravel(){
   if(mode!=='play')return;mode='travel';inp.atk=false;for(const k in keys)keys[k]=false;
   const el=$('#travelList');el.innerHTML='';
+  $('#travel h2').textContent=G.village?'Teleport Gate':'Floor gate';
+  const go=(n,cp)=>{closeTravel();if(NET.on)NET.send({t:'travel',n});else{S.hp=null;startFloor(n,cp);}};
   // online the party travels together: up to the highest floor anyone in it has reached, and only the leader chooses
   const best=NET.on?NET.party.best:S.best,leader=!NET.on||NET.party.leader===P.id;
+  if(!NET.on&&!G.village){const b=document.createElement('button');b.className='btn primary';
+    b.innerHTML='The root village<small>The market, the forge, the inn</small>';b.onclick=()=>go(0);el.appendChild(b);}
   for(let n=1;n<=best;n++){
+    const row=document.createElement('div');row.className='trow';
     const b=document.createElement('button');b.className='btn'+(n===G.n?'':' primary');b.disabled=n===G.n||!leader;
     const beaten=floorState(n).boss>0;
     b.innerHTML=`Floor ${n}<small>${n===G.n?'You are here':beaten?'Boss beaten'+(floorState(n).boss>1?' '+floorState(n).boss+' times':''):'Boss not yet beaten'}</small>`;
-    b.onclick=()=>{closeTravel();if(NET.on)NET.send({t:'travel',n});else{S.hp=null;startFloor(n);}};el.appendChild(b);
+    b.onclick=()=>go(n,0);row.appendChild(b);
+    // single player: the safe points you have visited on that floor, by their place in it
+    const pts=!NET.on&&n!==G.n&&S.points&&S.points[n]||[];
+    if(pts.length){const count=genFloor(n,S.seed).safe.length;
+      for(const i of[...pts].sort((a,c)=>a-c)){const s=document.createElement('button');s.className='btn small';
+        s.textContent=i===count-1?'By the boss':'Safe room '+i;s.title='Teleport to this safe point on floor '+n;
+        s.onclick=()=>go(n,i);row.appendChild(s);}}
+    el.appendChild(row);
   }
   const lead=NET.on&&NET.party.members.find(m=>m.id===NET.party.leader);
   if(!leader){$('#travelTxt').textContent=`The party travels together. Only the leader, ${lead?lead.name:'someone else'}, chooses the floor.`;$('#travel').hidden=false;return;}
-  $('#travelTxt').textContent=best>1?'Step through to any floor you have reached. Enemies and the boss will be back; chests you opened stay empty.':'This gate leads to every floor you reach. Beat this floor\u2019s boss to unlock the next one.';
+  $('#travelTxt').textContent=G.village?'Step through to any floor you have reached, or to a safe point you have visited on it.':
+    best>1?'Step through to any floor you have reached. Enemies and the boss will be back; chests you opened stay empty.':'This gate leads to every floor you reach. Beat this floor\u2019s boss to unlock the next one.';
   $('#travel').hidden=false;
 }
 function closeTravel(){if(mode!=='travel')return;$('#travel').hidden=true;mode='play';}
@@ -286,18 +320,20 @@ $('#btnMenu').addEventListener('click',e=>{e.currentTarget.blur();openPause();})
 
 /* ---------- gear panel ---------- */
 let sel=null; // {from:'bag',i} | {from:'eq',slot}
-// The same panel serves as the blacksmith's counter: opened next to a smith it also shows the stock and allows enhancing.
-let atSmith=null;   // index of the blacksmith whose counter is open, or null
-const shopNow=()=>atSmith==null?null:shopOf(atSmith);
+// The same panel serves as the trader's pack and the blacksmith's counter: next to a trader it shows the stock and
+// supplies; next to a blacksmith it allows enhancing.
+let atSmith=null,atWho=null;   // index of the safe room whose trader or blacksmith is open, and which ('trader', 'smith')
+const shopNow=()=>atSmith==null||atWho!=='trader'?null:shopOf(atSmith);
+const atForge=()=>atSmith!=null&&atWho==='smith';
 // Runs a player action (js/sim/actions.js). Single player: right here. Online: on the server, which answers with the
 // result and the updated save (net.js), and then done(result) runs.
 function act(name,args,done){if(NET.on)return NET.act(name,args,done);const r=runAction(name,args);if(done)done(r);}
-function openPanel(smith){
+function openPanel(npc,who){
   if(mode!=='play')return;mode='panel';inp.atk=false;for(const k in keys)keys[k]=false;sel=null;
-  atSmith=smith?G.smiths.indexOf(smith):null;
-  $('#panel').hidden=false;renderPanel();if(atSmith!=null)act('openShop',[atSmith],()=>{if(mode==='panel')renderPanel();});
+  atWho=npc?who:null;atSmith=npc?(who==='trader'?G.traders:who==='stash'?G.stashes:G.smiths).indexOf(npc):null;
+  $('#panel').hidden=false;renderPanel();if(atWho==='trader')act('openShop',[atSmith],()=>{if(mode==='panel')renderPanel();});
 }
-function closePanel(){if(mode!=='panel')return;atSmith=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
+function closePanel(){if(mode!=='panel')return;atSmith=atWho=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
 function cell(it,on,label,bag){
   const b=document.createElement('button');b.className='cell'+(on?' on':'')+(it?'':' empty');
   if(it){const c=document.createElement('canvas');c.width=c.height=24;drawItemIcon(c,it);b.appendChild(c);b.style.borderColor=RARITY[it.rarity].color;b.title=it.name;
@@ -308,10 +344,11 @@ function cell(it,on,label,bag){
   return b;
 }
 const SLOTL={weapon:'Weapon',armor:'Armor',boots:'Boots',trinket:'Trinket'};
-function selItem(){if(!sel||sel.from==='potion')return null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
+const atStash=()=>atSmith!=null&&atWho==='stash';
+function selItem(){if(!sel||sel.from==='supply')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
 function renderPanel(){
   calcStats();const c=S.char;
-  $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, floor ${G.n}. ${c.xp} / ${xpNeed(c.level)} experience`;
+  $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
   drawPreview($('#pPrev'),c.look,S.equip,c.custom?CUSTOM:null);
   $('#pCustomDel').hidden=!c.custom;
   const eq=$('#pEquip');eq.innerHTML='';
@@ -333,14 +370,17 @@ function renderPanel(){
   $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;$('#pShards').textContent=S.shards;
   $('#pMats').innerHTML=Object.keys(MATS).map(k=>`<span title="${MATS[k].name}"><i class="mat" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('');
   const shop=shopNow();
-  $('#pTitle').textContent=shop?'Blacksmith':c.name;
-  $('#shopBox').hidden=!shop;
+  $('#pTitle').textContent=shop?G.traders[atSmith].name:atForge()?'Blacksmith':atStash()?'Stash':c.name;
+  $('#shopBox h3').textContent=atStash()?`Stash ${S.stash.length} / ${STASH_SIZE}`:shop&&G.traders[atSmith].stall?'For sale':'Trader\u2019s pack';
+  $('#shopBox').hidden=!shop&&!atStash();$('#sGrid').classList.toggle('tall',atStash());
+  if(atStash()){const sg=$('#sGrid');sg.innerHTML='';
+    for(let i=0;i<STASH_SIZE;i++){const it=S.stash[i],b=cell(it,sel&&sel.from==='stash'&&sel.i===i,'',false);
+      if(it){b.onclick=()=>{sel={from:'stash',i};renderPanel();};b.ondblclick=()=>act('unstash',[i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();});}sg.appendChild(b);}}
   if(shop){const sg=$('#sGrid');sg.innerHTML='';
     (shop.stock||[]).forEach((e,i)=>{const b=cell(e.it,sel&&sel.from==='shop'&&sel.i===i,'',true);b.dataset.p=e.price;b.title=e.it.name+', '+e.price+' shards';b.onclick=()=>{sel={from:'shop',i};renderPanel();};sg.appendChild(b);});
-    const pb=document.createElement('button');pb.className='cell'+(sel&&sel.from==='potion'?' on':'');pb.dataset.p=potionPrice();pb.title='Potion';
-    const pc=document.createElement('canvas');pc.width=pc.height=24;const px=pc.getContext('2d');
-    px.fillStyle='#262630';px.fillRect(0,0,24,24);px.fillStyle='#050508';px.fillRect(8,3,8,3);px.fillRect(6,6,12,13);px.fillStyle='#e6e1d3';px.fillRect(10,4,4,2);px.fillStyle='#d9534f';px.fillRect(7,9,10,9);px.fillStyle='#f1b0a8';px.fillRect(8,10,2,3);
-    pb.appendChild(pc);const pe=document.createElement('em');pe.textContent='x'+shop.potions;pb.appendChild(pe);pb.onclick=()=>{sel={from:'potion'};renderPanel();};sg.appendChild(pb);}
+    for(const k of TRADER_SELLS[G.traders[atSmith].sells||'all'].supplies){const s=SUPPLIES[k],pb=document.createElement('button');pb.className='cell'+(sel&&sel.from==='supply'&&sel.k===k?' on':'');pb.dataset.p=supplyPrice(k);pb.title=s.name;
+      const pc=document.createElement('canvas');supplyIcon(pc,k);
+      pb.appendChild(pc);const pe=document.createElement('em');pe.textContent='x'+shop[s.key];pb.appendChild(pe);pb.onclick=()=>{sel={from:'supply',k};renderPanel();};sg.appendChild(pb);}}
   const g=$('#pGrid');g.innerHTML='';
   for(let i=0;i<BAG_SIZE;i++){const it=S.inv[i],b=cell(it,sel&&sel.from==='bag'&&sel.i===i,'',true);if(it){b.onclick=()=>{sel={from:'bag',i};delete it.isNew;renderPanel();};b.ondblclick=()=>{sel={from:'bag',i};equipSel();};}g.appendChild(b);}
   renderDetail();
@@ -350,12 +390,14 @@ function renderPanel(){
 function cmp(a,b,dec=0){const d=a-b;if(Math.abs(d)<(dec?.05:.5))return'';return`<i class="${d>0?'up':'down'}">${d>0?'+':''}${d.toFixed(dec)}</i>`;}
 function renderDetail(){
   const el=$('#pDetail'),it=selItem(),shop=shopNow();
-  if(sel&&sel.from==='potion'&&shop){const pr=potionPrice();
-    el.innerHTML=`<h4>Potion</h4><div class="sub">Restores 45% of your health. You carry ${S.potions}. The smith has ${shop.potions} left.</div>`;
+  if(sel&&sel.from==='supply'&&shop){const k=sel.k,s=SUPPLIES[k],pr=supplyPrice(k),left=shop[s.key];
+    el.innerHTML=`<h4>${s.name}</h4><div class="sub">${s.desc} You carry ${S[s.key]||0}. The trader has ${left} left${left?'':': it comes back when this floor\u2019s boss falls'}.</div>`;
     const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Buy for ${pr} shards`;
-    b.disabled=S.shards<pr||shop.potions<=0;b.onclick=()=>act('buyPotion',[atSmith],r=>{if(r)sfx('pick');renderPanel();});
+    b.disabled=S.shards<pr||left<=0;b.onclick=()=>act('buySupply',[atSmith,k],r=>{if(r)sfx('pick');renderPanel();});
     a.appendChild(b);el.appendChild(a);return;}
-  if(!it&&shop){el.innerHTML='<p class="muted">Pick something from the stock to see it against what you are wearing, or pick one of your own pieces to enhance it. Prices are in shards.</p>';return;}
+  if(!it&&shop){el.innerHTML='<p class="muted">Pick something for sale to see it, or to compare it with what you are wearing. Prices are in shards.</p>';return;}
+  if(!it&&atForge()){el.innerHTML='<p class="muted">Pick one of your own pieces to enhance it.</p>';return;}
+  if(!it&&atStash()){el.innerHTML='<p class="muted">The same stash waits behind every stash chest: in the inn and in every safe room. Pick something to move it between your bag and the stash, or double-click it.</p>';return;}
   if(!it){el.innerHTML=`<p class="muted">${S.inv.length?'Select an item to compare it with what you are wearing. Double-click an item in the bag to equip it.':'Your bag is empty. Enemies and chests drop weapons, armor, boots and trinkets.'}</p>`;return;}
   const R=RARITY[it.rarity],cur=S.equip[it.slot],other=(sel.from==='bag'||sel.from==='shop')&&cur?cur:null,m=itemMult(it);
   let h=`<h4 style="color:${R.color}">${esc(it.name)}${it.plus?' +'+it.plus:''}</h4>`;
@@ -389,9 +431,12 @@ function renderDetail(){
   if(sel.from==='shop'){const e=shop.stock[sel.i],full=S.inv.length>=BAG_SIZE;
     btn(full?'Bag is full':`Buy for ${e.price} shards`,'primary',()=>act('buy',[atSmith,sel.i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();}),full||S.shards<e.price);
     el.appendChild(acts);return;}
+  if(sel.from==='stash'){btn(S.inv.length>=BAG_SIZE?'Bag is full':'Take it','primary',()=>act('unstash',[sel.i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();}),S.inv.length>=BAG_SIZE);
+    el.appendChild(acts);return;}
   if(sel.from==='bag')btn('Equip','primary',equipSel);
-  if(it.slot!=='trinket'&&!shop){const n=document.createElement('span');n.className='muted';n.style.alignSelf='center';n.textContent='Enhancing is done at a blacksmith.';acts.appendChild(n);}
-  if(it.slot!=='trinket'&&shop){
+  if(sel.from==='bag'&&atStash())btn(S.stash.length>=STASH_SIZE?'Stash is full':'Put in the stash','',()=>act('stash',[sel.i],r=>{if(r!==false){sel={from:'stash',i:r};sfx('pick');}renderPanel();}),S.stash.length>=STASH_SIZE);
+  if(it.slot!=='trinket'&&!atForge()){const n=document.createElement('span');n.className='muted';n.style.alignSelf='center';n.textContent='Enhancing is done at the forge, in the root village.';acts.appendChild(n);}
+  if(it.slot!=='trinket'&&atForge()){
     if((it.plus||0)>=ENH_MAX)btn('Fully enhanced','',()=>{},true);
     else{const r=enhanceRecipe(it),can=S.shards>=r.shards&&hasMats(S.mats,r.mats),pct=Math.round(r.chance*100);
       btn(`Enhance to +${r.to}`+(pct<100?` (${pct}%)`:''),'',()=>act('enhance',sel.from==='eq'?['eq',sel.slot]:['bag',sel.i],res=>{
@@ -432,10 +477,10 @@ function openDebug(){
   const lvl=k=>{const c=S.char;c.level+=k;c.pts+=3*k;calcStats();P.hp=ST.maxHp;P.mp=ST.maxMp;};
   add('Level +1 (now '+S.char.level+')',()=>lvl(1),true);add('Level +5',()=>lvl(5),true);
   add('Shards +500 (now '+S.shards+')',()=>{S.shards+=500;},true);
-  add('Full heal',()=>{P.hp=ST.maxHp;P.mp=ST.maxMp;});
+  add('Full heal',()=>{P.hp=ST.maxHp;P.mp=ST.maxMp;P.food=P.drink=100;});
   add('God mode: '+(god?'on':'off'),()=>{god=!god;},true);
   add('Go to the boss gate',()=>{const q=G.gates[1];P.x=q.x-18;P.y=q.y;P.dash=null;});
-  add('Go to the next blacksmith',()=>{const i=(Math.max(0,G.smiths.findIndex(q=>hyp(q.x-P.x,q.y-P.y)<60))+1)%G.smiths.length,q=G.smiths[i];P.x=q.x;P.y=q.y+24;P.dash=null;});
+  add('Go to the next safe room',()=>{const pts=G.points||[];if(!pts.length)return;const i=(Math.max(0,pts.findIndex(q=>hyp(q.x-P.x,q.y-P.y)<60))+1)%pts.length,q=pts[i];P.x=q.x;P.y=q.y+24;P.dash=null;});
   add('Close',()=>{});
   $('#debug').hidden=false;
 }
@@ -448,7 +493,7 @@ $('#pQuit').onclick=quitToTitle;
 $('#btnBag').addEventListener('click',e=>{e.currentTarget.blur();openPanel();});
 holdBtn($('#slAtk'),()=>{inp.atk=true;press('atk');},()=>{inp.atk=false;});
 holdBtn($('#slSkill'),()=>press('skill'));holdBtn($('#slBlock'),()=>{inp.block=true;},()=>{inp.block=false;});
-$('#askGo').onclick=confirmChamber;$('#askNo').onclick=closeAsk;holdBtn($('#slDodge'),()=>press('dodge'));holdBtn($('#slPot'),()=>press('potion'));
+$('#askGo').onclick=confirmChamber;$('#askNo').onclick=closeAsk;holdBtn($('#slDodge'),()=>press('dodge'));holdBtn($('#slPot'),()=>press('potion'));holdBtn($('#slFood'),()=>press('eat'));holdBtn($('#slDrink'),()=>press('drink'));
 elPrompt.addEventListener('click',e=>{e.currentTarget.blur();interact();});
 // Save whenever the page goes away mid-run, whatever menu is open. Hiding the tab during play also pauses the game.
 const inRun=()=>!!G&&mode!=='title'&&mode!=='creator';

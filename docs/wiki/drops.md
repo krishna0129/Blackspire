@@ -9,14 +9,16 @@ their loot can be farmed.
 
 ## What drops from what
 
-On the ground: <img src="img/drop-shard.png" alt="shards" width="36"> shards <img src="img/drop-potion.png" alt="potion" width="36"> potion <img src="img/drop-scrap.png" alt="Iron scrap" width="36"> Iron scrap <img src="img/drop-ember.png" alt="Emberstone" width="36"> Emberstone <img src="img/drop-crystal.png" alt="Spire crystal" width="36"> Spire crystal <img src="img/drop-item.png" alt="item" width="36"> an item (rare and better ones also send a beam of their colour into the dark).
+On the ground: <img src="img/drop-shard.png" alt="shards" width="36"> shards <img src="img/drop-potion.png" alt="potion" width="36"> potion <img src="img/drop-ration.png" alt="ration" width="36"> ration <img src="img/drop-flask.png" alt="water flask" width="36"> water flask <img src="img/drop-scrap.png" alt="Iron scrap" width="36"> Iron scrap <img src="img/drop-ember.png" alt="Emberstone" width="36"> Emberstone <img src="img/drop-crystal.png" alt="Spire crystal" width="36"> Spire crystal <img src="img/drop-item.png" alt="item" width="36"> an item (rare and better ones also send a beam of their colour into the dark).
 
-| Source | Shards (floor 1 / 2 / 3) | Items | Potions | Materials |
+| Source | Shards (floor 1 / 2 / 3) | Items | Potions, rations, water | Materials |
 |---|---|---|---|---|
-| Ordinary enemy | 1–4 / 1–5 / 2–6 | 13% | 5.5% | Iron scrap: 30% for 1<br>Emberstone: 3.0% for 1 |
-| Elite enemy | 14 / 18 / 21 | 70%, at least uncommon | 30% | Iron scrap: 1 to 3<br>Emberstone: 40% for 1<br>Spire crystal: 4.0% for 1 |
-| Floor boss | 60 / 75 / 90 | 1 (item level +1), at least rare<br>1 (item level +1), at least uncommon<br>1 (item level +1), at least uncommon | 2 potions | Iron scrap: 4 to 6<br>Emberstone: 2 to 3<br>Spire crystal: 1 |
-| Chest | 8–16 / 10–20 / 12–24 | 1<br>35% | 50% | Iron scrap: 1 to 2<br>Emberstone: 25% for 1 |
+| Ordinary enemy | 1–4 / 1–5 / 2–6 | 13% | 5.5% health potion<br>4.0% ration<br>5.0% water flask | Iron scrap: 30% for 1<br>Emberstone: 3.0% for 1 |
+| Elite enemy | 14 / 18 / 21 | 70%, at least uncommon | 30% health potion<br>25% ration<br>30% water flask | Iron scrap: 1 to 3<br>Emberstone: 40% for 1<br>Spire crystal: 4.0% for 1 |
+| Floor boss | 60 / 75 / 90 | 1 (item level +1), at least rare<br>1 (item level +1), at least uncommon<br>1 (item level +1), at least uncommon | 2 health potions<br>1 ration<br>1 water flask | Iron scrap: 4 to 6<br>Emberstone: 2 to 3<br>Spire crystal: 1 |
+| Chest | 8–16 / 10–20 / 12–24 | 1<br>35% | 50% health potion<br>40% ration<br>50% water flask | Iron scrap: 1 to 2<br>Emberstone: 25% for 1 |
+
+Rations and water flasks refill the hunger and thirst meters. Traders in safe rooms also sell them, 5–10 of each supply, restocked when the floor’s boss falls.
 
 Elites are 7.0% of room spawns, marked by gold outlines and eyes. They have 2.4× health and 1.3× damage, and give 3× experience.
 
@@ -68,10 +70,11 @@ floor's item level (bosses: one higher), which raises base numbers by 22% per le
 
 ## Where each enemy appears
 
-| Floor | Enemies (share of room spawns) |
-|---|---|
-| 1 | Shade 38%, Skitter 38%, Brute 13%, Wisp 13% |
-| 2 and up | Bone soldier 38%, Bone archer 25%, Bone knight 13%, Skitter 13%, Wisp 13% |
+| Floor | Enemies (share of room spawns) | Also | Boss |
+|---|---|---|---|
+| 1 | Shade 38%, Skitter 38%, Brute 13%, Wisp 13% | – | The Gate Warden |
+| 2 | Bone soldier 38%, Bone archer 25%, Bone knight 13%, Skitter 13%, Wisp 13% | – | The Bone Regent |
+| 3 and up | Rotting thrall 38%, Gravecaller 25%, Ossuary hermit 13%, Bloodbloom 13%, Bone archer 13% | Thornroot on the top wall of 55% of rooms; thorn patches | The Pale Collector |
 
 ## Unique drops
 
