@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="560" viewBox="0 0 880 560" role="img" aria-label="Plan of the root village: the Tower Gate in the roots to the north, the square with the well and notice board in the middle, the inn and stash to the north-west, the trader's stalls to the north-east, the forge to the east, the arcanist's hut to the west, the kingdom camps to the south-west, the training yard to the south-east and the closed fields gate to the south">
+  <rect width="880" height="560" rx="6" fill="#0d0d12"/>
+  <g font-family="system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="12" fill="#e6e1d3">
+    <text x="20" y="30" font-size="16" font-weight="600">The root village: plan</text>
+    <text x="20" y="50" fill="#8d8b98">About 48 × 32 tiles, three screens wide. The tower's roots wall it in; every path meets at the square.</text>
+
+    <!-- roots wall -->
+    <path d="M60,90 C140,70 220,95 300,80 C380,66 500,66 580,80 C660,95 740,70 820,90 L830,520 C740,535 640,510 540,526 C440,540 340,512 240,528 C160,540 100,520 50,524 Z" fill="#141a12" stroke="#3b4a2a" stroke-width="10"/>
+    <!-- paths -->
+    <g stroke="#3a3326" stroke-width="22" stroke-linecap="round" fill="none">
+      <path d="M440,120 V470"/><path d="M150,300 H740"/><path d="M440,300 L250,430"/><path d="M440,300 L640,430"/><path d="M440,300 L240,200"/><path d="M440,300 L645,200"/>
+    </g>
+    <!-- tower gate -->
+    <path d="M395,118 V92 Q440,52 485,92 V118 Z" fill="#1b1a24" stroke="#6fd6e6" stroke-width="2"/>
+    <text x="440" y="140" text-anchor="middle" font-weight="600" fill="#6fd6e6">Tower Gate</text>
+    <text x="440" y="155" text-anchor="middle" fill="#8d8b98" font-size="11">to any floor you have reached</text>
+
+    <!-- square -->
+    <circle cx="440" cy="300" r="62" fill="#221f19" stroke="#4a4232"/>
+    <circle cx="440" cy="300" r="13" fill="#24505a" stroke="#5aa7e6" stroke-width="2"/>
+    <text x="440" y="330" text-anchor="middle" font-size="11" fill="#5aa7e6">well</text>
+    <rect x="470" y="262" width="24" height="16" fill="#3e2c1e" stroke="#d9a441"/>
+    <text x="512" y="274" font-size="11" fill="#d9a441">notice board</text>
+    <text x="440" y="248" text-anchor="middle" font-weight="600">The square</text>
+    <circle cx="410" cy="350" r="5" fill="#e6e1d3"/><text x="382" y="372" font-size="11" fill="#8d8b98">you arrive here</text>
+
+    <g font-weight="600">
+      <!-- inn + stash -->
+      <rect x="170" y="150" width="140" height="80" rx="4" fill="#2a2018" stroke="#a07844"/>
+      <text x="240" y="182" text-anchor="middle">Inn</text>
+      <text x="240" y="200" text-anchor="middle" font-weight="400" font-size="11" fill="#8d8b98">meals, rest, the stash</text>
+      <!-- trader stalls -->
+      <rect x="570" y="150" width="150" height="80" rx="4" fill="#2a2018" stroke="#d9a441"/>
+      <text x="645" y="182" text-anchor="middle">Market stalls</text>
+      <text x="645" y="200" text-anchor="middle" font-weight="400" font-size="11" fill="#8d8b98">the trader; the market later</text>
+      <!-- forge -->
+      <rect x="680" y="265" width="120" height="74" rx="4" fill="#2a1d18" stroke="#f08a3c"/>
+      <text x="740" y="296" text-anchor="middle">Forge</text>
+      <text x="740" y="314" text-anchor="middle" font-weight="400" font-size="11" fill="#8d8b98">the blacksmith</text>
+      <!-- arcanist -->
+      <rect x="80" y="265" width="120" height="74" rx="4" fill="#1d1a2a" stroke="#b07be8" stroke-dasharray="5 4"/>
+      <text x="140" y="296" text-anchor="middle">Arcanist</text>
+      <text x="140" y="314" text-anchor="middle" font-weight="400" font-size="11" fill="#8d8b98">shut until it opens</text>
+      <!-- camps -->
+      <g fill="#2a2018">
+        <path d="M150,440 l26,-36 l26,36 z" stroke="#8e97b5"/><path d="M210,460 l26,-36 l26,36 z" stroke="#e2b93b"/><path d="M270,440 l26,-36 l26,36 z" stroke="#d9a441"/>
+      </g>
+      <text x="236" y="486" text-anchor="middle">Kingdom camps</text>
+      <text x="236" y="502" text-anchor="middle" font-weight="400" font-size="11" fill="#8d8b98">Iron Crown · Sun Choir · Gilded League</text>
+      <!-- training yard -->
+      <rect x="580" y="410" width="130" height="70" rx="4" fill="#1e1c16" stroke="#8d8b98"/>
+      <g fill="#a07844"><rect x="600" y="430" width="6" height="22"/><rect x="630" y="430" width="6" height="22"/><rect x="660" y="430" width="6" height="22"/></g>
+      <text x="645" y="472" text-anchor="middle">Training yard</text>
+      <!-- fields gate -->
+      <rect x="415" y="478" width="50" height="22" fill="#1b1a24" stroke="#8fd14f" stroke-dasharray="4 3"/>
+      <text x="440" y="522" text-anchor="middle" fill="#8fd14f">Fields (later)</text>
+    </g>
+  </g>
+</svg>

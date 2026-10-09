@@ -111,7 +111,7 @@ fail (80%, 65%, 50%, 38%, 28%): the level stays, the cost is spent, and each fai
   (`npx playwright install chromium`); rerun it after changing sprites.
 - [docs/design](docs/design): design proposals: [skill trees and mutations](docs/design/skill-trees.md),
   [class trees and skill ranks](docs/design/class-trees.md),
-  [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md).
+  [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md).
 
 ## Saves
 
