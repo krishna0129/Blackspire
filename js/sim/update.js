@@ -79,7 +79,8 @@ function resetBoss(){
 function updateNeeds(dt){
   if(G.village)return;   // nobody goes hungry at home
   let empty=0;
-  for(const k in NEEDS){const was=P[k];P[k]=Math.max(0,P[k]-NEEDS[k].drain*dt);
+  const slow=P.buff&&P.buff.id==='fed'?.5:1;
+  for(const k in NEEDS){const was=P[k];P[k]=Math.max(0,P[k]-NEEDS[k].drain*slow*dt);
     if(was>=NEED_LOW&&P[k]<NEED_LOW)log(NEEDS[k].low);
     if(was>0&&P[k]<=0)log(`<span style="color:var(--red)">${NEEDS[k].empty}</span>`);
     if(P[k]<=0)empty++;}
@@ -88,11 +89,14 @@ function updateNeeds(dt){
 }
 function updatePlayer(dt){
   if(P.dead)return;
-  P.mp=Math.min(ST.maxMp,P.mp+ST.mpRegen*(P.drink<NEED_LOW?.5:1)*dt);if(P.guard>0)P.guard-=dt;if(P.ward>0)P.ward-=dt;if(P.hot){heal(P.hot.rate*dt);P.hot.t-=dt;if(P.hot.t<=0)P.hot=null;}
+  const buff=P.buff&&P.buff.id;
+  P.mp=Math.min(ST.maxMp,P.mp+ST.mpRegen*(P.drink<NEED_LOW?.5:1)*(buff==='clear'?1.25:1)*dt);
+  if(P.buff){P.buff.t-=dt;if(P.buff.t<=0){log(BUFFS[P.buff.id].name+' has worn off.');P.buff=null;}}if(P.guard>0)P.guard-=dt;if(P.ward>0)P.ward-=dt;if(P.hot){heal(P.hot.rate*dt);P.hot.t-=dt;if(P.hot.t<=0)P.hot=null;}
   P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
-  if(P.food>=NEED_LOW)heal(ST.regen*dt);
+  if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:1)*dt);
   updateNeeds(dt);if(P.dead)return;
+  P.farmT=(P.farmT||0)-dt;if(P.farmT<=0){P.farmT=5;if(S.farm&&S.farm.farmer)farmWork();}   // the farmhand, while you play
   // Safe rooms: no fighting in either direction. The last one you stand in is where you wake after dying.
   const si=P.locked?-1:safeIndex(P.x,P.y);P.safe=si>=0;
   if(si>=0&&(S.cp!==si||S.cpFloor!==G.n)){S.cp=si;S.cpFloor=G.n;if(si>0){log('Safe room reached. You will wake here if you fall.');sfx('pick');}}
@@ -151,6 +155,10 @@ function updateEnemy(e,dt){   // enemies never step into a safe room, whether wa
 }
 function updateEnemyCore(e,dt){
   if(e.flash>0)e.flash-=dt;if(e.hurtT>0)e.hurtT-=dt;if(e.sunder>0)e.sunder-=dt;
+  if(ETYPES[e.type].dummy){   // a scarecrow: shrugs off knockback and stuns, and is whole again once left alone
+    e.kx=e.ky=0;e.stun=0;if(e.hurtT<=0){e.hp=e.maxHp;e.bleedT=0;}else if(e.bleedT>0){e.bleedT-=dt;e.bleedAcc+=e.bleedDps*dt;
+      if(e.bleedAcc>=1){const d=Math.floor(e.bleedAcc);e.bleedAcc-=d;e.hp-=d;addNum(e.x,e.y-e.r-5,d,'bleed');}}
+    return;}
   if(e.bleedT>0){e.bleedT-=dt;e.bleedAcc+=e.bleedDps*dt;if(e.bleedAcc>=1){const d=Math.floor(e.bleedAcc);e.bleedAcc-=d;e.hp-=d;e.hurtT=4;addNum(e.x,e.y-e.r-5,d,'bleed');if(e.hp<=0){killEnemy(e);return;}}}
   if(Math.abs(e.kx)+Math.abs(e.ky)>1){moveEnt(e,e.kx*dt,e.ky*dt);const k=Math.max(0,1-9*dt);e.kx*=k;e.ky*=k;}
   if(e.stun>0){e.stun-=dt;return;}

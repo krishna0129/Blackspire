@@ -41,19 +41,34 @@ test('online play',async t=>{
     const d=await client(s.port);d.send({t:'resume',token:'nope'});assert.ok(!(await d.wait(o=>o.t==='auth')).ok);d.ws.close();
   });
 
-  await t.test('each player starts alone in their own party',async()=>{
+  const member=name=>[...s.game.parties.values()].flatMap(p=>p.members).find(q=>q.S.char.name===name);
+
+  await t.test('new characters arrive in the root village, each in their own party, sharing one channel',async()=>{
+    assert.strictEqual(A.floor.n,0);assert.strictEqual(B.floor.n,0);
     assert.notStrictEqual(A.last('party').code,B.last('party').code);
-    assert.strictEqual(A.last('s').pl.length,0);
+    assert.strictEqual(A.floor.ch,B.floor.ch);
+    const wa=await A.wait(o=>o.t==='world'&&o.people.some(q=>q.name==='Bravo'),3000,0);assert.strictEqual(wa.ch,A.floor.ch);
+    const sa=await A.wait(o=>o.t==='s'&&o.pl.length===1);assert.strictEqual(sa.pl[0].id,B.floor.id);
   });
 
-  await t.test('joining by code puts both on the same floor and each sees the other',async()=>{
+  await t.test('joining by code makes one party, still in the village',async()=>{
     const code=A.last('party').code,since=B.msgs.length;
     B.send({t:'join',code});
-    const fl=await B.wait(o=>o.t==='floor',3000,since);
-    assert.strictEqual(fl.seed,A.floor.seed);
+    const fl=await B.wait(o=>o.t==='floor',3000,since);assert.strictEqual(fl.n,0);
     const pa=await A.wait(o=>o.t==='party'&&o.members.length===2);
     assert.deepStrictEqual(pa.members.map(m=>m.name).sort(),['Alpha','Bravo']);
-    const sa=await A.wait(o=>o.t==='s'&&o.pl.length===1);assert.strictEqual(sa.pl[0].id,fl.id);
+  });
+
+  await t.test('the leader takes the party up through the Teleport Gate, but only from the gate',async()=>{
+    const ma=member('Alpha'),since=A.msgs.length,sb=B.msgs.length;
+    A.send({t:'travel',n:1});await new Promise(r=>setTimeout(r,150));
+    assert.ok(!A.msgs.slice(since).some(o=>o.t==='floor'),'not from across the square');
+    const G=ma.w.G;ma.pl.x=G.home.x;ma.pl.y=G.home.y;
+    A.send({t:'travel',n:1});
+    const fa=await A.wait(o=>o.t==='floor',3000,since),fb=await B.wait(o=>o.t==='floor',3000,sb);
+    assert.strictEqual(fa.n,1);assert.strictEqual(fb.n,1);assert.strictEqual(fa.seed,fb.seed);
+    const sa=await A.wait(o=>o.t==='s'&&o.pl.length===1);assert.strictEqual(sa.pl[0].id,fb.id);
+    A.floor=fa;
   });
 
   await t.test('hunger and thirst come down in the snapshot, and eating is a key the server runs',async()=>{
@@ -75,13 +90,13 @@ test('online play',async t=>{
     assert.ok(Math.abs(bad.me.x-ok.me.x)<5,'the server kept the player where they were');
   });
 
-  await t.test('gear and attribute actions run on the server; the shop needs a blacksmith nearby',async()=>{
+  await t.test('gear and attribute actions run on the server; the shop needs a trader nearby',async()=>{
     const g=s.game,m=[...g.parties.values()][0].members.find(q=>q.S.char.name==='Alpha');
     m.S.char.pts=2;
     A.send({t:'act',id:1,name:'spend',args:['str']});
     assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===1)).r,true);
     assert.strictEqual(m.S.char.str,1);
-    m.pl.x+=200;   // walk away from the start room's smith
+    m.pl.x+=200;   // walk away from the start room's trader
     A.send({t:'act',id:2,name:'openShop',args:[0]});assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===2)).r,false);
     A.send({t:'act',id:3,name:'nope',args:[]});assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===3)).r,false);
   });
@@ -89,16 +104,56 @@ test('online play',async t=>{
   await t.test('a kill rewards both players, and loot is only sent to its owner',async()=>{
     const g=s.game,p=[...g.parties.values()].find(q=>q.members.length===2),R=g.R;
     const [ma,mb]=p.members,xa=ma.S.char.xp,xb=mb.S.char.xp;
-    R.setWorld(p.G);R.setPlayer(ma.pl);const e=p.G.enemies.find(q=>!q.boss&&!q.elite);e.elite=true;R.killEnemy(e);
+    const G=p.floorW.G;R.setWorld(G);R.setPlayer(ma.pl);const e=G.enemies.find(q=>!q.boss&&!q.elite);e.elite=true;R.killEnemy(e);
     assert.ok(ma.S.char.xp>xa&&mb.S.char.xp>xb,'both gained experience');
-    const owners=new Set(p.G.drops.map(d=>d.owner));assert.deepStrictEqual([...owners].sort(),[ma.pid,mb.pid].sort());
+    const owners=new Set(G.drops.map(d=>d.owner));assert.deepStrictEqual([...owners].sort(),[ma.pid,mb.pid].sort());
     const sa=await A.wait(o=>o.t==='s'&&o.dr.length>0);
-    assert.ok(sa.dr.every(d=>p.G.drops.find(q=>q.uid===d.uid).owner===ma.pid));
+    assert.ok(sa.dr.every(d=>G.drops.find(q=>q.uid===d.uid).owner===ma.pid));
   });
 
   await t.test('only the leader picks the floor',async()=>{
-    const since=B.msgs.length;B.send({t:'travel',n:1});
+    const since=B.msgs.length;B.send({t:'travel',n:0});
     assert.match((await B.wait(o=>o.t==='err',3000,since)).msg,/leader/);
+  });
+
+  await t.test('the floor gate takes the party home to the village',async()=>{
+    const ma=member('Alpha'),G=ma.w.G,since=A.msgs.length;ma.pl.x=G.home.x;ma.pl.y=G.home.y;
+    A.send({t:'travel',n:0});
+    const fa=await A.wait(o=>o.t==='floor',3000,since);assert.strictEqual(fa.n,0);assert.ok(fa.ch>=1);
+    assert.strictEqual(member('Bravo').w,ma.w,'the party shares a channel');
+  });
+
+  await t.test('online characters enhance at the village forge',async()=>{
+    const ma=member('Alpha'),q=ma.w.G.smiths[0];ma.pl.x=q.x;ma.pl.y=q.y+16;
+    ma.S.mats={scrap:99,ember:99,crystal:99};ma.S.shards=99999;
+    A.send({t:'act',id:40,name:'enhance',args:['eq','weapon']});
+    assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===40)).r,'up');
+    assert.strictEqual(ma.S.equip.weapon.plus,1);
+  });
+
+  await t.test('a full channel opens another',async()=>{
+    const g=s.game,w=member('Alpha').w,pad=[];
+    while(w.members.length+pad.length<30)pad.push({});
+    w.members.push(...pad);const other=g.channelFor(1);w.members.splice(w.members.length-pad.length,pad.length);
+    assert.notStrictEqual(other,w);assert.strictEqual(other.kind,'village');assert.notStrictEqual(other.ch,w.ch);
+    g.worlds.delete(other);
+  });
+
+  await t.test('party notices at the guild: the leader posts, someone else joins from it',async()=>{
+    let since=B.msgs.length;B.send({t:'notice',text:'not mine to post'});
+    assert.match((await B.wait(o=>o.t==='err',3000,since)).msg,/leader/);
+    since=A.msgs.length;A.send({t:'notice',text:'  Two for floor 3, <healer> wanted  '});
+    const mine=await A.wait(o=>o.t==='notices'&&o.list.length===1,3000,since);
+    assert.strictEqual(mine.list[0].text,'Two for floor 3, healer wanted','trimmed, and no markup');assert.ok(mine.list[0].own);
+    const C=await player(s.port,'Charlie');C.send({t:'notices'});
+    const seen=await C.wait(o=>o.t==='notices'&&o.list.length===1);
+    assert.strictEqual(seen.list[0].name,'Alpha');assert.ok(!seen.list[0].own);assert.strictEqual(seen.list[0].size,2);
+    since=C.msgs.length;C.send({t:'join',code:seen.list[0].code});
+    const fl=await C.wait(o=>o.t==='floor',3000,since);assert.strictEqual(fl.n,0);
+    await A.wait(o=>o.t==='party'&&o.members.length===3);
+    since=A.msgs.length;A.send({t:'unnotice'});
+    assert.strictEqual((await A.wait(o=>o.t==='notices',3000,since)).list.length,0);
+    C.ws.close();await new Promise(r=>setTimeout(r,100));
   });
 
   await t.test('characters are saved and come back on the next login',async()=>{

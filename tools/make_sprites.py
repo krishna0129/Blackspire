@@ -671,9 +671,14 @@ def small():
     d.ellipse([6,3,15,12],fill=hx('#d9c08a')); R2(d,8,6,1,1,'#2a1d12'); R2(d,13,6,1,1,'#2a1d12'); R2(d,9,9,4,1,'#6b4a2c')
     d.polygon([(4,4),(11,0),(18,4)],fill=hx('#4a3324')); R2(d,2,4,18,2,'#4a3324')
     for x in (0,19): R2(d,x,11,3,6,'#d9a441')
-    save(im,'village/scarecrow')
+    save(im,'enemies/dummy')                                                              # the training yard's scarecrow
     im,d=V(12,16); R2(d,5,6,2,10,'#6b4a2c'); R2(d,0,0,12,8,'#d9a441'); R2(d,1,1,10,6,'#e2b93b'); R2(d,3,3,6,1,'#5e4620'); R2(d,3,5,4,1,'#5e4620')   # "for sale"
     save(im,'village/sign')
+    im,d=V(22,30); R2(d,9,8,3,22,'#4a3324'); R2(d,10,8,1,22,'#6b4a2c')                    # the fields' signpost: "Fields", a sprout
+    d.polygon([(1,2),(18,2),(21,7),(18,12),(1,12)],fill=hx('#6b4a2c')); d.polygon([(2,3),(17,3),(19,7),(17,11),(2,11)],fill=hx('#8a6a3a'))
+    for (x,y) in [(4,5),(6,5),(8,5),(10,5),(12,5),(4,8),(7,8),(10,8)]: R2(d,x,y,1,1,'#3e2c1e')
+    R2(d,14,6,1,4,'#3d6630'); R2(d,12,6,2,1,'#4d7a3a'); R2(d,15,5,2,1,'#4d7a3a')
+    save(im,'village/signpost')
 def trunk():
     im,d=V(300,96)
     d.polygon([(30,95),(60,40),(70,0),(230,0),(240,40),(270,95)],fill=hx('#1e1824'))

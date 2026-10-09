@@ -23,7 +23,7 @@ const KINGDOMS=[
 const VILLAGE={
   square:{x:28,y:17,r:5.5},
   market:[40,5,14,22],
-  fields:[3,27,13,7],plots:[[4,28],[8,28],[12,28],[4,31],[8,31],[12,31]],
+  fields:[3,27,13,7],fieldGate:[13,15],fieldSign:[15.7,27],plots:[[4,28],[8,28],[12,28],[4,31],[8,31],[12,31]],
   yard:[38,29,13,6],
   // worn dirt paths, each a cubic curve: start, two control points, end
   paths:[
@@ -36,7 +36,7 @@ const VILLAGE={
     [[28,11.5],[27,8],[29.5,7],[28,4.5]],       // up to the trunk
   ],
   trees:[[3.5,13.5,'a'],[17.5,5.5,'b'],[37.5,5.2,'a'],[19,23.5,'b'],[36.5,24.2,'a'],[2.8,26,'b'],[34.5,35,'a'],[18,35.2,'b'],
-    [37.2,11.6,'b'],[21,8.5,'a'],[34.6,9,'b'],[16.5,30,'a'],[52.5,30,'b'],[14.5,19,'a'],[38.5,20.5,'a'],[3,35,'a'],[53,35.4,'a']],
+    [37.2,11.6,'b'],[21,8.5,'a'],[34.6,9,'b'],[17.8,33,'a'],[52.5,30,'b'],[14.5,19,'a'],[38.5,20.5,'a'],[3,35,'a'],[53,35.4,'a']],
   lamps:[[20.5,13.5],[35,15.6],[21.2,21.2],[24.5,26.5],[34.5,26.4],[39.6,9],[16.5,25.6]],
   scarecrows:[[41.5,32],[44.5,32],[47.5,32]],
 };
@@ -68,19 +68,29 @@ function genVillage(){
   for(const k of KINGDOMS){block(Math.floor(k.x)-1,k.y-2,3,2);prop('village/tent',k.x,k.y,{tint:k.color});
     talkers.push({x:vx(k.x),y:vy(k.y+.8),name:'Captain of the '+k.name,line:k.line,
       look:{skin:SKINS[1+KINGDOMS.indexOf(k)],hair:HAIRS[KINGDOMS.indexOf(k)*2],style:KINGDOMS.indexOf(k)+1,eyes:EYES[0]},eq:{armor:{type:k.armor,tint:k.color}}});}
-  talkers.push({x:vx(9.5),y:vy(11.7),name:'Innkeeper',line:'Rooms and hot meals soon. The well round the side is free.',
+  traders.push({x:vx(9.5),y:vy(11.7),name:'Innkeeper',sells:'inn',
     look:{skin:SKINS[2],hair:HAIRS[2],style:5,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#8a8474'}}});
-  talkers.push({x:vx(28),y:vy(32.8),name:'Guild clerk',line:'The guild opens its doors soon. Quests, rewards and party notices, all in here.',
-    look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}});
+  // the fields' entrance (top right, where the path arrives): a signpost, the farmhand and the crop broker. Any of
+  // them, or any plot, opens the fields manager (js/sim/fields.js).
+  const[sgx,sgy]=VILLAGE.fieldSign;block(Math.floor(sgx),Math.floor(sgy)-1,1,1);prop('village/signpost',sgx,sgy);
+  const farmhand={x:vx(12.2),y:vy(26.5),name:'Farmhand',fields:true,look:{skin:SKINS[3],hair:HAIRS[4],style:1,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#5e4620'}}};
+  const broker={x:vx(17.4),y:vy(27.7),name:'Crop broker',fields:true,look:{skin:SKINS[1],hair:HAIRS[5],style:3,eyes:EYES[3]},eq:{armor:{type:'coat',tint:'#6b4a2c'}}};
+  talkers.push(farmhand,broker);
+  const fieldDesk=[{x:vx(sgx),y:vy(sgy-.3),name:'Fields'},farmhand,broker];
+  // the Adventurers' Guild's clerk, at its door: quests and party notices (js/sim/quests.js)
+  const guild={x:vx(28),y:vy(32.8),name:'Guild clerk',look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}};
   // scenery
   for(const[x,y,v]of VILLAGE.trees){block(Math.floor(x),Math.floor(y)-1,1,1);prop('village/tree_'+v,x,y);}
   for(const[x,y]of VILLAGE.lamps)prop('village/lamp',x,y,{lamp:true});
-  for(const[x,y]of VILLAGE.scarecrows){block(Math.floor(x),Math.floor(y)-1,1,1);prop('village/scarecrow',x,y);}
-  for(const[x,y]of VILLAGE.plots)prop('village/sign',x+2.6,y+.9);
+  // the training yard's scarecrows are enemies that never fight back or fall (ETYPES.dummy); fighting is allowed there
+  // (their tiles stay open: a hit needs a clear line to its target)
+  const enemies=VILLAGE.scarecrows.map(([x,y])=>makeEnemy('dummy',vx(x),vy(y-.6),1,1,false));
+  const[yx,yy,yw,yh]=VILLAGE.yard,spar={x0:vx(yx),y0:vy(yy),x1:vx(yx+yw),y1:vy(yy+yh)};
+  // the fields' plots: drawn by render() from each player's own S.plots (a "for sale" sign on the ones you don't own)
   const all={x0:vx(0),y0:vy(0),x1:vx(VW),y1:vy(VH)},spawn=VILLAGE.square;
   return{n:0,village:true,map,rooms:[],start:{x:VOX+27,y:VOY+21,w:2,h:2},boss:{x:0,y:0,w:0,h:0},gates:[],gatesOpen:true,locked:false,
-    enemies:[],chests:[],drops:[],proj:[],pproj:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
+    enemies,spar,chests:[],drops:[],proj:[],pproj:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
     gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],
-    safe:[all],points:[],smiths,traders,talkers,props,wells,stashes,home:{x:vx(spawn.x),y:vy(spawn.y)}};
+    safe:[all],points:[],smiths,traders,talkers,props,wells,stashes,guild,board:{x:vx(22),y:vy(17.3)},fieldDesk,crops:['potato','glowcap'],home:{x:vx(spawn.x),y:vy(spawn.y)}};
 }
 const nearTalker=()=>{for(const q of G.talkers||[])if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;};

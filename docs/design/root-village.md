@@ -3,12 +3,13 @@
 Status: being built. Part of [world.md](world.md): the first village, at the roots of the tree, where every character
 starts and comes home to.
 
-**In the game (single player):** the map and its art, the Teleport Gate (floors and visited safe points), the floor
-gate's way home, the four trader stalls, the forge (the only blacksmith now: the tower's safe rooms keep a trader and
-a stash chest), the stash chest by the inn, the well and empty flasks, the arcanist, captains, innkeeper and guild
-clerk (who talk, for now), and no hunger or thirst at home. **Not yet:** the inn's meals, working scarecrows, the
-guild, the fields, and the village online (online play still starts on floor 1, so online characters can't reach
-the forge until the online village exists).
+**In the game, single player and online:** the map and its art, the Teleport Gate (floors and visited safe points),
+the floor gate's way home, the four trader stalls, the forge (the only blacksmith: the tower's safe rooms keep a trader
+and a stash chest), the stash chest by the inn, the well and empty flasks, the arcanist, captains, innkeeper and guild
+clerk (who talk, for now), and no hunger or thirst at home. Online, the village is **shared**: everyone is in a
+channel of up to 30, sees the others there, and parties form and leave through the Teleport Gate together. The
+inn serves meals, the training yard's scarecrows take hits, the Adventurers' Guild runs its quest board and party
+notices, and the fields grow potatoes and glowcaps (below). The whole village plan is in.
 
 ![Plan of the root village: the Teleport Gate glowing in the middle of the square under the tower's trunk; winding paths lined with trees, shrubs, flowers and lamps lead to the inn and well, the market of six stalls including the forge and the witchcraft room, the kingdom camps, the fields of plots for sale, and the training yard with scarecrow dummies](img/root-village.svg)
 
@@ -32,6 +33,20 @@ grass, lamps at the corners, smoke from the forge and bubbles from the witchcraf
 - **Teleporting** goes to **safe points you have visited** (decided), plus each floor's entrance.
 
 ### The Adventurers' Guild
+
+**In the game.** How it works now:
+
+- **One board a day per region**, the same for every player, built from the date (it needs no server). The root
+  village's board has three hunts (kill a number of one enemy, on the floor it lives on), two deliveries (bring iron
+  scrap, Emberstone or Spire crystal) and a bounty (beat one floor's boss). Rewards are shards and experience; the
+  bounty adds a Spire crystal.
+- Up to **three quests** taken at once, at the guild clerk by the door. Kills count from when you take a quest;
+  deliveries count what you carry and take it when you hand in. Giving a quest up frees its place.
+- The notice board in the square shows the same board, to read; taking and handing in happen at the guild.
+- The board refreshes at **midnight UTC**, and shows how long until then.
+- **Party notices (online):** a party leader in the village posts one line; anyone online sees it at the guild, with
+  the leader's name, level and class, the party's size and furthest floor, and joins with one click. A notice comes
+  down when the party fills, breaks up, its leader takes it down, or after 30 minutes.
 
 **Decided:** the village has an adventurers' guild, on the square's south side. There players:
 
@@ -67,6 +82,25 @@ All six count as NPC stock for the region's prices ([world.md](world.md#the-mark
 | **Kingdom camps** | the three companies' tents and banners; their captains say a line or two now and give quests later |
 | **Fields** | plots of farmland that players **buy** to grow crops (below) |
 
+### The inn's meals
+
+**In the game.** The innkeeper serves three meals, eaten on the spot. Each fills the meters and leaves one buff for
+20 minutes; a new meal replaces the old buff, and falling in the tower loses it.
+
+| Meal | Price | Fills | Buff |
+|---|---|---|---|
+| Root stew | 15 | hunger 100%, thirst 20% | **Well fed:** hunger and thirst drain half as fast |
+| Roast boar and bread | 30 | hunger 100% | **Hearty:** natural healing 50% faster |
+| Glowcap tea | 10 | thirst 100% | **Clear-headed:** mana comes back 25% faster |
+
+Prices rise 25% for each floor past the first that you have reached, like the market's.
+
+### The training yard
+
+**In the game.** The yard is the one place in the village where weapons come out. Its three scarecrows take hits,
+show the damage numbers, rock when struck and never fall; left alone for a few seconds they are whole again. They
+never move or strike back, give nothing, and online every player in the channel shares them.
+
 ### Water and the well
 
 **Decided:** water from the well is free, but you need a **flask** to take it. Water flasks are bought from traders
@@ -74,6 +108,31 @@ and market stalls; once drunk, a flask becomes an **empty flask**, which the wel
 player who keeps their flasks only pays for them once, and the well is a reason to come home.
 
 ### Fields
+
+**In the game.** Everything is done from the **fields manager**, one screen showing every plot in the village's
+fields: buy, plant, harvest, and switch the farmhand and the crop broker. It opens at the field's entrance (top
+right, where the path arrives) from the signpost or either of the two people standing there, or from any plot.
+
+- **Buy it:** the first plot costs 100 shards and each one after costs twice the last (200, 400...).
+- **Plant it:** potatoes (10 shards of seed, ready in an hour, 4 to 6 a harvest) or glowcaps (20 shards, three hours,
+  2 or 3). Crops grow in real time, offline too. Only your own plots show your crops; the ones you don't own show a
+  "for sale" sign, so every player sees just their own field.
+- **Harvest it**, and take the crops to the inn: the innkeeper cooks root stew from three potatoes and glowcap tea
+  from two glowcaps instead of charging shards, and packs two potatoes into a ration to take into the tower.
+- Glowcaps going into potions waits for the arcanist's witchcraft room.
+
+**Help on the field (decided, in the game).** Two people by the fields, both switched on and off at any of your plots:
+
+- The **farmhand** brings in ripe crops and replants the same crop, paying the seed from your shards. Their wage is
+  **40 shards a plot each day**, paid at the start of every 24 hours; if you can't pay, they leave. They work while
+  you are in the tower or offline, and catch up the moment you are back.
+- The **crop broker** sells every harvest for you, the farmhand's or your own, and keeps **a quarter**.
+- Doing it yourself pays more: harvest by hand and sell at the food and drink stall at the full price (potatoes 4
+  shards, glowcaps 15). Early on that is the better deal; later, the farmhand and the broker turn the fields into
+  passive income while you spend your time in the tower.
+
+With both hired, one potato plot nets about 80 shards a day and six about 480: a steady side income, below a good
+run in the tower. Easy to tune with the wage, the cut and the crop prices.
 
 - Fields are divided into **plots you buy** with shards. An owned plot is yours alone; nobody else can enter your
   field (decided in world.md).

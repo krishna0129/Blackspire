@@ -27,6 +27,7 @@ function render(){
     else if(q.line){ctx.save();ctx.translate(q.x-camX,q.y-camY);ctx.rotate(q.a);ctx.globalAlpha=.16+.3*p;ctx.fillStyle='#d9534f';ctx.fillRect(0,-13,q.len,26);ctx.globalAlpha=.8;ctx.fillRect(0,-13,q.len*p,1);ctx.fillRect(0,12,q.len*p,1);ctx.restore();ctx.globalAlpha=1;}
     else{const x=q.x-camX,y=q.y-camY;ctx.globalAlpha=.14;ctx.fillStyle='#d9534f';ctx.beginPath();ctx.arc(x,y,q.r,0,TAU);ctx.fill();ctx.globalAlpha=.34;ctx.beginPath();ctx.arc(x,y,q.r*p,0,TAU);ctx.fill();ctx.globalAlpha=1;dotArc(x,y,q.r,0,TAU,'#d9534f');}}
   // bodies on the floor (floor 3): a Gravecaller can raise them, fire burns them
+  if(G.village)drawPlots(t);
   if(G.corpses&&G.corpses.length){const cs=corpseSprite();for(const c of G.corpses)put(ctx,cs,Math.round(c.x-camX-gw(cs)/2),Math.round(c.y-camY-gh(cs)/2));}
   // chests + drops
   const opened=floorState(G.n).chests;   // which chests are open is yours alone
@@ -44,6 +45,7 @@ function render(){
   for(const q of G.smiths)list.push({smith:q,y:q.y,r:6});
   for(const q of G.traders||[])list.push({trader:q,y:q.y,r:6});
   for(const q of G.talkers||[])list.push({talker:q,y:q.y,r:6});
+  if(G.guild)list.push({talker:G.guild,y:G.guild.y,r:6});
   for(const q of G.stashes||[])list.push({stash:q,y:q.y,r:0});
   for(const q of G.props||[])list.push({prop:q,y:q.y,r:0});
   list.sort((a,b)=>(a.y+a.r)-(b.y+b.r));
@@ -114,6 +116,24 @@ function drawOther(q){
   ctx.font='8px "Pixelify Sans",monospace';ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText(q.name,x+1,y+1);ctx.fillStyle='#cfe9ee';ctx.fillText(q.name,x,y);
   const w=16,hp=clamp(q.hp/q.maxHp,0,1);ctx.fillStyle='#000';ctx.fillRect(x-w/2-1,y+2,w+2,3);ctx.fillStyle='#8fd14f';ctx.fillRect(x-w/2,y+3,Math.ceil(w*hp),1);
 }
+// The fields' plots, as this player has them: crops by how far they have grown, and a sign on the plots for sale.
+function drawPlots(t){
+  const now=Date.now(),sign=IMG['village/sign']?propSprite({s:'village/sign'}):null;
+  VILLAGE.plots.forEach(([px,py],i)=>{
+    const x0=vx(px)-camX,y0=vy(py)-camY;if(x0>W||y0>H||x0<-60||y0<-40)return;const p=myPlot(i);
+    if(!p){if(sign)put(ctx,sign,Math.round(x0+40-gw(sign)/2),Math.round(y0+14-gh(sign)));return;}
+    if(!p.crop)return;
+    const g=cropGrowth(p,now),C=CROPS[p.crop],ready=g>=1;
+    for(let r=0;r<2;r++)for(let c=0;c<5;c++){const x=Math.round(x0+5+c*9+(r%2)*4),y=Math.round(y0+8+r*13);
+      if(g<.2){ctx.fillStyle='#2a1d12';ctx.fillRect(x,y,2,1);continue;}                 // seed holes
+      const h=Math.round(2+g*6);
+      if(p.crop==='potato'){ctx.fillStyle='#3d6630';ctx.fillRect(x,y-h,1,h);ctx.fillRect(x-1,y-h+1,3,Math.max(1,h-3));
+        if(g>.6){ctx.fillStyle='#4d7a3a';ctx.fillRect(x-2,y-h+2,5,2);}if(ready){ctx.fillStyle='#e6e1d3';ctx.fillRect(x,y-h-1,1,1);}}
+      else{ctx.fillStyle='#d9d4c4';ctx.fillRect(x,y-h+2,1,h-2);ctx.fillStyle=ready?'#9be08a':'#5e7a50';ctx.fillRect(x-1,y-h,3,2);
+        if(ready){ctx.globalAlpha=.25+.15*Math.sin(t*3+c+r);ctx.fillRect(x-3,y-h-2,7,6);ctx.globalAlpha=1;}}}
+    if(ready&&Math.floor(t*2)%2){ctx.fillStyle=C.color;ctx.fillRect(Math.round(x0+44),Math.round(y0+1),2,2);}   // a blink: ready to harvest
+  });
+}
 // The village's Teleport Gate: a ring of light in the square, between its four pillars, with a beam rising from it.
 function drawTeleportGate(q,t){
   const gx=Math.round(q.x-camX),gy=Math.round(q.y-camY),pu=Math.sin(t*2.5)*2;
@@ -158,6 +178,7 @@ function drawEnemy(e,t){
   if(e.state==='hop')bob=-Math.sin((1-Math.max(0,e.t)/(e.hopT||.24))*Math.PI)*6;
   if(e.state==='windup'||e.state==='draw'||e.state==='channel'){x+=rand(-.8,.8);if(!s.sheet)bob-=1;}
   if(e.state==='exposed')x+=Math.sin(t*40)*.8;   // a hermit just out of the ground, dazed
+  if(e.type==='dummy'){x+=e.flash>0?Math.sin(t*50)*1.5:0;bob=0;}   // a scarecrow rocks when it is hit
   if(e.lunge>0){const a=Math.atan2(P.y-e.y,P.x-e.x);x+=Math.cos(a)*4;y+=Math.sin(a)*4;}
   if(e.stun>0)x+=Math.sin(t*40)*.6;
   e.bobY=Math.round(bob);
@@ -171,7 +192,7 @@ function drawEnemy(e,t){
   if(flip){ctx.save();ctx.translate(dx,0);ctx.scale(-1,1);cut(ctx,img,fx,fy,fw,fh,-Math.ceil(fw/2),dy);ctx.restore();}
   else cut(ctx,img,fx,fy,fw,fh,dx-Math.floor(fw/2),dy);
   if(e.state==='windup'||e.state==='draw'){ctx.fillStyle='#fff';ctx.fillRect(dx,dy-4,1,2);ctx.fillRect(dx,dy-1,1,1);}
-  if(e.hurtT>0&&!e.boss){const w=Math.max(8,e.r*2),p=clamp(e.hp/e.maxHp,0,1);ctx.fillStyle='#000';ctx.fillRect(dx-w/2-1,dy-4,w+2,3);ctx.fillStyle=e.elite?'#e8b24a':'#d9534f';ctx.fillRect(dx-w/2,dy-3,Math.ceil(w*p),1);}
+  if(e.hurtT>0&&!e.boss&&e.type!=='dummy'){const w=Math.max(8,e.r*2),p=clamp(e.hp/e.maxHp,0,1);ctx.fillStyle='#000';ctx.fillRect(dx-w/2-1,dy-4,w+2,3);ctx.fillStyle=e.elite?'#e8b24a':'#d9534f';ctx.fillRect(dx-w/2,dy-3,Math.ceil(w*p),1);}
 }
 // Where the weapon hand sits and how the weapon rests, for facing down, up, left, right.
 // The off-hand shield: [dx, dy, frame (0 front, 1 back, 2 edge-on), drawn in front of the body?] for facing down, up, left, right.

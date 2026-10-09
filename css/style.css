@@ -45,6 +45,8 @@ button{font:inherit;color:inherit}
 .needs .bar{flex:1;height:6px;border-color:var(--line)}
 .bar.food i{background:#d9a441}
 .bar.drink i{background:#5aa7e6}
+#hBuff{margin-top:4px;font-size:12px;color:var(--cyan);text-shadow:0 1px 0 #000}
+#hBuff:empty{display:none}
 .needs .bar.low{animation:needlow 1s steps(2) infinite}
 @keyframes needlow{50%{border-color:var(--red)}}
 #hFloor{margin-top:6px;font-size:13px;color:var(--dim);text-shadow:0 2px 0 #000}
@@ -185,6 +187,43 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #dead h2,#ask h2,#pause h2,#travel h2,#online h2{font-size:34px;margin:0 0 6px;color:#f1b0a8}
 #pause h2,#online h2{color:var(--bone)}
 #travel h2{color:var(--amber)}
+/* the fields manager */
+#fields{align-items:center;justify-content:center;padding:10px}
+#fields .sheet{width:min(720px,100%);max-height:92vh;overflow:auto;padding:22px 20px}
+#fields h2{font-size:30px;margin:0 0 4px;color:#8fd14f;text-align:center}
+#fields p{color:var(--dim);margin:0 0 12px;text-align:center}
+.fdhelp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.fdhelp .btn,.plot .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px}
+.fdhelp small,.plot small{font-weight:500;font-size:12px;opacity:.75}
+.fdhelp .on{border-color:#8fd14f}
+.fdgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.plot{display:flex;flex-direction:column;gap:6px;padding:10px;background:#15151c;border:1px solid var(--line);min-height:128px}
+.plot.ready{border-color:#8fd14f}
+.plot h4{margin:0;font-size:14px}
+.plot .st{font-size:12px;color:var(--dim)}
+.plot .bar{height:6px;margin:0}
+.plot .bar i{background:#8fd14f}
+.plot .btn{width:100%}
+/* the Adventurers' Guild */
+#guild{align-items:center;justify-content:center;padding:10px}
+#guild .sheet{width:min(640px,100%);max-height:92vh;overflow:auto;padding:22px 20px}
+#guild h2{font-size:30px;margin:0 0 4px;color:var(--cyan);text-align:center}
+#guild p{text-align:center;margin:0 0 10px;color:var(--dim)}
+#guild h3{font-size:14px;margin:14px 0 6px;color:var(--bone)}
+#guild h3 span{color:var(--dim);font-weight:500}
+.qlist{display:grid;gap:6px}
+.quest{display:flex;gap:10px;align-items:center;padding:8px 10px;background:#15151c;border:1px solid var(--line)}
+.quest.ready{border-color:var(--cyan)}
+.quest .qt{flex:1;min-width:0}
+.quest b{display:block}
+.quest small{display:block;color:var(--dim);font-size:12px}
+.quest .rw,.quest .pg{display:block}
+.quest .rw{color:var(--amber);font-size:12px}
+.quest .pg{font-size:12px;color:var(--cyan)}
+.quest .btn{white-space:nowrap}
+.qlist .none{color:var(--dim);font-size:13px}
+.gpost{display:flex;gap:6px;margin-top:6px}
+.gpost input{flex:1;min-width:0}
 #travelList{display:grid;gap:8px;margin-bottom:14px;max-height:50vh;overflow:auto}
 #travelList .btn{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 #travelList small{font-weight:500;font-size:12px;opacity:.75}

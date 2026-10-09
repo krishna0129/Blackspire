@@ -14,18 +14,20 @@ function updateHud(){
   setStyle('xpw',elXp,'width',(S.char.xp/xpNeed(S.char.level)*100).toFixed(1)+'%');
   setTxt('hLv','Level '+S.char.level+(S.char.pts?' (+'+S.char.pts+')':''));
   setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));setTxt('foodN',String(S.rations||0));setTxt('drinkN',String(S.flasks||0));setTxt('emptyN',S.empties?S.empties+' empty':'');
+  setTxt('hBuff',P.buff?`${BUFFS[P.buff.id].name}, ${Math.max(1,Math.ceil(P.buff.t/60))} min`:'');
   for(const k of['food','drink']){const v=clamp((P[k]==null?100:P[k])/100,0,1);setStyle(k+'w',$('#'+k+'Fill'),'width',(v*100).toFixed(1)+'%');
     const low=v*100<NEED_LOW;if(hc[k+'low']!==low){hc[k+'low']=low;$('#'+k+'Fill').parentNode.classList.toggle('low',low);}}
   setStyle('cds',cdSk,'height',(P.skillMax?P.skillCd/P.skillMax*100:0).toFixed(0)+'%');
   setStyle('mpw',elMp,'width',(clamp(P.mp/ST.maxMp,0,1)*100).toFixed(1)+'%');setTxt('mpTxt',Math.floor(P.mp)+' / '+ST.maxMp);
   const lack=P.mp<SKILLS[ST.skill].mp||P.safe;if(hc.lack!==lack){hc.lack=lack;elSk.classList.toggle('lack',lack);}
   if(hc.safe!==P.safe){hc.safe=P.safe;$('#slAtk').classList.toggle('lack',!!P.safe);}
-  setTxt('hFloor',G.village?'The root village':'Floor '+G.n+(P.safe?', safe room':''));
+  setTxt('hFloor',G.village?'The root village'+(NET.on?', channel '+NET.ch:''):'Floor '+G.n+(P.safe?', safe room':''));
   setStyle('cdd',cdDo,'height',(P.dodgeCd/.9*100).toFixed(0)+'%');
   setStyle('cdp',cdPo,'height',(P.potCd/1.2*100).toFixed(0)+'%');
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
   const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
   const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
+    nearGuild()?'guild':nearBoard()?'board':plotAt()>=0?'plot'+plotAt()+plotPrompt(plotAt()):nearFields(24)?'fields':
     wl?'well'+(S.empties>0?S.empties:''):tk?'talk:'+tk.name:'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>E</kbd>';
@@ -35,6 +37,10 @@ function updateHud(){
     else if(near==='home')elPrompt.innerHTML=(G.village?'Teleport Gate':'Floor gate')+'<kbd>E</kbd>';
     else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>E</kbd>';
     else if(near==='stash')elPrompt.innerHTML='Stash<kbd>E</kbd>';
+    else if(near==='guild')elPrompt.innerHTML='Adventurers\u2019 Guild<kbd>E</kbd>';
+    else if(near==='board')elPrompt.innerHTML='Notice board<kbd>E</kbd>';
+    else if(near.startsWith('plot'))elPrompt.innerHTML=plotPrompt(plotAt())+': fields<kbd>E</kbd>';
+    else if(near==='fields')elPrompt.innerHTML='Your fields<kbd>E</kbd>';
     else if(near.startsWith('well'))elPrompt.innerHTML=(S.empties>0?`Fill ${S.empties} empty flask${S.empties>1?'s':''} at the well`:'The well')+'<kbd>E</kbd>';
 }
 }
@@ -91,7 +97,7 @@ function showTitle(msg){
   for(const id of['#hud','#panel','#creator','#dead','#ask','#debug','#pause','#travel','#online','#boss'])$(id).hidden=true;
   $('#title').hidden=false;
   const b=$('#btnContinue');b.hidden=!sv;
-  if(sv)b.textContent=`Continue as ${sv.char.name}, level ${sv.char.level}, floor ${sv.floor}`;
+  if(sv)b.textContent=`Continue as ${sv.char.name}, level ${sv.char.level}, ${sv.floor===0?'in the root village':'floor '+sv.floor}`;
   $('#btnNew').className=sv?'btn':'btn primary';
   $('#titleMsg').hidden=!msg;$('#titleMsg').textContent=msg||'';
   $('#modeBtns').hidden=false;$('#soloBtns').hidden=true;
@@ -168,7 +174,7 @@ function buildCreator(){
 }
 let creatorFor='solo';   // solo: a new local save; online: a character on the server
 function openCreator(kind){
-  creatorFor=kind;armed=false;$('#cMsg').textContent='';$('#cGo').textContent=kind==='online'?'Create and enter':'Enter floor 1';
+  creatorFor=kind;armed=false;$('#cMsg').textContent='';$('#cGo').textContent=kind==='online'?'Create and enter':'Enter the village';
   $('#title').hidden=true;$('#online').hidden=true;$('#creator').hidden=false;mode='creator';buildCreator();
 }
 $('#btnNew').onclick=()=>openCreator('solo');
@@ -263,6 +269,9 @@ function interact(){
   const tr=nearTrader();if(tr){openPanel(tr,'trader');return;}
   const st=nearStash();if(st){openPanel(st,'stash');return;}
   const sm=nearSmith();if(sm){openPanel(sm,'smith');return;}
+  if(nearGuild()){openGuild(true);return;}
+  if(nearBoard()){openGuild(false);return;}
+  if(nearFields(24)){openFields();return;}
   if(nearWell()){act('fillFlasks',[],n=>{if(n){sfx('pick');log(`Filled ${n} flask${n>1?'s':''} at the well.`);}
     else log('You have no empty flasks to fill. The food and drink stall sells water flasks; drink one and the flask is yours to refill.');hc.near=null;});return;}
   const tk=nearTalker();if(tk){tk.sayUntil=G.time+6;sfx('pick');}
@@ -280,6 +289,93 @@ function confirmChamber(){
   if(NET.on)NET.send({t:'chamber',g:G.gates.indexOf(q)});else enterChamber(q);
 }
 
+/* ---------- the fields manager ----------
+   Every plot in the village's fields on one screen: buy, plant, harvest, and switch the farmhand and the crop broker
+   (js/sim/fields.js). Opened at the field's entrance (its signpost and the two people there) or on any plot. */
+const fmtLeft=ms=>{const m=Math.ceil(ms/60000);return m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min';};
+function plotPrompt(i){const p=myPlot(i);
+  if(!p)return'Field plot for sale';if(!p.crop)return'Your plot, empty';
+  const C=CROPS[p.crop];return cropReady(p)?`${C.name}s ready to harvest`.replace('Potatos','Potatoes'):`${C.name} plot: ${fmtLeft(C.grow-(Date.now()-p.t))} to go`;}
+let fieldsTick=null;
+function openFields(){if(mode!=='play')return;mode='fields';inp.atk=false;for(const k in keys)keys[k]=false;$('#fields').hidden=false;renderFields();
+  clearInterval(fieldsTick);fieldsTick=setInterval(()=>{if(mode==='fields')renderFields();else clearInterval(fieldsTick);},1000);}   // the clocks count down while it is open
+function closeFields(){if(mode!=='fields')return;$('#fields').hidden=true;mode='play';hc.near=null;clearInterval(fieldsTick);}
+$('#fdClose').onclick=closeFields;
+function renderFields(){
+  if(mode!=='fields')return;const F=S.farm||{},now=Date.now(),own=S.plots.length,price=plotPrice(own),again=()=>renderFields();
+  const held=Object.keys(CROPS).filter(c=>(S.crops||{})[c]).map(c=>`${S.crops[c]} ${CROPS[c].plural}`);
+  $('#fdTxt').textContent=`The soil here is rich in what ${G.crops.map(c=>CROPS[c].plural).join(' and ')} need, and little else. Crops keep growing while you are away. `+
+    (held.length?`You have ${held.join(' and ')}: the inn cooks them, the food and drink stall buys them.`:'');
+  const mk=(html,cls,fn,dis)=>{const b=document.createElement('button');b.className='btn '+cls;b.innerHTML=html;b.disabled=!!dis;b.onclick=fn;return b;};
+  // help for the whole field
+  const h=$('#fdHelp');h.innerHTML='';const w=FARMHAND_WAGE*own;
+  h.appendChild(F.farmer?mk(`Farmhand: working<small>${w} shards a day, next wage in ${fmtLeft(F.paid-now)}. Click to dismiss</small>`,'on',()=>act('farmhand',[false],again))
+    :mk(`Hire the farmhand<small>${own?w+' shards a day':FARMHAND_WAGE+' shards a plot a day'}. Harvests and replants for you, offline too</small>`,'',()=>act('farmhand',[true],again),!own||S.shards<w));
+  h.appendChild(F.broker?mk(`Crop broker: selling<small>Every harvest sold for you, less their ${BROKER_CUT*100}% cut. Click to stop</small>`,'on',()=>act('broker',[false],again))
+    :mk(`Let the broker sell<small>Every harvest sold, less a ${BROKER_CUT*100}% cut. Selling yourself at the food stall pays in full</small>`,'',()=>act('broker',[true],again),!own));
+  // every plot
+  const g=$('#fdGrid');g.innerHTML='';
+  VILLAGE.plots.forEach((_,i)=>{const p=myPlot(i),d=document.createElement('div');d.className='plot';
+    const head=t=>{d.innerHTML=`<h4>Plot ${i+1}</h4><div class="st">${t}</div>`;};
+    if(!p){head('For sale');d.appendChild(mk(`Buy<small>${price} shards</small>`,'primary',()=>act('buyPlot',[i],again),S.shards<price));}
+    else if(!p.crop){head('Yours, freshly turned');for(const c of G.crops){const C=CROPS[c];d.appendChild(mk(`Plant ${C.plural}<small>${C.seed} shards, ready in ${fmtLeft(C.grow)}</small>`,'',()=>act('plant',[i,c],again),S.shards<C.seed));}}
+    else{const C=CROPS[p.crop],g2=cropGrowth(p,now);
+      if(g2>=1){d.className+=' ready';head(`${C.plural[0].toUpperCase()+C.plural.slice(1)}, ready`);
+        d.appendChild(mk(`Harvest<small>${C.yield[0]} to ${C.yield[1]} ${C.plural}${F.broker?', sold by the broker':''}</small>`,'primary',()=>act('harvest',[i],again)));}
+      else{head(`${C.name}: ${fmtLeft(C.grow-(now-p.t))} to go`);const b=document.createElement('div');b.className='bar';b.innerHTML=`<i style="width:${(g2*100).toFixed(1)}%"></i>`;d.appendChild(b);}}
+    g.appendChild(d);});
+}
+
+/* ---------- the Adventurers' Guild ----------
+   Quests (js/sim/quests.js) are taken and handed in at the clerk by the guild's door; the notice board in the square
+   shows the same board to read. Party notices are online only: the server keeps them. */
+let atGuild=false;
+function openGuild(clerk){
+  if(mode!=='play')return;mode='guild';atGuild=clerk;inp.atk=false;for(const k in keys)keys[k]=false;
+  if(NET.on)NET.send({t:'notices'});
+  $('#guild').hidden=false;renderGuild();
+}
+function closeGuild(){if(mode!=='guild')return;$('#guild').hidden=true;mode='play';$('#gNoteTxt').blur();}
+$('#gClose').onclick=closeGuild;
+const rewardText=r=>`${r.shards} shards, ${r.xp} experience`+(r.mats?Object.keys(r.mats).map(k=>`, ${r.mats[k]} ${MATS[k].name}`).join(''):'');
+function questCard(q,btns,extra=''){
+  const d=document.createElement('div');d.className='quest'+(extra.includes('ready')?' ready':'');
+  d.innerHTML=`<div class="qt"><b>${esc(q.title)}</b><small>${esc(q.desc)}</small><span class="rw">${rewardText(q.reward)}</span>${extra.replace('ready','')}</div>`;
+  for(const[t,cls,fn,dis]of btns){const b=document.createElement('button');b.className='btn small '+cls;b.textContent=t;b.disabled=!!dis;b.onclick=fn;d.appendChild(b);}
+  return d;
+}
+function renderGuild(){
+  if(mode!=='guild')return;
+  const L=questLog(),board=questBoard(questDay()),left=questRefreshIn(),h=Math.floor(left/3600000),mn=Math.floor(left%3600000/60000);
+  const taken=Object.keys(L.active).length,again=()=>renderGuild();
+  $('#gTitle').textContent=atGuild?'Adventurers\u2019 Guild':'Notice board';
+  $('#gTxt').textContent=(atGuild?'Take up to '+QUEST_MAX+' quests and hand them in here when they are done.':'Quests are taken and handed in at the Adventurers\u2019 Guild, south of the square.')+
+    ` A new board goes up in ${h} h ${mn} min; anything taken and not handed in by then is lost.`;
+  $('#gCount').textContent=`${taken} / ${QUEST_MAX}`;
+  const mine=$('#gMine');mine.innerHTML='';
+  for(const id of Object.keys(L.active)){const q=board.find(x=>x.id===id);if(!q)continue;const[have,need]=questProgress(q),ready=have>=need;
+    mine.appendChild(questCard(q,[
+      ...(atGuild?[[ready?'Hand in':'Not done yet','primary',()=>act('handIn',[id],again),!ready]]:[]),
+      ['Give up','',()=>act('dropQuest',[id],again)]],
+      `<span class="pg">${q.kind==='deliver'?'You have':'Progress:'} ${have} / ${need}</span>`+(ready?'ready':'')));}
+  if(!taken){const n=document.createElement('div');n.className='none';n.textContent='None taken.';mine.appendChild(n);}
+  const bd=$('#gBoard');bd.innerHTML='';
+  for(const q of board){if(q.id in L.active)continue;const done=L.done.includes(q.id);
+    bd.appendChild(questCard(q,done?[['Handed in','',()=>{},true]]:atGuild?[['Take','primary',()=>act('takeQuest',[q.id],again),taken>=QUEST_MAX]]:[]));}
+  // party notices
+  const nl=$('#gNotes');nl.innerHTML='';const post=$('#gPostRow');
+  if(!NET.on){nl.innerHTML='<div class="none">Party notices are for online play: post one to find party mates, or join someone else\u2019s party from theirs.</div>';post.hidden=true;return;}
+  const list=NET.notices||[],leader=NET.party&&NET.party.leader===P.id;
+  for(const n of list){const d=document.createElement('div');d.className='quest';
+    d.innerHTML=`<div class="qt"><b>${esc(n.name)}, level ${n.level} ${esc(n.cls.toLowerCase())}</b><small>\u201c${esc(n.text)}\u201d</small><span class="pg">Party of ${n.size} / 4, reached floor ${n.best}. Posted ${n.mins?n.mins+' min ago':'just now'}.</span></div>`;
+    const b=document.createElement('button');b.className='btn small primary';b.textContent=n.own?'Your party':'Join';b.disabled=n.own;
+    b.onclick=()=>{NET.send({t:'join',code:n.code});closeGuild();};d.appendChild(b);nl.appendChild(d);}
+  if(!list.length)nl.innerHTML='<div class="none">No notices up. Post one to find party mates.</div>';
+  post.hidden=!atGuild||!leader;$('#gUnpost').hidden=!list.some(n=>n.own);
+}
+$('#gPost').onclick=()=>{const t=$('#gNoteTxt').value.trim();if(!t)return;NET.send({t:'notice',text:t});$('#gNoteTxt').value='';};
+$('#gUnpost').onclick=()=>NET.send({t:'unnotice'});
+
 /* ---------- floor gate ----------
    Stands in every start room. It takes you to any floor up to the highest you have unlocked. Enemies and the boss
    are back when you arrive; opened chests stay empty. */
@@ -287,10 +383,10 @@ function openTravel(){
   if(mode!=='play')return;mode='travel';inp.atk=false;for(const k in keys)keys[k]=false;
   const el=$('#travelList');el.innerHTML='';
   $('#travel h2').textContent=G.village?'Teleport Gate':'Floor gate';
-  const go=(n,cp)=>{closeTravel();if(NET.on)NET.send({t:'travel',n});else{S.hp=null;startFloor(n,cp);}};
+  const go=(n,cp)=>{closeTravel();if(NET.on)NET.send({t:'travel',n,cp});else{S.hp=null;startFloor(n,cp);}};
   // online the party travels together: up to the highest floor anyone in it has reached, and only the leader chooses
   const best=NET.on?NET.party.best:S.best,leader=!NET.on||NET.party.leader===P.id;
-  if(!NET.on&&!G.village){const b=document.createElement('button');b.className='btn primary';
+  if(!G.village){const b=document.createElement('button');b.className='btn primary';b.disabled=!leader;
     b.innerHTML='The root village<small>The market, the forge, the inn</small>';b.onclick=()=>go(0);el.appendChild(b);}
   for(let n=1;n<=best;n++){
     const row=document.createElement('div');row.className='trow';
@@ -299,7 +395,7 @@ function openTravel(){
     b.innerHTML=`Floor ${n}<small>${n===G.n?'You are here':beaten?'Boss beaten'+(floorState(n).boss>1?' '+floorState(n).boss+' times':''):'Boss not yet beaten'}</small>`;
     b.onclick=()=>go(n,0);row.appendChild(b);
     // single player: the safe points you have visited on that floor, by their place in it
-    const pts=!NET.on&&n!==G.n&&S.points&&S.points[n]||[];
+    const pts=leader&&n!==G.n&&S.points&&S.points[n]||[];
     if(pts.length){const count=genFloor(n,S.seed).safe.length;
       for(const i of[...pts].sort((a,c)=>a-c)){const s=document.createElement('button');s.className='btn small';
         s.textContent=i===count-1?'By the boss':'Safe room '+i;s.title='Teleport to this safe point on floor '+n;
@@ -345,7 +441,7 @@ function cell(it,on,label,bag){
 }
 const SLOTL={weapon:'Weapon',armor:'Armor',boots:'Boots',trinket:'Trinket'};
 const atStash=()=>atSmith!=null&&atWho==='stash';
-function selItem(){if(!sel||sel.from==='supply')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
+function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal'||sel.from==='pack')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
 function renderPanel(){
   calcStats();const c=S.char;
   $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
@@ -368,15 +464,21 @@ function renderPanel(){
     ['Mana',ST.maxMp],['Mana per second',ST.mpRegen.toFixed(2)],
     ...(ST.skill==='fireball'?[['Fireball damage',(ST.dmg*2.6).toFixed(0)]]:ST.skill==='heal'?[['Heal restores',healAmount()]]:[]),['Kills',S.kills],['Deaths',S.deaths]].map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
   $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;$('#pShards').textContent=S.shards;
-  $('#pMats').innerHTML=Object.keys(MATS).map(k=>`<span title="${MATS[k].name}"><i class="mat" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('');
+  $('#pMats').innerHTML=Object.keys(MATS).map(k=>`<span title="${MATS[k].name}"><i class="mat" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('')+
+    Object.keys(CROPS).filter(k=>S.crops&&S.crops[k]).map(k=>`<span title="${CROPS[k].plural}"><i class="mat" style="background:${CROPS[k].color};border-radius:50%"></i> ${S.crops[k]}</span>`).join('');
   const shop=shopNow();
   $('#pTitle').textContent=shop?G.traders[atSmith].name:atForge()?'Blacksmith':atStash()?'Stash':c.name;
   $('#shopBox h3').textContent=atStash()?`Stash ${S.stash.length} / ${STASH_SIZE}`:shop&&G.traders[atSmith].stall?'For sale':'Trader\u2019s pack';
   $('#shopBox').hidden=!shop&&!atStash();$('#sGrid').classList.toggle('tall',atStash());
+  if(shop&&TRADER_SELLS[G.traders[atSmith].sells].meals){$('#shopBox h3').textContent='Today\u2019s menu';const sg=$('#sGrid');sg.innerHTML='';
+    for(const k in MEALS){const b=document.createElement('button');b.className='cell'+(sel&&sel.from==='meal'&&sel.k===k?' on':'');b.dataset.p=mealPrice(k);b.title=MEALS[k].name;
+      const c=document.createElement('canvas');mealIcon(c,k);b.appendChild(c);b.onclick=()=>{sel={from:'meal',k};renderPanel();};sg.appendChild(b);}
+    const rb=document.createElement('button');rb.className='cell'+(sel&&sel.from==='pack'?' on':'');rb.title='Packed ration';
+    const rc=document.createElement('canvas');supplyIcon(rc,'ration');rb.appendChild(rc);rb.onclick=()=>{sel={from:'pack'};renderPanel();};sg.appendChild(rb);}
   if(atStash()){const sg=$('#sGrid');sg.innerHTML='';
     for(let i=0;i<STASH_SIZE;i++){const it=S.stash[i],b=cell(it,sel&&sel.from==='stash'&&sel.i===i,'',false);
       if(it){b.onclick=()=>{sel={from:'stash',i};renderPanel();};b.ondblclick=()=>act('unstash',[i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();});}sg.appendChild(b);}}
-  if(shop){const sg=$('#sGrid');sg.innerHTML='';
+  if(shop&&!TRADER_SELLS[G.traders[atSmith].sells].meals){const sg=$('#sGrid');sg.innerHTML='';
     (shop.stock||[]).forEach((e,i)=>{const b=cell(e.it,sel&&sel.from==='shop'&&sel.i===i,'',true);b.dataset.p=e.price;b.title=e.it.name+', '+e.price+' shards';b.onclick=()=>{sel={from:'shop',i};renderPanel();};sg.appendChild(b);});
     for(const k of TRADER_SELLS[G.traders[atSmith].sells||'all'].supplies){const s=SUPPLIES[k],pb=document.createElement('button');pb.className='cell'+(sel&&sel.from==='supply'&&sel.k===k?' on':'');pb.dataset.p=supplyPrice(k);pb.title=s.name;
       const pc=document.createElement('canvas');supplyIcon(pc,k);
@@ -390,12 +492,32 @@ function renderPanel(){
 function cmp(a,b,dec=0){const d=a-b;if(Math.abs(d)<(dec?.05:.5))return'';return`<i class="${d>0?'up':'down'}">${d>0?'+':''}${d.toFixed(dec)}</i>`;}
 function renderDetail(){
   const el=$('#pDetail'),it=selItem(),shop=shopNow();
+  if(sel&&sel.from==='meal'&&shop){const k=sel.k,m=MEALS[k],pr=mealPrice(k),B=BUFFS[m.buff];
+    const fills=[m.food&&`${m.food}% of your hunger`,m.drink&&`${m.drink}% of your thirst`].filter(Boolean).join(' and ');
+    el.innerHTML=`<h4>${m.name}</h4><div class="sub">${m.desc} Fills ${fills}.</div><div class="pas" style="color:var(--cyan)">${B.name} for ${BUFF_TIME/60} minutes: ${B.desc.toLowerCase()}</div>`+
+      (P.buff?`<div class="muted">It replaces ${BUFFS[P.buff.id].name.toLowerCase()} (${Math.ceil(P.buff.t/60)} min left).</div>`:'');
+    const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Eat for ${pr} shards`;
+    b.disabled=S.shards<pr;b.onclick=()=>act('eatMeal',[atSmith,k],r=>{renderPanel();});a.appendChild(b);
+    if(m.cook){const need=Object.keys(m.cook).map(c=>`${m.cook[c]} ${CROPS[c].plural}`).join(', '),can=Object.keys(m.cook).every(c=>(S.crops[c]||0)>=m.cook[c]);
+      const o=document.createElement('button');o.className='btn small';o.textContent=`Cook it from your own ${need}`;o.disabled=!can;
+      o.onclick=()=>act('eatMeal',[atSmith,k,true],r=>{renderPanel();});a.appendChild(o);}
+    el.appendChild(a);return;}
+  if(sel&&sel.from==='pack'&&shop){const have=S.crops.potato||0;
+    el.innerHTML=`<h4>Packed ration</h4><div class="sub">${RATION_POTATOES} of your potatoes, cooked and wrapped to take into the tower. A ration fills 40% of your hunger. You have ${have} potato${have===1?'':'es'} and ${S.rations||0} ration${S.rations===1?'':'s'}.</div>`;
+    const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Pack one (${RATION_POTATOES} potatoes)`;
+    b.disabled=have<RATION_POTATOES;b.onclick=()=>act('packRation',[atSmith],r=>{renderPanel();});a.appendChild(b);el.appendChild(a);return;}
   if(sel&&sel.from==='supply'&&shop){const k=sel.k,s=SUPPLIES[k],pr=supplyPrice(k),left=shop[s.key];
     el.innerHTML=`<h4>${s.name}</h4><div class="sub">${s.desc} You carry ${S[s.key]||0}. The trader has ${left} left${left?'':': it comes back when this floor\u2019s boss falls'}.</div>`;
     const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Buy for ${pr} shards`;
     b.disabled=S.shards<pr||left<=0;b.onclick=()=>act('buySupply',[atSmith,k],r=>{if(r)sfx('pick');renderPanel();});
     a.appendChild(b);el.appendChild(a);return;}
-  if(!it&&shop){el.innerHTML='<p class="muted">Pick something for sale to see it, or to compare it with what you are wearing. Prices are in shards.</p>';return;}
+  if(!it&&shop&&TRADER_SELLS[G.traders[atSmith].sells].meals){el.innerHTML='<p class="muted">Pick a meal. You eat it here, it fills you up, and it leaves you with a buff for 20 minutes.</p>';return;}
+  if(!it&&shop){el.innerHTML='<p class="muted">Pick something for sale to see it, or to compare it with what you are wearing. Prices are in shards.</p>';
+    if(G.traders[atSmith].sells==='food'){const a=document.createElement('div');a.className='acts';   // the food stall buys your crops
+      for(const c in CROPS){const n=(S.crops||{})[c]||0;if(!n)continue;const b=document.createElement('button');b.className='btn small';
+        b.textContent=`Sell ${n} ${CROPS[c].plural} for ${cropValue(c,n)} shards`;b.onclick=()=>act('sellCrops',[atSmith,c],()=>renderPanel());a.appendChild(b);}
+      if(a.children.length)el.appendChild(a);}
+    return;}
   if(!it&&atForge()){el.innerHTML='<p class="muted">Pick one of your own pieces to enhance it.</p>';return;}
   if(!it&&atStash()){el.innerHTML='<p class="muted">The same stash waits behind every stash chest: in the inn and in every safe room. Pick something to move it between your bag and the stash, or double-click it.</p>';return;}
   if(!it){el.innerHTML=`<p class="muted">${S.inv.length?'Select an item to compare it with what you are wearing. Double-click an item in the bag to equip it.':'Your bag is empty. Enemies and chests drop weapons, armor, boots and trinkets.'}</p>`;return;}

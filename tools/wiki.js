@@ -234,7 +234,7 @@ double damage from fire.
 bonuses are planned (see [docs/design/floor-3.md](../design/floor-3.md)); this page will list them and where they
 drop. Until then, any source can drop any weapon: the best odds of a good one are elites (70% item chance, at least
 uncommon) and bosses (three items, one item level higher).`];
-  for(const [t,E] of Object.entries(D.ETYPES)){if(t==='boss')continue;const n=NOTES[t]||{};
+  for(const [t,E] of Object.entries(D.ETYPES)){if(t==='boss'||E.dummy)continue;const n=NOTES[t]||{};
     out.push(`## ${E.name}`,`${IMG('enemy-'+t,E.name)} ${IMG('enemy-'+t+'-elite',E.name+', elite')}<br><sub>Ordinary and elite</sub>`,
 table(['','Floor 1','Floor 2','Floor 3'],[['Health (elite)',...SHOWN.map(f=>`${Math.round(E.hp*floorMult(f).hp)} (${Math.round(E.hp*floorMult(f).hp*2.4)})`)],
   ['Damage per hit (elite)',...SHOWN.map(f=>`${(E.dmg*floorMult(f).dmg).toFixed(1)} (${(E.dmg*floorMult(f).dmg*1.3).toFixed(1)})`)],
