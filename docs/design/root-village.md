@@ -3,12 +3,12 @@
 Status: being built. Part of [world.md](world.md): the first village, at the roots of the tree, where every character
 starts and comes home to.
 
-**In the game (single player):** the map and its art, the Teleport Gate (floors and visited safe points), the floor
-gate's way home, the four trader stalls, the forge (the only blacksmith now: the tower's safe rooms keep a trader and
-a stash chest), the stash chest by the inn, the well and empty flasks, the arcanist, captains, innkeeper and guild
-clerk (who talk, for now), and no hunger or thirst at home. **Not yet:** the inn's meals, working scarecrows, the
-guild, the fields, and the village online (online play still starts on floor 1, so online characters can't reach
-the forge until the online village exists).
+**In the game, single player and online:** the map and its art, the Teleport Gate (floors and visited safe points),
+the floor gate's way home, the four trader stalls, the forge (the only blacksmith: the tower's safe rooms keep a trader
+and a stash chest), the stash chest by the inn, the well and empty flasks, the arcanist, captains, innkeeper and guild
+clerk (who talk, for now), and no hunger or thirst at home. Online, the village is **shared**: everyone is in a
+channel of up to 30, sees the others there, and parties form and leave through the Teleport Gate together. **Not
+yet:** the inn's meals, working scarecrows, the guild, the fields.
 
 ![Plan of the root village: the Teleport Gate glowing in the middle of the square under the tower's trunk; winding paths lined with trees, shrubs, flowers and lamps lead to the inn and well, the market of six stalls including the forge and the witchcraft room, the kingdom camps, the fields of plots for sale, and the training yard with scarecrow dummies](img/root-village.svg)
 

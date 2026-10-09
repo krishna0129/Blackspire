@@ -20,7 +20,7 @@ function updateHud(){
   setStyle('mpw',elMp,'width',(clamp(P.mp/ST.maxMp,0,1)*100).toFixed(1)+'%');setTxt('mpTxt',Math.floor(P.mp)+' / '+ST.maxMp);
   const lack=P.mp<SKILLS[ST.skill].mp||P.safe;if(hc.lack!==lack){hc.lack=lack;elSk.classList.toggle('lack',lack);}
   if(hc.safe!==P.safe){hc.safe=P.safe;$('#slAtk').classList.toggle('lack',!!P.safe);}
-  setTxt('hFloor',G.village?'The root village':'Floor '+G.n+(P.safe?', safe room':''));
+  setTxt('hFloor',G.village?'The root village'+(NET.on?', channel '+NET.ch:''):'Floor '+G.n+(P.safe?', safe room':''));
   setStyle('cdd',cdDo,'height',(P.dodgeCd/.9*100).toFixed(0)+'%');
   setStyle('cdp',cdPo,'height',(P.potCd/1.2*100).toFixed(0)+'%');
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
@@ -91,7 +91,7 @@ function showTitle(msg){
   for(const id of['#hud','#panel','#creator','#dead','#ask','#debug','#pause','#travel','#online','#boss'])$(id).hidden=true;
   $('#title').hidden=false;
   const b=$('#btnContinue');b.hidden=!sv;
-  if(sv)b.textContent=`Continue as ${sv.char.name}, level ${sv.char.level}, floor ${sv.floor}`;
+  if(sv)b.textContent=`Continue as ${sv.char.name}, level ${sv.char.level}, ${sv.floor===0?'in the root village':'floor '+sv.floor}`;
   $('#btnNew').className=sv?'btn':'btn primary';
   $('#titleMsg').hidden=!msg;$('#titleMsg').textContent=msg||'';
   $('#modeBtns').hidden=false;$('#soloBtns').hidden=true;
@@ -168,7 +168,7 @@ function buildCreator(){
 }
 let creatorFor='solo';   // solo: a new local save; online: a character on the server
 function openCreator(kind){
-  creatorFor=kind;armed=false;$('#cMsg').textContent='';$('#cGo').textContent=kind==='online'?'Create and enter':'Enter floor 1';
+  creatorFor=kind;armed=false;$('#cMsg').textContent='';$('#cGo').textContent=kind==='online'?'Create and enter':'Enter the village';
   $('#title').hidden=true;$('#online').hidden=true;$('#creator').hidden=false;mode='creator';buildCreator();
 }
 $('#btnNew').onclick=()=>openCreator('solo');
@@ -287,10 +287,10 @@ function openTravel(){
   if(mode!=='play')return;mode='travel';inp.atk=false;for(const k in keys)keys[k]=false;
   const el=$('#travelList');el.innerHTML='';
   $('#travel h2').textContent=G.village?'Teleport Gate':'Floor gate';
-  const go=(n,cp)=>{closeTravel();if(NET.on)NET.send({t:'travel',n});else{S.hp=null;startFloor(n,cp);}};
+  const go=(n,cp)=>{closeTravel();if(NET.on)NET.send({t:'travel',n,cp});else{S.hp=null;startFloor(n,cp);}};
   // online the party travels together: up to the highest floor anyone in it has reached, and only the leader chooses
   const best=NET.on?NET.party.best:S.best,leader=!NET.on||NET.party.leader===P.id;
-  if(!NET.on&&!G.village){const b=document.createElement('button');b.className='btn primary';
+  if(!G.village){const b=document.createElement('button');b.className='btn primary';b.disabled=!leader;
     b.innerHTML='The root village<small>The market, the forge, the inn</small>';b.onclick=()=>go(0);el.appendChild(b);}
   for(let n=1;n<=best;n++){
     const row=document.createElement('div');row.className='trow';
@@ -299,7 +299,7 @@ function openTravel(){
     b.innerHTML=`Floor ${n}<small>${n===G.n?'You are here':beaten?'Boss beaten'+(floorState(n).boss>1?' '+floorState(n).boss+' times':''):'Boss not yet beaten'}</small>`;
     b.onclick=()=>go(n,0);row.appendChild(b);
     // single player: the safe points you have visited on that floor, by their place in it
-    const pts=!NET.on&&n!==G.n&&S.points&&S.points[n]||[];
+    const pts=leader&&n!==G.n&&S.points&&S.points[n]||[];
     if(pts.length){const count=genFloor(n,S.seed).safe.length;
       for(const i of[...pts].sort((a,c)=>a-c)){const s=document.createElement('button');s.className='btn small';
         s.textContent=i===count-1?'By the boss':'Safe room '+i;s.title='Teleport to this safe point on floor '+n;

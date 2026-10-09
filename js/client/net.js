@@ -13,7 +13,7 @@ const ONLINE_KEY='blackspire.online';
 const EVENTS={num:addNum,burst,vfx,sfx,shake,log,banner,toast,bagBadge,hurtFlash,bossBar,onDeath,gates:()=>{}};
 
 Object.assign(NET,{
-  on:false,ws:null,party:null,others:[],snaps:[],acts:new Map(),aid:0,sendT:0,last:null,bossName:null,
+  on:false,ws:null,party:null,people:[],sheets:new Map(),ch:0,others:[],snaps:[],acts:new Map(),aid:0,sendT:0,last:null,bossName:null,
   // where the server is: the page's own address when the server served it, else what the player typed
   defaultUrl(){return location.protocol.startsWith('http')?`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws`:'ws://localhost:8080/ws';},
   saved(){try{return JSON.parse(localStorage.getItem(ONLINE_KEY))||{};}catch(e){return{};}},
@@ -31,7 +31,7 @@ Object.assign(NET,{
       ws.onclose=()=>{if(this.ws!==ws)return;const was=this.on;this.ws=null;this.on=false;if(was)showTitle('The connection to the server was lost.');};
     });
   },
-  close(){if(this.ws){const ws=this.ws;this.ws=null;ws.close();}this.on=false;this.party=null;this.others=[];this.snaps=[];this.acts.clear();},
+  close(){if(this.ws){const ws=this.ws;this.ws=null;ws.close();}this.on=false;this.party=null;this.people=[];this.sheets.clear();this.others=[];this.snaps=[];this.acts.clear();},
   send(o){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(o));},
   act(name,args,done){const id=++this.aid;if(done)this.acts.set(id,done);this.send({t:'act',id,name,args:args||[]});},
   // one-off presses; a dodge-roll also starts here at once so it feels instant (the server runs its own)
@@ -45,29 +45,34 @@ Object.assign(NET,{
         if(mode==='panel')renderPanel();return;}
       case'floor':return this.enterFloor(o);
       case's':return this.snapshot(o);
-      case'party':this.party=o;this.setOthers();if(mode==='pause')renderParty();return;
+      case'party':this.party=o;if(mode==='pause')renderParty();return;
+      // everyone else in your world: your party on a floor, everyone in your channel in the village. A character
+      // sheet comes once per person; true means "the one you already have".
+      case'world':this.ch=o.ch;for(const q of o.people){if(typeof q.custom==='string')this.sheets.set(q.id,q.custom);else if(q.custom===true)q.custom=this.sheets.get(q.id)||null;}
+        this.people=o.people;this.setOthers();return;
       case'ar':{const f=this.acts.get(o.id);this.acts.delete(o.id);if(o.err)log(esc(o.err));if(f)f(o.r);return;}
       case'respawned':if(mode==='dead')mode='play';$('#dead').hidden=true;return;
       case'err':log(esc(o.msg));if(mode==='pause')$('#partyMsg').textContent=o.msg;return;
     }
   },
-  // A new floor (first entry, the party travelling, or joining a party): build a local copy of it to draw.
+  // A new floor or the village (first entry, the party travelling, or joining a party): build a local copy to draw.
   enterFloor(o){
-    this.on=true;this.snaps=[];this.bossName=o.boss;
-    G=genFloor(o.n,o.seed);G.enemies=[];G.bossEnt=null;G.drops=[];
-    if(o.gatesOpen)openGates();G.mapCv=paintMap(G);G.gate=o.gate;
+    this.on=true;this.snaps=[];this.bossName=o.boss;this.ch=o.ch||0;
+    G=o.n===0?genVillage():genFloor(o.n,o.seed);G.enemies=[];G.bossEnt=null;G.drops=[];
+    if(G.village)G.mapCv=paintVillage(G);else{if(o.gatesOpen)openGates();G.mapCv=paintMap(G);}G.gate=o.gate;
     P=makePlayer(o.id,S);Object.assign(P,{x:o.x,y:o.y,tp:o.tp,hp:o.hp});G.players=[P];setPlayer(P);
     useCustom(S.char.custom||null);refreshSprites();refreshHudStatic();reveal();drawMini();
     for(const k in hc)delete hc[k];
     for(const id of['#title','#online','#creator','#boss','#dead','#ask','#debug','#pause','#travel','#panel'])$(id).hidden=true;
     $('#hud').hidden=false;$('#toasts').innerHTML='';bagBadge();mode='play';inp.atk=false;
-    banner('Floor '+o.n,this.party&&this.party.members.length>1?'Party of '+this.party.members.length:'Online',2400);
+    if(G.village)banner('The root village','Online, channel '+this.ch+'. Step into the Teleport Gate to climb.',2800);
+    else banner('Floor '+o.n,this.party&&this.party.members.length>1?'Party of '+this.party.members.length:'Online',2400);
     this.setOthers();
   },
-  // Avatars for everyone else in the party, rebuilt when their gear or look changes.
+  // Avatars for everyone else in your world, rebuilt when their gear or look changes.
   setOthers(){
-    if(!this.party||!G)return;const keep=new Map(this.others.map(q=>[q.id,q]));
-    this.others=this.party.members.filter(m=>!P||m.id!==P.id).map(m=>{
+    if(!G)return;const keep=new Map(this.others.map(q=>[q.id,q]));
+    this.others=this.people.filter(m=>!P||m.id!==P.id).map(m=>{
       const q=keep.get(m.id)||{id:m.id,other:true,x:-999,y:-999,dir:0,walk:0,hp:1,maxHp:1,r:5};
       const sig=JSON.stringify(m);if(q.sig!==sig){q.sig=sig;q.name=m.name;const W=WTYPES[m.weapon.type];
         q.st={ranged:!!W.ranged,magic:!!W.magic,arc:W.arc,thrust:!W.magic&&!W.ranged&&W.arc<50,shield:W.shield||null};

@@ -1,6 +1,7 @@
 'use strict';
 // Blackspire server: the game. It loads the very same rule files the browser uses (js/sim) into a sandbox, runs one
-// floor per party, and turns the rules' host calls into messages for the players on that floor.
+// copy of a floor per party and shared copies (channels) of the root village, and turns the rules' host calls into
+// messages for the players in each.
 //
 // Who decides what: the server runs combat, damage, loot, saves, shops and enhancement. Each browser moves its own
 // player (so movement answers at once) and reports where it is; checkMove() accepts a report only if it is reachable
@@ -14,6 +15,7 @@ const TICK=1/30;          // the rules run 30 times a second
 const SNAP_EVERY=2;       // each player gets a snapshot every second tick (15 a second)
 const VIEW=360;           // enemies and shots further than this from a player are left out of their snapshot
 const PARTY_MAX=4;
+const CHANNEL_MAX=30;     // players in one copy of the village before another opens
 const SAVE_EVERY=10;      // seconds between writes of changed characters to the database
 
 // The host functions, as the server implements them: everything the rules report becomes an event for the players
@@ -68,10 +70,12 @@ function validSheet(url){
 
 class Game{
   constructor(db){
-    this.db=db;this.R=loadRules();this.parties=new Map();this.byCode=new Map();this.nextPid=1;this.ticks=0;this.saveT=0;
+    this.db=db;this.R=loadRules();this.parties=new Map();this.byCode=new Map();this.worlds=new Set();this.nextPid=1;this.ticks=0;this.saveT=0;
     this.timer=setInterval(()=>this.tick(),1000*TICK);
   }
   stop(){clearInterval(this.timer);for(const p of this.parties.values())for(const m of p.members)this.store(m);}
+  // online characters, for the character screen; floor 0 is the village
+  charSummary(m){return m.S?{name:m.S.char.name,level:m.S.char.level,floor:m.S.floor==null?1:m.S.floor}:null;}
 
   /* ---------- characters ---------- */
   createChar(m,o){
@@ -88,27 +92,58 @@ class Game{
     s.char.custom=o.custom||null;
     m.S=JSON.parse(JSON.stringify(s));this.db.saveChar(m.account,m.S);return null;
   }
-  charSummary(m){return m.S?{name:m.S.char.name,level:m.S.char.level,floor:m.S.floor||1}:null;}
   store(m){if(m.S){if(m.pl&&!m.pl.dead){m.S.hp=Math.round(m.pl.hp);this.R.storeNeeds(m.pl);}const j=JSON.stringify(m.S);if(j!==m.lastStored){this.db.saveChar(m.account,m.S);m.lastStored=j;}}}
 
-  /* ---------- parties ---------- */
+  /* ---------- parties and worlds ----------
+     A world is one running copy of a map, and every player in the game is in exactly one (m.w):
+       - a party's floor: {kind:'floor', n, seed, G, members}, its own copy, as before;
+       - a channel of the root village: {kind:'village', n:0, ch, G, members}, shared by everyone in it, up to
+         CHANNEL_MAX players (more channels open as it fills, the way MMO towns do).
+     A party (code, leader, members, n) stays together: it travels as one, and its members share a channel. */
   newCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c;do{c='';for(let i=0;i<6;i++)c+=A[crypto.randomInt(A.length)];}while(this.byCode.has(c));return c;}
-  // Puts member m into the game: in a party of their own, on the floor they were last on.
+  // Puts member m into the game: in a party of their own, where they were last (the village, or a floor).
   play(m){
     if(!m.S)return;
-    if(m.party)return this.sendFloor(m.party,m);
-    const p={id:crypto.randomUUID(),code:this.newCode(),members:[],leader:m,n:Math.min(m.S.floor||1,m.S.best||1),seed:crypto.randomInt(2**31),G:null};
-    this.parties.set(p.id,p);this.byCode.set(p.code,p);
-    this.addMember(p,m);this.buildWorld(p);
+    if(m.party)return this.sendFloor(m);
+    const n=m.S.floor===0?0:Math.min(m.S.floor||1,m.S.best||1);
+    const p=this.newParty(m,n);this.moveParty(p);
   }
-  addMember(p,m){
-    p.members.push(m);m.party=p;m.pid=this.nextPid++;
-    if(p.G)this.placePlayer(p,m);
+  newParty(m,n){
+    const p={id:crypto.randomUUID(),code:this.newCode(),members:[],leader:m,n,seed:crypto.randomInt(2**31),floorW:null};
+    this.parties.set(p.id,p);this.byCode.set(p.code,p);p.members.push(m);m.party=p;m.pid=m.pid||this.nextPid++;return p;
+  }
+  // Takes the party's members out of wherever they are and into p.n: a fresh copy of the floor, or a village channel.
+  moveParty(p){
+    for(const m of p.members)this.leaveWorld(m);
+    let w;
+    if(p.n===0)w=this.channelFor(p.members.length);
+    else{w={kind:'floor',n:p.n,seed:p.seed+p.n*7919,members:[]};w.G=this.R.genFloor(w.n,w.seed);this.worlds.add(w);}
+    p.floorW=w.kind==='floor'?w:null;
+    for(const m of p.members)this.enterWorld(w,m);
+    for(const m of p.members)this.sendFloor(m);
+    this.sendParty(p);
+  }
+  // A village channel with room for k more: the fullest one that fits, so people meet; a new one if none does.
+  channelFor(k){
+    let best=null;for(const w of this.worlds)if(w.kind==='village'&&w.members.length+k<=CHANNEL_MAX&&(!best||w.members.length>best.members.length))best=w;
+    if(best)return best;
+    let ch=1;while([...this.worlds].some(w=>w.kind==='village'&&w.ch===ch))ch++;
+    const w={kind:'village',n:0,seed:0,ch,members:[],G:this.R.genVillage()};this.worlds.add(w);return w;
+  }
+  enterWorld(w,m){
+    m.w=w;w.members.push(m);this.placePlayer(w,m);
+    for(const q of w.members)if(q!==m)this.sendWorld(q);   // everyone already there learns who arrived
+  }
+  leaveWorld(m){
+    const w=m.w;if(!w)return;
+    if(m.pl){m.pl.gone=true;w.G.players=w.G.players.filter(q=>q!==m.pl);}
+    w.members=w.members.filter(q=>q!==m);m.w=null;m.pl=null;
+    if(!w.members.length)this.worlds.delete(w);
+    else for(const q of w.members)this.sendWorld(q);
   }
   removeMember(m){
-    const p=m.party;if(!p)return;this.store(m);
-    p.members=p.members.filter(q=>q!==m);if(p.G&&m.pl){m.pl.gone=true;p.G.players=p.G.players.filter(q=>q!==m.pl);}
-    m.party=null;m.pl=null;
+    const p=m.party;if(!p)return;this.store(m);this.leaveWorld(m);
+    p.members=p.members.filter(q=>q!==m);m.party=null;
     if(!p.members.length){this.parties.delete(p.id);this.byCode.delete(p.code);return;}
     if(p.leader===m)p.leader=p.members[0];
     this.sendParty(p);
@@ -118,30 +153,38 @@ class Game{
     if(!p)return'No party has that code.';
     if(p===m.party)return'You are already in that party.';
     if(p.members.length>=PARTY_MAX)return'That party is full.';
-    this.removeMember(m);this.addMember(p,m);this.sendFloor(p,m);this.sendParty(p);return null;
+    this.removeMember(m);p.members.push(m);m.party=p;
+    this.enterWorld(p.leader.w,m);this.sendFloor(m);this.sendParty(p);return null;
   }
-  leave(m){if(!m.party||m.party.members.length<2)return'You are not in a party with anyone.';const n=m.party.n;this.removeMember(m);m.S.floor=n;this.play(m);return null;}
+  // Out of the party, into one of your own, staying where you are: the same village channel, or a fresh copy of the floor.
+  leave(m){
+    if(!m.party||m.party.members.length<2)return'You are not in a party with anyone.';
+    const w=m.w,n=m.party.n;this.removeMember(m);m.S.floor=n;
+    const p=this.newParty(m,n);
+    if(n===0&&this.worlds.has(w)){this.enterWorld(w,m);this.sendFloor(m);this.sendParty(p);}else this.moveParty(p);
+    return null;
+  }
   partyBest(p){return Math.max(...p.members.map(m=>m.S.best||1));}
-  // The whole party moves to floor n: a fresh copy of it, enemies and boss included.
-  travel(p,n){p.n=n;for(const m of p.members){m.S.floor=n;m.S.hp=m.pl&&!m.pl.dead?Math.round(m.pl.hp):null;this.R.storeNeeds(m.pl);}this.buildWorld(p);}
-  buildWorld(p){
-    const R=this.R;p.G=R.genFloor(p.n,p.seed+p.n*7919);R.setWorld(p.G);
-    for(const m of p.members)this.placePlayer(p,m);
-    for(const m of p.members)this.sendFloor(p,m);
-    this.sendParty(p);
+  // The whole party moves to n (0 is the village): a fresh copy of a floor, enemies and boss included. cp: arrive at
+  // that safe point of the floor (0, its entrance).
+  travel(p,n,cp){
+    p.n=n;
+    for(const m of p.members){m.S.floor=n;m.S.hp=m.pl&&!m.pl.dead?Math.round(m.pl.hp):null;this.R.storeNeeds(m.pl);if(n>0&&cp!=null){m.S.cp=cp;m.S.cpFloor=n;}}
+    this.moveParty(p);
   }
-  placePlayer(p,m){
-    const R=this.R;R.setWorld(p.G);
-    m.S.floor=p.n;const pl=R.makePlayer(m.pid,m.S);pl.remote=true;pl.name=m.S.char.name;
+  placePlayer(w,m){
+    const R=this.R;R.setWorld(w.G);
+    m.S.floor=w.n;const pl=R.makePlayer(m.pid,m.S);pl.remote=true;pl.name=m.S.char.name;
     if(m.S.hp!=null&&m.S.hp>0)pl.hp=Math.min(pl.ST.maxHp,m.S.hp);
-    m.pl=pl;m.budget=0;m.in={mx:0,my:0,atk:false,block:false};m.pos=null;p.G.players.push(pl);
+    m.pl=pl;m.budget=0;m.in={mx:0,my:0,atk:false,block:false};m.pos=null;w.G.players.push(pl);
   }
 
   /* ---------- messages to players ---------- */
   send(m,o){if(m.ws.readyState===1)m.ws.send(JSON.stringify(o));}
-  sendFloor(p,m){
-    const G=p.G;this.sendSave(m,true);   // the save first: the browser needs the character to set up the floor
-    this.send(m,{t:'floor',n:p.n,seed:p.seed+p.n*7919,id:m.pid,x:m.pl.x,y:m.pl.y,tp:m.pl.tp,hp:m.pl.hp,gatesOpen:G.gatesOpen,gate:G.gate,boss:G.bossEnt?G.bossEnt.name:null});
+  sendFloor(m){
+    const w=m.w,G=w.G;this.sendSave(m,true);   // the save first: the browser needs the character to set up the floor
+    this.send(m,{t:'floor',n:w.n,seed:w.seed,ch:w.ch||0,id:m.pid,x:m.pl.x,y:m.pl.y,tp:m.pl.tp,hp:m.pl.hp,gatesOpen:G.gatesOpen,gate:G.gate,boss:G.bossEnt?G.bossEnt.name:null});
+    this.sendWorld(m);
   }
   // What other players need to draw you: name, level, look and gear (or your own character sheet).
   look(m){const S=m.S,e=S.equip,w=e.weapon;
@@ -149,15 +192,22 @@ class Game{
       weapon:{type:w.type,tint:w.tint,school:w.school||null},armor:e.armor?{type:e.armor.type,tint:e.armor.tint}:null,boots:e.boots?{type:e.boots.type,tint:e.boots.tint}:null};}
   sendParty(p){
     const o={t:'party',code:p.code,leader:p.leader.pid,best:this.partyBest(p),members:p.members.map(m=>this.look(m))};
-    for(const m of p.members){m.lookSig=JSON.stringify(this.look(m));this.send(m,o);}
+    for(const m of p.members)this.send(m,o);
+  }
+  // Everyone else in your world, to draw. A character sheet (up to 120 KB) goes to each player once, not every time.
+  sendWorld(m){
+    const w=m.w;if(!w)return;m.sheets=m.sheets||new Map();
+    const people=w.members.filter(q=>q!==m).map(q=>{const l=this.look(q);if(l.custom){if(m.sheets.get(q.pid)===l.custom)l.custom=true;else m.sheets.set(q.pid,l.custom);}return l;});
+    this.send(m,{t:'world',ch:w.ch||0,people});
   }
   sendSave(m,force){const j=JSON.stringify(m.S);if(force||j!==m.lastSent){m.lastSent=j;this.send(m,{t:'save',s:m.S});}}
-  snapshot(p,m){
-    const G=p.G,me=m.pl,near=e=>Math.abs(e.x-me.x)<VIEW&&Math.abs(e.y-me.y)<VIEW*.7;
+  snapshot(w,m){
+    const G=w.G,me=m.pl,near=e=>Math.abs(e.x-me.x)<VIEW&&Math.abs(e.y-me.y)<VIEW*.7;
     return{t:'s',time:r1(G.time),
       me:{hp:r1(me.hp),mp:r1(me.mp),food:r1(me.food),drink:r1(me.drink),x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
         swing:me.swing?[r1(me.swing.t),r1(me.swing.d),me.swing.hit?1:0]:0,skillCd:r1(me.skillCd),skillMax:r1(me.skillMax),potCd:r1(me.potCd),dodgeCd:r1(me.dodgeCd),mom:me.mom,blocking:!!me.blocking},
-      pl:G.players.filter(q=>q!==me&&!q.gone).map(q=>({id:q.id,x:r1(q.x),y:r1(q.y),dir:q.dir,moving:q.moving,dead:q.dead,inv:r1(q.inv),guard:r1(q.guard),hp:Math.ceil(q.hp),maxHp:q.ST.maxHp,
+      // in a busy village, only the people near you
+      pl:G.players.filter(q=>q!==me&&!q.gone&&(w.kind!=='village'||near(q))).map(q=>({id:q.id,x:r1(q.x),y:r1(q.y),dir:q.dir,moving:q.moving,dead:q.dead,inv:r1(q.inv),guard:r1(q.guard),hp:Math.ceil(q.hp),maxHp:q.ST.maxHp,
         swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,blocking:!!q.blocking,dash:!!q.dash})),
       en:G.enemies.filter(e=>!e.dead&&(e.boss||near(e))).map(e=>({id:e.id,type:e.type,x:r1(e.x),y:r1(e.y),dir:e.dir,face:e.face,state:e.state,t:r1(e.t||0),hopT:e.hopT,
         flash:e.flash>0?1:0,stun:e.stun>0?1:0,hurtT:e.hurtT>0?1:0,hp:Math.ceil(e.hp),maxHp:e.maxHp,elite:e.elite,boss:!!e.boss,sprite:e.sprite||null,name:e.name||null,moving:!!e.moving,lunge:e.lunge>0?1:0,ph:r1(e.ph),burrowed:!!e.burrowed,cx:e.state==='channel'?e.cx:undefined,cy:e.state==='channel'?e.cy:undefined})),
@@ -174,19 +224,20 @@ class Game{
   /* ---------- the loop ---------- */
   tick(){
     const R=this.R;this.ticks++;this.saveT+=TICK;const snap=this.ticks%SNAP_EVERY===0,saveNow=this.saveT>=SAVE_EVERY;if(saveNow)this.saveT=0;
-    for(const p of this.parties.values()){
+    for(const w of this.worlds){
       try{
-        R.setWorld(p.G);
-        for(const m of p.members){const pl=m.pl;pl.in=m.in;R.setPlayer(pl);this.checkMove(m);}
+        R.setWorld(w.G);
+        for(const m of w.members){const pl=m.pl;pl.in=m.in;R.setPlayer(pl);this.checkMove(m);}
         R.simUpdate(TICK);
-        for(const e of R.__take())for(const m of p.members)if(e.to==null||e.to===m.pid)m.out.push([e.k,e.a]);
-        for(const m of p.members){
+        for(const e of R.__take())for(const m of w.members)if(e.to==null||e.to===m.pid)m.out.push([e.k,e.a]);
+        for(const m of w.members){
           if(m.pl.dirty){m.pl.dirty=false;this.store(m);}
-          if(snap)this.send(m,this.snapshot(p,m));
-          if(this.ticks%15===0){this.sendSave(m);if(JSON.stringify(this.look(m))!==m.lookSig)this.sendParty(p);}
+          if(snap)this.send(m,this.snapshot(w,m));
+          if(this.ticks%15===0){this.sendSave(m);const sig=JSON.stringify(this.look(m));
+            if(sig!==m.lookSig){m.lookSig=sig;for(const q of w.members)if(q!==m)this.sendWorld(q);if(m.party)this.sendParty(m.party);}}
           if(saveNow)this.store(m);
         }
-      }catch(err){console.error('party',p.code,'tick failed:',err);}
+      }catch(err){console.error(w.kind,w.ch||w.n,'tick failed:',err);}
     }
   }
   // Accepts the browser's reported position if the player could have got there since the last report: within their
@@ -205,10 +256,10 @@ class Game{
 
   /* ---------- messages from players ---------- */
   handle(m,o){
-    const R=this.R,p=m.party,pl=m.pl;
+    const R=this.R,p=m.party,pl=m.pl,w=m.w;
     if(o.t==='play')return this.play(m);
-    if(!p||!pl)return;
-    R.setWorld(p.G);R.setPlayer(pl);
+    if(!p||!pl||!w)return;
+    R.setWorld(w.G);R.setPlayer(pl);
     switch(o.t){
       case'in':   // held input and where the browser has the player
         m.in={mx:isNum(o.mx)?Math.max(-1,Math.min(1,o.mx)):0,my:isNum(o.my)?Math.max(-1,Math.min(1,o.my)):0,atk:!!o.atk,block:!!o.block};
@@ -218,19 +269,20 @@ class Game{
         pl.in=m.in;
         if(o.a==='atk')pl.atkBuf=.18;else if(o.a==='skill')R.useSkill();else if(o.a==='dodge')R.dodge();else if(o.a==='potion')R.usePotion();else if(o.a==='eat')R.eat();else if(o.a==='drink')R.drink();
         return;
-      case'act':{ // gear, attributes, the blacksmith
+      case'act':{ // gear, attributes, traders, the stash, the forge, the well
         if(!Object.prototype.hasOwnProperty.call(R.__actions(),o.name)||!Array.isArray(o.args)||o.args.length>3)return this.send(m,{t:'ar',id:o.id,r:false});
         if(o.name==='custom'&&!validSheet(o.args[0]))return this.send(m,{t:'ar',id:o.id,r:false,err:'A character sheet must be a PNG of 88 x 78 pixels, or a whole multiple of that up to x4, under 88 KB.'});
         const r=R.runAction(o.name,o.args.map(a=>typeof a==='string'||isNum(a)||a===null?a:null));
-        for(const e of R.__take())for(const q of p.members)if(e.to==null||e.to===q.pid)q.out.push([e.k,e.a]);
+        for(const e of R.__take())for(const q of w.members)if(e.to==null||e.to===q.pid)q.out.push([e.k,e.a]);
         this.sendSave(m,true);return this.send(m,{t:'ar',id:o.id,r});}
-      case'chamber':{const q=p.G.gates[o.g];if(q&&R.nearGate()===q)R.enterChamber(q);return;}
+      case'chamber':{const q=w.G.gates[o.g];if(q&&R.nearGate()===q)R.enterChamber(q);return;}
       case'respawn':if(pl.dead){R.respawnPlayer(pl);this.send(m,{t:'respawned'});}return;
-      case'climb':if(p.G.gate&&Math.hypot(p.G.gate.x-pl.x,p.G.gate.y-pl.y)<26)this.travel(p,p.n+1);return;
-      case'travel':
+      case'climb':if(w.G.gate&&Math.hypot(w.G.gate.x-pl.x,w.G.gate.y-pl.y)<26)this.travel(p,p.n+1);return;
+      case'travel':{   // the Teleport Gate, or a floor's gate: to the village (0) or a floor, and on it a safe point you have visited
         if(p.leader!==m)return this.send(m,{t:'err',msg:'Only the party leader chooses the floor.'});
-        if(!Number.isInteger(o.n)||o.n<1||o.n>this.partyBest(p)||!R.__nearHome())return;
-        return this.travel(p,o.n);
+        if(!Number.isInteger(o.n)||o.n<0||o.n>this.partyBest(p)||o.n===p.n||!R.__nearHome())return;
+        const cp=Number.isInteger(o.cp)&&o.cp>0&&((m.S.points||{})[o.n]||[]).includes(o.cp)?o.cp:0;
+        return this.travel(p,o.n,cp);}
       case'join':{const err=this.join(m,o.code);if(err)this.send(m,{t:'err',msg:err});return;}
       case'leave':{const err=this.leave(m);if(err)this.send(m,{t:'err',msg:err});return;}
     }

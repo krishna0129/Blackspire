@@ -33,7 +33,7 @@ js/sim/               the game rules. No page, canvas or sound: the browser runs
   items.js            item generation, prices, enhancement, the blacksmith's stock
   rules.js            players, saves, derived stats, and the list of host functions the rules call
   world.js            floor generation
-  village.js          the root village (floor 0): its map, stalls, people and scenery
+  village.js          the root village (floor 0): its map, stalls, people and scenery; online, shared in channels
   combat.js           hit detection, damage, skills, spells, loot, the boss chamber
   update.js           one step of a floor: every player, enemy, shot and drop; enemy and boss AI
   floor3.js           floor 3's enemies (Gravecaller, Thornroot, Bloodbloom, Ossuary hermit) and the Pale Collector
@@ -81,10 +81,13 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 
 - **Accounts:** a name and a password. Passwords are stored only as salted scrypt hashes. A login lasts 30 days
   in that browser. One account plays from one place at a time.
-- **Characters** live on the server and are separate from single-player saves.
+- **Characters** live on the server and are separate from single-player saves. New ones start in the root village.
+- **The village is shared:** everyone online is in one of its channels (up to 30 players each; another opens when
+  one is full) and sees everyone else there. The Teleport Gate takes your party to a floor; each floor's gate
+  brings it home.
 - **Parties:** everyone starts in a party of their own, with a 6-letter code in the menu (Esc). Up to 4 players
   join by entering the code. A party shares one copy of the floor: every kill gives everyone experience, while
-  loot, chests and shops are each player's own. The party leader picks the floor at the floor gate; anyone can
+  loot, chests and shops are each player's own. The party leader picks the floor at the Teleport Gate or a floor gate; anyone can
   take the party up the stairs after a boss. Heal reaches everyone nearby.
 - **Who decides what:** the server runs combat, loot, saves, shops and enhancement, using the same rule files as
   single player (`js/sim`). Your browser moves your character so movement answers at once, and the server checks
