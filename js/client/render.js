@@ -35,13 +35,16 @@ function render(){
     if(d.k==='shard'){ctx.fillStyle='#6fd6e6';ctx.fillRect(x,y-1,1,3);ctx.fillRect(x-1,y,3,1);}
     else if(d.k==='mat'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-2,4,4);ctx.fillStyle=MATS[d.id].color;ctx.fillRect(x-1,y-1,2,2);}
     else if(d.k==='potion'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,6);ctx.fillStyle='#d9534f';ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#e6e1d3';ctx.fillRect(x,y-2,1,1);}
+    else if(d.k==='ration'){ctx.fillStyle='#050508';ctx.fillRect(x-3,y-2,7,5);ctx.fillStyle='#b07a3a';ctx.fillRect(x-2,y-1,5,3);ctx.fillStyle='#e0b36a';ctx.fillRect(x-1,y-1,3,1);}
+    else if(d.k==='flask'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,7);ctx.fillStyle='#7a5a3a';ctx.fillRect(x-1,y-1,3,4);ctx.fillStyle='#5aa7e6';ctx.fillRect(x-1,y,3,2);ctx.fillStyle='#c9b48a';ctx.fillRect(x,y-2,1,1);}
     else{const c=RARITY[d.item.rarity].color;ctx.fillStyle='#050508';ctx.fillRect(x-3,y-1,7,3);ctx.fillRect(x-1,y-3,3,7);ctx.fillStyle=c;ctx.fillRect(x-2,y,5,1);ctx.fillRect(x,y-2,1,5);ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);}}
   // entities, y-sorted
   const list=[P,...(NET.on?NET.others:[])];
   for(const e of G.enemies)if(e.x-camX>-48&&e.x-camX<W+48&&e.y-camY>-48&&e.y-camY<H+48)list.push(e);   // only what is on screen
   for(const q of G.smiths)list.push({smith:q,y:q.y,r:6});
+  for(const q of G.traders||[])list.push({trader:q,y:q.y,r:6});
   list.sort((a,b)=>(a.y+a.r)-(b.y+b.r));
-  for(const e of list){if(e===P)drawPlayer();else if(e.other)drawOther(e);else if(e.smith)drawSmith(e.smith,t);else drawEnemy(e,t);}
+  for(const e of list){if(e===P)drawPlayer();else if(e.other)drawOther(e);else if(e.smith)drawSmith(e.smith,t);else if(e.trader)drawTrader(e.trader,t);else drawEnemy(e,t);}
   // projectiles, particles, slashes
   for(const p of G.proj){const x=Math.round(p.x-camX),y=Math.round(p.y-camY);ctx.fillStyle=p.c||'#6fd6e6';
     if(p.arrow){const c=Math.cos(p.a),sn=Math.sin(p.a);for(let i=1;i<7;i++)ctx.fillRect(Math.round(x-c*i),Math.round(y-sn*i),1,1);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);continue;}

@@ -59,6 +59,11 @@ function genFloor(n,seed){
   const safeRooms=[start,...rooms.filter(r=>r.kind==='safe')];
   g.safe=safeRooms.map(r=>({x0:r.x*TILE,y0:r.y*TILE,x1:(r.x+r.w)*TILE,y1:(r.y+r.h)*TILE}));
   g.smiths=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
+  // A trader stands beside each blacksmith, past the forge, kept inside the room. The start room's top row already
+  // holds the forge and the floor gate, so its trader stands in the bottom corner below the forge.
+  // g.traders[i] belongs to safe room i too.
+  g.traders=g.smiths.map((q,i)=>{const r=safeRooms[i];
+    return i?{x:Math.min(q.x+42,(r.x+r.w-.8)*TILE),y:q.y+5}:{x:(r.x+1.6)*TILE,y:(r.y+r.h-1.5)*TILE};});
   const FL=floorDef(n),bag=FL.spawns;g.corpses=[];
   if(FL.thorns)g.thorns=new Uint8Array(MW*MH);
   for(const r of rooms){
@@ -97,6 +102,7 @@ function safeIndex(x,y){const a=G.safe;for(let i=0;i<a.length;i++){const r=a[i];
 const inSafe=(x,y)=>safeIndex(x,y)>=0;
 const nearHome=()=>G.home&&hyp(G.home.x-P.x,G.home.y-P.y)<20;
 function nearSmith(){for(const q of G.smiths)if(hyp(q.x-P.x,q.y-P.y)<26)return q;return null;}
+function nearTrader(){for(const q of G.traders)if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;}
 function nearGate(){
   if(G.gatesOpen||P.locked||!G.bossEnt||G.bossEnt.dead)return null;
   for(const q of G.gates)if(hyp(q.x-P.x,q.y-P.y)<27)return q;

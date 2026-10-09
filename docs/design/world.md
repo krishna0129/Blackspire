@@ -1,7 +1,7 @@
 # The world: the tree, its villages, the economy and the story
 
 Status: proposal. The owner's decisions are marked **Decided**. Everything else is a suggestion, open to change.
-Nothing here is in the game yet. It changes where some existing things live (the blacksmith moves out of the
+**In the game** so far: the trader, hunger and thirst, and trader stock limits. Everything else here is not built yet. It changes where some existing things live (the blacksmith moves out of the
 tower's safe rooms), so it should be settled before more floors are built.
 
 ## The picture
@@ -48,13 +48,14 @@ part of the tree. A return gate can take you to any village you have reached.
 
 **Decided:** fields around each village are safe zones where players grow crops, then cook or craft with them.
 
-- **Suggested:** each player has their **own plots** in a field. Other players can walk through and see them, but
-  only the owner plants and harvests, so nobody can grief anyone's farm online.
+- **Decided:** fields are **personal**. Everyone has and sees only their own plots, and nobody can enter anyone
+  else's field. Online, a field is a private copy per player, the way a red gate is a private copy per party.
 - Crops grow in **real time** (an hour to a day), including while you are offline or in the tower. That gives a
   reason to come home without forcing it.
 - Each village's fields grow different crops, so higher villages give better food.
-- **Food** gives a timed buff, one at a time: for example +5% health regeneration for 30 minutes. Food helps you
-  climb, but you can climb without it.
+- **Cooked food** fills the hunger and thirst meters (below), and better dishes also give a timed buff, one at a time:
+  for example +5% health regeneration for 30 minutes. Field food is how a player stops depending on the trader's
+  small stock.
 - **Suggested:** potions become craftable from field herbs, with the trader's stock as the fallback. That gives
   farming a use for every player, not only those who enjoy it.
 
@@ -63,7 +64,25 @@ part of the tree. A return gate can take you to any village you have reached.
 **Decided:** they stay, limited to lower-level services: potions, buying and selling gear, and the universal
 stash. Forging, the arcanist and the market are village-only, which is what makes going home worth it.
 
+- **The trader (decided, in the game):** a travelling merchant under a pack almost as big as they are. They sell gear,
+  potions, food and water. Each supply is limited to **5–10** per trader in single player, refilled when the floor's
+  boss falls; online numbers come later.
+- Until villages exist, the blacksmith stays in safe rooms next to the trader, for enhancing only.
 - **Suggested:** the stash is **per character**, with a shared tab between your own characters later.
+
+### Hunger and thirst
+
+**Decided, in the game:** survival meters as in Minecraft or Rust. Health still comes back with potions; food and
+water keep the meters up.
+
+- Both meters run from full to empty while you are on a floor: hunger in about **25 minutes**, thirst in about **15**.
+- **Below 25%:** hungry means no natural healing and 10% slower; thirsty means half mana regeneration. The meter
+  flashes on the HUD and the log says what to do.
+- **Empty:** each empty meter costs 1% of your max health every second, so starving is a slow death, not a sudden one.
+- **Rations** (R) fill 40% of hunger; **water flasks** (T) fill 50% of thirst. They come from traders, enemies,
+  chests and bosses. New characters carry 2 of each.
+- Dying wakes you at least half fed and half watered, so nobody gets stuck starving in a loop.
+- Later, cooked food from the fields replaces rations as the main source.
 
 ## Economy
 
@@ -74,33 +93,38 @@ stash. Forging, the arcanist and the market are village-only, which is what make
 | | What it is | Where it comes from | What it's for |
 |---|---|---|---|
 | **Shards** | the everyday money of the whole world | every enemy, chests, selling | everything ordinary |
-| **Heartstone** (suggested name) | a rare ore: sap the tree has hardened over centuries | quests, branch wardens, red gates, secret bosses | forging the rarest gear |
+| **Mythril ore** (decided) | the rarest ore, found deep in the tree | quests, branch wardens, red gates, secret bosses | forging the rarest gear |
 
-- Heartstone is not sold by NPCs. **Suggested:** players can trade and auction it, so it ends up with a price in
-  shards, but the only way it enters the world is by playing.
+- **Decided:** mythril ore can be traded and auctioned, so it ends up with a price in shards. NPCs never sell it: the
+  only way it enters the world is by playing.
+- **Decided:** **mythril-grade gear needs level 50** to use. It isn't meant to arrive any time soon, so early players
+  can hold or trade the ore, but not wear what it makes.
 - This replaces "premium currency": it's rare because of where it comes from, not because anyone pays for it.
 
-### The market: commodities with moving prices
+### The market: one pricing rule, by region
 
-**Decided:** one shared market, simulated by the server, and it works the same in single player.
+**Decided:** keep it simple. One general rule sets every price from **how much of that good is available in a
+region**, and it is the same code in single player and online. Anti-abuse rules go in before anything else.
 
-- **Suggested split:**
-  - the **market** trades stackable things: materials, monster drops, crops, heartstone;
-  - the **auction house** handles gear, because every piece rolls differently and has no single price.
-- **Suggested price model.** Each commodity has a base price and a **demand index**:
+- A **region** is a village and its part of the tree. Each region keeps a stock level for each good.
+- **Suggested rule:**
 
   ```
-  price      = base × clamp(1 + demand, 0.4, 2.5)
+  price      = base × clamp(normal stock / current stock, 0.5, 2)
   sell price = 80% of the buy price         (the spread stops instant buy-low, sell-high loops)
   ```
 
-  - Players selling a commodity push its demand down; players buying push it up.
-  - Every hour, demand drifts back toward 0, plus a small random wobble, so a crashed price recovers.
-  - **Events** move whole groups of goods for a few days, and the quest board explains them. For example, "The
-    Iron Crown is arming for a push: iron and leather +40% this week."
-  - Each village shows a 7-day price chart, which is the "like stocks" part.
-- **Single player** runs the same model in your own save, with simulated traders moving the prices. Single player
-  and online characters are already separate, so an offline market can't be manipulated from outside.
+  - Selling a good adds to the region's stock, so its price there falls; buying takes from it, so the price rises.
+  - Every hour each stock drifts back toward normal (the region uses some and makes some), so prices recover.
+  - The same good can cost different amounts in different villages, which is the only "event" the rule needs:
+    goods from the Wildwood are cheap near the Wildwood and dear at the roots.
+- **Anti-abuse, first:**
+  - the spread, and the 0.5–2× clamp, so no single sale or purchase can swing a price far;
+  - a per-player limit on how much of one good a region takes from them each hour;
+  - everything goes through the server online (it already decides every action), and every sale is logged.
+- The **auction house** handles gear, because every piece rolls differently and has no single price. The market
+  takes stackable things: materials, monster drops, crops, mythril ore.
+- Single player keeps its own copy of the regions in the save; online, every player shares the server's.
 
 ### Trading between players (online)
 
@@ -157,7 +181,7 @@ blacksmith, except grimoires, which the arcanist makes.
 
 - **Suggested:**
   - Rare and better gear comes with **sealed passive slots**: 1 for rare and epic, 2 for legendary.
-  - The arcanist unseals a slot with the gear's family drops and shards, or heartstone for legendary gear. The
+  - The arcanist unseals a slot with the gear's family drops and shards, or mythril ore for legendary gear. The
     passive is rolled from a list for that gear type, for example "+10% damage for 2 seconds after a dodge".
   - Unsealing again rerolls the passive.
 - This moves skill ranks, respecs and class changes from the blacksmith to the arcanist in
@@ -168,14 +192,18 @@ blacksmith, except grimoires, which the arcanist makes.
 **Decided:** a red gate is a locked, harder version of a floor (a "double dungeon"). It opens when certain conditions
 are met, not at random.
 
-- **Suggested conditions**, a different one per red gate, hinted at by quests and notes found in the tower:
+- **Decided, the first condition:** clear a floor too easily, **without being hit once**, and the next floor has a
+  **40% chance** to be a red gate.
+- **Decided:** the condition that opened a red gate decides **which boss** waits inside, so each condition has its own
+  boss.
+- **Suggested conditions for later**, hinted at by quests and notes found in the tower:
   - beat a floor's boss without drinking a potion;
   - clear every elite on a floor before entering the boss chamber;
   - carry a sigil forged from a secret boss's drop.
 - **Inside:**
   - the return gate is sealed until the red boss dies;
   - online, it holds only your party;
-  - it guarantees heartstone and has a chance at unique gear.
+  - it guarantees mythril ore and has a chance at unique gear.
 - **Secret bosses** live behind red gates. Their mutagens are the undiscovered rank 5 material from
   [class-trees.md](class-trees.md).
 
@@ -191,7 +219,7 @@ Simple to tell, delivered in small pieces: a short intro, branch wardens' lines,
 and notes found in the tower. None of it blocks play.
 
 > Every kingdom lives in the shade of the World Tree. Its roots drink from the deep, its leaves carry villages, and
-> its hardened sap, heartstone, makes the finest steel there is.
+> its heartwood holds mythril, the finest ore there is.
 >
 > Thirty years ago its crown went black. Something took the top of the tree. The few knights who came back called
 > it the Demon King, and since then the blight has crept down the trunk. Where it passes, the tree's own guardians
@@ -239,11 +267,11 @@ Recommended order, with reasons:
    - Forging is the core verb of the pitch ("use monster drops to forge powerful gear"), and today gear only
      drops or is bought.
 3. **The market and the quest board.**
-   - Drops become worth shards and heartstone, and the quest board explains market events.
+   - Drops become worth shards and mythril ore, and the quest board gives them a second use.
    - Works the same in single player and online.
 4. **The arcanist.**
    - Skill ranks, class trees and mutations (already designed), and gear passives.
-5. **Floors 4–10, the first branch warden, and the first branch village.**
+5. **Floors 4–10, the first branch warden, and the first branch village.** (**Decided:** agreed.)
    - Act 1 of the story goes in here. New floors can be built alongside steps 2–4 whenever content is needed.
 6. **Player trading and the auction house.**
    - Online only. It needs a working economy and its anti-abuse rules first.
@@ -253,7 +281,9 @@ Recommended order, with reasons:
 
 ## Open questions
 
-1. Should the rarest gear (heartstone gear) be **tradeable, or bound to you once equipped**? Bound keeps it meaning
-   "I earned this" and stops a few rich players from buying out the top. Tradeable is freer.
-2. Personal plots in shared fields, as suggested, or fully shared fields?
-3. Should a character's online and single player progress stay separate (as today), with separate markets?
+1. A red gate needs a floor cleared without being hit once. Is that the **whole floor** (every room, every enemy,
+   then the boss), or **from the boss chamber on**? The whole floor is very hard on floors of about 80 enemies,
+   which may be the point.
+2. Should online and single player characters stay separate (as today), each with their own market regions?
+3. Online, how many supplies should a trader hold, when a party of four shares a safe room? Per player (as now) is
+   simplest.

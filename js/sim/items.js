@@ -97,7 +97,8 @@ const matsText=m=>Object.keys(m).map(k=>m[k]+' '+MATS[k].name).join(', ');
 const enhanceCost=it=>Math.round(22*((it.plus||0)+1)*(1+.3*(it.ilvl-1))*RARITY[it.rarity].mult);
 const BAG_SIZE=30;
 const buyPrice=it=>Math.round([40,70,130,240,450][it.rarity]*(1+.3*(it.ilvl-1)));
-const potionPrice=()=>Math.round(25*(1+.25*(G.n-1)));
+const supplyPrice=k=>Math.round(SUPPLIES[k].price*(1+.25*(G.n-1)));
+const potionPrice=()=>supplyPrice('potion');
 
 // A blacksmith's stock for the current player: one weapon of their own class, then five random pieces, at this floor's level.
 function makeStock(){

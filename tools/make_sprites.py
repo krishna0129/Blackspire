@@ -482,6 +482,40 @@ def colour(im,tint):
             if px[x,y][3]: px[x,y]=hard_light(px[x,y],t)
     return im
 def cell(im,col,row): return im.crop((col*CW,row*CH,(col+1)*CW,(row+1)*CH))
+# The trader: side view, facing right, under a pack almost as tall as they are, with a bedroll on top, a pan and a
+# lantern hanging off it, a wide hat and a walking stick. Painted as shapes on a character grid, then coloured.
+TRADER_PAL={"W":"#7a5a34","w":"#4a3320","L":"#a07844","r":"#8e2a38","R":"#c44a58","g":"#3a2a18","B":"#d9a441","m":"#6f6a5a",
+    "M":"#b3afc0","y":"#f5c86a","h":"#4a3324","H":"#6b4a2c","s":"#c68d62","S":"#9a6a48","e":"#1c1c24","c":"#3e5a3a",
+    "C":"#5a7a4a","b":"#2b2018","p":"#3a3440","k":"#2a211b","t":"#8a6a3a","T":"#c9a46a"}
+def trader():
+    W,H=24,27; gd=[['.']*W for _ in range(H)]
+    def fill(c,x,y,w,h):
+        for yy in range(y,y+h):
+            for xx in range(x,x+w): gd[yy][xx]=c
+    # the pack
+    fill('W',2,3,13,19); fill('w',2,3,1,19); fill('w',14,3,1,19); fill('w',2,3,13,1); fill('w',2,21,13,1)
+    fill('L',3,4,11,4); fill('w',3,8,11,1)                         # the flap
+    fill('g',8,4,1,9); fill('B',8,7,1,1)                           # strap and buckle
+    fill('L',3,13,4,6); fill('w',3,13,4,1); fill('w',6,13,1,6)     # side pocket
+    fill('r',4,0,10,3); fill('R',4,0,10,1); fill('g',6,0,1,3); fill('g',11,0,1,3)   # bedroll
+    fill('g',1,9,1,1); fill('m',0,10,3,3); fill('M',1,10,1,1)      # a pan
+    fill('g',1,15,1,1); fill('m',0,16,2,4); fill('y',0,17,2,2)     # a lantern
+    # the trader
+    fill('t',23,6,1,21); fill('T',23,5,1,1)                        # walking stick
+    fill('c',15,12,7,8); fill('C',20,12,1,8)                       # coat
+    fill('g',15,10,2,8)                                            # pack strap over the shoulder
+    fill('b',15,15,7,1); fill('B',19,15,1,1)                       # belt
+    fill('C',21,12,1,5); fill('s',22,16,1,1)                       # arm, hand on the stick
+    fill('r',16,11,6,1)                                            # scarf
+    fill('s',17,8,5,3); fill('S',17,8,1,3); fill('e',20,9,1,1); fill('s',22,9,1,1)   # face, looking right
+    fill('h',17,4,4,3); fill('H',17,5,4,1); fill('h',15,7,8,1)     # hat
+    fill('p',16,20,2,5); fill('p',19,20,2,5)                       # legs
+    fill('k',16,25,3,2); fill('k',19,25,3,2)                       # boots
+    im=canvas(W+2,H+2)
+    for y,row in enumerate(gd):
+        for x,ch in enumerate(row):
+            if ch!='.': im.putpixel((1+x,1+y),hx(TRADER_PAL[ch]))
+    save(im,'npc/trader')
 def props(layers):
     # the blacksmith is the side-view body, bald, bearded and aproned, in fixed colours
     sm=canvas(CW,CH)
@@ -490,6 +524,7 @@ def props(layers):
     for r in [(3,6,6,2,'#9a9484'),(4,8,4,1,'#9a9484'),(5,6,2,1,'#c68d62'),(2,9,6,5,'#2b2b33'),(2,9,6,1,'#3d3d48'),(3,8,1,1,'#2b2b33'),(6,8,1,1,'#2b2b33')]:
         rect(sm,*r[:4],hx(r[4]),OX,OY)
     save(sm,'npc/smith')
+    trader()
     a=canvas(16,11)
     for r in [(1,0,12,3,'#5a5e6b'),(1,0,12,1,'#8d93a0'),(0,1,1,1,'#5a5e6b'),(13,1,1,1,'#5a5e6b'),(4,3,6,2,'#3d4152'),(2,5,10,3,'#4a4e5c'),(2,7,10,1,'#2b2e3a')]: rect(a,*r[:4],hx(r[4]))
     save(a,'props/anvil')

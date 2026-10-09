@@ -89,7 +89,7 @@ class Game{
     m.S=JSON.parse(JSON.stringify(s));this.db.saveChar(m.account,m.S);return null;
   }
   charSummary(m){return m.S?{name:m.S.char.name,level:m.S.char.level,floor:m.S.floor||1}:null;}
-  store(m){if(m.S){if(m.pl&&!m.pl.dead)m.S.hp=Math.round(m.pl.hp);const j=JSON.stringify(m.S);if(j!==m.lastStored){this.db.saveChar(m.account,m.S);m.lastStored=j;}}}
+  store(m){if(m.S){if(m.pl&&!m.pl.dead){m.S.hp=Math.round(m.pl.hp);this.R.storeNeeds(m.pl);}const j=JSON.stringify(m.S);if(j!==m.lastStored){this.db.saveChar(m.account,m.S);m.lastStored=j;}}}
 
   /* ---------- parties ---------- */
   newCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c;do{c='';for(let i=0;i<6;i++)c+=A[crypto.randomInt(A.length)];}while(this.byCode.has(c));return c;}
@@ -123,7 +123,7 @@ class Game{
   leave(m){if(!m.party||m.party.members.length<2)return'You are not in a party with anyone.';const n=m.party.n;this.removeMember(m);m.S.floor=n;this.play(m);return null;}
   partyBest(p){return Math.max(...p.members.map(m=>m.S.best||1));}
   // The whole party moves to floor n: a fresh copy of it, enemies and boss included.
-  travel(p,n){p.n=n;for(const m of p.members){m.S.floor=n;m.S.hp=m.pl&&!m.pl.dead?Math.round(m.pl.hp):null;}this.buildWorld(p);}
+  travel(p,n){p.n=n;for(const m of p.members){m.S.floor=n;m.S.hp=m.pl&&!m.pl.dead?Math.round(m.pl.hp):null;this.R.storeNeeds(m.pl);}this.buildWorld(p);}
   buildWorld(p){
     const R=this.R;p.G=R.genFloor(p.n,p.seed+p.n*7919);R.setWorld(p.G);
     for(const m of p.members)this.placePlayer(p,m);
@@ -155,7 +155,7 @@ class Game{
   snapshot(p,m){
     const G=p.G,me=m.pl,near=e=>Math.abs(e.x-me.x)<VIEW&&Math.abs(e.y-me.y)<VIEW*.7;
     return{t:'s',time:r1(G.time),
-      me:{hp:r1(me.hp),mp:r1(me.mp),x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
+      me:{hp:r1(me.hp),mp:r1(me.mp),food:r1(me.food),drink:r1(me.drink),x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
         swing:me.swing?[r1(me.swing.t),r1(me.swing.d),me.swing.hit?1:0]:0,skillCd:r1(me.skillCd),skillMax:r1(me.skillMax),potCd:r1(me.potCd),dodgeCd:r1(me.dodgeCd),mom:me.mom,blocking:!!me.blocking},
       pl:G.players.filter(q=>q!==me&&!q.gone).map(q=>({id:q.id,x:r1(q.x),y:r1(q.y),dir:q.dir,moving:q.moving,dead:q.dead,inv:r1(q.inv),guard:r1(q.guard),hp:Math.ceil(q.hp),maxHp:q.ST.maxHp,
         swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,blocking:!!q.blocking,dash:!!q.dash})),
@@ -216,7 +216,7 @@ class Game{
         return;
       case'p':    // a one-off press
         pl.in=m.in;
-        if(o.a==='atk')pl.atkBuf=.18;else if(o.a==='skill')R.useSkill();else if(o.a==='dodge')R.dodge();else if(o.a==='potion')R.usePotion();
+        if(o.a==='atk')pl.atkBuf=.18;else if(o.a==='skill')R.useSkill();else if(o.a==='dodge')R.dodge();else if(o.a==='potion')R.usePotion();else if(o.a==='eat')R.eat();else if(o.a==='drink')R.drink();
         return;
       case'act':{ // gear, attributes, the blacksmith
         if(!Object.prototype.hasOwnProperty.call(R.__actions(),o.name)||!Array.isArray(o.args)||o.args.length>3)return this.send(m,{t:'ar',id:o.id,r:false});

@@ -10,7 +10,7 @@
 
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {loadRules}=require('../server/game.js');
-const R=loadRules(),D=vm.runInContext(`({ETYPES,RARITY,WTYPES,ATYPES,BTYPES,TTYPES,PASSIVES,GEAR_AFFIX,GRIM,MATS,LOOT,FLOORS,ELITE_CHANCE,
+const R=loadRules(),D=vm.runInContext(`({ETYPES,RARITY,WTYPES,ATYPES,BTYPES,TTYPES,PASSIVES,GEAR_AFFIX,GRIM,MATS,LOOT,FLOORS,ELITE_CHANCE,SUPPLIES,STOCK_RANGE,
   ENH_CHANCE,ENH_MAX,SKILLS,ilvlMult,itemMult,enhanceRecipe,enhanceCost,salvageValue,salvageMats})`,R);
 const OUT=path.join(__dirname,'..','docs','wiki');
 const SHOWN=[1,2,3];   // floors the tables show
@@ -133,11 +133,12 @@ function dropsPage(){
 your drops, and only you see them. Each chest opens once per player. Bosses return whenever you arrive on a floor, so
 their loot can be farmed.`,
 `## What drops from what`,
-`On the ground: ${IMG('drop-shard','shards',36)} shards ${IMG('drop-potion','potion',36)} potion ${IMG('drop-scrap','Iron scrap',36)} Iron scrap ${IMG('drop-ember','Emberstone',36)} Emberstone ${IMG('drop-crystal','Spire crystal',36)} Spire crystal ${IMG('drop-item','item',36)} an item (rare and better ones also send a beam of their colour into the dark).`,
-table(['Source','Shards (floor 1 / 2 / 3)','Items','Potions','Materials'],Object.keys(L).map(k=>{const q=L[k];
+`On the ground: ${IMG('drop-shard','shards',36)} shards ${IMG('drop-potion','potion',36)} potion ${IMG('drop-ration','ration',36)} ration ${IMG('drop-flask','water flask',36)} water flask ${IMG('drop-scrap','Iron scrap',36)} Iron scrap ${IMG('drop-ember','Emberstone',36)} Emberstone ${IMG('drop-crystal','Spire crystal',36)} Spire crystal ${IMG('drop-item','item',36)} an item (rare and better ones also send a beam of their colour into the dark).`,
+table(['Source','Shards (floor 1 / 2 / 3)','Items','Potions, rations, water','Materials'],Object.keys(L).map(k=>{const q=L[k];
   return[src[k],SHOWN.map(n=>{const m=floorMult(n).shards,a=Math.round(q.shards[0]*m),b=Math.round(q.shards[1]*m);return a===b?a:a+'–'+b;}).join(' / '),
     q.items.map(i=>`${i.chance<1?pct(i.chance):'1'}${i.ilvl?' (item level +'+i.ilvl+')':''}${i.minRar?', at least '+D.RARITY[i.minRar].name.toLowerCase():''}`).join('<br>'),
-    q.potions.length>1?q.potions.length+' potions':pct(q.potions[0]),matText(q.mats)];})),
+    Object.values(D.SUPPLIES).map(s=>{const c=q[s.key]||[];return(c.length>1?c.length:c[0]>=1?'1':pct(c[0]))+' '+s.name.toLowerCase()+(c.length>1?'s':'');}).join('<br>'),matText(q.mats)];})),
+`Rations and water flasks refill the hunger and thirst meters. Traders in safe rooms also sell them, ${D.STOCK_RANGE[0]}–${D.STOCK_RANGE[1]} of each supply, restocked when the floor\u2019s boss falls.`,
 `Elites are ${pct(D.ELITE_CHANCE)} of room spawns, marked by gold outlines and eyes. They have 2.4× health and 1.3× damage, and give 3× experience.`,
 `## Item rarity odds`,
 `![Item rarity odds by source: Legendary rises from 1.5% to 27% as the rarity bonus grows, while Epic stays at 5.5%](img/rarity-odds.svg)`,

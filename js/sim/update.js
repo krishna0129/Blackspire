@@ -53,7 +53,7 @@ function simUpdate(dt){
     if(d.k==='shard'){pull(d,P,dt);if(dist<8){S.shards+=d.amt;d.gone=true;}}
     else if(d.k==='mat'){pull(d,P,dt);
       if(dist<8){S.mats[d.id]=(S.mats[d.id]||0)+d.amt;d.gone=true;sfx('pick');log(`Picked up <span style="color:${MATS[d.id].color}">${d.amt>1?d.amt+' ':''}${MATS[d.id].name}</span>`);}}
-    else if(d.k==='potion'){if(dist<10){S.potions++;d.gone=true;sfx('pick');log('Picked up a potion');}}
+    else if(SUPPLIES[d.k]){if(dist<10){const s=SUPPLIES[d.k];S[s.key]=(S[s.key]||0)+1;d.gone=true;sfx('pick');log('Picked up a '+s.name.toLowerCase());}}
     else if(dist<11){if(S.inv.length<BAG_SIZE){d.item.isNew=true;S.inv.push(d.item);d.gone=true;sfx(d.item.rarity>=2?'rare':'pick');
         toast(d.item);bagBadge();if(d.item.rarity>=2)burst(P.x,P.y-4,14,RARITY[d.item.rarity].color,70);
         log(`Picked up <span style="color:${RARITY[d.item.rarity].color}">${esc(d.item.name)}</span>`);}
@@ -75,12 +75,23 @@ function resetBoss(){
   G.enemies=G.enemies.filter(e=>e===b||!e.summoned);G.beams=[];bossBar(null);
   if(G.arena){G.corpses=G.corpses.filter(c=>!c.arena);for(const q of G.arena)G.corpses.push({x:q.x,y:q.y,t:1e9,arena:true});}   // the chamber's bodies are back
 }
+// Hunger and thirst (NEEDS, data.js) drain all the time on a floor. Low weakens you; empty costs health every second.
+function updateNeeds(dt){
+  let empty=0;
+  for(const k in NEEDS){const was=P[k];P[k]=Math.max(0,P[k]-NEEDS[k].drain*dt);
+    if(was>=NEED_LOW&&P[k]<NEED_LOW)log(NEEDS[k].low);
+    if(was>0&&P[k]<=0)log(`<span style="color:var(--red)">${NEEDS[k].empty}</span>`);
+    if(P[k]<=0)empty++;}
+  P.needT=(P.needT||0)+dt;
+  if(P.needT>=1){P.needT-=1;if(empty&&!god){const d=Math.max(1,Math.round(ST.maxHp*NEED_HURT*empty));P.hp-=d;addNum(P.x,P.y-16,d,'hurt');if(P.hp<=0)die();}}
+}
 function updatePlayer(dt){
   if(P.dead)return;
-  P.mp=Math.min(ST.maxMp,P.mp+ST.mpRegen*dt);if(P.guard>0)P.guard-=dt;if(P.ward>0)P.ward-=dt;if(P.hot){heal(P.hot.rate*dt);P.hot.t-=dt;if(P.hot.t<=0)P.hot=null;}
-  P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.inv=Math.max(0,P.inv-dt);
+  P.mp=Math.min(ST.maxMp,P.mp+ST.mpRegen*(P.drink<NEED_LOW?.5:1)*dt);if(P.guard>0)P.guard-=dt;if(P.ward>0)P.ward-=dt;if(P.hot){heal(P.hot.rate*dt);P.hot.t-=dt;if(P.hot.t<=0)P.hot=null;}
+  P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
-  heal(ST.regen*dt);
+  if(P.food>=NEED_LOW)heal(ST.regen*dt);
+  updateNeeds(dt);if(P.dead)return;
   // Safe rooms: no fighting in either direction. The last one you stand in is where you wake after dying.
   const si=P.locked?-1:safeIndex(P.x,P.y);P.safe=si>=0;
   if(si>=0&&(S.cp!==si||S.cpFloor!==G.n)){S.cp=si;S.cpFloor=G.n;if(si>0){log('Safe room reached. You will wake here if you fall.');sfx('pick');}}
@@ -122,7 +133,7 @@ function steerPlayer(dt){
     if(Math.random()<.7)part({x:P.x,y:P.y+rand(-6,4),vx:0,vy:0,t:0,d:.22,c:'#4a4a5e'});
     if(D.t<=0)P.dash=null;
   }else{
-    const sp=ST.move*(P.swing?(ST.magic||ST.ranged?.3:0):P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1);   // you plant your feet to swing
+    const sp=ST.move*(P.swing?(ST.magic||ST.ranged?.3:0):P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1);   // you plant your feet to swing
     if(P.lunge>0){P.lunge-=dt;if(!P.remote)moveEnt(P,Math.cos(P.aim)*110*dt,Math.sin(P.aim)*110*dt);}
     if(!P.remote)moveEnt(P,mx*sp*dt,my*sp*dt);
     P.moving=m>.1;if(P.moving)P.walk+=dt*(sp/64)*7;

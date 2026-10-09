@@ -20,6 +20,7 @@
       <div class="bar"><i id="hpFill"></i><b id="hpTxt"></b></div>
       <div class="bar mp"><i id="mpFill"></i><b id="mpTxt"></b></div>
       <div class="bar xp"><i id="xpFill"></i></div>
+      <div class="needs"><div class="bar food" title="Hunger"><i id="foodFill"></i></div><div class="bar drink" title="Thirst"><i id="drinkFill"></i></div></div>
       <div id="hFloor"></div>
     </div>
     <div class="topRight">
@@ -39,6 +40,8 @@
       <button class="slot" id="slBlock" tabindex="-1" hidden><span class="nm">Block</span><kbd>H</kbd></button>
       <button class="slot" id="slDodge" tabindex="-1"><span class="nm">Dodge</span><i class="cd"></i><kbd>Shift</kbd></button>
       <button class="slot" id="slPot" tabindex="-1"><span class="nm">Potion</span><b id="potN">0</b><i class="cd"></i><kbd>Q</kbd></button>
+      <button class="slot" id="slFood" tabindex="-1"><span class="nm">Eat</span><b id="foodN">0</b><kbd>R</kbd></button>
+      <button class="slot" id="slDrink" tabindex="-1"><span class="nm">Drink</span><b id="drinkN">0</b><kbd>T</kbd></button>
     </div>
     <button class="btn primary" id="prompt" tabindex="-1" hidden></button>
     <div id="toasts"></div>
@@ -117,7 +120,7 @@
           <h3>Stats</h3><dl class="stats" id="pStats"></dl>
         </section>
         <section>
-          <div id="shopBox" hidden><h3>Blacksmith's stock</h3><div class="grid" id="sGrid"></div></div>
+          <div id="shopBox" hidden><h3>Trader's pack</h3><div class="grid" id="sGrid"></div></div>
           <div class="bagHead"><span id="bagN"></span><span id="pMats"></span><span><span class="gem"></span> <span id="pShards"></span> shards</span></div>
           <div class="grid" id="pGrid"></div>
           <div class="detail" id="pDetail"></div>

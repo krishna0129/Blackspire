@@ -1,21 +1,24 @@
 'use strict';
-// Blackspire: everything a player can do outside of combat (gear, attributes, the blacksmith), as named actions.
+// Blackspire: everything a player can do outside of combat (gear, attributes, the trader, the blacksmith), as named actions.
 // Single player calls them directly; online, the client asks the server to run them, so the server's copy of the
 // save is the only one that counts. Each acts on the current player (setPlayer) and returns a result, or false.
 
 const nearSmithIdx=si=>{const q=G.smiths[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
+const nearTraderIdx=si=>{const q=G.traders[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const ACTIONS={
-  // make the stock the first time a smith's counter is opened
-  openShop(si){if(!nearSmithIdx(si))return false;const sh=shopOf(si);if(!sh.stock)sh.stock=makeStock();return true;},
+  // make the stock the first time a trader's pack is opened
+  openShop(si){if(!nearTraderIdx(si))return false;const sh=shopOf(si);if(!sh.stock)sh.stock=makeStock();return true;},
   buy(si,i){
-    if(!nearSmithIdx(si))return false;const sh=shopOf(si),e=sh.stock&&sh.stock[i];
+    if(!nearTraderIdx(si))return false;const sh=shopOf(si),e=sh.stock&&sh.stock[i];
     if(!e||S.shards<e.price||S.inv.length>=BAG_SIZE)return false;
     S.shards-=e.price;S.inv.push(e.it);sh.stock.splice(i,1);return S.inv.length-1;
   },
-  buyPotion(si){
-    if(!nearSmithIdx(si))return false;const sh=shopOf(si),pr=potionPrice();
-    if(S.shards<pr||sh.potions<=0)return false;S.shards-=pr;sh.potions--;S.potions++;return true;
+  // k: a SUPPLIES key (potion, ration, flask)
+  buySupply(si,k){
+    const s=SUPPLIES[k];if(!s||!nearTraderIdx(si))return false;const sh=shopOf(si),pr=supplyPrice(k);
+    if(S.shards<pr||sh[s.key]<=0)return false;S.shards-=pr;sh[s.key]--;S[s.key]=(S[s.key]||0)+1;return true;
   },
+  buyPotion(si){return ACTIONS.buySupply(si,'potion');},
   // bag item i goes on; whatever it replaces takes its place in the bag
   equip(i){
     const it=S.inv[i];if(!it)return false;

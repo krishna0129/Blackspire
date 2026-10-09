@@ -56,6 +56,16 @@ test('online play',async t=>{
     const sa=await A.wait(o=>o.t==='s'&&o.pl.length===1);assert.strictEqual(sa.pl[0].id,fl.id);
   });
 
+  await t.test('hunger and thirst come down in the snapshot, and eating is a key the server runs',async()=>{
+    const s0=A.last('s').me;assert.strictEqual(typeof s0.food,'number');assert.strictEqual(typeof s0.drink,'number');
+    await A.wait(o=>o.t==='s'&&o.me.drink<s0.drink,4000);
+    // a full meter refuses food, so make Alpha hungry on the server first
+    for(const p of s.game.parties.values())for(const m of p.members)if(m.pid===A.floor.id)m.pl.food=10;
+    const r0=A.last('save').s.rations;A.send({t:'p',a:'eat'});
+    await A.wait(o=>o.t==='save'&&o.s.rations===r0-1,4000);
+    await A.wait(o=>o.t==='s'&&o.me.food>=49,4000);   // 10 + a ration's 40
+  });
+
   await t.test('a reachable position is accepted, a teleport is refused',async()=>{
     const me=A.last('s').me;
     A.send({t:'in',mx:1,my:0,x:me.x+1.5,y:me.y,tp:me.tp});

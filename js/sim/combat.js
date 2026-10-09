@@ -113,11 +113,10 @@ function dropLoot(kind,x,y){
   dropShards(x,y,Math.round(rand(L.shards[0],L.shards[1])*(1+.25*(G.n-1))));
   const m={};for(const k in L.mats){const[c,lo,hi]=L.mats[k];m[k]=Math.random()<c?Math.round(rand(lo,hi)):0;}dropMats(x,y,m);
   for(const q of L.items)if(Math.random()<q.chance)dropItem(x+rand(-sp,sp),y+rand(-sp,sp),randomItem(G.n+q.ilvl,q.bonus,q.minRar),x,y);
-  for(const c of L.potions)if(Math.random()<c)dropPotion(x+rand(-sp,sp),y+rand(-sp,sp),x,y);
+  for(const k in SUPPLIES)for(const c of L[SUPPLIES[k].key]||[])if(Math.random()<c)drop({k,x:x+rand(-sp,sp),y:y+rand(-sp,sp)},x,y);
 }
 function dropMats(x,y,m){for(const id in m)if(m[id]>0)drop({k:'mat',id,amt:m[id],x:x+rand(-9,9),y:y+rand(-9,9)},x,y);}
 function dropItem(x,y,it,ox=x,oy=y){drop({k:'item',item:it,x,y},ox,oy);}
-const dropPotion=(x,y,ox,oy)=>drop({k:'potion',x,y},ox,oy);
 function gainXp(v){
   const c=S.char;c.xp+=Math.round(v*(1+(ST.g.xp||0)/100));
   while(c.xp>=xpNeed(c.level)){c.xp-=xpNeed(c.level);c.level++;c.pts+=3;calcStats();P.hp=ST.maxHp;P.mp=ST.maxMp;
@@ -150,7 +149,8 @@ function hurtPlayer(dmg,src,sure,from,ground){
   if(P.hp<=0)die();
 }
 function die(){
-  P.dead=true;P.hp=0;P.swing=P.dash=null;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;persist();
+  P.dead=true;P.hp=0;P.swing=P.dash=null;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;
+  S.food=Math.max(50,Math.round(P.food));S.drink=Math.max(50,Math.round(P.drink));persist();   // you wake up at least half fed
   onDeath(lost,S.cpFloor===G.n&&S.cp>0);   // cp: whether they wake in a safe room (true) or at the entrance
 }
 
@@ -234,3 +234,11 @@ function usePotion(){
   if(P.dead||P.potCd>0||S.potions<=0||P.hp>=ST.maxHp)return;
   S.potions--;P.potCd=1.2;heal(ST.maxHp*.45);burst(P.x,P.y,12,'#d9534f',50);sfx('pick');
 }
+// Eating a ration or drinking from a flask: refills its meter. Nothing happens when the meter is already full.
+function useSupply(k){
+  const s=SUPPLIES[k];if(P.dead||P.eatCd>0||!s.need||(S[s.key]||0)<=0||P[s.need]>=99)return;
+  S[s.key]--;P.eatCd=.6;P[s.need]=Math.min(100,P[s.need]+s.gives);burst(P.x,P.y,8,s.color,40);sfx('pick');
+}
+// declared as functions so the server can call them on its sandbox (R.eat, R.drink)
+function eat(){useSupply('ration');}
+function drink(){useSupply('flask');}

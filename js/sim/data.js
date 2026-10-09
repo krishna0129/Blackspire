@@ -153,15 +153,32 @@ const FLOORS=[
 ];
 const floorDef=n=>FLOORS[Math.min(n,FLOORS.length)-1];
 const THORN_SLOW=.6,THORN_DMG=3;   // thorn patches: speed multiplier, and damage every 0.7 s (scaled by floor, through defense)
+// Supplies: things you carry by count and use with a key. key: the save's counter; price: shards on floor 1 (+25% a floor).
+// need/gives: the meter a ration or flask refills, and by how much.
+const SUPPLIES={
+  potion:{key:'potions',name:'Health potion',price:25,color:'#d9534f',desc:'Restores 45% of your health.'},
+  ration:{key:'rations',name:'Ration',price:12,color:'#d9a441',need:'food',gives:40,desc:'Bread and dried meat. Fills 40% of your hunger meter.'},
+  flask:{key:'flasks',name:'Water flask',price:8,color:'#5aa7e6',need:'drink',gives:50,desc:'Clean water. Fills 50% of your thirst meter.'},
+};
+// Hunger and thirst. Each meter runs from 100 (full) to 0 and drains while you are on a floor: food in about 25 minutes,
+// drink in about 15. Below NEED_LOW you are weakened (hungry: no natural healing and 10% slower; thirsty: half mana
+// regeneration). At 0, each empty meter costs NEED_HURT of your max health every second.
+const NEEDS={
+  food:{drain:100/(25*60),low:'You are getting hungry. Eat a ration (R).',empty:'You are starving and losing health. Eat something (R).'},
+  drink:{drain:100/(15*60),low:'You are getting thirsty. Drink some water (T).',empty:'You are parched and losing health. Drink something (T).'},
+};
+const NEED_LOW=25,NEED_HURT=.01;
+// What a trader keeps of each supply: a random amount in this range, refilled when the floor's boss falls.
+const STOCK_RANGE=[5,10];
 const ELITE_CHANCE=.07;   // share of room spawns that are elites: 2.4x health, 1.3x damage, 3x experience, better loot
 // Loot, rolled separately for every player who gets credit. shards: [min,max], scaled by +25% per floor above 1.
 // items: one roll each: chance, rarity bonus (see rollRarity), lowest rarity, item level above the floor's.
-// potions: one chance each. mats: [chance, min, max] per material.
+// potions, rations, flasks: one chance each (SUPPLIES). mats: [chance, min, max] per material.
 const LOOT={
-  normal:{shards:[1,4],items:[{chance:.13,bonus:0,minRar:0,ilvl:0}],potions:[.055],mats:{scrap:[.3,1,1],ember:[.03,1,1]}},
-  elite:{shards:[14,14],items:[{chance:.7,bonus:18,minRar:1,ilvl:0}],potions:[.3],mats:{scrap:[1,1,3],ember:[.4,1,1],crystal:[.04,1,1]}},
-  boss:{shards:[60,60],items:[{chance:1,bonus:25,minRar:2,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1}],potions:[1,1],
+  normal:{shards:[1,4],items:[{chance:.13,bonus:0,minRar:0,ilvl:0}],potions:[.055],rations:[.04],flasks:[.05],mats:{scrap:[.3,1,1],ember:[.03,1,1]}},
+  elite:{shards:[14,14],items:[{chance:.7,bonus:18,minRar:1,ilvl:0}],potions:[.3],rations:[.25],flasks:[.3],mats:{scrap:[1,1,3],ember:[.4,1,1],crystal:[.04,1,1]}},
+  boss:{shards:[60,60],items:[{chance:1,bonus:25,minRar:2,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1}],potions:[1,1],rations:[1],flasks:[1],
     mats:{scrap:[1,4,6],ember:[1,2,3],crystal:[1,1,1]}},
-  chest:{shards:[8,16],items:[{chance:1,bonus:12,minRar:0,ilvl:0},{chance:.35,bonus:6,minRar:0,ilvl:0}],potions:[.5],mats:{scrap:[1,1,2],ember:[.25,1,1]}},
+  chest:{shards:[8,16],items:[{chance:1,bonus:12,minRar:0,ilvl:0},{chance:.35,bonus:6,minRar:0,ilvl:0}],potions:[.5],rations:[.4],flasks:[.5],mats:{scrap:[1,1,2],ember:[.25,1,1]}},
 };
 // Names kept for floors still to be designed: 'Ash Regent', 'The Unlit King', 'Keeper of the Ninth Stair', 'Old Hunger', 'The Bell Below'.

@@ -52,6 +52,8 @@ const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','wiki','img'),DES
     const ground=(draw)=>{const c=document.createElement('canvas');c.width=c.height=9;const x=c.getContext('2d');draw(x,4,4);return frame(c,0,0,9,9,8,1);};
     out['drop-shard']=ground((x,X,Y)=>{x.fillStyle='#6fd6e6';x.fillRect(X,Y-1,1,3);x.fillRect(X-1,Y,3,1);});
     out['drop-potion']=ground((x,X,Y)=>{x.fillStyle='#050508';x.fillRect(X-2,Y-3,5,6);x.fillStyle='#d9534f';x.fillRect(X-1,Y-1,3,3);x.fillStyle='#e6e1d3';x.fillRect(X,Y-2,1,1);});
+    out['drop-ration']=ground((x,X,Y)=>{x.fillStyle='#050508';x.fillRect(X-3,Y-2,7,5);x.fillStyle='#b07a3a';x.fillRect(X-2,Y-1,5,3);x.fillStyle='#e0b36a';x.fillRect(X-1,Y-1,3,1);});
+    out['drop-flask']=ground((x,X,Y)=>{x.fillStyle='#050508';x.fillRect(X-2,Y-3,5,7);x.fillStyle='#7a5a3a';x.fillRect(X-1,Y-1,3,4);x.fillStyle='#5aa7e6';x.fillRect(X-1,Y,3,2);x.fillStyle='#c9b48a';x.fillRect(X,Y-2,1,1);});
     for(const k of Object.keys(MATS))out['drop-'+k]=ground((x,X,Y)=>{x.fillStyle='#050508';x.fillRect(X-2,Y-2,4,4);x.fillStyle=MATS[k].color;x.fillRect(X-1,Y-1,2,2);});
     out['drop-item']=ground((x,X,Y)=>{x.fillStyle='#050508';x.fillRect(X-3,Y-1,7,3);x.fillRect(X-1,Y-3,3,7);x.fillStyle=RARITY[2].color;x.fillRect(X-2,Y,5,1);x.fillRect(X,Y-2,1,5);x.fillRect(X-1,Y-1,3,3);x.fillStyle='#fff';x.fillRect(X,Y,1,1);});
     return out;

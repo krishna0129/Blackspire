@@ -69,6 +69,7 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Block (longsword and mace classes) | hold H or F |
 | Roll | Shift or L |
 | Potion | Q |
+| Eat a ration / drink water | R / T |
 | Interact (gates, floor gate, blacksmith) | E |
 | Gear | I or Tab |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
