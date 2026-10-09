@@ -44,7 +44,7 @@ land at the same moment.
 | **Arcanist** | mutations, skills and skill ranks, special passives on gear; forges grimoires | **Decided** |
 | **Market** | buys and sells materials, drops and crops at prices that move | **Decided** |
 | **Auction house** | players list gear for other players to bid on | **Decided** |
-| **Quest board** | fixed quests and refreshing ones that ask for monster drops | **Decided** |
+| **Quest board** | every quest in the region; the whole board refreshes once every 24 hours | **Decided** |
 | **Stash** | the universal stash, reachable from every village and safe point | **Decided** |
 | **Cook** | turns crops into food | suggested |
 | **Kingdom camps** | the three kingdoms' companies: story, and quests | suggested |
@@ -58,6 +58,8 @@ part of the tree. A return gate can take you to any village you have reached.
 
 - **Decided:** fields are **personal**. Everyone has and sees only their own plots, and nobody can enter anyone
   else's field. Online, a field is a private copy per player, the way a red gate is a private copy per party.
+- **Decided:** plots are **bought**, and each village grows only **one or two crops** (its soil is rich in one or two
+  nutrients). See [root-village.md](root-village.md#fields).
 - Crops grow in **real time** (an hour to a day), including while you are offline or in the tower. That gives a
   reason to come home without forcing it.
 - Each village's fields grow different crops, so higher villages give better food.
