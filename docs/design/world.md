@@ -221,6 +221,9 @@ are met, not at random.
   Killing every enemy matters for the second: skipping rooms doesn't count.
 - **Decided:** the condition that opened a red gate decides **which boss** waits inside. The untouched-floor boss
   should be the harder one, with the better loot, since it asks far more.
+- **Decided:** in a party, both conditions are **party-wide**: one hit on anyone breaks it for everyone. They are
+  meant as solo feats, and a solo player has the easiest time meeting them. Conditions built around a whole party
+  come later.
 - How "hit" is counted: any damage that reaches you. A dodged, evaded or fully blocked blow is not a hit. Thorns,
   hunger and thirst don't count either, since nothing attacked you.
 - **Suggested conditions for later**, hinted at by quests and notes found in the tower:
@@ -309,5 +312,3 @@ Recommended order, with reasons:
 ## Open questions
 
 1. Online stock sizes for traders, now that online stock is shared between players (to set when online gets its pass).
-2. In a party, does a red gate condition count for the **whole party** (nobody hit) or **per player**? Whole party
-   is simpler to show and harder to earn.
