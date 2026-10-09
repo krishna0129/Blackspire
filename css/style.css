@@ -185,6 +185,9 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #travelList{display:grid;gap:8px;margin-bottom:14px;max-height:50vh;overflow:auto}
 #travelList .btn{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 #travelList small{font-weight:500;font-size:12px;opacity:.75}
+#travelList .trow{display:flex;gap:6px;align-items:stretch}
+#travelList .trow .btn:first-child{flex:1}
+#travelList .trow .btn.small{white-space:nowrap}
 #dead p,#ask p,#pause p,#travel p,#online p{color:var(--dim);margin:0 0 18px}
 #ask .titleBtns,#pause .titleBtns,#travel .titleBtns,#online .titleBtns{justify-content:center}
 @media (prefers-reduced-motion:reduce){.bar i,#hurt{transition:none}.toast{animation-name:toastfade}}

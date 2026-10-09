@@ -77,6 +77,7 @@ function resetBoss(){
 }
 // Hunger and thirst (NEEDS, data.js) drain all the time on a floor. Low weakens you; empty costs health every second.
 function updateNeeds(dt){
+  if(G.village)return;   // nobody goes hungry at home
   let empty=0;
   for(const k in NEEDS){const was=P[k];P[k]=Math.max(0,P[k]-NEEDS[k].drain*dt);
     if(was>=NEED_LOW&&P[k]<NEED_LOW)log(NEEDS[k].low);
@@ -95,6 +96,8 @@ function updatePlayer(dt){
   // Safe rooms: no fighting in either direction. The last one you stand in is where you wake after dying.
   const si=P.locked?-1:safeIndex(P.x,P.y);P.safe=si>=0;
   if(si>=0&&(S.cp!==si||S.cpFloor!==G.n)){S.cp=si;S.cpFloor=G.n;if(si>0){log('Safe room reached. You will wake here if you fall.');sfx('pick');}}
+  // safe points you have stood in, by floor: the Teleport Gate can take you back to them
+  if(si>0&&G.n>0){const pts=S.points||(S.points={}),l=pts[G.n]||(pts[G.n]=[]);if(!l.includes(si))l.push(si);}
   if(onThorns(P.x,P.y)&&!P.safe){P.thornT=(P.thornT||0)-dt;if(P.thornT<=0){P.thornT=.7;
     const d=Math.max(1,Math.round(THORN_DMG*G.dmgM*100/(100+ST.def)));if(!god){P.hp-=d;addNum(P.x,P.y-16,d,'hurt');if(P.hp<=0)die();}}}
   else P.thornT=0;

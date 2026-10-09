@@ -160,6 +160,15 @@ const SUPPLIES={
   ration:{key:'rations',name:'Ration',price:12,color:'#d9a441',need:'food',gives:40,desc:'Bread and dried meat. Fills 40% of your hunger meter.'},
   flask:{key:'flasks',name:'Water flask',price:8,color:'#5aa7e6',need:'drink',gives:50,desc:'Clean water. Fills 50% of your thirst meter.'},
 };
+// What each kind of trader sells: gear slots, and supplies (SUPPLIES keys). Tower traders carry a bit of everything;
+// the village market splits it between stalls.
+const TRADER_SELLS={
+  all:{gear:['weapon','armor','boots','trinket'],supplies:['potion','ration','flask']},
+  weapons:{gear:['weapon'],supplies:[]},
+  gear:{gear:['armor','boots','trinket'],supplies:[]},
+  potions:{gear:[],supplies:['potion']},
+  food:{gear:[],supplies:['ration','flask']},
+};
 // Hunger and thirst. Each meter runs from 100 (full) to 0 and drains while you are on a floor: food in about 25 minutes,
 // drink in about 15. Below NEED_LOW you are weakened (hungry: no natural healing and 10% slower; thirsty: half mana
 // regeneration). At 0, each empty meter costs NEED_HURT of your max health every second.

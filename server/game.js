@@ -9,7 +9,7 @@
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 
 const ROOT=path.join(__dirname,'..');
-const SIM_FILES=['util','data','items','rules','world','combat','update','floor3','actions'];
+const SIM_FILES=['util','data','items','rules','world','village','combat','update','floor3','actions'];
 const TICK=1/30;          // the rules run 30 times a second
 const SNAP_EVERY=2;       // each player gets a snapshot every second tick (15 a second)
 const VIEW=360;           // enemies and shots further than this from a player are left out of their snapshot

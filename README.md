@@ -33,6 +33,7 @@ js/sim/               the game rules. No page, canvas or sound: the browser runs
   items.js            item generation, prices, enhancement, the blacksmith's stock
   rules.js            players, saves, derived stats, and the list of host functions the rules call
   world.js            floor generation
+  village.js          the root village (floor 0): its map, stalls, people and scenery
   combat.js           hit detection, damage, skills, spells, loot, the boss chamber
   update.js           one step of a floor: every player, enemy, shot and drop; enemy and boss AI
   floor3.js           floor 3's enemies (Gravecaller, Thornroot, Bloodbloom, Ossuary hermit) and the Pale Collector
@@ -70,7 +71,7 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Roll | Shift or L |
 | Potion | Q |
 | Eat a ration / drink water | R / T |
-| Interact (gates, floor gate, blacksmith) | E |
+| Interact (gates, the Teleport Gate, traders, blacksmith, villagers) | E |
 | Gear | I or Tab |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Respawn after a death | R or Enter |

@@ -7,7 +7,7 @@ const nearSmithIdx=si=>{const q=G.smiths[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;
 const nearTraderIdx=si=>{const q=G.traders[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const ACTIONS={
   // make the stock the first time a trader's pack is opened
-  openShop(si){if(!nearTraderIdx(si))return false;const sh=shopOf(si);if(!sh.stock)sh.stock=makeStock();return true;},
+  openShop(si){if(!nearTraderIdx(si))return false;const sh=shopOf(si);if(!sh.stock)sh.stock=makeStock(G.traders[si].sells||'all');return true;},
   buy(si,i){
     if(!nearTraderIdx(si))return false;const sh=shopOf(si),e=sh.stock&&sh.stock[i];
     if(!e||S.shards<e.price||S.inv.length>=BAG_SIZE)return false;
@@ -15,7 +15,7 @@ const ACTIONS={
   },
   // k: a SUPPLIES key (potion, ration, flask)
   buySupply(si,k){
-    const s=SUPPLIES[k];if(!s||!nearTraderIdx(si))return false;const sh=shopOf(si),pr=supplyPrice(k);
+    const s=SUPPLIES[k];if(!s||!nearTraderIdx(si)||!TRADER_SELLS[G.traders[si].sells||'all'].supplies.includes(k))return false;const sh=shopOf(si),pr=supplyPrice(k);
     if(S.shards<pr||sh[s.key]<=0)return false;S.shards-=pr;sh[s.key]--;S[s.key]=(S[s.key]||0)+1;return true;
   },
   buyPotion(si){return ACTIONS.buySupply(si,'potion');},

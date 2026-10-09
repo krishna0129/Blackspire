@@ -63,7 +63,7 @@ function genFloor(n,seed){
   // holds the forge and the floor gate, so its trader stands in the bottom corner below the forge.
   // g.traders[i] belongs to safe room i too.
   g.traders=g.smiths.map((q,i)=>{const r=safeRooms[i];
-    return i?{x:Math.min(q.x+42,(r.x+r.w-.8)*TILE),y:q.y+5}:{x:(r.x+1.6)*TILE,y:(r.y+r.h-1.5)*TILE};});
+    return Object.assign(i?{x:Math.min(q.x+42,(r.x+r.w-.8)*TILE),y:q.y+5}:{x:(r.x+1.6)*TILE,y:(r.y+r.h-1.5)*TILE},{name:'Trader',sells:'all'});});
   const FL=floorDef(n),bag=FL.spawns;g.corpses=[];
   if(FL.thorns)g.thorns=new Uint8Array(MW*MH);
   for(const r of rooms){

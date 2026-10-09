@@ -25,7 +25,11 @@ const SPRITE_NAMES=[
   'weapons/shield', 'weapons/spear', 'weapons/spear_tint', 'weapons/sword', 'weapons/sword_tint',
   // floor 3
   'enemies/thrall', 'enemies/thrall_eyes', 'enemies/gravecaller', 'enemies/gravecaller_eyes', 'enemies/thornroot', 'enemies/thornroot_eyes',
-  'enemies/bloodbloom', 'enemies/bloodbloom_eyes', 'enemies/hermit', 'enemies/hermit_eyes', 'enemies/collector', 'enemies/collector_eyes', 'enemies/corpse'
+  'enemies/bloodbloom', 'enemies/bloodbloom_eyes', 'enemies/hermit', 'enemies/hermit_eyes', 'enemies/collector', 'enemies/collector_eyes', 'enemies/corpse',
+  // the root village
+  'village/tree_a', 'village/tree_b', 'village/inn', 'village/guild', 'village/stall', 'village/stall_tint', 'village/counter', 'village/forge',
+  'village/witch', 'village/cauldron', 'village/tent_tint', 'village/flag_tint', 'village/well', 'village/pillar', 'village/board', 'village/lamp',
+  'village/scarecrow', 'village/sign', 'village/trunk', 'village/goods_weapons', 'village/goods_gear', 'village/goods_potions', 'village/goods_food'
 ];
 // Sprites drawn finer than the game's pixel grid: 'enemies/thrall':4 means thrall.png is 4 file pixels per game pixel
 // (a 72 x 80 file for an 18 x 20 enemy). Whole numbers from 1 to MAX_RATIO. A sprite's _tint and _eyes files share its
@@ -148,9 +152,39 @@ function drawSmith(q,t){
   ctx.save();ctx.translate(x,0);ctx.scale(-1,1);put(ctx,sp.c,-12,y-13);ctx.restore();   // faces the anvil
   ctx.save();ctx.translate(x-6,y+3);ctx.rotate(Math.PI+.9-Math.abs(Math.sin(t*2.6))*1.05);put(ctx,sp.hammer,-4,-5);ctx.restore();
 }
+// The village's props (js/sim/village.js): buildings, stalls, trees and the rest, outlined like every sprite.
+// A stall is its frame, its awning in the stall's colour and its goods; a tent is the kingdom's colour with its flag.
+const PROPS={};
+function propSprite(q){
+  const key=q.s+'|'+(q.tint||'');if(PROPS[key])return PROPS[key];
+  let src=IMG[q.s];
+  if(q.s==='village/stall'||q.s==='village/tent'){const base=q.s==='village/tent'?tinted('village/tent_tint',q.tint):IMG[q.s];if(base){
+    const[c,x]=mk(gw(base),gh(base),ratioOf(q.s,q.s+'_tint',q.goods||''));put(x,base,0,0);
+    if(q.s==='village/stall'){const a=tinted('village/stall_tint',q.tint);if(a)put(x,a,0,0);if(IMG[q.goods])put(x,IMG[q.goods],0,0);}
+    else{const f=tinted('village/flag_tint',q.tint);if(f)put(x,f,0,0);}
+    src=c;}}
+  return PROPS[key]=src?outlined(src,'#050508'):mk(1,1)[0];
+}
+function drawProp(q,t){
+  const c=propSprite(q),w=gw(c),h=gh(c),x=Math.round(q.x-camX-w/2),y=Math.round(q.y-camY-h);
+  if(x>W||y>H||x+w<0||y+h<0)return;
+  put(ctx,c,x,y);
+  if(q.brew){for(let i=0;i<3;i++){const p=(t*.8+i/3)%1;ctx.globalAlpha=1-p;ctx.fillStyle='#9be08a';ctx.fillRect(Math.round(q.x-camX-5+i*5),Math.round(q.y-camY-h+2-p*12),2,2);}ctx.globalAlpha=1;}
+}
+// People in the village (stall keepers, the arcanist, the captains) are built from the character layers, standing
+// facing you. q.look and q.eq are a character's look and gear, as in a save.
+const NPCAV={};
+function drawNpc(q){
+  const key=JSON.stringify([q.look,q.eq]),av=NPCAV[key]||(NPCAV[key]=buildAvatar(q.look,q.eq,null));
+  const x=Math.round(q.x-camX),y=Math.round(q.y-camY);
+  if(!q.stall){ctx.globalAlpha=.4;ctx.fillStyle='#000';ctx.fillRect(x-5,y+9,10,2);ctx.globalAlpha=1;}
+  cut(ctx,av,0,0,FRAME_W,FRAME_H,x-12,y-13);
+}
 // The trader: a travelling merchant under a pack almost as big as they are. They sway a little as they wait.
+// Village stall keepers are ordinary people (drawNpc).
 let TRADER=null;
 function drawTrader(q,t){
+  if(q.look){drawNpc(q);return;}
   const c=TRADER||(TRADER=IMG['npc/trader']?outlined(IMG['npc/trader'],'#050508'):mk(1,1)[0]),w=gw(c),h=gh(c);
   const x=Math.round(q.x-camX),y=Math.round(q.y-camY),sway=Math.floor(t*1.5+q.x)%2;
   ctx.globalAlpha=.4;ctx.fillStyle='#000';ctx.fillRect(x-7,y+9,14,2);ctx.globalAlpha=1;

@@ -97,13 +97,19 @@ const matsText=m=>Object.keys(m).map(k=>m[k]+' '+MATS[k].name).join(', ');
 const enhanceCost=it=>Math.round(22*((it.plus||0)+1)*(1+.3*(it.ilvl-1))*RARITY[it.rarity].mult);
 const BAG_SIZE=30;
 const buyPrice=it=>Math.round([40,70,130,240,450][it.rarity]*(1+.3*(it.ilvl-1)));
-const supplyPrice=k=>Math.round(SUPPLIES[k].price*(1+.25*(G.n-1)));
+// The floor whose prices and item levels a shop uses: its own, or in the village, the highest floor you have reached.
+const shopFloor=()=>G.n||Math.max(1,S.best||1);
+const supplyPrice=k=>Math.round(SUPPLIES[k].price*(1+.25*(shopFloor()-1)));
 const potionPrice=()=>supplyPrice('potion');
 
-// A blacksmith's stock for the current player: one weapon of their own class, then five random pieces, at this floor's level.
-function makeStock(){
+// A trader's gear for the current player, at the shop's floor level. kind (TRADER_SELLS): 'all' is a tower trader's
+// mixed pack (one weapon of your own class, then five random pieces); the village stalls keep to their own goods.
+function makeStock(kind='all'){
   const rar=()=>{const r=Math.random();return r<.03?3:r<.2?2:r<.55?1:0;};   // a shop sells mostly ordinary gear: 45% common, 35% uncommon, 17% rare, 3% epic, never legendary
-  const w=S.equip.weapon,st=[makeWeapon(w.type,G.n,Math.max(1,rar()),w.school)];
-  for(let i=0;i<5;i++){const it=randomItem(G.n,0),q=rar();st.push(it.slot==='weapon'?makeWeapon(it.type,G.n,q,it.school):it.slot==='armor'?makeArmor(it.type,G.n,q):it.slot==='boots'?makeBoots(it.type,G.n,q):makeTrinket(it.type,G.n,q));}
+  const n=shopFloor(),w=S.equip.weapon,want=TRADER_SELLS[kind].gear,st=[];
+  if(!want.length)return[];
+  if(want.includes('weapon'))st.push(makeWeapon(w.type,n,Math.max(1,rar()),w.school));
+  for(let i=0,tries=0;st.length<6&&tries<200;tries++){const it=randomItem(n,0),q=rar();if(!want.includes(it.slot))continue;i++;
+    st.push(it.slot==='weapon'?makeWeapon(it.type,n,q,it.school):it.slot==='armor'?makeArmor(it.type,n,q):it.slot==='boots'?makeBoots(it.type,n,q):makeTrinket(it.type,n,q));}
   return st.map(it=>({it,price:buyPrice(it)}));
 }

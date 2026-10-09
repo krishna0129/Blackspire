@@ -18,7 +18,7 @@ function render(){
   const t=G.time;
   // gates: the way up (cyan, after the boss falls) and the floor gate in the start room (amber)
   if(G.gate)drawPortal(G.gate,t,'#6fd6e6','#c8f3fa');
-  if(G.home)drawPortal(G.home,t,'#e2b93b','#f5e2a8');
+  if(G.home)(G.village?drawTeleportGate:drawPortal)(G.home,t,'#e2b93b','#f5e2a8');
   // telegraphs
   for(const q of G.tele){const p=q.t/q.d;
     if(q.cone){const x=q.x-camX,y=q.y-camY,a0=q.a-q.half,a1=q.a+q.half;ctx.fillStyle='#d9534f';
@@ -43,8 +43,10 @@ function render(){
   for(const e of G.enemies)if(e.x-camX>-48&&e.x-camX<W+48&&e.y-camY>-48&&e.y-camY<H+48)list.push(e);   // only what is on screen
   for(const q of G.smiths)list.push({smith:q,y:q.y,r:6});
   for(const q of G.traders||[])list.push({trader:q,y:q.y,r:6});
+  for(const q of G.talkers||[])list.push({talker:q,y:q.y,r:6});
+  for(const q of G.props||[])list.push({prop:q,y:q.y,r:0});
   list.sort((a,b)=>(a.y+a.r)-(b.y+b.r));
-  for(const e of list){if(e===P)drawPlayer();else if(e.other)drawOther(e);else if(e.smith)drawSmith(e.smith,t);else if(e.trader)drawTrader(e.trader,t);else drawEnemy(e,t);}
+  for(const e of list){if(e===P)drawPlayer();else if(e.other)drawOther(e);else if(e.smith)drawSmith(e.smith,t);else if(e.trader)drawTrader(e.trader,t);else if(e.talker)drawNpc(e.talker);else if(e.prop)drawProp(e.prop,t);else drawEnemy(e,t);}
   // projectiles, particles, slashes
   for(const p of G.proj){const x=Math.round(p.x-camX),y=Math.round(p.y-camY);ctx.fillStyle=p.c||'#6fd6e6';
     if(p.arrow){const c=Math.cos(p.a),sn=Math.sin(p.a);for(let i=1;i<7;i++)ctx.fillRect(Math.round(x-c*i),Math.round(y-sn*i),1,1);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);continue;}
@@ -71,7 +73,8 @@ function render(){
   }
   ctx.globalAlpha=1;
   // darkness
-  ctx.drawImage(light,0,0);
+  if(!G.village)ctx.drawImage(light,0,0);   // the village is outdoors, in the light
+  else drawVillageLights(t);
   // the Pale Collector's lantern sweep: a beam turning around it
   if(G.beams)for(const B of G.beams){const bx=B.x-camX,by=B.y-camY;ctx.save();ctx.translate(bx,by);ctx.rotate(B.a);
     ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55;const L=beamReach(B.x,B.y,B.a,B.len);ctx.fillStyle='#e2b93b';ctx.fillRect(4,-6,L-4,12);ctx.globalAlpha=.9;ctx.fillStyle='#ffe9a8';ctx.fillRect(4,-2,L-4,4);
@@ -86,7 +89,8 @@ function render(){
     if(e.flip){ctx.save();ctx.translate(bx,0);ctx.scale(-1,1);cut(ctx,s.eyes,fx,fy,s.fw,s.fh,-Math.ceil(s.fw/2),by);ctx.restore();}else cut(ctx,s.eyes,fx,fy,s.fw,s.fh,bx-Math.floor(s.fw/2),by);}
   for(const d of G.drops)if(d.owner===P.id&&d.k==='item'&&d.item.rarity>=2){const x=Math.round(d.x-camX),y=Math.round(d.y-camY);ctx.fillStyle=RARITY[d.item.rarity].color;for(let i=0;i<10;i++){ctx.globalAlpha=.7*(1-i/10);ctx.fillRect(x,y-4-i,1,1);}ctx.globalAlpha=1;}
   if(G.gate){const gx=G.gate.x-camX,gy=G.gate.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#6fd6e6');}
-  if(G.home){const gx=G.home.x-camX,gy=G.home.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#e2b93b');}
+  if(G.home&&!G.village){const gx=G.home.x-camX,gy=G.home.y-camY;dotArc(gx,gy,10+Math.sin(t*4)*1.5,t,t+2,'#e2b93b');}
+  for(const q of G.talkers||[])if(q.sayUntil>G.time)drawSay(q);
   // forge light: a warm glow that carries through the dark, so a safe room can be spotted from a distance
   for(const q of G.smiths){const x=q.x-camX+17,y=q.y-camY+4;if(x<-70||y<-70||x>W+70||y>H+70)continue;
     const fl=.85+.15*Math.sin(t*7+q.x);ctx.globalCompositeOperation='lighter';ctx.fillStyle='#f08a3c';
@@ -108,6 +112,33 @@ function drawOther(q){
   if(q.dead)return;const x=Math.round(q.x)-camX,y=Math.round(q.y)-camY-22;
   ctx.font='8px "Pixelify Sans",monospace';ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText(q.name,x+1,y+1);ctx.fillStyle='#cfe9ee';ctx.fillText(q.name,x,y);
   const w=16,hp=clamp(q.hp/q.maxHp,0,1);ctx.fillStyle='#000';ctx.fillRect(x-w/2-1,y+2,w+2,3);ctx.fillStyle='#8fd14f';ctx.fillRect(x-w/2,y+3,Math.ceil(w*hp),1);
+}
+// The village's Teleport Gate: a ring of light in the square, between its four pillars, with a beam rising from it.
+function drawTeleportGate(q,t){
+  const gx=Math.round(q.x-camX),gy=Math.round(q.y-camY),pu=Math.sin(t*2.5)*2;
+  ctx.globalCompositeOperation='lighter';
+  for(const[r,al]of[[38+pu,.06],[28+pu,.08],[18,.1]]){ctx.globalAlpha=al;ctx.fillStyle='#6fd6e6';ctx.beginPath();ctx.arc(gx,gy,r,0,TAU);ctx.fill();}
+  ctx.globalAlpha=.16+.06*Math.sin(t*3);ctx.fillStyle='#c8f3fa';ctx.fillRect(gx-6,gy-90,12,90);ctx.globalAlpha=.25;ctx.fillRect(gx-2,gy-90,4,90);
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+  dotArc(gx,gy,34,t*.6,t*.6+TAU,'#6fd6e6');dotArc(gx,gy,26,-t,-t+4,'#c8f3fa');dotArc(gx,gy,14,t*1.8,t*1.8+3,'#fff');
+  for(let i=0;i<6;i++){const a=t*.9+i*TAU/6,p=(t*.5+i/6)%1;ctx.globalAlpha=1-p;ctx.fillStyle='#c8f3fa';ctx.fillRect(Math.round(gx+Math.cos(a)*20),Math.round(gy+Math.sin(a)*12-p*40),1,2);}
+  ctx.globalAlpha=1;
+}
+// Warm light from the village's lamps, and a soft dusk at the edges of the view.
+function drawVillageLights(t){
+  ctx.globalCompositeOperation='lighter';ctx.fillStyle='#f5c86a';
+  for(const q of G.props)if(q.lamp){const x=q.x-camX,y=q.y-camY-21;if(x<-40||y<-40||x>W+40||y>H+40)continue;
+    for(const[r,al]of[[22,.05],[12,.07]]){ctx.globalAlpha=al*(.9+.1*Math.sin(t*5+q.x));ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();}}
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+}
+// What a villager says when you talk to them, in a box over their head for a few seconds.
+function drawSay(q){
+  ctx.font='8px "Pixelify Sans",monospace';const words=q.line.split(' '),lines=[];let cur='';
+  for(const w of words){if(ctx.measureText(cur+' '+w).width>120&&cur){lines.push(cur);cur=w;}else cur=cur?cur+' '+w:w;}lines.push(cur);
+  const bw=Math.ceil(Math.max(...lines.map(l=>ctx.measureText(l).width)))+8,bh=lines.length*9+6,x=Math.round(q.x-camX-bw/2),y=Math.round(q.y-camY-20-bh);
+  ctx.globalAlpha=Math.min(1,(q.sayUntil-G.time)*2);ctx.fillStyle='#0d0d12';ctx.fillRect(x,y,bw,bh);ctx.fillStyle='#4a4232';ctx.fillRect(x,y,bw,1);ctx.fillRect(x,y+bh-1,bw,1);ctx.fillRect(x,y,1,bh);ctx.fillRect(x+bw-1,y,1,bh);
+  ctx.fillStyle='#0d0d12';ctx.fillRect(x+bw/2-2|0,y+bh,4,2);
+  ctx.fillStyle='#e6e1d3';ctx.textAlign='left';lines.forEach((l,i)=>ctx.fillText(l,x+4,y+10+i*9));ctx.globalAlpha=1;
 }
 function drawPortal(q,t,col,hi){
   const gx=q.x-camX,gy=q.y-camY,pu=Math.sin(t*4)*1.5;
@@ -177,7 +208,9 @@ function drawPlayer(pl=P,st=ST,av=AV,wspr=WSPR,bowf=BOWF){
 const mini=$('#mini'),mctx=mini.getContext('2d');mini.width=MW;mini.height=MH;
 function drawMini(){
   const id=mctx.createImageData(MW,MH),d=id.data,r=G.boss;
-  for(let i=0;i<MW*MH;i++){const m=G.map[i];if(!G.seen[i]||(m!==1&&m!==3))continue;const x=i%MW,y=(i/MW)|0,inB=x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h,j=i*4;
+  if(G.village){for(let i=0;i<MW*MH;i++){if(G.map[i]!==1)continue;const j=i*4;d[j]=58;d[j+1]=84;d[j+2]=50;d[j+3]=255;}
+    const sq=G.home;d[((sq.y/TILE|0)*MW+(sq.x/TILE|0))*4+2]=230;}
+  else for(let i=0;i<MW*MH;i++){const m=G.map[i];if(!G.seen[i]||(m!==1&&m!==3))continue;const x=i%MW,y=(i/MW)|0,inB=x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h,j=i*4;
     if(m===3){d[j]=226;d[j+1]=80;d[j+2]=74;d[j+3]=255;continue;}
     if(inSafe(x*TILE+8,y*TILE+8)){d[j]=168;d[j+1]=124;d[j+2]=72;d[j+3]=255;continue;}   // safe rooms show amber
     d[j]=inB?120:92;d[j+1]=inB?56:90;d[j+2]=inB?64:112;d[j+3]=255;}
