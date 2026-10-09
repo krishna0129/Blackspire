@@ -112,3 +112,34 @@ test('the training yard is the one place in the village to fight: scarecrows tak
   assert.strictEqual(run(`G.enemies[0].hp===G.enemies[0].maxHp`),true,'whole again once left alone');
   assert.strictEqual(run(`[G.enemies[0].x===vx(VILLAGE.scarecrows[0][0]),pl.hp===pl.ST.maxHp].join()`),'true,true','it never moves or strikes back');
 });
+
+test('the fields: buy a plot, plant it, wait for it to grow in real time, harvest it',()=>{
+  const run=village();
+  run(`S.shards=1000;globalThis.onPlot=i=>{const[px,py]=VILLAGE.plots[i];pl.x=vx(px+1.5);pl.y=vy(py+1);};`);
+  assert.strictEqual(run(`runAction('buyPlot',[])`),false,'only standing on a plot');
+  run(`onPlot(0);`);assert.strictEqual(run(`runAction('buyPlot',[])`),true);
+  assert.strictEqual(run(`S.shards`),900,'the first plot is 100 shards');
+  assert.strictEqual(run(`runAction('buyPlot',[])`),false,'already yours');
+  run(`onPlot(1);`);assert.strictEqual(run(`runAction('buyPlot',[])`),true);
+  assert.strictEqual(run(`S.shards`),700,'the second costs twice as much');
+  run(`onPlot(0);`);
+  assert.strictEqual(run(`runAction('plant',['wheat'])`),false,'only what this village grows');
+  assert.strictEqual(run(`runAction('plant',['potato'])`),true);
+  assert.strictEqual(run(`runAction('harvest',[])`),false,'not before it has grown');
+  run(`myPlot(0).t-=CROPS.potato.grow-1000;`);assert.strictEqual(run(`runAction('harvest',[])`),false,'a second early is still early');
+  run(`myPlot(0).t-=2000;`);const n=run(`runAction('harvest',[])`);
+  assert.ok(n>=4&&n<=6,'4 to 6 potatoes: '+n);assert.strictEqual(run(`S.crops.potato`),n);
+  assert.strictEqual(run(`myPlot(0).crop`),null,'the plot is empty again');
+  run(`onPlot(2);`);assert.strictEqual(run(`runAction('plant',['potato'])`),false,'not on a plot you don’t own');
+});
+
+test('the innkeeper cooks from your own crops, and packs potatoes as rations',()=>{
+  const run=village();
+  run(`const k=G.traders.findIndex(t=>t.sells==='inn');globalThis.inn=k;pl.x=G.traders[k].x;pl.y=G.traders[k].y+16;S.shards=0;S.crops={potato:5,glowcap:1};pl.food=10;`);
+  assert.strictEqual(run(`runAction('eatMeal',[inn,'stew',true])`),true,'stew from three potatoes, no shards');
+  assert.strictEqual(run(`[S.crops.potato,pl.food,pl.buff.id].join()`),'2,100,fed');
+  assert.strictEqual(run(`runAction('eatMeal',[inn,'tea',true])`),false,'tea needs two glowcaps');
+  assert.strictEqual(run(`runAction('eatMeal',[inn,'roast',true])`),false,'the roast is not from the fields');
+  run(`globalThis.r0=S.rations;`);assert.strictEqual(run(`runAction('packRation',[inn])`),true);
+  assert.strictEqual(run(`[S.crops.potato,S.rations-r0].join()`),'0,1');
+});

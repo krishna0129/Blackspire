@@ -48,9 +48,11 @@ const ACTIONS={
   // the village well fills every empty flask you carry, for nothing
   fillFlasks(){if(!nearWell(40)||!(S.empties>0))return false;const n=S.empties;S.flasks+=n;S.empties=0;return n;},
   // a meal at the inn, eaten at once: the meters fill and its buff starts (MEALS)
-  eatMeal(si,k){
+  // own: cooked from your own crops (m.cook) instead of paid for
+  eatMeal(si,k,own){
     const m=MEALS[k];if(!m||!nearTraderIdx(si)||!TRADER_SELLS[G.traders[si].sells||'all'].meals)return false;const pr=mealPrice(k);
-    if(S.shards<pr)return false;S.shards-=pr;
+    if(own){if(!m.cook||Object.keys(m.cook).some(c=>(S.crops[c]||0)<m.cook[c]))return false;for(const c in m.cook)S.crops[c]-=m.cook[c];}
+    else{if(S.shards<pr)return false;S.shards-=pr;}
     P.food=Math.min(100,P.food+m.food);P.drink=Math.min(100,P.drink+m.drink);P.buff={id:m.buff,t:BUFF_TIME};
     log(`You eat the ${m.name.toLowerCase()}. ${BUFFS[m.buff].name}: ${BUFFS[m.buff].desc.toLowerCase()}`);sfx('pick');return true;
   },
@@ -68,6 +70,24 @@ const ACTIONS={
     const R=q.reward;S.shards+=R.shards;for(const k in R.mats||{})S.mats[k]=(S.mats[k]||0)+R.mats[k];
     log(`<span style="color:var(--cyan)">${q.title} handed in: ${R.shards} shards and ${R.xp} experience${R.mats?', and a Spire crystal':''}.</span>`);
     sfx('lvl');gainXp(R.xp);return true;
+  },
+  // the innkeeper wraps potatoes into a ration to take into the tower
+  packRation(si){
+    if(!nearTraderIdx(si)||!TRADER_SELLS[G.traders[si].sells||'all'].meals||(S.crops.potato||0)<RATION_POTATOES)return false;
+    S.crops.potato-=RATION_POTATOES;S.rations=(S.rations||0)+1;sfx('pick');return true;
+  },
+  // the fields: buy the plot you stand on, plant it, harvest it
+  buyPlot(){
+    const i=plotAt();if(i<0||myPlot(i))return false;const pr=plotPrice(S.plots.length);if(S.shards<pr)return false;
+    S.shards-=pr;S.plots.push({i,crop:null,t:0});log(`The plot is yours. Plant it with ${G.crops.map(c=>CROPS[c].plural).join(' or ')}.`);sfx('lvl');return true;
+  },
+  plant(crop){
+    const i=plotAt(),p=myPlot(i),C=CROPS[crop];if(!p||p.crop||!C||!G.crops.includes(crop)||S.shards<C.seed)return false;
+    S.shards-=C.seed;p.crop=crop;p.t=Date.now();sfx('pick');return true;
+  },
+  harvest(){
+    const p=myPlot(plotAt());if(!cropReady(p))return false;const C=CROPS[p.crop],n=Math.round(rand(C.yield[0],C.yield[1]));
+    S.crops[p.crop]=(S.crops[p.crop]||0)+n;log(`Harvested ${n} ${n>1?C.plural:C.name.toLowerCase()}.`);p.crop=null;p.t=0;sfx('pick');return n;
   },
   salvage(i){if(!S.inv[i])return false;salvageItem(S,i);return true;},
   seen(){for(const it of S.inv)delete it.isNew;return true;},

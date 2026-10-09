@@ -172,12 +172,12 @@ const TRADER_SELLS={
   food:{gear:[],supplies:['ration','flask']},
   inn:{gear:[],supplies:[],meals:true},   // the innkeeper: meals, eaten at the table
 };
-// The inn's meals. Eaten on the spot, not carried: each fills the meters by food and drink and gives its buff
+// The inn's meals. cook: the crops from your own field the innkeeper can cook it from instead of charging. Eaten on the spot, not carried: each fills the meters by food and drink and gives its buff
 // (BUFFS) for BUFF_TIME seconds. One buff at a time; a new meal replaces it, and it is lost when you fall.
 const MEALS={
-  stew:{name:'Root stew',price:15,food:100,drink:20,buff:'fed',desc:'Potatoes and roots, slow-cooked under the tree.'},
+  stew:{name:'Root stew',price:15,cook:{potato:3},food:100,drink:20,buff:'fed',desc:'Potatoes and roots, slow-cooked under the tree.'},
   roast:{name:'Roast boar and bread',price:30,food:100,drink:0,buff:'hearty',desc:'The innkeeper\u2019s best. A whole evening\u2019s worth.'},
-  tea:{name:'Glowcap tea',price:10,food:0,drink:100,buff:'clear',desc:'Brewed from the mushrooms on the roots. Faintly glowing.'},
+  tea:{name:'Glowcap tea',price:10,cook:{glowcap:2},food:0,drink:100,buff:'clear',desc:'Brewed from the mushrooms on the roots. Faintly glowing.'},
 };
 const BUFFS={
   fed:{name:'Well fed',desc:'Hunger and thirst drain half as fast.'},

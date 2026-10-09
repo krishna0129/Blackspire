@@ -8,8 +8,8 @@ the floor gate's way home, the four trader stalls, the forge (the only blacksmit
 and a stash chest), the stash chest by the inn, the well and empty flasks, the arcanist, captains, innkeeper and guild
 clerk (who talk, for now), and no hunger or thirst at home. Online, the village is **shared**: everyone is in a
 channel of up to 30, sees the others there, and parties form and leave through the Teleport Gate together. The
-inn serves meals, the training yard's scarecrows take hits, and the Adventurers' Guild runs its quest board and party
-notices (below). **Not yet:** the fields.
+inn serves meals, the training yard's scarecrows take hits, the Adventurers' Guild runs its quest board and party
+notices, and the fields grow potatoes and glowcaps (below). The whole village plan is in.
 
 ![Plan of the root village: the Teleport Gate glowing in the middle of the square under the tower's trunk; winding paths lined with trees, shrubs, flowers and lamps lead to the inn and well, the market of six stalls including the forge and the witchcraft room, the kingdom camps, the fields of plots for sale, and the training yard with scarecrow dummies](img/root-village.svg)
 
@@ -108,6 +108,16 @@ and market stalls; once drunk, a flask becomes an **empty flask**, which the wel
 player who keeps their flasks only pays for them once, and the well is a reason to come home.
 
 ### Fields
+
+**In the game.** Stand on one of the six plots and press E:
+
+- **Buy it:** the first plot costs 100 shards and each one after costs twice the last (200, 400...).
+- **Plant it:** potatoes (10 shards of seed, ready in an hour, 4 to 6 a harvest) or glowcaps (20 shards, three hours,
+  2 or 3). Crops grow in real time, offline too. Only your own plots show your crops; the ones you don't own show a
+  "for sale" sign, so every player sees just their own field.
+- **Harvest it**, and take the crops to the inn: the innkeeper cooks root stew from three potatoes and glowcap tea
+  from two glowcaps instead of charging shards, and packs two potatoes into a ration to take into the tower.
+- Glowcaps going into potions waits for the arcanist's witchcraft room.
 
 - Fields are divided into **plots you buy** with shards. An owned plot is yours alone; nobody else can enter your
   field (decided in world.md).
