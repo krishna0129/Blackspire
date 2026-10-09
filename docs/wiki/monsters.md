@@ -11,11 +11,20 @@ Elites (gold) have 2.4× health and 1.3× damage. Damage shown is before your de
 patches at the edges of rooms slow everything but plants by 40% and prick for small damage; and Thornroots take
 double damage from fire.
 
-**Weapons with a bonus against a monster type: none yet.** The only targeted bonus today is the weapon affix
-*Giant-slaying* (extra damage to elites and bosses); the dead take less magic damage and Thornroots more fire (below). Monster-type
-bonuses are planned (see [docs/design/floor-3.md](../design/floor-3.md)); this page will list them and where they
-drop. Until then, any source can drop any weapon: the best odds of a good one are elites (70% item chance, at least
-uncommon) and bosses (three items, one item level higher).
+**Families.** Every monster belongs to a family and drops that family’s own material. Gear
+[forged](forging.md) from it works against the whole family: a weapon deals +15% to +25% damage to it, armor and
+boots take less damage from it. Each monster’s family is listed below.
+
+| Family | Monsters | Bosses | Drop |
+|---|---|---|---|
+| Spirits | Shade, Skitter, Brute, Wisp | The Gate Warden | <img src="img/drop-essence.png" alt="" width="28"> Shade essence |
+| Undead | Bone soldier, Bone archer, Bone knight, Rotting thrall, Gravecaller | The Bone Regent, The Pale Collector | <img src="img/drop-bone.png" alt="" width="28"> Old bone |
+| Plants | Thornroot, Bloodbloom | none yet | <img src="img/drop-thornwood.png" alt="" width="28"> Thornwood |
+| Beasts | Ossuary hermit | none yet | <img src="img/drop-chitin.png" alt="" width="28"> Chitin plate |
+
+Other targeted bonuses: the weapon affix *Giant-slaying* (extra damage to elites and bosses); the dead take less
+magic damage and Thornroots more fire (below). Every "% more damage" bonus (a forged weapon’s, Giant-slaying,
+Executioner’s, Sunder’s mark) adds up and is applied once: +20% and +30% make +50%, not +56%.
 
 ## Shade
 
@@ -27,6 +36,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 9.0 (11.7) | 11.0 (14.3) | 13.0 (16.8) |
 | Experience (elite) | 9 (27) | 12 (35) | 14 (43) |
 
+- **Family:** [Spirits](forging.md) · drops Shade essence (30% for 1; elites 2 to 3)
 - **Found on floors:** 1
 - **Speed:** 40
 - **How it fights:** Walks straight at you, winds up for 0.38 s, then swipes. Any hit during the wind-up cancels it.
@@ -43,6 +53,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 5.0 (6.5) | 6.1 (7.9) | 7.2 (9.4) |
 | Experience (elite) | 5 (15) | 7 (20) | 8 (24) |
 
+- **Family:** [Spirits](forging.md) · drops Shade essence (30% for 1; elites 2 to 3)
 - **Found on floors:** 1, 2
 - **Speed:** 74
 - **How it fights:** Fast (74 speed) and fragile, with a short 0.22 s wind-up. Comes in groups, and the Gate Warden summons them.
@@ -59,6 +70,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 19.0 (24.7) | 23.2 (30.1) | 27.4 (35.6) |
 | Experience (elite) | 20 (60) | 26 (78) | 32 (96) |
 
+- **Family:** [Spirits](forging.md) · drops Shade essence (30% for 1; elites 2 to 3)
 - **Found on floors:** 1
 - **Speed:** 26 · **heavy** (not staggered by hits)
 - **How it fights:** Slow and heavy: hits do not stagger it and barely knock it back. A long 0.75 s wind-up into a 19-damage blow.
@@ -75,6 +87,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 11.0 (14.3) | 13.4 (17.4) | 15.8 (20.6) |
 | Experience (elite) | 12 (36) | 16 (47) | 19 (58) |
 
+- **Family:** [Undead](forging.md) · drops Old bone (30% for 1; elites 2 to 3)
 - **Found on floors:** 2
 - **Speed:** 46 · **ignores 75% of magic damage**
 - **How it fights:** Moves along one axis at a time and lunges in a straight line when lined up with you. Half the time it hops back out of a melee swing aimed at it.
@@ -91,6 +104,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 10.0 (13.0) | 12.2 (15.9) | 14.4 (18.7) |
 | Experience (elite) | 13 (39) | 17 (51) | 21 (62) |
 
+- **Family:** [Undead](forging.md) · drops Old bone (30% for 1; elites 2 to 3)
 - **Found on floors:** 2, 3+
 - **Speed:** 40 · **ranged** · **ignores 75% of magic damage**
 - **How it fights:** Sidesteps onto your row or column, draws for 0.45 s, then looses an arrow along that line. Hops away if you get within 46 px.
@@ -107,6 +121,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 21.0 (27.3) | 25.6 (33.3) | 30.2 (39.3) |
 | Experience (elite) | 26 (78) | 34 (101) | 42 (125) |
 
+- **Family:** [Undead](forging.md) · drops Old bone (30% for 1; elites 2 to 3)
 - **Found on floors:** 2
 - **Speed:** 30 · **heavy** (not staggered by hits) · **ignores 85% of magic damage** · **shield**
 - **How it fights:** Its shield stops everything from the side it faces while it walks or stands, but it only re-faces you every 0.75 s. Heavy 0.7 s wind-up, then a long 1.1 s recovery.
@@ -123,6 +138,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 15.0 (19.5) | 18.3 (23.8) | 21.6 (28.1) |
 | Experience (elite) | 16 (48) | 21 (62) | 26 (77) |
 
+- **Family:** [Undead](forging.md) · drops Old bone (30% for 1; elites 2 to 3)
 - **Found on floors:** 3+
 - **Speed:** 30 · **heavy** (not staggered by hits) · **leaves a body**
 - **How it fights:** Shambles in with a slow, heavy swing (0.6 s wind-up) that hits do not interrupt. When it dies it leaves its body for 6 s, and a Gravecaller nearby can raise it again at half health.
@@ -139,6 +155,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 12.0 (15.6) | 14.6 (19.0) | 17.3 (22.5) |
 | Experience (elite) | 24 (72) | 31 (94) | 38 (115) |
 
+- **Family:** [Undead](forging.md) · drops Old bone (30% for 1; elites 2 to 3)
 - **Found on floors:** 3+
 - **Speed:** 38 · **ranged**
 - **How it fights:** Keeps 64 to 110 px away and throws slow grave-fire. Stops to raise a body within reach: a 1.2 s channel, shown as a green line to the body. Blinks away when you get close (every 5 s). An elite raises two at once.
@@ -155,6 +172,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 16.0 (20.8) | 19.5 (25.4) | 23.0 (30.0) |
 | Experience (elite) | 18 (54) | 23 (70) | 29 (86) |
 
+- **Family:** [Plants](forging.md) · drops Thornwood (60% for 1; elites 2 to 3)
 - **Found on floors:** 3+
 - **Speed:** 0 · **heavy** (not staggered by hits) · **rooted** (never moves, no knockback) · **takes 2× fire damage**
 - **How it fights:** Grows from the top wall of a room and never moves. Marks a lane toward you for 0.7 s, then lashes along it.
@@ -171,6 +189,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 0.0 (0.0) | 0.0 (0.0) | 0.0 (0.0) |
 | Experience (elite) | 14 (42) | 18 (55) | 22 (67) |
 
+- **Family:** [Plants](forging.md) · drops Thornwood (30% for 1; elites 2 to 3)
 - **Found on floors:** 3+
 - **Speed:** 0 · **rooted** (never moves, no knockback)
 - **How it fights:** A rooted flower. Every 4 s a green ring pulses out and heals every other enemy nearby by 12% of its health.
@@ -187,6 +206,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 20.0 (26.0) | 24.4 (31.7) | 28.8 (37.4) |
 | Experience (elite) | 30 (90) | 39 (117) | 48 (144) |
 
+- **Family:** [Beasts](forging.md) · drops Chitin plate (1 to 2; elites 2 to 3)
 - **Found on floors:** 3+
 - **Speed:** 52 · **heavy** (not staggered by hits)
 - **How it fights:** Burrows under the floor, where nothing can hit it, and moves toward you. A red circle marks where it will burst up; it hits hard and no shield stops it. Then it lies dazed for 1.6 s, then fights inside its skull shell (taking 40% damage) for 2.6 s before burrowing again.
@@ -203,6 +223,7 @@ uncommon) and bosses (three items, one item level higher).
 | Damage per hit (elite) | 8.0 (10.4) | 9.8 (12.7) | 11.5 (15.0) |
 | Experience (elite) | 11 (33) | 14 (43) | 18 (53) |
 
+- **Family:** [Spirits](forging.md) · drops Shade essence (30% for 1; elites 2 to 3)
 - **Found on floors:** 1, 2
 - **Speed:** 32 · **ranged**
 - **How it fights:** Floats at 52 to 92 px, firing a slow orb every 2 to 2.6 s. Its shots stop at walls and safe rooms.
@@ -219,7 +240,7 @@ everyone inside the chamber falls, the boss heals to full.
 
 <img src="img/boss-warden.png" alt="The Gate Warden" width="150">
 
-*Floor 1*
+*Floor 1* · Family: [Spirits](forging.md), drops 6 to 8 Shade essence
 
 - Slam: a red circle around itself when you are close (48 px). Leave the circle.
 - Targeted burst: a red circle where you stand, from range. Move off it.
@@ -239,7 +260,7 @@ What each warning looks like, just before it lands:
 
 <img src="img/boss-regent.png" alt="The Bone Regent" width="150">
 
-*Floor 2*
+*Floor 2* · Family: [Undead](forging.md), drops 6 to 8 Old bone
 
 - Slam around itself, as the Gate Warden.
 - Rib volley: seven bone shards in a cone. Ordinary shots: Dexterity can evade them and a melee swing knocks them down.
@@ -260,7 +281,7 @@ What each warning looks like, just before it lands:
 
 <img src="img/boss-collector.png" alt="The Pale Collector" width="150">
 
-*Floor 3 (and every floor above until they get their own)*
+*Floor 3 (and every floor above until they get their own)* · Family: [Undead](forging.md), drops 6 to 8 Old bone
 
 - Soul bolts: three green shots in a spread. Ordinary shots: they can be evaded, blocked and knocked down.
 - Raises thralls from the six bodies in its chamber (two at a time, three from two thirds of its health). They ignore you and walk to it; each one that arrives heals it by 8% (12% below a third).

@@ -106,52 +106,84 @@ const SKINS=['#f2d3b6','#e0b08a','#c68d62','#9a643f','#6e4428','#d9c7c0'];
 const HAIRS=['#1b1b22','#4a2f1e','#8a5a2b','#d8b45a','#b9382f','#c9c6d4','#3d5a8a','#7a4a8f'];
 const EYES=['#1c1c24','#2f5fa8','#2f7f4a','#7a4a1e','#a83232','#6f55c0'];
 const STYLES=['Short','Spiked','Long','Tail','Bob','Buzz'];
+// Enemy families. Every monster belongs to one: ETYPES[].fam, and a boss takes FLOORS[].boss.fam. A family has its own
+// drop (mat, a MATS key), and the forge turns those drops into gear against that family: weapons that hit it harder,
+// armour and boots that take less from it (FORGING, below). them: how the family reads in a sentence. bane, ward: the
+// names forged weapons and armour carry. tint, cloth: their colours (blades and bows; armour and boots).
+const FAMILIES={
+  spirit:{name:'Spirits',them:'spirits',mat:'essence',bane:'Shadebane',ward:'Shadeward',tint:'#d86fb6',cloth:'#5a2e52'},
+  undead:{name:'Undead',them:'the undead',mat:'bone',bane:'Gravebane',ward:'Graveward',tint:'#e6dfc4',cloth:'#8a8474'},
+  plant:{name:'Plants',them:'plants',mat:'thornwood',bane:'Thornbane',ward:'Thornward',tint:'#7fb04a',cloth:'#3c5a2a'},
+  beast:{name:'Beasts',them:'beasts',mat:'chitin',bane:'Beastbane',ward:'Beastward',tint:'#b5533c',cloth:'#6a3226'},
+};
+// e: an enemy, or anything that carries a family (a shot remembers who fired it)
+const famOf=e=>e?e.fam||(ETYPES[e.type]&&ETYPES[e.type].fam)||null:null;
+// famDrop on a type: its own roll for its family's drop, instead of the LOOT table's ([chance, min, max])
 const ETYPES={
   // the training yard's scarecrows: they take hits and show the numbers, never move, strike back or die
   dummy:{name:'Training scarecrow',hp:1e6,dmg:0,speed:0,r:6,reach:0,windup:1,recover:1,xp:0,eye:'#000',line:'#4a3324',dummy:true},
-  shade:{name:'Shade',hp:34,dmg:9,speed:40,r:6,reach:5,windup:.38,recover:.7,xp:9,eye:'#e2553f'},
-  skitter:{name:'Skitter',hp:15,dmg:5,speed:74,r:4,reach:4,windup:.22,recover:.5,xp:5,eye:'#e2b93b'},
-  brute:{name:'Brute',hp:110,dmg:19,speed:26,r:8,reach:8,windup:.75,recover:1,xp:20,eye:'#e2553f',heavy:true},
+  shade:{fam:'spirit',name:'Shade',hp:34,dmg:9,speed:40,r:6,reach:5,windup:.38,recover:.7,xp:9,eye:'#e2553f'},
+  skitter:{fam:'spirit',name:'Skitter',hp:15,dmg:5,speed:74,r:4,reach:4,windup:.22,recover:.5,xp:5,eye:'#e2b93b'},
+  brute:{fam:'spirit',name:'Brute',hp:110,dmg:19,speed:26,r:8,reach:8,windup:.75,recover:1,xp:20,eye:'#e2553f',heavy:true},
   // Floor 2: the dead. mres = share of magic damage they ignore (grimoire bolts, Fireball, its burn).
   // ai: these three move and fight the way enemies in old top-down adventures do (see zeldaAI in update.js).
   // fw, fh: frame size in their sprite sheet (three frames across, three facings down).
-  skel:{name:'Bone soldier',hp:46,dmg:11,speed:46,r:6,reach:6,windup:.3,recover:.55,xp:12,eye:'#9be08a',mres:.75,line:'#8d8674',ai:'stalfos',fw:20,fh:23},
-  skelarcher:{name:'Bone archer',hp:26,dmg:10,speed:40,r:5,ranged:true,pspeed:150,pcol:'#d9d4c4',xp:13,eye:'#9be08a',mres:.75,line:'#8d8674',ai:'archer',fw:18,fh:21},
-  skelknight:{name:'Bone knight',hp:140,dmg:21,speed:30,r:8,reach:8,windup:.7,recover:1.1,xp:26,eye:'#9be08a',mres:.85,heavy:true,line:'#8d8674',ai:'darknut',shield:true,fw:24,fh:24},
+  skel:{fam:'undead',name:'Bone soldier',hp:46,dmg:11,speed:46,r:6,reach:6,windup:.3,recover:.55,xp:12,eye:'#9be08a',mres:.75,line:'#8d8674',ai:'stalfos',fw:20,fh:23},
+  skelarcher:{fam:'undead',name:'Bone archer',hp:26,dmg:10,speed:40,r:5,ranged:true,pspeed:150,pcol:'#d9d4c4',xp:13,eye:'#9be08a',mres:.75,line:'#8d8674',ai:'archer',fw:18,fh:21},
+  skelknight:{fam:'undead',name:'Bone knight',hp:140,dmg:21,speed:30,r:8,reach:8,windup:.7,recover:1.1,xp:26,eye:'#9be08a',mres:.85,heavy:true,line:'#8d8674',ai:'darknut',shield:true,fw:24,fh:24},
   // Floor 3: roots and the restless dead (docs/design/floor-3.md). rooted: never moves or gets knocked back.
   // weak: damage taken from a kind of attack is multiplied (fire = Fireball and its burn). corpse: leaves a body behind.
-  thrall:{name:'Rotting thrall',hp:70,dmg:15,speed:30,r:6,reach:7,windup:.6,recover:.9,xp:16,eye:'#d6f07a',line:'#4d5a36',heavy:true,corpse:true},
-  gravecaller:{name:'Gravecaller',hp:38,dmg:12,speed:38,r:6,ranged:true,pspeed:105,pcol:'#9be08a',xp:24,eye:'#9be08a',line:'#3f3452',ai:'gravecaller'},
-  thornroot:{name:'Thornroot',hp:80,dmg:16,speed:0,r:8,xp:18,eye:'#f2a03c',line:'#33421f',ai:'thornroot',rooted:true,heavy:true,plant:true,weak:{fire:2}},
-  bloodbloom:{name:'Bloodbloom',hp:30,dmg:0,speed:0,r:6,xp:14,eye:'#9be08a',line:'#4e1520',ai:'bloodbloom',rooted:true,plant:true},
-  hermit:{name:'Ossuary hermit',hp:120,dmg:20,speed:52,r:9,xp:30,eye:'#f2a03c',line:'#2b261c',ai:'hermit',heavy:true},
-  wisp:{name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
+  thrall:{fam:'undead',name:'Rotting thrall',hp:70,dmg:15,speed:30,r:6,reach:7,windup:.6,recover:.9,xp:16,eye:'#d6f07a',line:'#4d5a36',heavy:true,corpse:true},
+  gravecaller:{fam:'undead',name:'Gravecaller',hp:38,dmg:12,speed:38,r:6,ranged:true,pspeed:105,pcol:'#9be08a',xp:24,eye:'#9be08a',line:'#3f3452',ai:'gravecaller'},
+  thornroot:{fam:'plant',name:'Thornroot',hp:80,dmg:16,speed:0,r:8,xp:18,eye:'#f2a03c',line:'#33421f',ai:'thornroot',rooted:true,heavy:true,plant:true,weak:{fire:2},famDrop:[.6,1,1]},
+  bloodbloom:{fam:'plant',name:'Bloodbloom',hp:30,dmg:0,speed:0,r:6,xp:14,eye:'#9be08a',line:'#4e1520',ai:'bloodbloom',rooted:true,plant:true},
+  hermit:{fam:'beast',name:'Ossuary hermit',hp:120,dmg:20,speed:52,r:9,xp:30,eye:'#f2a03c',line:'#2b261c',ai:'hermit',heavy:true,famDrop:[1,1,2]},
+  wisp:{fam:'spirit',name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
   boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d'},
 };
-// Enhancement materials, from common to rare. Enemies, chests and bosses drop them; salvaging gear gives them back.
+// Materials. The first three are for enhancing, from common to rare: enemies, chests and bosses drop them, and
+// salvaging gear gives them back. The rest are monster drops, one per family (fam): only that family drops it, and the
+// forge makes gear against that family from it.
 const MATS={
   scrap:{name:'Iron scrap',color:'#b9b4c8'},
   ember:{name:'Emberstone',color:'#f08a3c'},
   crystal:{name:'Spire crystal',color:'#a98be0'},
+  essence:{name:'Shade essence',color:'#d86fb6',fam:'spirit'},
+  bone:{name:'Old bone',color:'#e6dfc4',fam:'undead'},
+  thornwood:{name:'Thornwood',color:'#7fb04a',fam:'plant'},
+  chitin:{name:'Chitin plate',color:'#b5533c',fam:'beast'},
 };
+/* Forging: gear made from one family's drops, at the blacksmith (grimoires at the arcanist). A forged piece is always
+   Rare, at the item level a shop would sell (shopFloor), and carries a bonus against that family on top of what any
+   Rare piece has:
+     weapon        +bonus% damage to that family
+     armor, boots  bonus% less damage taken from that family (worn together, the two add up)
+   drops: how many of the family's drop it costs; scrap: iron scrap; shards: at item level 1, +30% a level after;
+   bonus: [lowest, highest] percent, rolled when it is made. Salvaging a forged piece returns a third of its drops. */
+const FORGING={
+  weapon:{drops:12,scrap:4,shards:80,bonus:[15,25]},
+  armor:{drops:10,scrap:3,shards:60,bonus:[10,20]},
+  boots:{drops:6,scrap:2,shards:40,bonus:[5,10]},
+};
+const FORGE_RARITY=2;
 // Everything that makes one floor different from another. Floors past the end of the list repeat the last one.
 //   theme: index into THEMES (client/paint.js), the floor's stone
 //   spawns: what ordinary rooms spawn, as a bag drawn from evenly (repeats make a type more common)
 //   wall: a stationary enemy that may grow from a room's top wall, and the chance per room
 //   thorns: thorn patches at the edges of rooms (slow and prick everything but plants)
-//   boss: name, sprite file (assets/sprites/enemies/<sprite>.png), behaviour (update.js), outline colour, and extras:
+//   boss: name, family (FAMILIES), sprite file (assets/sprites/enemies/<sprite>.png), behaviour (update.js), outline colour, and extras:
 //         mres = share of magic damage ignored, calls = what it summons, corpses = corpses lying in its chamber
 const FLOORS=[
   {theme:0,intro:'Find the boss chamber. It is somewhere to the east.',introMs:2800,
     spawns:['shade','shade','shade','skitter','skitter','skitter','brute','wisp'],
-    boss:{name:'The Gate Warden',sprite:'boss',ai:'warden',line:'#7a4a52',calls:'skitter'}},
+    boss:{name:'The Gate Warden',fam:'spirit',sprite:'boss',ai:'warden',line:'#7a4a52',calls:'skitter'}},
   {theme:1,intro:'The dead here shrug off magic. Bring steel.',introMs:4200,
     spawns:['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'],
-    boss:{name:'The Bone Regent',sprite:'boneboss',ai:'regent',line:'#9a8f6a',mres:.5,calls:'skel'}},
+    boss:{name:'The Bone Regent',fam:'undead',sprite:'boneboss',ai:'regent',line:'#9a8f6a',mres:.5,calls:'skel'}},
   {theme:2,intro:'Roots have broken into the crypt. Kill whatever raises the dead.',introMs:4200,
     spawns:['thrall','thrall','thrall','gravecaller','gravecaller','hermit','bloodbloom','skelarcher'],
     wall:{type:'thornroot',chance:.55},thorns:true,
-    boss:{name:'The Pale Collector',sprite:'collector',ai:'collector',line:'#8a8698',corpses:true}},
+    boss:{name:'The Pale Collector',fam:'undead',sprite:'collector',ai:'collector',line:'#8a8698',corpses:true}},
 ];
 const floorDef=n=>FLOORS[Math.min(n,FLOORS.length)-1];
 const THORN_SLOW=.6,THORN_DMG=3;   // thorn patches: speed multiplier, and damage every 0.7 s (scaled by floor, through defense)
@@ -200,11 +232,12 @@ const ELITE_CHANCE=.07;   // share of room spawns that are elites: 2.4x health, 
 // Loot, rolled separately for every player who gets credit. shards: [min,max], scaled by +25% per floor above 1.
 // items: one roll each: chance, rarity bonus (see rollRarity), lowest rarity, item level above the floor's.
 // potions, rations, flasks: one chance each (SUPPLIES). mats: [chance, min, max] per material.
+// fam: [chance, min, max] of the drop of the family of whatever died (chests have no family, so none).
 const LOOT={
-  normal:{shards:[1,4],items:[{chance:.13,bonus:0,minRar:0,ilvl:0}],potions:[.055],rations:[.04],flasks:[.05],mats:{scrap:[.3,1,1],ember:[.03,1,1]}},
-  elite:{shards:[14,14],items:[{chance:.7,bonus:18,minRar:1,ilvl:0}],potions:[.3],rations:[.25],flasks:[.3],mats:{scrap:[1,1,3],ember:[.4,1,1],crystal:[.04,1,1]}},
+  normal:{shards:[1,4],items:[{chance:.13,bonus:0,minRar:0,ilvl:0}],potions:[.055],rations:[.04],flasks:[.05],mats:{scrap:[.3,1,1],ember:[.03,1,1]},fam:[.3,1,1]},
+  elite:{shards:[14,14],items:[{chance:.7,bonus:18,minRar:1,ilvl:0}],potions:[.3],rations:[.25],flasks:[.3],mats:{scrap:[1,1,3],ember:[.4,1,1],crystal:[.04,1,1]},fam:[1,2,3]},
   boss:{shards:[60,60],items:[{chance:1,bonus:25,minRar:2,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1}],potions:[1,1],rations:[1],flasks:[1],
-    mats:{scrap:[1,4,6],ember:[1,2,3],crystal:[1,1,1]}},
+    mats:{scrap:[1,4,6],ember:[1,2,3],crystal:[1,1,1]},fam:[1,6,8]},
   chest:{shards:[8,16],items:[{chance:1,bonus:12,minRar:0,ilvl:0},{chance:.35,bonus:6,minRar:0,ilvl:0}],potions:[.5],rations:[.4],flasks:[.5],mats:{scrap:[1,1,2],ember:[.25,1,1]}},
 };
 // Names kept for floors still to be designed: 'Ash Regent', 'The Unlit King', 'Keeper of the Ninth Stair', 'Old Hunger', 'The Bell Below'.

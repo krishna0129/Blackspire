@@ -31,6 +31,7 @@ function updateHud(){
     wl?'well'+(S.empties>0?S.empties:''):tk?'talk:'+tk.name:'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>E</kbd>';
+    else if(near.startsWith('talk:')&&tk.arcanist)elPrompt.innerHTML='Arcanist<kbd>E</kbd>';
     else if(near.startsWith('talk:'))elPrompt.innerHTML='Talk to the '+esc(tk.name.toLowerCase().startsWith('captain')?tk.name.replace('Captain','captain'):tk.name.toLowerCase())+'<kbd>E</kbd>';
     if(near==='up')elPrompt.innerHTML='Climb to floor '+(G.n+1)+'<kbd>E</kbd>';
     else if(near==='boss')elPrompt.innerHTML='Boss chamber gate<kbd>E</kbd>';
@@ -274,7 +275,8 @@ function interact(){
   if(nearFields(24)){openFields();return;}
   if(nearWell()){act('fillFlasks',[],n=>{if(n){sfx('pick');log(`Filled ${n} flask${n>1?'s':''} at the well.`);}
     else log('You have no empty flasks to fill. The food and drink stall sells water flasks; drink one and the flask is yours to refill.');hc.near=null;});return;}
-  const tk=nearTalker();if(tk){tk.sayUntil=G.time+6;sfx('pick');}
+  const tk=nearTalker();if(tk&&tk.arcanist){openPanel(tk,'arcanist');return;}
+  if(tk){tk.sayUntil=G.time+6;sfx('pick');}
 }
 // The boss chamber asks first: once inside, the gate seals until the boss dies.
 let askGate=null;
@@ -416,17 +418,19 @@ $('#btnMenu').addEventListener('click',e=>{e.currentTarget.blur();openPause();})
 
 /* ---------- gear panel ---------- */
 let sel=null; // {from:'bag',i} | {from:'eq',slot}
-// The same panel serves as the trader's pack and the blacksmith's counter: next to a trader it shows the stock and
-// supplies; next to a blacksmith it allows enhancing.
-let atSmith=null,atWho=null;   // index of the safe room whose trader or blacksmith is open, and which ('trader', 'smith')
+// The same panel serves as the trader's pack, the blacksmith's counter and the arcanist's desk: next to a trader it
+// shows the stock and supplies; next to a blacksmith it allows enhancing, and forging from monster drops; next to the
+// arcanist, grimoires from monster drops.
+let atSmith=null,atWho=null;   // which trader, stash, blacksmith or talker is open (its index), and which kind ('trader', 'stash', 'smith', 'arcanist')
 const shopNow=()=>atSmith==null||atWho!=='trader'?null:shopOf(atSmith);
 const atForge=()=>atSmith!=null&&atWho==='smith';
+const atMaker=()=>atSmith!=null&&(atWho==='smith'||atWho==='arcanist');   // someone who forges from monster drops
 // Runs a player action (js/sim/actions.js). Single player: right here. Online: on the server, which answers with the
 // result and the updated save (net.js), and then done(result) runs.
 function act(name,args,done){if(NET.on)return NET.act(name,args,done);const r=runAction(name,args);if(done)done(r);}
 function openPanel(npc,who){
   if(mode!=='play')return;mode='panel';inp.atk=false;for(const k in keys)keys[k]=false;sel=null;
-  atWho=npc?who:null;atSmith=npc?(who==='trader'?G.traders:who==='stash'?G.stashes:G.smiths).indexOf(npc):null;
+  atWho=npc?who:null;atSmith=npc?(who==='trader'?G.traders:who==='stash'?G.stashes:who==='arcanist'?G.talkers:G.smiths).indexOf(npc):null;
   $('#panel').hidden=false;renderPanel();if(atWho==='trader')act('openShop',[atSmith],()=>{if(mode==='panel')renderPanel();});
 }
 function closePanel(){if(mode!=='panel')return;atSmith=atWho=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
@@ -441,7 +445,7 @@ function cell(it,on,label,bag){
 }
 const SLOTL={weapon:'Weapon',armor:'Armor',boots:'Boots',trinket:'Trinket'};
 const atStash=()=>atSmith!=null&&atWho==='stash';
-function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal'||sel.from==='pack')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
+function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal'||sel.from==='pack'||sel.from==='forge')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
 function renderPanel(){
   calcStats();const c=S.char;
   $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
@@ -462,14 +466,17 @@ function renderPanel(){
     ['Critical chance',ST.crit.toFixed(0)+'%'],['Critical damage',ST.critDmg+'%'],['Defense',ST.def+' ('+Math.round(100-10000/(100+ST.def))+'% less damage)'],
     ['Evade chance',ST.evade.toFixed(0)+'% (30% at most)'],['Move speed',Math.round(ST.move)],
     ['Mana',ST.maxMp],['Mana per second',ST.mpRegen.toFixed(2)],
-    ...(ST.skill==='fireball'?[['Fireball damage',(ST.dmg*2.6).toFixed(0)]]:ST.skill==='heal'?[['Heal restores',healAmount()]]:[]),['Kills',S.kills],['Deaths',S.deaths]].map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
+    ...(ST.skill==='fireball'?[['Fireball damage',(ST.dmg*2.6).toFixed(0)]]:ST.skill==='heal'?[['Heal restores',healAmount()]]:[]),...Object.keys(ST.vs).map(f=>['Damage to '+FAMILIES[f].them,'+'+ST.vs[f]+'%']),...Object.keys(ST.res).map(f=>['Damage from '+FAMILIES[f].them,ST.res[f]+'% less']),
+    ['Kills',S.kills],['Deaths',S.deaths]].map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
   $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;$('#pShards').textContent=S.shards;
-  $('#pMats').innerHTML=Object.keys(MATS).map(k=>`<span title="${MATS[k].name}"><i class="mat" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('')+
+  // monster drops (the diamonds) only show once you carry some
+  $('#pMats').innerHTML=Object.keys(MATS).filter(k=>!MATS[k].fam||S.mats[k]>0).map(k=>`<span title="${MATS[k].name}"><i class="mat${MATS[k].fam?' fam':''}" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('')+
     Object.keys(CROPS).filter(k=>S.crops&&S.crops[k]).map(k=>`<span title="${CROPS[k].plural}"><i class="mat" style="background:${CROPS[k].color};border-radius:50%"></i> ${S.crops[k]}</span>`).join('');
   const shop=shopNow();
-  $('#pTitle').textContent=shop?G.traders[atSmith].name:atForge()?'Blacksmith':atStash()?'Stash':c.name;
-  $('#shopBox h3').textContent=atStash()?`Stash ${S.stash.length} / ${STASH_SIZE}`:shop&&G.traders[atSmith].stall?'For sale':'Trader\u2019s pack';
-  $('#shopBox').hidden=!shop&&!atStash();$('#sGrid').classList.toggle('tall',atStash());
+  $('#pTitle').textContent=shop?G.traders[atSmith].name:atForge()?'Blacksmith':atWho==='arcanist'&&atMaker()?'Arcanist':atStash()?'Stash':c.name;
+  $('#shopBox h3').textContent=atStash()?`Stash ${S.stash.length} / ${STASH_SIZE}`:atMaker()?(atForge()?'Forge from monster drops':'Grimoires from monster drops'):shop&&G.traders[atSmith].stall?'For sale':'Trader\u2019s pack';
+  $('#shopBox').hidden=!shop&&!atStash()&&!atMaker();$('#sGrid').classList.toggle('tall',atStash());
+  $('#fFams').hidden=!atMaker();if(atMaker())renderForge();
   if(shop&&TRADER_SELLS[G.traders[atSmith].sells].meals){$('#shopBox h3').textContent='Today\u2019s menu';const sg=$('#sGrid');sg.innerHTML='';
     for(const k in MEALS){const b=document.createElement('button');b.className='cell'+(sel&&sel.from==='meal'&&sel.k===k?' on':'');b.dataset.p=mealPrice(k);b.title=MEALS[k].name;
       const c=document.createElement('canvas');mealIcon(c,k);b.appendChild(c);b.onclick=()=>{sel={from:'meal',k};renderPanel();};sg.appendChild(b);}
@@ -518,13 +525,16 @@ function renderDetail(){
         b.textContent=`Sell ${n} ${CROPS[c].plural} for ${cropValue(c,n)} shards`;b.onclick=()=>act('sellCrops',[atSmith,c],()=>renderPanel());a.appendChild(b);}
       if(a.children.length)el.appendChild(a);}
     return;}
-  if(!it&&atForge()){el.innerHTML='<p class="muted">Pick one of your own pieces to enhance it.</p>';return;}
+  if(sel&&sel.from==='forge'&&atMaker()){forgeDetail(el);return;}
+  if(!it&&atForge()){el.innerHTML='<p class="muted">Pick one of your own pieces to enhance it, or a piece above to have it forged from monster drops. Forged weapons hit one family of monsters harder; forged armor and boots take less from it.</p>';return;}
+  if(!it&&atMaker()){el.innerHTML='<p class="muted">Pick a grimoire above to have it written from monster drops. It deals more damage to the family whose drops go into it. Everything else is forged at the blacksmith.</p>';return;}
   if(!it&&atStash()){el.innerHTML='<p class="muted">The same stash waits behind every stash chest: in the inn and in every safe room. Pick something to move it between your bag and the stash, or double-click it.</p>';return;}
   if(!it){el.innerHTML=`<p class="muted">${S.inv.length?'Select an item to compare it with what you are wearing. Double-click an item in the bag to equip it.':'Your bag is empty. Enemies and chests drop weapons, armor, boots and trinkets.'}</p>`;return;}
   const R=RARITY[it.rarity],cur=S.equip[it.slot],other=(sel.from==='bag'||sel.from==='shop')&&cur?cur:null,m=itemMult(it);
   let h=`<h4 style="color:${R.color}">${esc(it.name)}${it.plus?' +'+it.plus:''}</h4>`;
   const kind=it.slot==='weapon'?(it.school?'Grimoire of '+GRIM[it.school].label:WTYPES[it.type].name)+' ('+classOf(it).toLowerCase()+')':it.slot==='armor'?ATYPES[it.type].name:it.slot==='boots'?BTYPES[it.type].name:TTYPES[it.type].name;
-  h+=`<div class="sub">${R.name} ${kind.toLowerCase()}, item level ${it.ilvl}${sel.from==='eq'?', equipped':sel.from==='shop'?', for sale':''}</div>`;
+  h+=`<div class="sub">${R.name} ${kind.toLowerCase()}, item level ${it.ilvl}${it.fam?(it.school?', written by the arcanist':', forged'):''}${sel.from==='eq'?', equipped':sel.from==='shop'?', for sale':''}</div>`;
+  const famLn=it.fam&&FAMILIES[it.fam.id]?`<div class="pas" style="color:${FAMILIES[it.fam.id].tint}">${famText(it)} <span class="muted">(${famMembers(it.fam.id)})</span></div>`:'';
   const ln=(l,v,d='')=>`<div class="ln"><span>${l}</span><span>${v}${d}</span></div>`;
   if(it.slot==='weapon'){
     const T=WTYPES[it.type],d=it.base.dmg*m,od=other?other.base.dmg*itemMult(other):0,oT=other?WTYPES[other.type]:null;
@@ -539,12 +549,14 @@ function renderDetail(){
     h+=`<div class="pas" style="color:var(--bone)">Skill: ${sk.name}, ${sk.mp} mana, ${sk.cd}s cooldown. <span class="muted">${sk.desc}</span></div>`;
     if(T.magic)h+=`<div class="pas" style="color:var(--dim)">A grimoire of ${GRIM[it.school].label} only ever carries bonuses to ${GRIM[it.school].attr}.</div>`;
     for(const a of it.aff)h+=`<div class="pas">${affDef(it,a.id).fmt(a.v)}</div>`;
+    h+=famLn;
   }else{
     const om=other?itemMult(other):1;
     if(it.base.def!=null)h+=ln('Defense',Math.round(it.base.def*m),other?cmp(it.base.def*m,(other.base.def||0)*om):'');
     if(it.base.hp)h+=ln('Health','+'+Math.round(it.base.hp*m),other?cmp(it.base.hp*m,(other.base.hp||0)*om):'');
     if(it.base.move)h+=ln('Move speed',(it.base.move>0?'+':'')+it.base.move+'%',other?cmp(it.base.move,other.base.move||0):'');
     for(const a of it.aff)h+=`<div class="pas">${GEAR_AFFIX[a.id].fmt(a.v)}</div>`;
+    h+=famLn;
     if(sel.from==='bag'||sel.from==='shop')h+=equipDiff(it);
   }
   el.innerHTML=h;
@@ -574,11 +586,65 @@ function renderDetail(){
 // For armor, boots and trinkets: every total that would change if you wore this instead, affixes included.
 const DIFF=[['Health',s=>s.maxHp,0],['Defense',s=>s.def,0],['Evade chance',s=>s.evade,0,'%'],['Move speed',s=>s.move,0],['Critical chance',s=>s.crit,0,'%'],
   ['Health per second',s=>s.regen,1],['Mana',s=>s.maxMp,0],['Mana per second',s=>s.mpRegen,2],['Skill recharge',s=>s.cdr,0,'% faster'],
-  ['Damage reflected',s=>s.g.thorns||0,0,'%'],['Experience',s=>s.g.xp||0,0,'% more']];
+  ['Damage reflected',s=>s.g.thorns||0,0,'%'],['Experience',s=>s.g.xp||0,0,'% more'],
+  ...Object.keys(FAMILIES).map(f=>['Damage from '+FAMILIES[f].them,s=>s.res[f]||0,0,'% less'])];
 function equipDiff(it){
   const now=computeStats(S.char,S.equip),alt=computeStats(S.char,{...S.equip,[it.slot]:it});
   const rows=DIFF.filter(([,f,dec])=>Math.abs(f(alt)-f(now))>=(dec?.05:.5)).map(([l,f,dec,u=''])=>`<div class="ln"><span>${l}</span><span>${f(alt).toFixed(dec)}${u}${cmp(f(alt),f(now),dec)}</span></div>`);
   return`<div class="sub" style="margin-top:8px">${S.equip[it.slot]?'If you wear this instead':'If you wear this'}</div>`+(rows.join('')||'<div class="muted">No change to your totals.</div>');
+}
+/* ---------- forging from monster drops ----------
+   At the blacksmith (weapons, armour, boots) and the arcanist (grimoires): pick a family, then a piece. What it costs
+   and what it gives come from FORGING and forgeRecipe (js/sim); the server makes the piece (ACTIONS.forge). */
+let forgeFam=null;
+// who is in a family, for the fine print: its monsters, then its bosses
+function famMembers(f){
+  const mons=Object.keys(ETYPES).filter(k=>ETYPES[k].fam===f).map(k=>ETYPES[k].name.toLowerCase()),boss=FLOORS.filter(F=>F.boss.fam===f).map(F=>F.boss.name);
+  return[...mons,...boss].join(', ');
+}
+// what can be made here: [slot, type] pairs, the type as ACTIONS.forge takes it
+function forgeList(){
+  if(atWho==='arcanist')return Object.keys(GRIM).map(sc=>['weapon','grimoire:'+sc]);
+  return[...Object.keys(WTYPES).filter(k=>!WTYPES[k].magic).map(k=>['weapon',k]),...Object.keys(ATYPES).map(k=>['armor',k]),...Object.keys(BTYPES).map(k=>['boots',k])];
+}
+// a stand-in for the piece before it exists, for its icon and name
+function forgeSample(slot,type,fam){
+  const[t,school]=type.split(':'),F=FAMILIES[fam],T=(slot==='weapon'?WTYPES:slot==='armor'?ATYPES:BTYPES)[t];
+  return{slot,type:t,school,rarity:FORGE_RARITY,plus:0,fam:{id:fam,v:0},tint:school?GRIM[school].tint:slot==='weapon'?F.tint:F.cloth,name:(slot==='weapon'?F.bane:F.ward)+' '+T.name.toLowerCase()};
+}
+const canForge=(slot,fam)=>{const r=forgeRecipe(slot,fam);return S.shards>=r.shards&&hasMats(S.mats,r.mats);};
+function renderForge(){
+  const fams=Object.keys(FAMILIES);
+  if(!forgeFam||!FAMILIES[forgeFam])forgeFam=fams.reduce((a,f)=>(S.mats[FAMILIES[f].mat]||0)>(S.mats[FAMILIES[a].mat]||0)?f:a,fams[0]);   // start on the family you carry most of
+  const row=$('#fFams');row.innerHTML='';
+  for(const f of fams){const F=FAMILIES[f],M=MATS[F.mat],b=document.createElement('button');b.className=f===forgeFam?'on':'';
+    b.innerHTML=`<i class="mat fam" style="background:${M.color}"></i> ${F.name}<b>${S.mats[F.mat]||0}</b>`;b.title=`${M.name}, dropped by ${F.them}: ${famMembers(f)}`;
+    b.onclick=()=>{forgeFam=f;if(sel&&sel.from==='forge')sel=null;renderPanel();};row.appendChild(b);}
+  const sg=$('#sGrid');sg.innerHTML='';
+  for(const[slot,type]of forgeList()){const it=forgeSample(slot,type,forgeFam),b=cell(it,sel&&sel.from==='forge'&&sel.slot===slot&&sel.type===type,'',false);
+    if(!canForge(slot,forgeFam))b.classList.add('cant');
+    b.onclick=()=>{sel={from:'forge',slot,type};renderPanel();};sg.appendChild(b);}
+}
+function forgeDetail(el){
+  const{slot,type}=sel,fam=forgeFam,F=FAMILIES[fam],it=forgeSample(slot,type,fam),r=forgeRecipe(slot,fam),R=RARITY[FORGE_RARITY],[t]=type.split(':'),m=ilvlMult(r.ilvl)*R.mult;
+  const ln=(l,v)=>`<div class="ln"><span>${l}</span><span>${v}</span></div>`;
+  const kind=slot==='weapon'?(it.school?'Grimoire of '+GRIM[it.school].label:WTYPES[t].name)+' ('+classOf(it).toLowerCase()+')':slot==='armor'?ATYPES[t].name:BTYPES[t].name;
+  let h=`<h4 style="color:${R.color}">${esc(it.name)}</h4><div class="sub">${R.name} ${kind.toLowerCase()}, item level ${r.ilvl}, ${atWho==='arcanist'?'written':'forged'} against ${F.them}</div>`;
+  if(slot==='weapon'){const T=WTYPES[t],d=T.dmg*m,cur=S.equip.weapon,same=cur.type===t&&cur.school===it.school;
+    h+=ln(T.magic?'Magic damage':'Damage',`${(d*.95).toFixed(1)} to ${(d*1.05).toFixed(1)}`+(same?` <i class="muted">yours: ${(cur.base.dmg*itemMult(cur)).toFixed(1)}</i>`:''));
+    h+=ln(T.magic?'Casts per second':T.ranged?'Shots per second':'Attacks per second',T.aspd.toFixed(2));}
+  else{const T=(slot==='armor'?ATYPES:BTYPES)[t],cur=S.equip[slot],yours=(k)=>cur&&cur.base[k]!=null?` <i class="muted">yours: ${Math.round(cur.base[k]*itemMult(cur))}</i>`:'';
+    h+=ln('Defense',Math.round(T.def*m)+yours('def'));if(T.hp)h+=ln('Health','+'+Math.round(T.hp*m)+yours('hp'));if(T.move)h+=ln('Move speed',(T.move>0?'+':'')+T.move+'%');}
+  h+=`<div class="pas" style="color:${F.tint}">${slot==='weapon'?`+${r.bonus[0]}% to +${r.bonus[1]}% damage to ${F.them}`:`Take ${r.bonus[0]}% to ${r.bonus[1]}% less damage from ${F.them}`} <span class="muted">(${famMembers(fam)})</span></div>`;
+  h+=`<div class="pas" style="color:var(--dim)">Like any ${R.name.toLowerCase()} piece it also carries one random bonus${it.school?' of its school':''}. The exact numbers are rolled when it is made.${slot==='weapon'?'':' Armor and boots against the same family add up.'}</div>`;
+  el.innerHTML=h;
+  const acts=document.createElement('div'),full=S.inv.length>=BAG_SIZE;acts.className='acts';
+  const b=document.createElement('button');b.className='btn small primary';b.textContent=full?'Bag is full':atWho==='arcanist'?'Write it':'Forge it';b.disabled=full||!canForge(slot,fam);
+  b.onclick=()=>act('forge',[slot,type,fam],res=>{if(res!==false){sel={from:'bag',i:res};sfx('lvl');save();}renderPanel();});acts.appendChild(b);
+  const need=document.createElement('div');need.className='muted';need.style.width='100%';
+  const have=k=>{const n=S.mats[k]||0;return`${r.mats[k]} ${MATS[k].name} <span style="color:var(--${n>=r.mats[k]?'hp':'red'})">(you have ${n})</span>`;};
+  need.innerHTML=`Costs ${r.shards} shards, ${Object.keys(r.mats).map(have).join(' and ')}. ${MATS[F.mat].name} drops from ${F.them}. Salvaging the piece later returns ${Math.floor(FORGING[slot].drops/3)} of it.`;
+  acts.appendChild(need);el.appendChild(acts);
 }
 function equipSel(){
   const it=selItem();if(!it||sel.from!=='bag')return;
@@ -599,6 +665,7 @@ function openDebug(){
   const lvl=k=>{const c=S.char;c.level+=k;c.pts+=3*k;calcStats();P.hp=ST.maxHp;P.mp=ST.maxMp;};
   add('Level +1 (now '+S.char.level+')',()=>lvl(1),true);add('Level +5',()=>lvl(5),true);
   add('Shards +500 (now '+S.shards+')',()=>{S.shards+=500;},true);
+  add('Monster drops +20 each, scrap +10',()=>{for(const k in MATS)if(MATS[k].fam)S.mats[k]=(S.mats[k]||0)+20;S.mats.scrap+=10;},true);
   add('Full heal',()=>{P.hp=ST.maxHp;P.mp=ST.maxMp;P.food=P.drink=100;});
   add('God mode: '+(god?'on':'off'),()=>{god=!god;},true);
   add('Go to the boss gate',()=>{const q=G.gates[1];P.x=q.x-18;P.y=q.y;P.dash=null;});

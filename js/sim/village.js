@@ -62,7 +62,8 @@ function genVillage(){
       look:{skin:SKINS[(st.x+st.y)%SKINS.length],hair:HAIRS[(st.x*3+st.y)%HAIRS.length],style:(st.x+st.y)%6,eyes:EYES[0]},eq:{armor:{type:'leather',tint:'#6b4a2c'}}});}
   block(FORGE.x,FORGE.y,5,2);prop('village/forge',FORGE.x+2.5,FORGE.y+1.1);smiths.push({x:vx(FORGE.x+3),y:vy(FORGE.y+1.4)});
   block(WITCH.x,WITCH.y,5,2);prop('village/witch',WITCH.x+2.5,WITCH.y+.9);prop('village/cauldron',WITCH.x+2.5,WITCH.y+2,{brew:true});
-  talkers.push({x:vx(WITCH.x+4),y:vy(WITCH.y+1.3),name:'Arcanist',line:'The cauldron isn’t ready for you yet. Come back when I open the witchcraft room.',
+  // the arcanist writes grimoires from monster drops, the way the forge makes everything else (ACTIONS.forge)
+  talkers.push({x:vx(WITCH.x+4),y:vy(WITCH.y+1.3),name:'Arcanist',arcanist:true,line:'Bring me what the tower’s monsters leave behind and I will write you a grimoire against them.',
     look:{skin:SKINS[5],hair:HAIRS[5],style:2,eyes:EYES[5]},eq:{armor:{type:'coat',tint:'#3c2c52'}}});
   // the kingdom camps, each with its captain out front
   for(const k of KINGDOMS){block(Math.floor(k.x)-1,k.y-2,3,2);prop('village/tent',k.x,k.y,{tint:k.color});
@@ -93,4 +94,5 @@ function genVillage(){
     gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],
     safe:[all],points:[],smiths,traders,talkers,props,wells,stashes,guild,board:{x:vx(22),y:vy(17.3)},fieldDesk,crops:['potato','glowcap'],home:{x:vx(spawn.x),y:vy(spawn.y)}};
 }
+const nearArcanist=(r=24)=>{for(const q of G.talkers||[])if(q.arcanist&&hyp(q.x-P.x,q.y-P.y)<r)return q;return null;};
 const nearTalker=()=>{for(const q of G.talkers||[])if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;};

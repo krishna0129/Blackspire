@@ -49,6 +49,8 @@ Salvaging gives `6 × (1 + 0.22 × (item level − 1)) × rarity multiplier³ ×
 | Epic | 4 Iron scrap, 1 Emberstone |
 | Legendary | 5 Iron scrap, 2 Emberstone, 1 Spire crystal |
 
+A [forged](forging.md) piece also returns a third of the monster drops that went into it: 4 from a weapon, 3 from armor, 2 from boots.
+
 ## Weapon damage range
 
 Lowest possible (common, +0, low roll) to highest possible (legendary, +10, high roll), per item level.

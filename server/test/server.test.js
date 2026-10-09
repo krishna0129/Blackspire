@@ -132,6 +132,20 @@ test('online play',async t=>{
     assert.strictEqual(ma.S.equip.weapon.plus,1);
   });
 
+  await t.test('online characters forge from monster drops, and the server makes the piece',async()=>{
+    const ma=member('Alpha'),q=ma.w.G.smiths[0];ma.pl.x=q.x;ma.pl.y=q.y+16;
+    ma.S.mats.bone=12;ma.S.mats.scrap=4;ma.S.shards=99999;const bag=ma.S.inv.length;
+    A.send({t:'act',id:41,name:'forge',args:['weapon','sword','undead']});
+    assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===41)).r,bag,'the answer is where it landed in the bag');
+    const it=ma.S.inv[bag];assert.strictEqual(it.name,'Gravebane longsword');assert.strictEqual(it.fam.id,'undead');
+    assert.strictEqual(ma.S.mats.bone,0);
+    assert.deepStrictEqual(A.last('save').s.inv[bag].fam,{id:it.fam.id,v:it.fam.v},'and the browser is sent the same piece');
+    A.send({t:'act',id:42,name:'forge',args:['weapon','sword','undead']});
+    assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===42)).r,false,'no drops left, no second sword');
+    A.send({t:'act',id:43,name:'forge',args:['weapon','grimoire:magic','undead']});
+    assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===43)).r,false,'grimoires are the arcanist\u2019s');
+  });
+
   await t.test('a full channel opens another',async()=>{
     const g=s.game,w=member('Alpha').w,pad=[];
     while(w.members.length+pad.length<30)pad.push({});

@@ -34,6 +34,9 @@ function render(){
   G.chests.forEach((c,i)=>cut(ctx,chestSheet(),opened.includes(i)?14:0,0,14,11,Math.round(c.x-camX-7),Math.round(c.y-camY-6)));
   for(const d of G.drops){if(d.owner!==P.id)continue;const x=Math.round(d.x-camX),y=Math.round(d.y-camY+Math.sin(d.t*5)*1.2);
     if(d.k==='shard'){ctx.fillStyle='#6fd6e6';ctx.fillRect(x,y-1,1,3);ctx.fillRect(x-1,y,3,1);}
+    else if(d.k==='mat'&&MATS[d.id].fam){   // a monster drop: a diamond, larger than the square enhancement materials
+      ctx.fillStyle='#050508';for(let i=-3;i<=3;i++)ctx.fillRect(x-(3-Math.abs(i)),y+i,7-2*Math.abs(i),1);
+      ctx.fillStyle=MATS[d.id].color;for(let i=-2;i<=2;i++)ctx.fillRect(x-(2-Math.abs(i)),y+i,5-2*Math.abs(i),1);ctx.fillStyle='#fff';ctx.fillRect(x-1,y-1,1,1);}
     else if(d.k==='mat'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-2,4,4);ctx.fillStyle=MATS[d.id].color;ctx.fillRect(x-1,y-1,2,2);}
     else if(d.k==='potion'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,6);ctx.fillStyle='#d9534f';ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#e6e1d3';ctx.fillRect(x,y-2,1,1);}
     else if(d.k==='ration'){ctx.fillStyle='#050508';ctx.fillRect(x-3,y-2,7,5);ctx.fillStyle='#b07a3a';ctx.fillRect(x-2,y-1,5,3);ctx.fillStyle='#e0b36a';ctx.fillRect(x-1,y-1,3,1);}
@@ -105,7 +108,7 @@ function render(){
     else if(p.k==='arrow'){const c=Math.cos(p.a),sn=Math.sin(p.a);ctx.fillStyle='#8d8b98';for(let i=2;i<7;i++)ctx.fillRect(Math.round(x-c*i),Math.round(y-sn*i),1,1);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);ctx.fillRect(Math.round(x-c),Math.round(y-sn),1,1);}
     else{ctx.fillStyle='#cfc8ff';ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);}}
   // numbers
-  for(const n of G.nums){const col=n.kind==='crit'?'#ffd86a':n.kind==='hurt'?'#ff6a5e':n.kind==='bleed'?'#c05a6a':n.kind==='heal'?'#9be08a':n.kind==='evade'?'#6fd6e6':n.kind==='mana'?'#7fa8ff':n.kind==='resist'?'#8e97b5':'#e6e1d3';
+  for(const n of G.nums){const col=n.kind==='crit'?'#ffd86a':n.kind==='hurt'?'#ff6a5e':n.kind==='bleed'?'#c05a6a':n.kind==='heal'?'#9be08a':n.kind==='evade'?'#6fd6e6':n.kind==='mana'?'#7fa8ff':n.kind==='resist'?'#8e97b5':n.kind==='bane'?'#f2a03c':'#e6e1d3';
     ctx.globalAlpha=n.t>.5?1-(n.t-.5)/.25:1;drawNum(n.v,n.x-camX,n.y-camY-n.t*18,col);}
   ctx.globalAlpha=1;
 }

@@ -29,8 +29,9 @@ css/style.css         all styling
 js/sim/               the game rules. No page, canvas or sound: the browser runs them for single player and the
                       server runs the very same files for online play
   util.js             small helpers
-  data.js             tables: floors, weapons, skills, passives, gear, enemies, materials, loot
-  items.js            item generation, prices, enhancement, the blacksmith's stock
+  data.js             tables: floors, weapons, skills, passives, gear, enemies and their families, materials,
+                      loot, forging
+  items.js            item generation, prices, enhancement, forged gear, the traders' stock
   rules.js            players, saves, derived stats, and the list of host functions the rules call
   world.js            floor generation
   village.js          the root village (floor 0): its map, stalls, people and scenery; online, shared in channels
@@ -39,7 +40,7 @@ js/sim/               the game rules. No page, canvas or sound: the browser runs
   combat.js           hit detection, damage, skills, spells, loot, the boss chamber
   update.js           one step of a floor: every player, enemy, shot and drop; enemy and boss AI
   floor3.js           floor 3's enemies (Gravecaller, Thornroot, Bloodbloom, Ossuary hermit) and the Pale Collector
-  actions.js          gear, attributes and blacksmith actions, run locally or by the server
+  actions.js          gear, attributes, trader, blacksmith and forging actions, run locally or by the server
 js/client/            everything on screen, loaded after js/sim in the order index.html lists them
   store.js            the local save store
   host.js             the browser's host functions: particles, numbers, messages, dialogs
@@ -47,7 +48,7 @@ js/client/            everything on screen, loaded after js/sim in the order ind
   paint.js            paints a floor's tiles
   input.js            canvas sizing, light mask, keyboard, mouse, touch, sound
   render.js           drawing the world
-  ui.js               HUD, title flow, character creator, gear panel, blacksmith, floor gate, debug menu
+  ui.js               HUD, title flow, character creator, gear panel, blacksmith and forging, floor gate, debug menu
   net.js              online play: the connection, snapshots, smoothing other players and enemies
   main.js             start-up and the main loop
 assets/sprites/       every sprite, as PNG (see assets/README.md)
@@ -112,9 +113,25 @@ Enemies, chests and bosses drop three materials: Iron scrap (common), Emberstone
 materials: scrap for +1 to +3, emberstone from +4, crystals from +7. Up to +5 it always works. From +6 an attempt can
 fail (80%, 65%, 50%, 38%, 28%): the level stays, the cost is spent, and each failure adds 10% to that item's next try.
 
+## Families and forging
+
+Every monster belongs to a family, and drops that family's own material on top of its other loot: spirits (floor 1's
+shades, skitters, brutes and wisps) drop Shade essence, the undead (the skeletons, thralls and Gravecallers) Old
+bone, plants Thornwood, beasts Chitin plate. Bosses and elites always drop some. In the root village the
+**blacksmith** forges those into weapons, armor and boots, and the **arcanist** writes grimoires from them:
+
+- a forged weapon deals 15% to 25% more damage to that family;
+- forged armor takes 10% to 20% less damage from that family, forged boots 5% to 10%, and the two add up.
+
+A forged piece is always Rare, at the item level of the highest floor you have reached, and costs the family's drops
+(12, 10 or 6), some Iron scrap and shards. Against any other family it is an ordinary Rare piece. Every "% more
+damage" bonus (a forged weapon's, Giant-slaying, Executioner's, Sunder's mark) adds up and is applied once. The
+tables are `FAMILIES` and `FORGING` in `js/sim/data.js`; the [wiki's forging page](docs/wiki/forging.md) has the
+numbers.
+
 ## Docs
 
-- [docs/wiki](docs/wiki/README.md): the player wiki (drops, enhancement, monsters), generated from the game's data
+- [docs/wiki](docs/wiki/README.md): the player wiki (drops, forging, enhancement, monsters), generated from the game's data
   by `npm run wiki`. `npm test` fails if it is out of date. Its pictures (monsters, items, boss attacks) are
   rendered by the game itself with `npm run wiki:images`, which needs Playwright and a Chromium
   (`npx playwright install chromium`); rerun it after changing sprites.
@@ -129,6 +146,7 @@ posting saves to your own server.
 
 ## Debug menu
 
-Testing shortcuts: jump to a floor, add levels or shards, god mode, teleport to the boss gate or a blacksmith.
+Testing shortcuts: jump to a floor, add levels, shards or monster drops, god mode, teleport to the boss gate or the
+next safe room.
 It is off for players. Add `?debug` to the address to switch it on, for example `index.html?debug` or
 `http://localhost:8000/?debug`. The ` key and the Debug button in the Gear panel then open it.

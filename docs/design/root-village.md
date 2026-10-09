@@ -67,8 +67,8 @@ alongside the traders. Six stalls:
 | **Armour and gear** | a trader | armour, boots, trinkets |
 | **Potions** | a trader | health potions, and later what the witchcraft room brews |
 | **Food and drink** | a trader | rations, water flasks, cooked meals |
-| **The forge** | the **blacksmith** | enhancing now; forging from monster drops later. An anvil, a glowing hearth, sparks |
-| **The witchcraft room** | the **arcanist** | mutations, skills, gear passives later; **alchemy and potion crafting**. A cauldron, shelves of jars, green light |
+| **The forge** | the **blacksmith** | enhancing, and forging weapons, armour and boots from monster drops (in the game). An anvil, a glowing hearth, sparks |
+| **The witchcraft room** | the **arcanist** | grimoires from monster drops (in the game); mutations, skills, gear passives later; **alchemy and potion crafting**. A cauldron, shelves of jars, green light |
 
 Each stall has its own striped awning and its goods on show, so you can tell them apart from across the market.
 **In the game:** the stalls restock whenever you beat any floor's boss, and once a day, when the guild's board

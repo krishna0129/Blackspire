@@ -84,7 +84,7 @@ function genFloor(n,seed){
   // The boss is always there, even on a floor you have cleared: a rematch is optional (the floor gate takes you past it)
   // and it is how boss loot is farmed. Its looks and behaviour come from the floor's entry in FLOORS.
   const b=makeEnemy('boss',(cx(boss)+.5)*TILE,(cy(boss)+.5)*TILE,hpM,dmgM,false),B=FL.boss;
-  Object.assign(b,{boss:true,name:B.name,sprite:B.sprite,ai:B.ai,mres:B.mres||0,calls:B.calls||null,atkT:1.5,summons:0});g.enemies.push(b);g.bossEnt=b;
+  Object.assign(b,{boss:true,name:B.name,fam:B.fam||null,sprite:B.sprite,ai:B.ai,mres:B.mres||0,calls:B.calls||null,atkT:1.5,summons:0});g.enemies.push(b);g.bossEnt=b;
   if(B.corpses){   // bodies lying in the chamber, for the boss to raise
     const pts=[[2,2],[boss.w-3,2],[2,boss.h-3],[boss.w-3,boss.h-3],[boss.w>>1,2],[boss.w>>1,boss.h-3]];
     g.arena=pts.map(([i,j])=>({x:(boss.x+i+.5)*TILE,y:(boss.y+j+.5)*TILE}));

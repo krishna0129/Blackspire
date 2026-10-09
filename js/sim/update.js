@@ -3,7 +3,8 @@
 
 /* ---------- update ----------
    One step of the floor: every player, every enemy, every shot. The host runs it each frame (single player)
-   or each tick (server), after setting each player's input (P.in). */
+   or each tick (server), after setting each player's input (P.in).
+   Every enemy shot pushed to G.proj carries its shooter's family (fam), so armour forged against it still counts. */
 // Whom an enemy goes after: the nearest living player it can reach. Ordinary enemies ignore anyone in a safe room or
 // sealed in the boss chamber; the boss only cares about whoever is sealed in with it, if anyone is.
 function targetFor(e){
@@ -23,7 +24,7 @@ function simUpdate(dt){
   G.enemies=G.enemies.filter(e=>!e.dead);
   // enemy shots hit whichever player they reach first
   for(const p of G.proj){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(solid(p.x,p.y)||inSafe(p.x,p.y))p.life=0;
-    if(p.life>0)for(const pl of G.players)if(!pl.dead&&!pl.gone&&hyp(p.x-pl.x,p.y-pl.y)<pl.r+2){setPlayer(pl);hurtPlayer(p.dmg,null,false,{x:p.x-p.vx,y:p.y-p.vy});p.life=0;break;}}
+    if(p.life>0)for(const pl of G.players)if(!pl.dead&&!pl.gone&&hyp(p.x-pl.x,p.y-pl.y)<pl.r+2){setPlayer(pl);hurtPlayer(p.dmg,null,false,{x:p.x-p.vx,y:p.y-p.vy,fam:p.fam});p.life=0;break;}}
   G.proj=G.proj.filter(p=>p.life>0);
   // the players' bolts, arrows and fireballs: hits count for whoever shot them
   for(const p of G.pproj){
@@ -179,7 +180,7 @@ function updateEnemyCore(e,dt){
     let mv=0;if(d<52)mv=-1;else if(d>92)mv=1;
     moveEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);
     e.fire-=dt;
-    if(e.fire<=0&&d<140&&los(e.x,e.y,P.x,P.y)){e.fire=rand(1.9,2.6);e.flash=.06;const v=T.pspeed||88;G.proj.push({x:e.x,y:e.y,vx:ux*v,vy:uy*v,dmg:e.dmg,life:2.4,c:T.pcol});}
+    if(e.fire<=0&&d<140&&los(e.x,e.y,P.x,P.y)){e.fire=rand(1.9,2.6);e.flash=.06;const v=T.pspeed||88;G.proj.push({x:e.x,y:e.y,vx:ux*v,vy:uy*v,dmg:e.dmg,life:2.4,c:T.pcol,fam:famOf(e)});}
     return;
   }
   if(e.state==='chase'){
@@ -222,7 +223,7 @@ function zeldaAI(e,dt,T,dx,dy,d){
   }
   if(T.ai==='archer'){
     if(e.state==='draw'){e.t-=dt;
-      if(e.t<=0){const a=DIR_ANGLE[e.dir],v=T.pspeed;G.proj.push({x:e.x,y:e.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,dmg:e.dmg,life:1.6,c:T.pcol,arrow:true,a});sfx('swing');e.state='chase';e.fire=rand(1.6,2.3);}
+      if(e.t<=0){const a=DIR_ANGLE[e.dir],v=T.pspeed;G.proj.push({x:e.x,y:e.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,dmg:e.dmg,life:1.6,c:T.pcol,arrow:true,a,fam:famOf(e)});sfx('swing');e.state='chase';e.fire=rand(1.6,2.3);}
       return;}
     if(e.state!=='chase')e.state='chase';
     e.fire-=dt;const lined=ax<7||ay<7;
@@ -285,7 +286,7 @@ function boneAttack(e,d,ux,uy,rage){
     // Rib volley: seven bone shards in a cone. These are ordinary shots, so they can be evaded and a melee swing knocks them down.
     const a=Math.atan2(uy,ux),half=.5,dur=.75*rage;e.state='cast';e.t=dur+.15;e.atkT=1.4*rage;
     G.tele.push({cone:true,x:e.x,y:e.y,a,half,len:120,t:0,d:dur,fn:()=>{if(e.dead)return;sfx('swing');
-      for(let i=-3;i<=3;i++){const b=a+i*half/3;G.proj.push({x:e.x,y:e.y,vx:Math.cos(b)*135,vy:Math.sin(b)*135,dmg:e.dmg*.8,life:1.5,c:'#d9d4c4'});}}});
+      for(let i=-3;i<=3;i++){const b=a+i*half/3;G.proj.push({x:e.x,y:e.y,vx:Math.cos(b)*135,vy:Math.sin(b)*135,dmg:e.dmg*.8,life:1.5,c:'#d9d4c4',fam:famOf(e)});}}});
   }else if(kind==='spikes'){
     // Grave spikes: bone erupts under your feet four times in a row (five when enraged), each aimed at where you stand at that moment.
     const n=rage<1?5:4;e.state='cast';e.t=.3*n+.3;e.atkT=1.6*rage;

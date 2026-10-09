@@ -71,6 +71,10 @@ function computeStats(c,e){
   // intelligence: mage damage. faith: healing and healer damage. mind: max mana. spirit: mana regen.
   const st={maxHp:100+c.vit*14+(c.level-1)*6,def:WT.def||0,movePct:c.agi*.6,crit:5+c.dex*.5+(WT.crit||0),critDmg:175,regen:.4+c.vit*.06,p:{},g:{}};
   for(const a of w.aff)st.p[a.id]=(st.p[a.id]||0)+a.v;
+  // Forged gear (it.fam = {id, v}): vs = percent more damage to a family, from the weapon; res = percent less damage
+  // taken from a family, from everything else worn, added together.
+  st.vs={};st.res={};
+  if(w.fam&&FAMILIES[w.fam.id])st.vs[w.fam.id]=w.fam.v;
   st.magic=!!WT.magic;st.ranged=!!WT.ranged;st.int=c.int+(st.p.int||0);st.fai=c.fai+(st.p.fai||0);
   const scale=st.magic?(w.school==='faith'?1+st.fai*.04:(1+st.int*.04)*(1+(st.p.mdmg||0)/100)):st.ranged?1+c.dex*.03:1+c.str*.04;
   st.dmg=w.base.dmg*itemMult(w)*scale;
@@ -80,7 +84,8 @@ function computeStats(c,e){
   st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;st.skill=skillOf(w);st.thrust=!st.magic&&!st.ranged&&WT.arc<50;
   for(const k of['armor','boots','trinket']){const it=e[k];if(!it)continue;const m=itemMult(it);
     st.def+=(it.base.def||0)*m;st.maxHp+=(it.base.hp||0)*m;st.movePct+=it.base.move||0;
-    for(const a of it.aff)st.g[a.id]=(st.g[a.id]||0)+a.v;}
+    for(const a of it.aff)st.g[a.id]=(st.g[a.id]||0)+a.v;
+    if(it.fam&&FAMILIES[it.fam.id])st.res[it.fam.id]=(st.res[it.fam.id]||0)+it.fam.v;}
   st.maxHp+=st.g.hp||0;st.def+=st.g.def||0;st.movePct+=st.g.move||0;
   st.crit+=(st.g.crit||0)+(st.p.keen||0);st.critDmg+=st.p.brutal||0;st.regen+=st.g.regen||0;
   st.evade=Math.min(30,c.dex*.6);

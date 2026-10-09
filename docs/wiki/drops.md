@@ -9,14 +9,14 @@ their loot can be farmed.
 
 ## What drops from what
 
-On the ground: <img src="img/drop-shard.png" alt="shards" width="36"> shards <img src="img/drop-potion.png" alt="potion" width="36"> potion <img src="img/drop-ration.png" alt="ration" width="36"> ration <img src="img/drop-flask.png" alt="water flask" width="36"> water flask <img src="img/drop-scrap.png" alt="Iron scrap" width="36"> Iron scrap <img src="img/drop-ember.png" alt="Emberstone" width="36"> Emberstone <img src="img/drop-crystal.png" alt="Spire crystal" width="36"> Spire crystal <img src="img/drop-item.png" alt="item" width="36"> an item (rare and better ones also send a beam of their colour into the dark).
+On the ground: <img src="img/drop-shard.png" alt="shards" width="36"> shards <img src="img/drop-potion.png" alt="potion" width="36"> potion <img src="img/drop-ration.png" alt="ration" width="36"> ration <img src="img/drop-flask.png" alt="water flask" width="36"> water flask <img src="img/drop-scrap.png" alt="Iron scrap" width="36"> Iron scrap <img src="img/drop-ember.png" alt="Emberstone" width="36"> Emberstone <img src="img/drop-crystal.png" alt="Spire crystal" width="36"> Spire crystal <img src="img/drop-essence.png" alt="Shade essence" width="36"> Shade essence <img src="img/drop-bone.png" alt="Old bone" width="36"> Old bone <img src="img/drop-thornwood.png" alt="Thornwood" width="36"> Thornwood <img src="img/drop-chitin.png" alt="Chitin plate" width="36"> Chitin plate (monster drops, the diamonds) <img src="img/drop-item.png" alt="item" width="36"> an item (rare and better ones also send a beam of their colour into the dark).
 
-| Source | Shards (floor 1 / 2 / 3) | Items | Potions, rations, water | Materials |
-|---|---|---|---|---|
-| Ordinary enemy | 1–4 / 1–5 / 2–6 | 13% | 5.5% health potion<br>4.0% ration<br>5.0% water flask | Iron scrap: 30% for 1<br>Emberstone: 3.0% for 1 |
-| Elite enemy | 14 / 18 / 21 | 70%, at least uncommon | 30% health potion<br>25% ration<br>30% water flask | Iron scrap: 1 to 3<br>Emberstone: 40% for 1<br>Spire crystal: 4.0% for 1 |
-| Floor boss | 60 / 75 / 90 | 1 (item level +1), at least rare<br>1 (item level +1), at least uncommon<br>1 (item level +1), at least uncommon | 2 health potions<br>1 ration<br>1 water flask | Iron scrap: 4 to 6<br>Emberstone: 2 to 3<br>Spire crystal: 1 |
-| Chest | 8–16 / 10–20 / 12–24 | 1<br>35% | 50% health potion<br>40% ration<br>50% water flask | Iron scrap: 1 to 2<br>Emberstone: 25% for 1 |
+| Source | Shards (floor 1 / 2 / 3) | Items | Potions, rations, water | Materials | Its family’s drop |
+|---|---|---|---|---|---|
+| Ordinary enemy | 1–4 / 1–5 / 2–6 | 13% | 5.5% health potion<br>4.0% ration<br>5.0% water flask | Iron scrap: 30% for 1<br>Emberstone: 3.0% for 1 | 30% for 1 |
+| Elite enemy | 14 / 18 / 21 | 70%, at least uncommon | 30% health potion<br>25% ration<br>30% water flask | Iron scrap: 1 to 3<br>Emberstone: 40% for 1<br>Spire crystal: 4.0% for 1 | 2 to 3 |
+| Floor boss | 60 / 75 / 90 | 1 (item level +1), at least rare<br>1 (item level +1), at least uncommon<br>1 (item level +1), at least uncommon | 2 health potions<br>1 ration<br>1 water flask | Iron scrap: 4 to 6<br>Emberstone: 2 to 3<br>Spire crystal: 1 | 6 to 8 |
+| Chest | 8–16 / 10–20 / 12–24 | 1<br>35% | 50% health potion<br>40% ration<br>50% water flask | Iron scrap: 1 to 2<br>Emberstone: 25% for 1 | – |
 
 Rations and water flasks refill the hunger and thirst meters. Traders in safe rooms also sell them, 5–10 of each supply, restocked when the floor’s boss falls.
 
@@ -61,12 +61,12 @@ floor's item level (bosses: one higher), which raises base numbers by 22% per le
 
 ## Average yield per kill
 
-| Source | Shards (floor 1) | Items | Iron scrap | Emberstone | Spire crystal |
-|---|---|---|---|---|---|
-| Ordinary enemy | 2.5 | 0.13 | 0.30 | 0.03 | – |
-| Elite enemy | 14 | 0.70 | 2 | 0.40 | 0.04 |
-| Floor boss | 60 | 3 | 5 | 2.50 | 1 |
-| Chest | 12 | 1.35 | 1.50 | 0.25 | – |
+| Source | Shards (floor 1) | Items | Iron scrap | Emberstone | Spire crystal | Its family’s drop |
+|---|---|---|---|---|---|---|
+| Ordinary enemy | 2.5 | 0.13 | 0.30 | 0.03 | – | 0.30 |
+| Elite enemy | 14 | 0.70 | 2 | 0.40 | 0.04 | 2.50 |
+| Floor boss | 60 | 3 | 5 | 2.50 | 1 | 7 |
+| Chest | 12 | 1.35 | 1.50 | 0.25 | – | – |
 
 ## Where each enemy appears
 
@@ -76,8 +76,24 @@ floor's item level (bosses: one higher), which raises base numbers by 22% per le
 | 2 | Bone soldier 38%, Bone archer 25%, Bone knight 13%, Skitter 13%, Wisp 13% | – | The Bone Regent |
 | 3 and up | Rotting thrall 38%, Gravecaller 25%, Ossuary hermit 13%, Bloodbloom 13%, Bone archer 13% | Thornroot on the top wall of 55% of rooms; thorn patches | The Pale Collector |
 
+## Monster drops
+
+Every monster belongs to a **family**, and each family has its own drop. A monster only ever drops its own
+family’s, on top of everything above; chests have no family and drop none. The blacksmith and the arcanist turn
+them into gear against that family: see [Forging](forging.md).
+
+| Family | Drop | Ordinary monsters (chance per kill) | Elites | Bosses |
+|---|---|---|---|---|
+| Spirits | <img src="img/drop-essence.png" alt="Shade essence" width="28"> Shade essence | Shade: 30% for 1<br>Skitter: 30% for 1<br>Brute: 30% for 1<br>Wisp: 30% for 1 | 2 to 3 | The Gate Warden: 6 to 8 |
+| Undead | <img src="img/drop-bone.png" alt="Old bone" width="28"> Old bone | Bone soldier: 30% for 1<br>Bone archer: 30% for 1<br>Bone knight: 30% for 1<br>Rotting thrall: 30% for 1<br>Gravecaller: 30% for 1 | 2 to 3 | The Bone Regent: 6 to 8<br>The Pale Collector: 6 to 8 |
+| Plants | <img src="img/drop-thornwood.png" alt="Thornwood" width="28"> Thornwood | Thornroot: 60% for 1<br>Bloodbloom: 30% for 1 | 2 to 3 | none yet |
+| Beasts | <img src="img/drop-chitin.png" alt="Chitin plate" width="28"> Chitin plate | Ossuary hermit: 1 to 2 | 2 to 3 | none yet |
+
+Tough monsters that are rare for their family roll better than the usual 30% for 1: Thornroot, Ossuary hermit.
+The dead that a Gravecaller or the Pale Collector raises drop nothing, like the rest of their loot.
+
 ## Unique drops
 
-**Not in the game yet.** Today every enemy rolls from the same pool above, so the type of enemy only changes how
-many you can kill per minute. Per-enemy unique drops are planned, starting with floor 3: see
-[docs/design/floor-3.md](../design/floor-3.md). When they land, this page lists them by enemy.
+**Not in the game yet.** Apart from its family’s drop, every enemy rolls from the same pool above. One-of-a-kind
+items from particular enemies and bosses are planned: see [docs/design/floor-3.md](../design/floor-3.md). When they
+land, this page lists them by enemy.

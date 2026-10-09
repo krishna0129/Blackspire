@@ -36,7 +36,7 @@ const FLOOR3_AI={
     if(mv){moveEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);e.moving=true;}
     e.fire-=dt;
     if(e.fire<=0&&d<160&&los(e.x,e.y,P.x,P.y)){e.fire=rand(2.2,3);e.flash=.06;
-      G.proj.push({x:e.x,y:e.y-6,vx:ux*T.pspeed,vy:uy*T.pspeed,dmg:e.dmg,life:2.4,c:T.pcol});}
+      G.proj.push({x:e.x,y:e.y-6,vx:ux*T.pspeed,vy:uy*T.pspeed,dmg:e.dmg,life:2.4,c:T.pcol,fam:famOf(e)});}
   },
   // Rooted in a wall. Marks a lane toward you, then lashes along it.
   thornroot(e,dt,T,dx,dy,d){
@@ -135,5 +135,5 @@ function collectorAI(e,dt,d,ux,uy){
   }
   // soul bolts: three at a time, ordinary shots that can be evaded, blocked or knocked down
   const a=Math.atan2(uy,ux);e.state='cast';e.t=.5;e.atkT=(phase===3?1.2:1.6);sfx('cast');
-  for(let i=-1;i<=1;i++){const b=a+i*.22;G.proj.push({x:e.x+10,y:e.y-6,vx:Math.cos(b)*120,vy:Math.sin(b)*120,dmg:e.dmg*.8,life:2,c:'#9be08a'});}
+  for(let i=-1;i<=1;i++){const b=a+i*.22;G.proj.push({x:e.x+10,y:e.y-6,vx:Math.cos(b)*120,vy:Math.sin(b)*120,dmg:e.dmg*.8,life:2,c:'#9be08a',fam:famOf(e)});}
 }

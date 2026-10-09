@@ -171,6 +171,25 @@ Anti-abuse rules go in before anything else.
 **Decided:** drops from a family of monsters forge weapons and armour that deal more damage to that family, or take
 less damage from it.
 
+**In the game** (`FAMILIES` and `FORGING` in `js/sim/data.js`; the numbers are on
+[the wiki's forging page](../wiki/forging.md)):
+
+- Four families so far: **spirits** (floor 1's shades, skitters, brutes and wisps, and the Gate Warden), the
+  **undead** (the skeletons, thralls and Gravecallers, the Bone Regent and the Pale Collector), **plants** (Thornroot,
+  Bloodbloom) and **beasts** (only the Ossuary hermit until the Wildwood). A new family is one row in `FAMILIES`, one
+  in `MATS`, and a `fam` on its monsters.
+- Each family has one drop: Shade essence, Old bone, Thornwood, Chitin plate. Ordinary monsters drop it 30% of the
+  time, elites 2–3, bosses 6–8. Monsters that are tough and rare for their family roll better (Thornroot, hermit).
+- The **blacksmith** forges weapons (+15–25% damage to the family), armour (10–20% less damage from it) and boots
+  (5–10%, adding to the armour's). The **arcanist** makes the grimoires. A forged piece is always Rare at the item
+  level of the highest floor reached, costs 12 / 10 / 6 drops plus scrap and shards, and returns a third of the drops
+  when salvaged. Trinkets are not forged.
+- All "% more damage" now adds in one bucket (the fix skill-trees.md asked for), so a family weapon does not multiply
+  with Giant-slaying, Executioner's or Sunder.
+
+Still open: whether the bonus should grow with enhancement, family gear above Rare (mythril ore for the rarest), and
+whether beasts need a second floor-1-to-3 monster before the Wildwood.
+
 - Every enemy gets a **family** tag: undead, plant, spirit, beast, beast-man, greenskin, elf, knight, mage, dragon.
 - **Suggested family gear:**
   - a **weapon** made from a family's drops gives **+15–25% damage** against that family;
@@ -296,7 +315,7 @@ Recommended order, with reasons:
    - The blacksmith moves there; safe points become trader and stash.
    - The universal stash.
    - Every other system lives in a village, so building them before it means moving them later.
-2. **Forging from drops, and enemy families.**
+2. **Forging from drops, and enemy families.** (**In the game.**)
    - Recipes at the blacksmith, family tags on the existing enemies, the first family gear.
    - Forging is the core verb of the pitch ("use monster drops to forge powerful gear"), and today gear only
      drops or is bought.
