@@ -158,6 +158,7 @@ function drawEnemy(e,t){
   if(e.state==='hop')bob=-Math.sin((1-Math.max(0,e.t)/(e.hopT||.24))*Math.PI)*6;
   if(e.state==='windup'||e.state==='draw'||e.state==='channel'){x+=rand(-.8,.8);if(!s.sheet)bob-=1;}
   if(e.state==='exposed')x+=Math.sin(t*40)*.8;   // a hermit just out of the ground, dazed
+  if(e.type==='dummy'){x+=e.flash>0?Math.sin(t*50)*1.5:0;bob=0;}   // a scarecrow rocks when it is hit
   if(e.lunge>0){const a=Math.atan2(P.y-e.y,P.x-e.x);x+=Math.cos(a)*4;y+=Math.sin(a)*4;}
   if(e.stun>0)x+=Math.sin(t*40)*.6;
   e.bobY=Math.round(bob);
@@ -171,7 +172,7 @@ function drawEnemy(e,t){
   if(flip){ctx.save();ctx.translate(dx,0);ctx.scale(-1,1);cut(ctx,img,fx,fy,fw,fh,-Math.ceil(fw/2),dy);ctx.restore();}
   else cut(ctx,img,fx,fy,fw,fh,dx-Math.floor(fw/2),dy);
   if(e.state==='windup'||e.state==='draw'){ctx.fillStyle='#fff';ctx.fillRect(dx,dy-4,1,2);ctx.fillRect(dx,dy-1,1,1);}
-  if(e.hurtT>0&&!e.boss){const w=Math.max(8,e.r*2),p=clamp(e.hp/e.maxHp,0,1);ctx.fillStyle='#000';ctx.fillRect(dx-w/2-1,dy-4,w+2,3);ctx.fillStyle=e.elite?'#e8b24a':'#d9534f';ctx.fillRect(dx-w/2,dy-3,Math.ceil(w*p),1);}
+  if(e.hurtT>0&&!e.boss&&e.type!=='dummy'){const w=Math.max(8,e.r*2),p=clamp(e.hp/e.maxHp,0,1);ctx.fillStyle='#000';ctx.fillRect(dx-w/2-1,dy-4,w+2,3);ctx.fillStyle=e.elite?'#e8b24a':'#d9534f';ctx.fillRect(dx-w/2,dy-3,Math.ceil(w*p),1);}
 }
 // Where the weapon hand sits and how the weapon rests, for facing down, up, left, right.
 // The off-hand shield: [dx, dy, frame (0 front, 1 back, 2 edge-on), drawn in front of the body?] for facing down, up, left, right.

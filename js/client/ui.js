@@ -14,6 +14,7 @@ function updateHud(){
   setStyle('xpw',elXp,'width',(S.char.xp/xpNeed(S.char.level)*100).toFixed(1)+'%');
   setTxt('hLv','Level '+S.char.level+(S.char.pts?' (+'+S.char.pts+')':''));
   setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));setTxt('foodN',String(S.rations||0));setTxt('drinkN',String(S.flasks||0));setTxt('emptyN',S.empties?S.empties+' empty':'');
+  setTxt('hBuff',P.buff?`${BUFFS[P.buff.id].name}, ${Math.max(1,Math.ceil(P.buff.t/60))} min`:'');
   for(const k of['food','drink']){const v=clamp((P[k]==null?100:P[k])/100,0,1);setStyle(k+'w',$('#'+k+'Fill'),'width',(v*100).toFixed(1)+'%');
     const low=v*100<NEED_LOW;if(hc[k+'low']!==low){hc[k+'low']=low;$('#'+k+'Fill').parentNode.classList.toggle('low',low);}}
   setStyle('cds',cdSk,'height',(P.skillMax?P.skillCd/P.skillMax*100:0).toFixed(0)+'%');
@@ -345,7 +346,7 @@ function cell(it,on,label,bag){
 }
 const SLOTL={weapon:'Weapon',armor:'Armor',boots:'Boots',trinket:'Trinket'};
 const atStash=()=>atSmith!=null&&atWho==='stash';
-function selItem(){if(!sel||sel.from==='supply')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
+function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
 function renderPanel(){
   calcStats();const c=S.char;
   $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
@@ -373,10 +374,13 @@ function renderPanel(){
   $('#pTitle').textContent=shop?G.traders[atSmith].name:atForge()?'Blacksmith':atStash()?'Stash':c.name;
   $('#shopBox h3').textContent=atStash()?`Stash ${S.stash.length} / ${STASH_SIZE}`:shop&&G.traders[atSmith].stall?'For sale':'Trader\u2019s pack';
   $('#shopBox').hidden=!shop&&!atStash();$('#sGrid').classList.toggle('tall',atStash());
+  if(shop&&TRADER_SELLS[G.traders[atSmith].sells].meals){$('#shopBox h3').textContent='Today\u2019s menu';const sg=$('#sGrid');sg.innerHTML='';
+    for(const k in MEALS){const b=document.createElement('button');b.className='cell'+(sel&&sel.from==='meal'&&sel.k===k?' on':'');b.dataset.p=mealPrice(k);b.title=MEALS[k].name;
+      const c=document.createElement('canvas');mealIcon(c,k);b.appendChild(c);b.onclick=()=>{sel={from:'meal',k};renderPanel();};sg.appendChild(b);}}
   if(atStash()){const sg=$('#sGrid');sg.innerHTML='';
     for(let i=0;i<STASH_SIZE;i++){const it=S.stash[i],b=cell(it,sel&&sel.from==='stash'&&sel.i===i,'',false);
       if(it){b.onclick=()=>{sel={from:'stash',i};renderPanel();};b.ondblclick=()=>act('unstash',[i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();});}sg.appendChild(b);}}
-  if(shop){const sg=$('#sGrid');sg.innerHTML='';
+  if(shop&&!TRADER_SELLS[G.traders[atSmith].sells].meals){const sg=$('#sGrid');sg.innerHTML='';
     (shop.stock||[]).forEach((e,i)=>{const b=cell(e.it,sel&&sel.from==='shop'&&sel.i===i,'',true);b.dataset.p=e.price;b.title=e.it.name+', '+e.price+' shards';b.onclick=()=>{sel={from:'shop',i};renderPanel();};sg.appendChild(b);});
     for(const k of TRADER_SELLS[G.traders[atSmith].sells||'all'].supplies){const s=SUPPLIES[k],pb=document.createElement('button');pb.className='cell'+(sel&&sel.from==='supply'&&sel.k===k?' on':'');pb.dataset.p=supplyPrice(k);pb.title=s.name;
       const pc=document.createElement('canvas');supplyIcon(pc,k);
@@ -390,11 +394,18 @@ function renderPanel(){
 function cmp(a,b,dec=0){const d=a-b;if(Math.abs(d)<(dec?.05:.5))return'';return`<i class="${d>0?'up':'down'}">${d>0?'+':''}${d.toFixed(dec)}</i>`;}
 function renderDetail(){
   const el=$('#pDetail'),it=selItem(),shop=shopNow();
+  if(sel&&sel.from==='meal'&&shop){const k=sel.k,m=MEALS[k],pr=mealPrice(k),B=BUFFS[m.buff];
+    const fills=[m.food&&`${m.food}% of your hunger`,m.drink&&`${m.drink}% of your thirst`].filter(Boolean).join(' and ');
+    el.innerHTML=`<h4>${m.name}</h4><div class="sub">${m.desc} Fills ${fills}.</div><div class="pas" style="color:var(--cyan)">${B.name} for ${BUFF_TIME/60} minutes: ${B.desc.toLowerCase()}</div>`+
+      (P.buff?`<div class="muted">It replaces ${BUFFS[P.buff.id].name.toLowerCase()} (${Math.ceil(P.buff.t/60)} min left).</div>`:'');
+    const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Eat for ${pr} shards`;
+    b.disabled=S.shards<pr;b.onclick=()=>act('eatMeal',[atSmith,k],r=>{renderPanel();});a.appendChild(b);el.appendChild(a);return;}
   if(sel&&sel.from==='supply'&&shop){const k=sel.k,s=SUPPLIES[k],pr=supplyPrice(k),left=shop[s.key];
     el.innerHTML=`<h4>${s.name}</h4><div class="sub">${s.desc} You carry ${S[s.key]||0}. The trader has ${left} left${left?'':': it comes back when this floor\u2019s boss falls'}.</div>`;
     const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Buy for ${pr} shards`;
     b.disabled=S.shards<pr||left<=0;b.onclick=()=>act('buySupply',[atSmith,k],r=>{if(r)sfx('pick');renderPanel();});
     a.appendChild(b);el.appendChild(a);return;}
+  if(!it&&shop&&TRADER_SELLS[G.traders[atSmith].sells].meals){el.innerHTML='<p class="muted">Pick a meal. You eat it here, it fills you up, and it leaves you with a buff for 20 minutes.</p>';return;}
   if(!it&&shop){el.innerHTML='<p class="muted">Pick something for sale to see it, or to compare it with what you are wearing. Prices are in shards.</p>';return;}
   if(!it&&atForge()){el.innerHTML='<p class="muted">Pick one of your own pieces to enhance it.</p>';return;}
   if(!it&&atStash()){el.innerHTML='<p class="muted">The same stash waits behind every stash chest: in the inn and in every safe room. Pick something to move it between your bag and the stash, or double-click it.</p>';return;}

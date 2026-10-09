@@ -80,7 +80,9 @@ function wakeBoss(){
 }
 // Every player on the floor shares the kill: each gets the experience and their own roll of the loot.
 function killEnemy(e){
-  if(e.dead)return;e.dead=true;sfx('kill');
+  if(e.dead)return;
+  if(ETYPES[e.type].dummy){e.hp=1;return;}   // a training scarecrow can't fall, however hard it is hit
+  e.dead=true;sfx('kill');
   burst(e.x,e.y,e.boss?40:10,'#3a3a4c',e.boss?120:60);burst(e.x,e.y,e.boss?14:3,ETYPES[e.type].eye,70);
   const T=ETYPES[e.type];
   if(T.corpse&&!e.collect)G.corpses.push({x:e.x,y:e.y,t:6});   // a thrall leaves its body behind, for a Gravecaller to raise
@@ -150,7 +152,7 @@ function hurtPlayer(dmg,src,sure,from,ground){
 }
 function die(){
   P.dead=true;P.hp=0;P.swing=P.dash=null;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;
-  S.food=Math.max(50,Math.round(P.food));S.drink=Math.max(50,Math.round(P.drink));persist();   // you wake up at least half fed
+  S.food=Math.max(50,Math.round(P.food));S.drink=Math.max(50,Math.round(P.drink));S.buff=null;P.buff=null;persist();   // you wake up at least half fed
   onDeath(lost,S.cpFloor===G.n&&S.cp>0);   // cp: whether they wake in a safe room (true) or at the entrance
 }
 

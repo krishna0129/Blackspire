@@ -107,6 +107,8 @@ const HAIRS=['#1b1b22','#4a2f1e','#8a5a2b','#d8b45a','#b9382f','#c9c6d4','#3d5a8
 const EYES=['#1c1c24','#2f5fa8','#2f7f4a','#7a4a1e','#a83232','#6f55c0'];
 const STYLES=['Short','Spiked','Long','Tail','Bob','Buzz'];
 const ETYPES={
+  // the training yard's scarecrows: they take hits and show the numbers, never move, strike back or die
+  dummy:{name:'Training scarecrow',hp:1e6,dmg:0,speed:0,r:6,reach:0,windup:1,recover:1,xp:0,eye:'#000',line:'#4a3324',dummy:true},
   shade:{name:'Shade',hp:34,dmg:9,speed:40,r:6,reach:5,windup:.38,recover:.7,xp:9,eye:'#e2553f'},
   skitter:{name:'Skitter',hp:15,dmg:5,speed:74,r:4,reach:4,windup:.22,recover:.5,xp:5,eye:'#e2b93b'},
   brute:{name:'Brute',hp:110,dmg:19,speed:26,r:8,reach:8,windup:.75,recover:1,xp:20,eye:'#e2553f',heavy:true},
@@ -168,7 +170,21 @@ const TRADER_SELLS={
   gear:{gear:['armor','boots','trinket'],supplies:[]},
   potions:{gear:[],supplies:['potion']},
   food:{gear:[],supplies:['ration','flask']},
+  inn:{gear:[],supplies:[],meals:true},   // the innkeeper: meals, eaten at the table
 };
+// The inn's meals. Eaten on the spot, not carried: each fills the meters by food and drink and gives its buff
+// (BUFFS) for BUFF_TIME seconds. One buff at a time; a new meal replaces it, and it is lost when you fall.
+const MEALS={
+  stew:{name:'Root stew',price:15,food:100,drink:20,buff:'fed',desc:'Potatoes and roots, slow-cooked under the tree.'},
+  roast:{name:'Roast boar and bread',price:30,food:100,drink:0,buff:'hearty',desc:'The innkeeper\u2019s best. A whole evening\u2019s worth.'},
+  tea:{name:'Glowcap tea',price:10,food:0,drink:100,buff:'clear',desc:'Brewed from the mushrooms on the roots. Faintly glowing.'},
+};
+const BUFFS={
+  fed:{name:'Well fed',desc:'Hunger and thirst drain half as fast.'},
+  hearty:{name:'Hearty',desc:'Natural healing is 50% faster.'},
+  clear:{name:'Clear-headed',desc:'Mana comes back 25% faster.'},
+};
+const BUFF_TIME=20*60;
 // Hunger and thirst. Each meter runs from 100 (full) to 0 and drains while you are on a floor: food in about 25 minutes,
 // drink in about 15. Below NEED_LOW you are weakened (hungry: no natural healing and 10% slower; thirsty: half mana
 // regeneration). At 0, each empty meter costs NEED_HURT of your max health every second.

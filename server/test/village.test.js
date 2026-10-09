@@ -36,7 +36,7 @@ test('hunger and thirst hold still at home',()=>{
 test('the market stalls each sell their own goods',()=>{
   const run=village();
   run(`S.shards=1e6;`);
-  const sells=run(`G.traders.map(t=>t.sells).join()`);assert.strictEqual(sells,'weapons,gear,potions,food');
+  const sells=run(`G.traders.map(t=>t.sells).join()`);assert.strictEqual(sells,'weapons,gear,potions,food,inn');
   const at=i=>`pl.x=G.traders[${i}].x;pl.y=G.traders[${i}].y+16;`;
   run(at(0)+`runAction('openShop',[0]);`);
   assert.ok(run(`shopOf(0).stock.length>0&&shopOf(0).stock.every(e=>e.it.slot==='weapon')`),'weapons stall: weapons only');
@@ -81,4 +81,34 @@ test('a drunk flask stays as an empty one, and the well fills empties for free',
   assert.strictEqual(run(`runAction('fillFlasks',[])`),1);
   assert.strictEqual(run(`[S.flasks,S.empties,S.shards].join()`),'2,0,7');
   assert.strictEqual(run(`runAction('fillFlasks',[])`),false,'nothing left to fill');
+});
+
+test('the inn serves meals: they fill you up, cost shards, and leave a buff that slows hunger',()=>{
+  const run=village();
+  run(`const k=G.traders.findIndex(t=>t.sells==='inn');globalThis.inn=k;pl.x=G.traders[k].x;pl.y=G.traders[k].y+16;pl.food=20;pl.drink=30;S.shards=100;`);
+  assert.strictEqual(run(`runAction('eatMeal',[inn,'stew'])`),true);
+  assert.strictEqual(run(`[pl.food,pl.drink,S.shards,pl.buff.id,pl.buff.t].join()`),'100,50,85,fed,1200');
+  assert.strictEqual(run(`runAction('eatMeal',[0,'stew'])`),false,'only the innkeeper serves meals');
+  run(`S.shards=5;`);assert.strictEqual(run(`runAction('eatMeal',[inn,'roast'])`),false,'not without the shards');
+  // on a floor, well fed: hunger drains half as fast
+  const R=loadRules(),f=code=>vm.runInContext(`{${code}}`,R);
+  vm.runInContext(`const s=newState('T',{},'sword','#222');setWorld(genFloor(1,7));const pl=makePlayer(1,s);G.players=[pl];setPlayer(pl);pl.buff={id:'fed',t:600};`,R);
+  f(`for(let i=0;i<1800;i++){pl.in={mx:0,my:0,atk:false,block:false};simUpdate(1/30);}`);
+  assert.ok(Math.abs(f(`pl.food`)-(100-100/25/2))<.2,'half the usual drain');
+  assert.ok(Math.abs(f(`pl.buff.t`)-540)<.5,'the buff counts down');
+});
+
+test('the training yard is the one place in the village to fight: scarecrows take hits and never fall',()=>{
+  const run=village();
+  assert.strictEqual(run(`G.enemies.length`),3);assert.ok(run(`G.enemies.every(e=>e.type==='dummy')`));
+  step(run,.2);assert.ok(run(`pl.safe`),'the square is safe');
+  run(`const e=G.enemies[0];pl.x=e.x;pl.y=e.y+14;pl.dir=1;`);step(run,.1);
+  assert.ok(!run(`pl.safe`),'the yard is not');
+  run(`globalThis.d0=G.enemies[0].hp;hitArc(DIR_ANGLE[1],120,30,1,{melee:true});`);   // a real swing, facing it
+  assert.ok(run(`G.enemies[0].hp<d0`),'the swing lands');
+  run(`for(let i=0;i<20;i++)damageEnemy(G.enemies[0],1e4);`);
+  assert.ok(run(`!G.enemies[0].dead`),'and it never falls');
+  step(run,5);
+  assert.strictEqual(run(`G.enemies[0].hp===G.enemies[0].maxHp`),true,'whole again once left alone');
+  assert.strictEqual(run(`[G.enemies[0].x===vx(VILLAGE.scarecrows[0][0]),pl.hp===pl.ST.maxHp].join()`),'true,true','it never moves or strikes back');
 });

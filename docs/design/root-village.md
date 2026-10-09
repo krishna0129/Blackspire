@@ -7,8 +7,8 @@ starts and comes home to.
 the floor gate's way home, the four trader stalls, the forge (the only blacksmith: the tower's safe rooms keep a trader
 and a stash chest), the stash chest by the inn, the well and empty flasks, the arcanist, captains, innkeeper and guild
 clerk (who talk, for now), and no hunger or thirst at home. Online, the village is **shared**: everyone is in a
-channel of up to 30, sees the others there, and parties form and leave through the Teleport Gate together. **Not
-yet:** the inn's meals, working scarecrows, the guild, the fields.
+channel of up to 30, sees the others there, and parties form and leave through the Teleport Gate together. The
+inn serves meals and the training yard's scarecrows take hits (below). **Not yet:** the guild, the fields.
 
 ![Plan of the root village: the Teleport Gate glowing in the middle of the square under the tower's trunk; winding paths lined with trees, shrubs, flowers and lamps lead to the inn and well, the market of six stalls including the forge and the witchcraft room, the kingdom camps, the fields of plots for sale, and the training yard with scarecrow dummies](img/root-village.svg)
 
@@ -66,6 +66,25 @@ All six count as NPC stock for the region's prices ([world.md](world.md#the-mark
 | **Training yard** | **scarecrow dummies** to test skills on. They take hits and show the damage numbers, like enemies do, and never die |
 | **Kingdom camps** | the three companies' tents and banners; their captains say a line or two now and give quests later |
 | **Fields** | plots of farmland that players **buy** to grow crops (below) |
+
+### The inn's meals
+
+**In the game.** The innkeeper serves three meals, eaten on the spot. Each fills the meters and leaves one buff for
+20 minutes; a new meal replaces the old buff, and falling in the tower loses it.
+
+| Meal | Price | Fills | Buff |
+|---|---|---|---|
+| Root stew | 15 | hunger 100%, thirst 20% | **Well fed:** hunger and thirst drain half as fast |
+| Roast boar and bread | 30 | hunger 100% | **Hearty:** natural healing 50% faster |
+| Glowcap tea | 10 | thirst 100% | **Clear-headed:** mana comes back 25% faster |
+
+Prices rise 25% for each floor past the first that you have reached, like the market's.
+
+### The training yard
+
+**In the game.** The yard is the one place in the village where weapons come out. Its three scarecrows take hits,
+show the damage numbers, rock when struck and never fall; left alone for a few seconds they are whole again. They
+never move or strike back, give nothing, and online every player in the channel shares them.
 
 ### Water and the well
 

@@ -29,7 +29,7 @@ const SPRITE_NAMES=[
   // the root village
   'village/tree_a', 'village/tree_b', 'village/inn', 'village/guild', 'village/stall', 'village/stall_tint', 'village/counter', 'village/forge',
   'village/witch', 'village/cauldron', 'village/tent_tint', 'village/flag_tint', 'village/well', 'village/pillar', 'village/board', 'village/lamp',
-  'village/scarecrow', 'village/sign', 'village/trunk', 'village/goods_weapons', 'village/goods_gear', 'village/goods_potions', 'village/goods_food'
+  'enemies/dummy', 'village/sign', 'village/trunk', 'village/goods_weapons', 'village/goods_gear', 'village/goods_potions', 'village/goods_food'
 ];
 // Sprites drawn finer than the game's pixel grid: 'enemies/thrall':4 means thrall.png is 4 file pixels per game pixel
 // (a 72 x 80 file for an 18 x 20 enemy). Whole numbers from 1 to MAX_RATIO. A sprite's _tint and _eyes files share its
@@ -202,6 +202,14 @@ function supplyIcon(cv,k){
 let STASHSPR=null;
 function drawStash(q){const c=STASHSPR||(STASHSPR=IMG['props/stash']?outlined(IMG['props/stash'],'#050508'):mk(1,1)[0]);
   put(ctx,c,Math.round(q.x-camX-gw(c)/2),Math.round(q.y-camY-gh(c)+4));}
+// The inn's meals, drawn in code, 24 x 24.
+function mealIcon(cv,k){
+  const x=uiCtx(cv,24,24),f=(c,a,b,w,h)=>{x.fillStyle=c;x.fillRect(a,b,w,h);};
+  f('#262630',0,0,24,24);
+  if(k==='stew'){f('#050508',3,10,18,10);f('#6b4a2c',4,11,16,8);f('#a0673a',5,11,14,3);f('#d9a441',7,12,3,2);f('#c05a4a',12,12,3,2);f('#e6e1d3',9,6,1,3);f('#e6e1d3',13,5,1,3);}
+  else if(k==='roast'){f('#050508',2,15,20,6);f('#b3afc0',3,16,18,4);f('#050508',5,8,12,9);f('#8a4a2a',6,9,10,7);f('#b07a3a',7,10,6,3);f('#e6e1d3',16,10,4,2);f('#c9a46a',17,14,5,4);}
+  else{f('#050508',6,8,12,13);f('#4a4a52',7,9,10,11);f('#9be08a',8,10,8,3);f('#c8f0b8',9,10,3,1);f('#050508',17,11,4,6);f('#4a4a52',18,12,2,4);f('#cfc8ff',10,4,1,3);f('#cfc8ff',13,3,1,3);}
+}
 let CHESTS=null;
 function chestSheet(){return CHESTS||(CHESTS=IMG['props/chest']?outlined(IMG['props/chest'],'#050508',14,11):mk(28,11)[0]);}
 

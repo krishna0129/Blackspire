@@ -47,6 +47,13 @@ const ACTIONS={
   unstash(i){if(!nearStash(40)||!S.stash[i]||S.inv.length>=BAG_SIZE)return false;S.inv.push(S.stash.splice(i,1)[0]);return S.inv.length-1;},
   // the village well fills every empty flask you carry, for nothing
   fillFlasks(){if(!nearWell(40)||!(S.empties>0))return false;const n=S.empties;S.flasks+=n;S.empties=0;return n;},
+  // a meal at the inn, eaten at once: the meters fill and its buff starts (MEALS)
+  eatMeal(si,k){
+    const m=MEALS[k];if(!m||!nearTraderIdx(si)||!TRADER_SELLS[G.traders[si].sells||'all'].meals)return false;const pr=mealPrice(k);
+    if(S.shards<pr)return false;S.shards-=pr;
+    P.food=Math.min(100,P.food+m.food);P.drink=Math.min(100,P.drink+m.drink);P.buff={id:m.buff,t:BUFF_TIME};
+    log(`You eat the ${m.name.toLowerCase()}. ${BUFFS[m.buff].name}: ${BUFFS[m.buff].desc.toLowerCase()}`);sfx('pick');return true;
+  },
   salvage(i){if(!S.inv[i])return false;salvageItem(S,i);return true;},
   seen(){for(const it of S.inv)delete it.isNew;return true;},
   custom(url){S.char.custom=url||null;return true;},

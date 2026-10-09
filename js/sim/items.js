@@ -101,6 +101,7 @@ const buyPrice=it=>Math.round([40,70,130,240,450][it.rarity]*(1+.3*(it.ilvl-1)))
 const shopFloor=()=>G.n||Math.max(1,S.best||1);
 const supplyPrice=k=>Math.round(SUPPLIES[k].price*(1+.25*(shopFloor()-1)));
 const potionPrice=()=>supplyPrice('potion');
+const mealPrice=k=>Math.round(MEALS[k].price*(1+.25*(shopFloor()-1)));
 
 // A trader's gear for the current player, at the shop's floor level. kind (TRADER_SELLS): 'all' is a tower trader's
 // mixed pack (one weapon of your own class, then five random pieces); the village stalls keep to their own goods.

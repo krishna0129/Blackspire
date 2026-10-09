@@ -37,7 +37,7 @@ const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','wiki','img'),DES
     const enemy=(type,elite,skin,scale)=>{const s=enemySprite(type,elite,skin);
       const c=document.createElement('canvas');c.width=s.fw;c.height=s.fh;const x=c.getContext('2d');x.drawImage(s.c,0,0,s.fw,s.fh,0,0,s.fw,s.fh);if(s.eyes)x.drawImage(s.eyes,0,0,s.fw,s.fh,0,0,s.fw,s.fh);
       return frame(c,0,0,s.fw,s.fh,scale);};
-    for(const t of Object.keys(ETYPES))if(t!=='boss'){out['enemy-'+t]=enemy(t,false,null,6);out['enemy-'+t+'-elite']=enemy(t,true,null,6);}
+    for(const t of Object.keys(ETYPES))if(t!=='boss'&&!ETYPES[t].dummy){out['enemy-'+t]=enemy(t,false,null,6);out['enemy-'+t+'-elite']=enemy(t,true,null,6);}
     out['boss-warden']=enemy('boss',false,'boss',5);out['boss-regent']=enemy('boss',false,'boneboss',5);out['boss-collector']=enemy('boss',false,'collector',5);
     // item icons, as the bag shows them
     const icon=it=>{const c=document.createElement('canvas');c.width=c.height=24;drawItemIcon(c,it);return frame(c,0,0,24,24,4,0);};

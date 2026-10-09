@@ -97,7 +97,8 @@ function genFloor(n,seed){
 function openGates(){for(const q of G.gates)for(const t of q.tiles)G.map[t[1]*MW+t[0]]=1;G.gatesOpen=true;for(const pl of G.players)pl.locked=false;mapChanged();}
 // Thorn patches: slow and prick everything that is not a plant.
 const onThorns=(x,y)=>!!G.thorns&&G.thorns[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]===1;
-function safeIndex(x,y){const a=G.safe;for(let i=0;i<a.length;i++){const r=a[i];if(x>=r.x0&&x<r.x1&&y>=r.y0&&y<r.y1)return i;}return -1;}
+// G.spar: a rectangle inside a safe area where fighting is allowed after all (the village's training yard).
+function safeIndex(x,y){const sp=G.spar;if(sp&&x>=sp.x0&&x<sp.x1&&y>=sp.y0&&y<sp.y1)return -1;const a=G.safe;for(let i=0;i<a.length;i++){const r=a[i];if(x>=r.x0&&x<r.x1&&y>=r.y0&&y<r.y1)return i;}return -1;}
 const inSafe=(x,y)=>safeIndex(x,y)>=0;
 const nearHome=()=>G.home&&hyp(G.home.x-P.x,G.home.y-P.y)<20;
 function nearSmith(){for(const q of G.smiths)if(hyp(q.x-P.x,q.y-P.y)<26)return q;return null;}
