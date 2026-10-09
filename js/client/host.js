@@ -26,9 +26,10 @@ function onDeath(lost,cp){
 }
 
 // Particles, slashes and floating numbers only exist on screen: they age here, every frame, in either mode.
+const NUM_LIFE=.5;   // seconds a floating number stays up; it fades over the last 0.15 (render.js)
 function updateCosmetics(dt){
   for(const a of[G.fx,G.nums])for(const f of a)f.t+=dt;
-  G.fx=G.fx.filter(f=>f.t<f.d);G.nums=G.nums.filter(n=>n.t<.75);
+  G.fx=G.fx.filter(f=>f.t<f.d);G.nums=G.nums.filter(n=>n.t<NUM_LIFE);
   for(const p of G.parts){p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=1-4*dt;p.vy*=1-4*dt;}
   G.parts=G.parts.filter(p=>p.t<p.d);
   if(G.shake>0)G.shake=Math.max(0,G.shake-22*dt);

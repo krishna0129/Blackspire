@@ -65,8 +65,9 @@ The skill reads `skillParams(id)` = base settings + the equipped mutation. Code 
 
 ## Keeping the numbers in hand
 
-- **One bucket per kind of bonus.** All "% more damage" sources add together, then apply once. Today execute,
-  giant-slaying and Sunder each multiply damage separately, so they compound; fix that before adding a tree.
+- **One bucket per kind of bonus.** All "% more damage" sources add together, then apply once. (**In the game**
+  since forged family weapons: execute, giant-slaying, Sunder and the family bonus share one bucket in
+  `damageEnemy`. Tree nodes that add "% more damage" go into the same bucket.)
 - **A power budget per tier,** e.g. a tier-1 node is worth about +3% damage per second or effective health. A
   balance script built on `computeStats` (it has no side effects) flags nodes far over budget.
 - **Respec costs shards, and is free when the tree changes.** Store `TREE_VERSION` in the save; a mismatch refunds

@@ -49,6 +49,26 @@ test('the market stalls each sell their own goods',()=>{
   assert.strictEqual(run(`runAction('buySupply',[2,'potion'])`),true);
 });
 
+test('the village market restocks when a floor\u2019s boss falls, and with each new day',()=>{
+  const run=village();
+  run(`S.shards=1e6;globalThis.stall=k=>G.traders.findIndex(t=>t.sells===k);
+    globalThis.home=k=>{setWorld(genVillage());const p=makePlayer(1,S);G.players=[p];setPlayer(p);const i=stall(k);p.x=G.traders[i].x;p.y=G.traders[i].y+16;runAction('openShop',[i]);return i;};
+    globalThis.buyOut=()=>{const i=home('potions');let n=0;while(runAction('buySupply',[i,'potion']))n++;return n;};
+    globalThis.beatBoss=n=>{setWorld(genFloor(n,S.seed));const p=makePlayer(1,S);G.players=[p];setPlayer(p);killEnemy(G.bossEnt);};`);
+  const first=run(`buyOut()`);assert.ok(first>=5&&first<=10,'5 to 10 potions to begin with');
+  assert.strictEqual(run(`buyOut()`),0,'sold out, and still sold out on coming back the same day');
+  run(`beatBoss(1);`);
+  assert.ok(run(`buyOut()`)>=5,'a boss fell in the tower: the market has restocked');
+  run(`floorState(0).day--;`);   // as if the stall was last opened yesterday
+  assert.ok(run(`buyOut()`)>=5,'a new day: restocked again');
+  assert.strictEqual(run(`buyOut()`),0,'but only once a day');
+  // gear restocks too, and at the level of the highest floor reached
+  run(`const i=home('weapons');while(runAction('buy',[i,0])!==false&&S.inv.length<BAG_SIZE);globalThis.left=shopOf(i).stock.length;S.inv.length=0;`);
+  assert.strictEqual(run(`left`),0,'the weapons stall is bought out');
+  run(`beatBoss(1);const i=home('weapons');globalThis.st=shopOf(i).stock;`);
+  assert.ok(run(`st.length>=1&&st.every(e=>e.it.ilvl===2)`),'new weapons, for floor 2 now that it is unlocked');
+});
+
 test('safe points you stand in are remembered for the Teleport Gate',()=>{
   const R=loadRules(),run=code=>vm.runInContext(`{${code}}`,R);
   vm.runInContext(`const s=newState('T',{},'sword','#222');setWorld(genFloor(2,5));const pl=makePlayer(1,s);G.players=[pl];setPlayer(pl);`,R);

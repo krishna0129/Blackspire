@@ -52,6 +52,16 @@ function migrateFloors(s){
   for(let n=1;n<s.best;n++)fl(n).boss=1;   // every floor below the highest one reached was beaten to get there
   delete s.chestFloor;delete s.chestsOpen;delete s.shops;delete s.cleared;
 }
+// Opened chests are remembered by their place in a floor's list of chests, so a list only means something on the
+// layout it was made on. fs.seed is that layout's seed; a list from before it was recorded was made on the
+// character's own seed, which is what single player has always used. Arriving on another layout of the same floor
+// starts the list again, so no chest shows as opened that this player never opened.
+function claimChests(save,g){
+  if(!g.n||g.seed==null)return;
+  const fs=save.floors[g.n]||(save.floors[g.n]={chests:[],shops:[],boss:0});
+  if((fs.seed==null?save.seed:fs.seed)!==g.seed)fs.chests=[];
+  fs.seed=g.seed;
+}
 const xpNeed=l=>Math.round(36+22*Math.pow(l,1.55));
 
 // Derived stats for a character wearing `e`. Pure: it changes nothing, so it can also answer "what if I wore this?".
@@ -61,6 +71,10 @@ function computeStats(c,e){
   // intelligence: mage damage. faith: healing and healer damage. mind: max mana. spirit: mana regen.
   const st={maxHp:100+c.vit*14+(c.level-1)*6,def:WT.def||0,movePct:c.agi*.6,crit:5+c.dex*.5+(WT.crit||0),critDmg:175,regen:.4+c.vit*.06,p:{},g:{}};
   for(const a of w.aff)st.p[a.id]=(st.p[a.id]||0)+a.v;
+  // Forged gear (it.fam = {id, v}): vs = percent more damage to a family, from the weapon; res = percent less damage
+  // taken from a family, from everything else worn, added together.
+  st.vs={};st.res={};
+  if(w.fam&&FAMILIES[w.fam.id])st.vs[w.fam.id]=w.fam.v;
   st.magic=!!WT.magic;st.ranged=!!WT.ranged;st.int=c.int+(st.p.int||0);st.fai=c.fai+(st.p.fai||0);
   const scale=st.magic?(w.school==='faith'?1+st.fai*.04:(1+st.int*.04)*(1+(st.p.mdmg||0)/100)):st.ranged?1+c.dex*.03:1+c.str*.04;
   st.dmg=w.base.dmg*itemMult(w)*scale;
@@ -70,7 +84,8 @@ function computeStats(c,e){
   st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;st.skill=skillOf(w);st.thrust=!st.magic&&!st.ranged&&WT.arc<50;
   for(const k of['armor','boots','trinket']){const it=e[k];if(!it)continue;const m=itemMult(it);
     st.def+=(it.base.def||0)*m;st.maxHp+=(it.base.hp||0)*m;st.movePct+=it.base.move||0;
-    for(const a of it.aff)st.g[a.id]=(st.g[a.id]||0)+a.v;}
+    for(const a of it.aff)st.g[a.id]=(st.g[a.id]||0)+a.v;
+    if(it.fam&&FAMILIES[it.fam.id])st.res[it.fam.id]=(st.res[it.fam.id]||0)+it.fam.v;}
   st.maxHp+=st.g.hp||0;st.def+=st.g.def||0;st.movePct+=st.g.move||0;
   st.crit+=(st.g.crit||0)+(st.p.keen||0);st.critDmg+=st.p.brutal||0;st.regen+=st.g.regen||0;
   st.evade=Math.min(30,c.dex*.6);
@@ -105,6 +120,7 @@ function migrateSave(s){
 // A player's runtime on floor G. tp counts moves the rules make for them (a teleport, a respawn): online, the
 // browser normally decides where its player stands, but a newer tp from the server means "jump to where I say". They start at the entrance, or at their last safe room on this floor.
 function makePlayer(id,save){
+  claimChests(save,G);   // every arrival on a floor comes through here, in single player and on the server
   const st=computeStats(save.char,save.equip),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
   return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,food:save.food==null?100:save.food,drink:save.drink==null?100:save.drink,buff:save.buff?Object.assign({},save.buff):null,
     aim:0,face:1,atkCd:0,atkBuf:0,skillCd:0,skillMax:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,

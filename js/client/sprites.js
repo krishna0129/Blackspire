@@ -246,4 +246,6 @@ function drawItemIcon(cv,it){
     const n='gear/'+(it.slot==='armor'?'armor_':'boots_')+it.type,[r,rx]=mk(FRAME_W,FRAME_H,ratioOf(n,n+'_tint'));layer(rx,n,it.tint,0,0,FRAME_W,FRAME_H);const o=outlined(r,'#050508');
     if(it.slot==='armor')cut(x,o,6,11,12,11,0,0,24,22);else cut(x,o,8,18,8,6,0,2,24,18);}
   else{const t=tinted('icons/trinket_tint',it.tint);if(t)put(x,t,0,0);x.fillStyle=RARITY[it.rarity].color;x.fillRect(10,4,4,3);x.fillStyle='#fff';x.fillRect(11,5,1,1);}
+  // forged against a family: its drop's diamond in the corner
+  if(it.fam&&FAMILIES[it.fam.id]){x.fillStyle='#050508';x.fillRect(17,17,7,3);x.fillRect(18,16,5,5);x.fillRect(19,15,3,7);x.fillStyle=MATS[FAMILIES[it.fam.id].mat].color;x.fillRect(18,18,5,1);x.fillRect(19,17,3,3);x.fillRect(20,16,1,5);}
 }

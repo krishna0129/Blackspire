@@ -64,6 +64,25 @@ function makeTrinket(type,ilvl,rar){
     base:{},aff:rollAff(GEAR_AFFIX,RARITY[rar].aff+1,rar,ilvl)};
   it.name=gearName(it,TTYPES[type].name);return it;
 }
+/* Forged gear (FORGING, data.js): an ordinary Rare piece of the type asked for, plus it.fam = {id, v}: the family it was
+   forged against and the size of its bonus in percent. It is named and coloured for that family. Nothing else makes
+   gear with a family: not drops, not shops. */
+const forgeLevel=()=>shopFloor();
+function forgeRecipe(slot,fam,ilvl=forgeLevel()){
+  const F=FORGING[slot];
+  return{shards:Math.round(F.shards*(1+.3*(ilvl-1))),mats:{[FAMILIES[fam].mat]:F.drops,scrap:F.scrap},bonus:F.bonus,ilvl};
+}
+// type: a WTYPES, ATYPES or BTYPES key for the slot. school: for a grimoire.
+function makeForged(slot,type,fam,ilvl,school){
+  const F=FAMILIES[fam],[lo,hi]=FORGING[slot].bonus;
+  const it=slot==='weapon'?makeWeapon(type,ilvl,FORGE_RARITY,school):slot==='armor'?makeArmor(type,ilvl,FORGE_RARITY,F.cloth):makeBoots(type,ilvl,FORGE_RARITY);
+  it.fam={id:fam,v:lo+Math.floor(Math.random()*(hi-lo+1))};
+  if(slot==='boots')it.tint=F.cloth;else if(slot==='weapon'&&!it.school)it.tint=F.tint;   // a grimoire keeps its school's colour
+  it.name=(slot==='weapon'?F.bane:F.ward)+' '+(slot==='weapon'?WTYPES[type]:slot==='armor'?ATYPES[type]:BTYPES[type]).name.toLowerCase();
+  return it;
+}
+// What a forged piece says about its bonus.
+const famText=it=>it.slot==='weapon'?`+${it.fam.v}% damage to ${FAMILIES[it.fam.id].them}`:`Take ${it.fam.v}% less damage from ${FAMILIES[it.fam.id].them}`;
 function randomItem(ilvl,bonus=0,minRar=0){
   const rar=Math.max(minRar,rollRarity(bonus)),r=Math.random();
   if(r<.42)return makeWeapon(pick(Object.keys(WTYPES)),ilvl,rar);
@@ -72,8 +91,10 @@ function randomItem(ilvl,bonus=0,minRar=0){
   return makeTrinket(pick(Object.keys(TTYPES)),ilvl,rar);
 }
 const salvageValue=it=>Math.round(6*ilvlMult(it.ilvl)*RARITY[it.rarity].mult**3*(1+.5*(it.plus||0)));
-// Salvaging also returns materials: scrap from anything, emberstone from epics up, a crystal from a legendary.
-const salvageMats=it=>{const m={scrap:1+it.rarity};if(it.rarity>=3)m.ember=it.rarity-2;if(it.rarity>=4)m.crystal=1;return m;};
+// Salvaging also returns materials: scrap from anything, emberstone from epics up, a crystal from a legendary, and
+// from a forged piece a third of the monster drops that went into it.
+const salvageMats=it=>{const m={scrap:1+it.rarity};if(it.rarity>=3)m.ember=it.rarity-2;if(it.rarity>=4)m.crystal=1;
+  if(it.fam&&FAMILIES[it.fam.id]&&FORGING[it.slot])m[FAMILIES[it.fam.id].mat]=Math.floor(FORGING[it.slot].drops/3);return m;};
 /* Enhancement. Each step costs shards plus materials: scrap for +1 to +3, emberstone joins from +4,
    spire crystals from +7. Up to +5 it always works. From +6 it can fail: a failure keeps the level but uses the
    cost, and adds 10 points to the item's next chance (it.pity), which resets on success. */

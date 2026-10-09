@@ -1,13 +1,20 @@
 'use strict';
-// Blackspire: everything a player can do outside of combat (gear, attributes, the trader, the blacksmith), as named actions.
+// Blackspire: everything a player can do outside of combat (gear, attributes, the trader, the blacksmith, the forge), as named actions.
 // Single player calls them directly; online, the client asks the server to run them, so the server's copy of the
 // save is the only one that counts. Each acts on the current player (setPlayer) and returns a result, or false.
 
 const nearSmithIdx=si=>{const q=G.smiths[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const nearTraderIdx=si=>{const q=G.traders[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
+const owns=(o,k)=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k);   // a real key of a table, not something inherited
 const ACTIONS={
   // make the stock the first time a trader's pack is opened
-  openShop(si){if(!nearTraderIdx(si))return false;const sh=shopOf(si);if(!sh.stock)sh.stock=makeStock(G.traders[si].sells||'all');return true;},
+  openShop(si){
+    if(!nearTraderIdx(si))return false;
+    // The village market restocks with each day's quest board, as well as whenever a boss falls (killEnemy). The
+    // tower's traders only restock when their own floor's boss falls.
+    if(G.village){const f=floorState(0),day=questDay();if(f.day!==day){f.shops=[];f.day=day;}}
+    const sh=shopOf(si);if(!sh.stock)sh.stock=makeStock(G.traders[si].sells||'all');return true;
+  },
   buy(si,i){
     if(!nearTraderIdx(si))return false;const sh=shopOf(si),e=sh.stock&&sh.stock[i];
     if(!e||S.shards<e.price||S.inv.length>=BAG_SIZE)return false;
@@ -101,6 +108,23 @@ const ACTIONS={
   sellCrops(si,crop){
     if(!nearTraderIdx(si)||G.traders[si].sells!=='food'||!CROPS[crop]||!(S.crops[crop]>0))return false;
     const n=S.crops[crop],v=cropValue(crop,n);S.crops[crop]=0;S.shards+=v;sfx('pick');log(`Sold ${n} ${CROPS[crop].plural} for ${v} shards.`);return v;
+  },
+  // Forging from monster drops (FORGING, data.js). slot: weapon, armor or boots. type: the piece ('sword', 'plate',
+  // 'greaves'; 'grimoire:magic' or 'grimoire:faith' for a grimoire). fam: the family whose drops pay for it and whose
+  // bonus it carries. The blacksmith makes everything but grimoires; those are the arcanist's, and all she makes.
+  forge(slot,type,fam){
+    if(!owns(FORGING,slot)||!owns(FAMILIES,fam)||typeof type!=='string')return false;
+    const[t,school]=type.split(':'),table=slot==='weapon'?WTYPES:slot==='armor'?ATYPES:BTYPES;
+    if(!owns(table,t))return false;
+    const grim=slot==='weapon'&&!!WTYPES[t].magic;
+    if(grim?!owns(GRIM,school):school!==undefined)return false;
+    if(grim?!nearArcanist(40):!G.smiths.some((q,i)=>nearSmithIdx(i)))return false;
+    const r=forgeRecipe(slot,fam);
+    if(S.inv.length>=BAG_SIZE||S.shards<r.shards||!hasMats(S.mats,r.mats))return false;
+    S.shards-=r.shards;for(const k in r.mats)S.mats[k]-=r.mats[k];
+    const it=makeForged(slot,t,fam,r.ilvl,school);S.inv.push(it);
+    log(`<span style="color:${RARITY[it.rarity].color}">${esc(it.name)}</span> ${grim?'written':'forged'}: ${famText(it).toLowerCase()}.`);
+    return S.inv.length-1;
   },
   salvage(i){if(!S.inv[i])return false;salvageItem(S,i);return true;},
   seen(){for(const it of S.inv)delete it.isNew;return true;},

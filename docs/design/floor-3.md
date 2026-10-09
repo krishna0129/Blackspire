@@ -1,8 +1,9 @@
 # Floor 3: The Rootbound Ossuary
 
 Status: **the enemies, the boss, thorn patches and the floor's stone are in the game** (`js/sim/floor3.js`, the
-`FLOORS` table in `js/sim/data.js`; how to fight each one is in [the monster wiki](../wiki/monsters.md)). Still a
-proposal: unique drops and monster-type bonuses (below).
+`FLOORS` table in `js/sim/data.js`; how to fight each one is in [the monster wiki](../wiki/monsters.md)). Monster
+families are in the game too, as gear forged from each family's drops (world.md, and
+[the wiki's forging page](../wiki/forging.md)). Still a proposal: unique drops (below).
 
 ## Concept art
 
@@ -82,7 +83,11 @@ one player intercepts thralls while another fights the boss.
 
 Floor 3 is the natural place to introduce two systems the wiki already has placeholders for.
 
-**Monster families and bonuses.** Each enemy gets a family (`shadow`, `undead`, `plant`, later `beast`) and
+**Monster families and bonuses.** *Built differently:* families are in the game (`spirit`, `undead`, `plant`,
+`beast`), but the bonus against a family comes from gear forged from that family's drops, not from affixes that
+roll on any weapon. The affix idea below is kept for reference only. Thornroots take double damage from fire.
+
+The original proposal: each enemy gets a family (`shadow`, `undead`, `plant`, later `beast`) and
 optional weaknesses (`plant: fire ×1.5`). New weapon affixes roll on any weapon: *Purging* (+% damage to undead),
 *Pruning* (+% damage to plants), *Banishing* (+% damage to shadows). The monster wiki then lists, for each enemy, the
 affixes that work on it and where they drop.
@@ -103,7 +108,8 @@ farms forever. Uniques are never sold in shops.
 1. **A floors table** (`FLOORS` in data.js): theme, spawn bag, boss id and intro banner per floor. This replaces the
    `n===2` checks in `genFloor`, `updateBoss` and the banner. Boss behaviours go in a registry (`BOSS_AI[id]`).
 2. **Families, weaknesses and family affixes.** Small: data, plus one multiplier in `damageEnemy`, plus the
-   "one bucket per kind of bonus" fix from the skill-tree design.
+   "one bucket per kind of bonus" fix from the skill-tree design. (**Done**, as forged family gear; the bucket fix
+   is in.)
 3. **The `UNIQUES` table, unique drop rolls and pity**, in the loot code (`dropLoot`), with the wiki listing them by
    enemy.
 4. **New enemy behaviours:** corpse-and-raise, interruptible channels, wall-spawned stationary enemies (placed on

@@ -72,7 +72,7 @@ function validSheet(url){
 
 class Game{
   constructor(db){
-    this.db=db;this.R=loadRules();this.parties=new Map();this.byCode=new Map();this.worlds=new Set();this.notices=[];this.nextNotice=1;this.nextPid=1;this.ticks=0;this.saveT=0;
+    this.db=db;this.R=loadRules();this.seed=db.worldSeed();this.parties=new Map();this.byCode=new Map();this.worlds=new Set();this.notices=[];this.nextNotice=1;this.nextPid=1;this.ticks=0;this.saveT=0;
     this.timer=setInterval(()=>this.tick(),1000*TICK);
   }
   stop(){clearInterval(this.timer);for(const p of this.parties.values())for(const m of p.members)this.store(m);}
@@ -98,7 +98,9 @@ class Game{
 
   /* ---------- parties and worlds ----------
      A world is one running copy of a map, and every player in the game is in exactly one (m.w):
-       - a party's floor: {kind:'floor', n, seed, G, members}, its own copy, as before;
+       - a party's floor: {kind:'floor', n, seed, G, members}, its own copy of floor n. Every copy is built from the
+         server's one seed (db.worldSeed), so the tower is the same place for everyone: the same rooms, the same
+         chests. That is what lets a character's list of opened chests mean the same thing in any party;
        - a channel of the root village: {kind:'village', n:0, ch, G, members}, shared by everyone in it, up to
          CHANNEL_MAX players (more channels open as it fills, the way MMO towns do).
      A party (code, leader, members, n) stays together: it travels as one, and its members share a channel. */
@@ -111,7 +113,7 @@ class Game{
     const p=this.newParty(m,n);this.moveParty(p);
   }
   newParty(m,n){
-    const p={id:crypto.randomUUID(),code:this.newCode(),members:[],leader:m,n,seed:crypto.randomInt(2**31),floorW:null};
+    const p={id:crypto.randomUUID(),code:this.newCode(),members:[],leader:m,n,floorW:null};
     this.parties.set(p.id,p);this.byCode.set(p.code,p);p.members.push(m);m.party=p;m.pid=m.pid||this.nextPid++;return p;
   }
   // Takes the party's members out of wherever they are and into p.n: a fresh copy of the floor, or a village channel.
@@ -119,7 +121,7 @@ class Game{
     for(const m of p.members)this.leaveWorld(m);
     let w;
     if(p.n===0)w=this.channelFor(p.members.length);
-    else{w={kind:'floor',n:p.n,seed:p.seed+p.n*7919,members:[]};w.G=this.R.genFloor(w.n,w.seed);this.worlds.add(w);}
+    else{w={kind:'floor',n:p.n,seed:this.seed,members:[]};w.G=this.R.genFloor(w.n,w.seed);this.worlds.add(w);}
     p.floorW=w.kind==='floor'?w:null;
     for(const m of p.members)this.enterWorld(w,m);
     for(const m of p.members)this.sendFloor(m);

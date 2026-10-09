@@ -11,7 +11,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {loadRules}=require('../server/game.js');
 const R=loadRules(),D=vm.runInContext(`({ETYPES,RARITY,WTYPES,ATYPES,BTYPES,TTYPES,PASSIVES,GEAR_AFFIX,GRIM,MATS,LOOT,FLOORS,ELITE_CHANCE,SUPPLIES,STOCK_RANGE,
-  ENH_CHANCE,ENH_MAX,SKILLS,ilvlMult,itemMult,enhanceRecipe,enhanceCost,salvageValue,salvageMats})`,R);
+  ENH_CHANCE,ENH_MAX,SKILLS,FAMILIES,FORGING,FORGE_RARITY,ilvlMult,itemMult,enhanceRecipe,enhanceCost,salvageValue,salvageMats})`,R);
 const OUT=path.join(__dirname,'..','docs','wiki');
 const SHOWN=[1,2,3];   // floors the tables show
 
@@ -76,6 +76,12 @@ function rarityOdds(bonus,minRar){
 const matAvg=([c,lo,hi])=>c*(lo===hi?lo:(lo+hi)/2);
 const matText=m=>Object.keys(m).map(k=>{const[c,lo,hi]=m[k];return`${MAT(k)}: ${c<1?pct(c)+' for ':''}${lo===hi?lo:lo+' to '+hi}`;}).join('<br>');
 const MAT=k=>D.MATS[k].name;
+// families (FAMILIES, data.js): a roll of a family's drop as text, who is in a family, and which roll a monster uses
+const famRoll=([c,lo,hi])=>`${c<1?pct(c)+' for ':''}${lo===hi?lo:lo+' to '+hi}`;
+const famMonsters=f=>Object.keys(D.ETYPES).filter(t=>D.ETYPES[t].fam===f);
+const famBosses=f=>D.FLOORS.filter(F=>F.boss.fam===f).map(F=>F.boss.name);
+const famDropOf=t=>D.ETYPES[t].famDrop||D.LOOT.normal.fam;
+const famLink=f=>`[${D.FAMILIES[f].name}](forging.md)`;
 // how many attempts a step takes on average, counting the +10% per failure
 function attempts(c){let e=0,reach=1;for(let k=0;reach>1e-9;k++){e+=reach;reach*=1-Math.min(1,c+.1*k);}return e;}
 // an affix's possible values at a rarity (rollAff: range[0] + spread * clamp(random*0.7 + rarity*0.1))
@@ -133,11 +139,11 @@ function dropsPage(){
 your drops, and only you see them. Each chest opens once per player. Bosses return whenever you arrive on a floor, so
 their loot can be farmed.`,
 `## What drops from what`,
-`On the ground: ${IMG('drop-shard','shards',36)} shards ${IMG('drop-potion','potion',36)} potion ${IMG('drop-ration','ration',36)} ration ${IMG('drop-flask','water flask',36)} water flask ${IMG('drop-scrap','Iron scrap',36)} Iron scrap ${IMG('drop-ember','Emberstone',36)} Emberstone ${IMG('drop-crystal','Spire crystal',36)} Spire crystal ${IMG('drop-item','item',36)} an item (rare and better ones also send a beam of their colour into the dark).`,
-table(['Source','Shards (floor 1 / 2 / 3)','Items','Potions, rations, water','Materials'],Object.keys(L).map(k=>{const q=L[k];
+`On the ground: ${IMG('drop-shard','shards',36)} shards ${IMG('drop-potion','potion',36)} potion ${IMG('drop-ration','ration',36)} ration ${IMG('drop-flask','water flask',36)} water flask ${IMG('drop-scrap','Iron scrap',36)} Iron scrap ${IMG('drop-ember','Emberstone',36)} Emberstone ${IMG('drop-crystal','Spire crystal',36)} Spire crystal ${Object.keys(D.MATS).filter(k=>D.MATS[k].fam).map(k=>IMG('drop-'+k,MAT(k),36)+' '+MAT(k)).join(' ')} (monster drops, the diamonds) ${IMG('drop-item','item',36)} an item (rare and better ones also send a beam of their colour into the dark).`,
+table(['Source','Shards (floor 1 / 2 / 3)','Items','Potions, rations, water','Materials','Its family\u2019s drop'],Object.keys(L).map(k=>{const q=L[k];
   return[src[k],SHOWN.map(n=>{const m=floorMult(n).shards,a=Math.round(q.shards[0]*m),b=Math.round(q.shards[1]*m);return a===b?a:a+'–'+b;}).join(' / '),
     q.items.map(i=>`${i.chance<1?pct(i.chance):'1'}${i.ilvl?' (item level +'+i.ilvl+')':''}${i.minRar?', at least '+D.RARITY[i.minRar].name.toLowerCase():''}`).join('<br>'),
-    Object.values(D.SUPPLIES).map(s=>{const c=q[s.key]||[];return(c.length>1?c.length:c[0]>=1?'1':pct(c[0]))+' '+s.name.toLowerCase()+(c.length>1?'s':'');}).join('<br>'),matText(q.mats)];})),
+    Object.values(D.SUPPLIES).map(s=>{const c=q[s.key]||[];return(c.length>1?c.length:c[0]>=1?'1':pct(c[0]))+' '+s.name.toLowerCase()+(c.length>1?'s':'');}).join('<br>'),matText(q.mats),q.fam?famRoll(q.fam):'–'];})),
 `Rations and water flasks refill the hunger and thirst meters. Traders in safe rooms also sell them, ${D.STOCK_RANGE[0]}–${D.STOCK_RANGE[1]} of each supply, restocked when the floor\u2019s boss falls.`,
 `Elites are ${pct(D.ELITE_CHANCE)} of room spawns, marked by gold outlines and eyes. They have 2.4× health and 1.3× damage, and give 3× experience.`,
 `## Item rarity odds`,
@@ -153,17 +159,27 @@ table(['Slot','Chance','Types (equally likely)'],[['Weapon',.42,Object.entries(D
 `A grimoire is equally likely to be of embers (Fireball, intelligence) or of grace (Heal, faith). Items drop at the
 floor's item level (bosses: one higher), which raises base numbers by 22% per level.`,
 `## Average yield per kill`,
-table(['Source','Shards (floor 1)','Items','Iron scrap','Emberstone','Spire crystal'],Object.keys(L).map(k=>{const q=L[k];
-  return[src[k],fx((q.shards[0]+q.shards[1])/2),fx(q.items.reduce((a,i)=>a+i.chance,0),2),...['scrap','ember','crystal'].map(m=>q.mats[m]?fx(matAvg(q.mats[m]),2):'–')];})),
+table(['Source','Shards (floor 1)','Items','Iron scrap','Emberstone','Spire crystal','Its family\u2019s drop'],Object.keys(L).map(k=>{const q=L[k];
+  return[src[k],fx((q.shards[0]+q.shards[1])/2),fx(q.items.reduce((a,i)=>a+i.chance,0),2),...['scrap','ember','crystal'].map(m=>q.mats[m]?fx(matAvg(q.mats[m]),2):'–'),q.fam?fx(matAvg(q.fam),2):'–'];})),
 `## Where each enemy appears`,
 table(['Floor','Enemies (share of room spawns)','Also','Boss'],D.FLOORS.map((f,i)=>{const bag=f.spawns,c={};for(const t of bag)c[t]=(c[t]||0)+1;
   return[i===D.FLOORS.length-1?`${i+1} and up`:String(i+1),Object.keys(c).map(t=>`${D.ETYPES[t].name} ${pct(c[t]/bag.length)}`).join(', '),
     [f.wall?`${D.ETYPES[f.wall.type].name} on the top wall of ${pct(f.wall.chance)} of rooms`:'',f.thorns?'thorn patches':''].filter(Boolean).join('; ')||'–',f.boss.name];})),
+`## Monster drops
+
+Every monster belongs to a **family**, and each family has its own drop. A monster only ever drops its own
+family\u2019s, on top of everything above; chests have no family and drop none. The blacksmith and the arcanist turn
+them into gear against that family: see [Forging](forging.md).`,
+table(['Family','Drop','Ordinary monsters (chance per kill)','Elites','Bosses'],Object.keys(D.FAMILIES).map(f=>{const F=D.FAMILIES[f],boss=famBosses(f);
+  return[F.name,IMG('drop-'+F.mat,MAT(F.mat),28)+' '+MAT(F.mat),famMonsters(f).map(t=>`${D.ETYPES[t].name}: ${famRoll(famDropOf(t))}`).join('<br>'),famRoll(L.elite.fam),
+    boss.length?boss.map(b=>`${b}: ${famRoll(L.boss.fam)}`).join('<br>'):'none yet'];})),
+`Tough monsters that are rare for their family roll better than the usual ${famRoll(L.normal.fam)}: ${Object.keys(D.ETYPES).filter(t=>D.ETYPES[t].famDrop).map(t=>D.ETYPES[t].name).join(', ')}.
+The dead that a Gravecaller or the Pale Collector raises drop nothing, like the rest of their loot.`,
 `## Unique drops
 
-**Not in the game yet.** Today every enemy rolls from the same pool above, so the type of enemy only changes how
-many you can kill per minute. Per-enemy unique drops are planned, starting with floor 3: see
-[docs/design/floor-3.md](../design/floor-3.md). When they land, this page lists them by enemy.`];
+**Not in the game yet.** Apart from its family\u2019s drop, every enemy rolls from the same pool above. One-of-a-kind
+items from particular enemies and bosses are planned: see [docs/design/floor-3.md](../design/floor-3.md). When they
+land, this page lists them by enemy.`];
   return out.join('\n\n')+'\n';
 }
 
@@ -196,6 +212,7 @@ table(['Item level',...D.RARITY.map(r=>r.name)],[1,2,3,4].map(l=>[l,...D.RARITY.
 
 Salvaging gives \`6 × (1 + 0.22 × (item level − 1)) × rarity multiplier³ × (1 + 0.5 × level)\` shards, plus materials:`,
 table(['Rarity','Materials back'],D.RARITY.map((r,i)=>[r.name,Object.entries(D.salvageMats({rarity:i})).map(([k,v])=>v+' '+MAT(k)).join(', ')])),
+`A [forged](forging.md) piece also returns a third of the monster drops that went into it: ${Object.keys(D.FORGING).map(s=>`${Math.floor(D.FORGING[s].drops/3)} from ${s==='weapon'?'a weapon':s}`).join(', ')}.`,
 `## Weapon damage range
 
 Lowest possible (common, +0, low roll) to highest possible (legendary, +${D.ENH_MAX}, high roll), per item level.
@@ -229,17 +246,20 @@ Elites (gold) have 2.4× health and 1.3× damage. Damage shown is before your de
 patches at the edges of rooms slow everything but plants by 40% and prick for small damage; and Thornroots take
 double damage from fire.
 
-**Weapons with a bonus against a monster type: none yet.** The only targeted bonus today is the weapon affix
-*Giant-slaying* (extra damage to elites and bosses); the dead take less magic damage and Thornroots more fire (below). Monster-type
-bonuses are planned (see [docs/design/floor-3.md](../design/floor-3.md)); this page will list them and where they
-drop. Until then, any source can drop any weapon: the best odds of a good one are elites (70% item chance, at least
-uncommon) and bosses (three items, one item level higher).`];
+**Families.** Every monster belongs to a family and drops that family\u2019s own material. Gear
+[forged](forging.md) from it works against the whole family: a weapon deals +${D.FORGING.weapon.bonus[0]}% to +${D.FORGING.weapon.bonus[1]}% damage to it, armor and
+boots take less damage from it. Each monster\u2019s family is listed below.`,
+table(['Family','Monsters','Bosses','Drop'],Object.keys(D.FAMILIES).map(f=>[D.FAMILIES[f].name,famMonsters(f).map(t=>D.ETYPES[t].name).join(', '),famBosses(f).join(', ')||'none yet',IMG('drop-'+D.FAMILIES[f].mat,'',28)+' '+MAT(D.FAMILIES[f].mat)])),
+`Other targeted bonuses: the weapon affix *Giant-slaying* (extra damage to elites and bosses); the dead take less
+magic damage and Thornroots more fire (below). Every "% more damage" bonus (a forged weapon\u2019s, Giant-slaying,
+Executioner\u2019s, Sunder\u2019s mark) adds up and is applied once: +20% and +30% make +50%, not +56%.`];
   for(const [t,E] of Object.entries(D.ETYPES)){if(t==='boss'||E.dummy)continue;const n=NOTES[t]||{};
     out.push(`## ${E.name}`,`${IMG('enemy-'+t,E.name)} ${IMG('enemy-'+t+'-elite',E.name+', elite')}<br><sub>Ordinary and elite</sub>`,
 table(['','Floor 1','Floor 2','Floor 3'],[['Health (elite)',...SHOWN.map(f=>`${Math.round(E.hp*floorMult(f).hp)} (${Math.round(E.hp*floorMult(f).hp*2.4)})`)],
   ['Damage per hit (elite)',...SHOWN.map(f=>`${(E.dmg*floorMult(f).dmg).toFixed(1)} (${(E.dmg*floorMult(f).dmg*1.3).toFixed(1)})`)],
   ['Experience (elite)',...SHOWN.map(f=>`${Math.round(E.xp*floorMult(f).xp)} (${Math.round(E.xp*floorMult(f).xp*3)})`)]]),
-`- **Found on floors:** ${where(t)||'(summoned only)'}
+`- **Family:** ${famLink(E.fam)} · drops ${MAT(D.FAMILIES[E.fam].mat)} (${famRoll(famDropOf(t))}; elites ${famRoll(D.LOOT.elite.fam)})
+- **Found on floors:** ${where(t)||'(summoned only)'}
 - **Speed:** ${E.speed}${E.ranged?' · **ranged**':''}${E.heavy?' · **heavy** (not staggered by hits)':''}${E.mres?` · **ignores ${pct(E.mres)} of magic damage**`:''}${E.shield?' · **shield**':''}${E.rooted?' · **rooted** (never moves, no knockback)':''}${E.weak&&E.weak.fire?` · **takes ${E.weak.fire}× fire damage**`:''}${E.corpse?' · **leaves a body**':''}
 - **How it fights:** ${n.fights||'—'}
 - **How to beat it:** ${n.beat||'—'}
@@ -249,18 +269,65 @@ table(['','Floor 1','Floor 2','Floor 3'],[['Health (elite)',...SHOWN.map(f=>`${M
 `Base health ${B.hp} and damage ${B.dmg}, scaled by floor like everything else (floor 2: ${Math.round(B.hp*floorMult(2).hp)} health, floor 3: ${Math.round(B.hp*floorMult(3).hp)}).
 Telegraphed attacks (red markings) cannot be evaded by Dexterity; shields cut them by less than ordinary blows. If
 everyone inside the chamber falls, the boss heals to full.`);
-  for(const b of BOSS_NOTES)out.push(`### ${b.name}\n\n${IMG(b.img,b.name,150)}\n\n*${b.floors}*\n\n${b.attacks.map(a=>'- '+a).join('\n')}\n\n${b.tips}`,
+  const bossFam=n=>{const F=D.FLOORS.find(f=>f.boss.name===n);return F&&F.boss.fam;};
+  for(const b of BOSS_NOTES)out.push(`### ${b.name}\n\n${IMG(b.img,b.name,150)}\n\n*${b.floors}* · Family: ${famLink(bossFam(b.name))}, drops ${famRoll(D.LOOT.boss.fam)} ${MAT(D.FAMILIES[bossFam(b.name)].mat)}\n\n${b.attacks.map(a=>'- '+a).join('\n')}\n\n${b.tips}`,
     `What each warning looks like, just before it lands:\n\n`+table(b.shots.map(x=>x[1]),[b.shots.map(([f,n])=>IMG(f,n+': the red warning before it lands',230))]));
   return out.join('\n\n')+'\n';
 }
 
+function forgingPage(){
+  const F=D.FORGING,R=D.RARITY[D.FORGE_RARITY],slotName={weapon:'Weapon',armor:'Armor',boots:'Boots'},lv=[1,2,3,4];
+  const shards=(s,l)=>Math.round(F[s].shards*(1+.3*(l-1)));
+  const gives=s=>s==='weapon'?`+${F[s].bonus[0]}% to +${F[s].bonus[1]}% damage to the family`:`${F[s].bonus[0]}% to ${F[s].bonus[1]}% less damage taken from the family`;
+  const out=[HEADER('Forging'),
+`Every monster belongs to a **family** and drops that family\u2019s own material (the diamonds on the ground). In the
+root village those drops are made into gear **against that family**:
+
+- a forged **weapon** deals more damage to every monster and boss of the family;
+- forged **armor** and **boots** take less damage from them, shots included, and worn together the two add up.
+
+Against everything else a forged piece is an ordinary ${R.name.toLowerCase()} piece, so it is a tool to bring to the floors where
+that family lives, not a replacement for your best gear.`,
+`## Where
+
+- **The blacksmith**, at the forge in the market: every weapon but grimoires, every armor, every pair of boots.
+- **The arcanist**, at the witchcraft room next door: grimoires, of embers or of grace.
+
+Talk to either (E), pick a family, then a piece. Trinkets cannot be forged.`,
+`## What it costs and what you get`,
+table(['Piece','Monster drops','Iron scrap',...lv.map(l=>'Shards at item level '+l),'Bonus'],Object.keys(F).map(s=>[slotName[s],F[s].drops,F[s].scrap,...lv.map(l=>shards(s,l)),gives(s)])),
+`- A forged piece is always **${R.name}** (${R.mult}× base numbers) with a ${R.name.toLowerCase()} piece\u2019s usual random bonus: ${R.aff} on a weapon, armor or boots, ${R.aff+1} on a grimoire, from its own school.
+- Its **item level** is the highest floor you have reached, the same as the village market\u2019s stock. Shards cost 30% more per level; the drops do not.
+- The **size of the bonus** is rolled when the piece is made, anywhere in its range. Forging again rolls again.
+- It can be **enhanced** like any other piece; enhancing raises its base numbers, not the family bonus.
+- **Salvaging** it returns a third of the drops (${Object.keys(F).map(s=>`${Math.floor(F[s].drops/3)} from ${s==='weapon'?'a weapon':s}`).join(', ')}), with the usual shards and scrap.
+- Drops, chests and shops never carry a family bonus: forging is the only source.`,
+`## The families`,
+table(['Family','Drop','Weapon','Armor and boots','Who is in it'],Object.keys(D.FAMILIES).map(f=>{const A=D.FAMILIES[f];
+  return[A.name,IMG('drop-'+A.mat,MAT(A.mat),28)+' '+MAT(A.mat),IMG('forged-weapon-'+f,A.bane+' longsword',36)+' '+A.bane,IMG('forged-armor-'+f,A.ward+' plate cuirass',36)+' '+A.ward,
+    [...famMonsters(f).map(t=>D.ETYPES[t].name),...famBosses(f)].join(', ')];})),
+`The corner diamond on a forged piece\u2019s icon is its family\u2019s colour. How often each monster drops its family\u2019s
+material is on the [Drops](drops.md#monster-drops) page.`,
+`## How the bonus is counted
+
+- **Weapons.** Every "% more damage" bonus adds up and is applied once: the family bonus, *Giant-slaying* (elites and
+  bosses), *Executioner\u2019s* (below 30% health) and Sunder\u2019s mark (+25%). A +20% Gravebane greatsword with +30%
+  Giant-slaying deals +50% to an elite bone soldier. Critical hits, magic resistance and fire weakness still multiply
+  on top. Hits that got the family bonus show their number in orange (critical hits stay yellow).
+- **Armor and boots.** The family\u2019s share comes off after defense: with ${F.armor.bonus[1]}% armor and ${F.boots.bonus[1]}% boots, the most
+  that can be forged, a blow from that family does ${100-F.armor.bonus[1]-F.boots.bonus[1]}% of what it would have.
+- Thorn patches belong to no family, so nothing forged helps against them.`];
+  return out.join('\n\n')+'\n';
+}
+
 function indexPage(){return HEADER('Blackspire wiki')+`
-- [Drops](drops.md): what every enemy, elite, boss and chest drops, rarity odds, where each enemy appears.
+- [Drops](drops.md): what every enemy, elite, boss and chest drops, rarity odds, where each enemy appears, each family\u2019s monster drop.
+- [Forging](forging.md): gear made from monster drops, against one family of monsters: where, what it costs, what it gives.
 - [Enhancement and item stats](enhancement.md): costs and odds for every level, the stat range of every item, bonus ranges by rarity.
-- [Monsters](monsters.md): health, damage and experience by floor, how each enemy fights and how to beat it, the bosses.
+- [Monsters](monsters.md): health, damage and experience by floor, each monster\u2019s family, how it fights and how to beat it, the bosses.
 `;}
 
-const pages={'README.md':indexPage(),'drops.md':dropsPage(),'enhancement.md':enhancePage(),'monsters.md':monstersPage()};
+const pages={'README.md':indexPage(),'drops.md':dropsPage(),'forging.md':forgingPage(),'enhancement.md':enhancePage(),'monsters.md':monstersPage()};
 pages['img/rarity-odds.svg']=rarityChart();pages['img/enhance-odds.svg']=enhanceChart();
 if(process.argv.includes('--check')){
   const stale=Object.keys(pages).filter(f=>{try{return fs.readFileSync(path.join(OUT,f),'utf8')!==pages[f];}catch(e){return true;}});

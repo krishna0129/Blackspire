@@ -2,6 +2,7 @@
 // End-to-end tests for the online server: real WebSocket clients against a server on a free port with a throwaway
 // in-memory database.  Run with: npm test
 const test=require('node:test'),assert=require('node:assert');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const WebSocket=require('ws');
 const {start}=require('../index');
 const {validSheet}=require('../game');
@@ -131,6 +132,20 @@ test('online play',async t=>{
     assert.strictEqual(ma.S.equip.weapon.plus,1);
   });
 
+  await t.test('online characters forge from monster drops, and the server makes the piece',async()=>{
+    const ma=member('Alpha'),q=ma.w.G.smiths[0];ma.pl.x=q.x;ma.pl.y=q.y+16;
+    ma.S.mats.bone=12;ma.S.mats.scrap=4;ma.S.shards=99999;const bag=ma.S.inv.length;
+    A.send({t:'act',id:41,name:'forge',args:['weapon','sword','undead']});
+    assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===41)).r,bag,'the answer is where it landed in the bag');
+    const it=ma.S.inv[bag];assert.strictEqual(it.name,'Gravebane longsword');assert.strictEqual(it.fam.id,'undead');
+    assert.strictEqual(ma.S.mats.bone,0);
+    assert.deepStrictEqual(A.last('save').s.inv[bag].fam,{id:it.fam.id,v:it.fam.v},'and the browser is sent the same piece');
+    A.send({t:'act',id:42,name:'forge',args:['weapon','sword','undead']});
+    assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===42)).r,false,'no drops left, no second sword');
+    A.send({t:'act',id:43,name:'forge',args:['weapon','grimoire:magic','undead']});
+    assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===43)).r,false,'grimoires are the arcanist\u2019s');
+  });
+
   await t.test('a full channel opens another',async()=>{
     const g=s.game,w=member('Alpha').w,pad=[];
     while(w.members.length+pad.length<30)pad.push({});
@@ -164,6 +179,31 @@ test('online play',async t=>{
     c.send({t:'play'});const sv=await c.wait(o=>o.t==='save');assert.strictEqual(sv.s.shards,1234);assert.strictEqual(sv.s.char.str,1);
     c.ws.close();B.ws.close();
   });
+});
+
+test('the tower is one place: every party gets the same floor, a restart keeps it, and opened chests stay opened',async t=>{
+  const dbFile=path.join(os.tmpdir(),`blackspire-test-${process.pid}-${Date.now()}.db`);
+  let s=await start({port:0,dbFile,quiet:true}),open=true;
+  const stop=()=>{if(open){open=false;s.close();}},socks=[],hangUp=async()=>{for(const c of socks.splice(0))c.ws.terminate();await new Promise(r=>setTimeout(r,150));};
+  // whatever happens, hang up before closing, or a failed check would leave the server waiting on open connections
+  t.after(async()=>{await hangUp();stop();for(const x of['','-wal','-shm'])fs.rmSync(dbFile+x,{force:true});});
+  const member=name=>[...s.game.parties.values()].flatMap(p=>p.members).find(q=>q.S.char.name===name);
+  const climb=(c,name)=>{const m=member(name),G=m.w.G,since=c.msgs.length;m.pl.x=G.home.x;m.pl.y=G.home.y;c.send({t:'travel',n:1});return c.wait(o=>o.t==='floor'&&o.n===1,3000,since);};
+  const A=await player(s.port,'Alpha'),B=await player(s.port,'Bravo');socks.push(A,B);
+  const fa=await climb(A,'Alpha'),fb=await climb(B,'Bravo');
+  assert.notStrictEqual(member('Alpha').w,member('Bravo').w,'two parties, each in its own copy of floor 1');
+  assert.strictEqual(fa.seed,fb.seed,'and both copies are the same floor');
+  const spot=()=>{const c=member('Alpha').w.G.chests[0];return c.x+','+c.y;};
+  const ma=member('Alpha'),c0=ma.w.G.chests[0],where=spot();ma.pl.x=c0.x;ma.pl.y=c0.y;
+  await A.wait(o=>o.t==='save'&&o.s.floors[1].chests.includes(0),4000);
+  await hangUp();stop();
+  // the server comes back on the same database
+  s=await start({port:0,dbFile,quiet:true});open=true;
+  const c=await client(s.port);socks.push(c);c.send({t:'login',name:'Alpha',pw:'correct horse'});assert.ok((await c.wait(o=>o.t==='auth')).ok);
+  c.send({t:'play'});const fl=await c.wait(o=>o.t==='floor');
+  assert.strictEqual(fl.n,1);assert.strictEqual(fl.seed,fa.seed,'the same tower after a restart');
+  assert.strictEqual(spot(),where,'the chest Alpha opened is where it was');
+  assert.deepStrictEqual(c.last('save').s.floors[1].chests,[0],'and it is still the one marked opened');
 });
 
 test('character sheet uploads must be 88 x 78 PNGs, or a whole multiple up to x4 for finer art',()=>{

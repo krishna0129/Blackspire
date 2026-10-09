@@ -44,9 +44,14 @@ function damageEnemy(e,mult,o={}){
   }
   let d=ST.dmg*mult*rand(.9,1.1);const crit=o.crit||Math.random()*100<ST.crit;
   if(crit)d*=ST.critDmg/100;
-  if(ST.p.execute&&e.hp/e.maxHp<.3)d*=1+ST.p.execute/100;
-  if(ST.p.giant&&(e.boss||e.elite))d*=1+ST.p.giant/100;
-  if(e.sunder>0)d*=1.25;
+  // Everything that reads "% more damage" adds up in one bucket and is applied once, so no two of them multiply each
+  // other: Executioner's, Giant-slaying, Sunder's mark, and a forged weapon's bonus against this enemy's family.
+  const bane=ST.vs[famOf(e)]||0;
+  let more=bane;
+  if(ST.p.execute&&e.hp/e.maxHp<.3)more+=ST.p.execute;
+  if(ST.p.giant&&(e.boss||e.elite))more+=ST.p.giant;
+  if(e.sunder>0)more+=25;
+  d*=1+more/100;
   const T=ETYPES[e.type];
   if(o.burn&&T.weak&&T.weak.fire)d*=T.weak.fire;   // fire: Fireball's blast (its burn is scaled the same way below)
   if(e.state==='shell')d*=.4;                       // a hermit's skull shell
@@ -55,7 +60,7 @@ function damageEnemy(e,mult,o={}){
   const resisted=ST.magic&&e.mres>0;if(resisted)d*=1-e.mres;
   d=Math.max(1,Math.round(d));
   e.hp-=d;e.flash=.09;e.hurtT=4;if(e.state==='idle'){if(e.boss)wakeBoss();else e.state='chase';}
-  addNum(e.x,e.y-e.r-5,d,resisted?'resist':crit?'crit':'hit');
+  addNum(e.x,e.y-e.r-5,d,resisted?'resist':crit?'crit':bane?'bane':'hit');
   if(resisted){if(G.time-e.resT>1.8){e.resT=G.time;addNum(e.x,e.y-e.r-13,'RESIST','resist');}}
   burst(e.x,e.y,crit?6:3,crit?'#ffe9a8':'#b9b4c8',crit?70:45);
   sfx(crit?'crit':'hit');
@@ -89,11 +94,11 @@ function killEnemy(e){
   forPlayers(pl=>{
     S.kills++;if(e.raised)return;   // the raised dead give nothing: no experience, no loot, so raising cannot be farmed
     gainXp(T.xp*(1+.3*(G.n-1))*(e.elite?3:1));questKill(e);
-    dropLoot(e.boss?'boss':e.elite?'elite':'normal',e.x,e.y);
+    dropLoot(e.boss?'boss':e.elite?'elite':'normal',e.x,e.y,e);
     if(e.boss){
       const fs=floorState(G.n),first=!fs.boss;fs.boss++;S.best=Math.max(S.best,G.n+1);
-      fs.shops=[];   // a fallen boss restocks this floor's traders
-      bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'The traders on this floor have restocked.',3600);
+      fs.shops=[];floorState(0).shops=[];   // a fallen boss restocks this floor's traders, and the village market
+      bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'This floor’s traders and the village market have restocked.',3600);
       if(!P.dead)P.hp=ST.maxHp;persist();
     }
   });
@@ -109,11 +114,15 @@ function drop(d,ox,oy){
   d.t=0;d.owner=P.id;d.uid=++G.did;G.drops.push(d);   // loot is personal: only its owner sees and picks it up
 }
 function dropShards(x,y,n){while(n>0){const a=Math.min(n,n>12?5:1);n-=a;drop({k:'shard',amt:a,x:x+rand(-8,8),y:y+rand(-8,8)},x,y);}}
-// Rolls the current player's share of a LOOT table entry (data.js) and drops it around (x,y).
-function dropLoot(kind,x,y){
+// Rolls the current player's share of a LOOT table entry (data.js) and drops it around (x,y). e: the enemy that
+// died, if one did: its family decides which monster drop can fall (an ordinary enemy's type may set its own roll).
+function dropLoot(kind,x,y,e){
   const L=LOOT[kind],sp=kind==='boss'?18:kind==='chest'?12:6;
   dropShards(x,y,Math.round(rand(L.shards[0],L.shards[1])*(1+.25*(G.n-1))));
-  const m={};for(const k in L.mats){const[c,lo,hi]=L.mats[k];m[k]=Math.random()<c?Math.round(rand(lo,hi)):0;}dropMats(x,y,m);
+  const m={};for(const k in L.mats){const[c,lo,hi]=L.mats[k];m[k]=Math.random()<c?Math.round(rand(lo,hi)):0;}
+  const fam=famOf(e),fr=fam&&(kind==='normal'&&ETYPES[e.type].famDrop||L.fam);
+  if(fr&&Math.random()<fr[0])m[FAMILIES[fam].mat]=Math.round(rand(fr[1],fr[2]));
+  dropMats(x,y,m);
   for(const q of L.items)if(Math.random()<q.chance)dropItem(x+rand(-sp,sp),y+rand(-sp,sp),randomItem(G.n+q.ilvl,q.bonus,q.minRar),x,y);
   for(const k in SUPPLIES)for(const c of L[SUPPLIES[k].key]||[])if(Math.random()<c)drop({k,x:x+rand(-sp,sp),y:y+rand(-sp,sp)},x,y);
 }
@@ -125,7 +134,8 @@ function gainXp(v){
     bannerMe('Level '+c.level,'3 attribute points to spend. Open Gear.',2600);sfx('lvl');burst(P.x,P.y,24,'#6fd6e6',90);}
 }
 function heal(v){P.hp=Math.min(ST.maxHp,P.hp+v);}
-// sure = telegraphed boss attack, which dexterity cannot evade. from = where a shot came from.
+// sure = telegraphed boss attack, which dexterity cannot evade. from = where a shot came from (and the family of
+// whoever fired it). Armour and boots forged against the attacker's family take their share off the damage.
 // ground = it comes up from under your feet, so no shield can stop it: the answer is to move.
 function hurtPlayer(dmg,src,sure,from,ground){
   if(P.inv>0||P.dead||god)return;
@@ -145,6 +155,7 @@ function hurtPlayer(dmg,src,sure,from,ground){
   }
   if(!sure&&ST.evade>0&&Math.random()*100<ST.evade){P.inv=.2;addNum(P.x,P.y-16,'DODGE','evade');return;}
   let d=dmg*100/(100+ST.def);if(P.ward>0&&ST.p.ward)d*=1-ST.p.ward/100;if(P.guard>0)d*=.4;
+  d*=1-(ST.res[famOf(from)||famOf(src)]||0)/100;
   d=Math.max(1,Math.round(d));
   P.hp-=d;P.inv=.45;shake(4,true);addNum(P.x,P.y-16,d,'hurt');sfx('hurt');hurtFlash();
   if(ST.g.thorns&&src&&!src.dead){const t=Math.max(1,Math.round(dmg*ST.g.thorns/100));src.hp-=t;src.flash=.09;addNum(src.x,src.y-src.r-5,t,'bleed');if(src.hp<=0)killEnemy(src);}
