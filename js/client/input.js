@@ -59,7 +59,7 @@ addEventListener('keydown',e=>{
   else if(mode==='pause'){if(is('menu',c))closePause();}
   else if(mode==='travel'){if(is('menu',c))closeTravel();}
   else if(mode==='guild'){if(is('menu',c))closeGuild();}
-  else if(mode==='plot'){if(is('menu',c))closePlot();}
+  else if(mode==='fields'){if(is('menu',c))closeFields();}
   else if(mode==='dead'){if(is('respawn',c))respawn();}
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});

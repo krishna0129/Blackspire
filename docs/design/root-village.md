@@ -109,7 +109,9 @@ player who keeps their flasks only pays for them once, and the well is a reason 
 
 ### Fields
 
-**In the game.** Stand on one of the six plots and press E:
+**In the game.** Everything is done from the **fields manager**, one screen showing every plot in the village's
+fields: buy, plant, harvest, and switch the farmhand and the crop broker. It opens at the field's entrance (top
+right, where the path arrives) from the signpost or either of the two people standing there, or from any plot.
 
 - **Buy it:** the first plot costs 100 shards and each one after costs twice the last (200, 400...).
 - **Plant it:** potatoes (10 shards of seed, ready in an hour, 4 to 6 a harvest) or glowcaps (20 shards, three hours,

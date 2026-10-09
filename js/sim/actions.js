@@ -76,27 +76,27 @@ const ACTIONS={
     if(!nearTraderIdx(si)||!TRADER_SELLS[G.traders[si].sells||'all'].meals||(S.crops.potato||0)<RATION_POTATOES)return false;
     S.crops.potato-=RATION_POTATOES;S.rations=(S.rations||0)+1;sfx('pick');return true;
   },
-  // the fields: buy the plot you stand on, plant it, harvest it
-  buyPlot(){
-    const i=plotAt();if(i<0||myPlot(i))return false;const pr=plotPrice(S.plots.length);if(S.shards<pr)return false;
-    S.shards-=pr;S.plots.push({i,crop:null,t:0});log(`The plot is yours. Plant it with ${G.crops.map(c=>CROPS[c].plural).join(' or ')}.`);sfx('lvl');return true;
+  // the fields, from the fields manager (at the field's entrance, its people, or any plot): i is the plot's number
+  buyPlot(i){
+    if(!nearFields()||!VILLAGE.plots[i]||myPlot(i))return false;const pr=plotPrice(S.plots.length);if(S.shards<pr)return false;
+    S.shards-=pr;S.plots.push({i,crop:null,t:0});sfx('lvl');return true;
   },
-  plant(crop){
-    const i=plotAt(),p=myPlot(i),C=CROPS[crop];if(!p||p.crop||!C||!G.crops.includes(crop)||S.shards<C.seed)return false;
+  plant(i,crop){
+    const p=myPlot(i),C=CROPS[crop];if(!nearFields()||!p||p.crop||!C||!G.crops.includes(crop)||S.shards<C.seed)return false;
     S.shards-=C.seed;p.crop=crop;p.t=Date.now();sfx('pick');return true;
   },
-  harvest(){
-    const p=myPlot(plotAt());if(!cropReady(p))return false;const C=CROPS[p.crop],n=Math.round(rand(C.yield[0],C.yield[1]));
+  harvest(i){
+    const p=myPlot(i);if(!nearFields()||!cropReady(p))return false;const C=CROPS[p.crop],n=Math.round(rand(C.yield[0],C.yield[1]));
     const v=takeHarvest(p.crop,n);log(`Harvested ${n} ${n>1?C.plural:C.name.toLowerCase()}`+(v?`; the broker sold them for ${v} shards.`:'.'));p.crop=null;p.t=0;sfx('pick');return n;
   },
-  // field help, switched at any of your plots. Hiring the farmhand pays the first day's wage at once.
+  // help for the whole field. Hiring the farmhand pays the first day's wage at once.
   farmhand(on){
-    const F=farmLog();if(myPlot(plotAt())==null)return false;
+    const F=farmLog();if(!nearFields()||!S.plots.length)return false;
     if(!on){F.farmer=false;return true;}
     if(F.farmer)return false;const w=FARMHAND_WAGE*S.plots.length;if(S.shards<w)return false;
     S.shards-=w;F.farmer=true;F.paid=Date.now()+FARM_DAY;return true;
   },
-  broker(on){if(myPlot(plotAt())==null)return false;farmLog().broker=!!on;return true;},
+  broker(on){if(!nearFields()||!S.plots.length)return false;farmLog().broker=!!on;return true;},
   // the food and drink stall buys your crops at the full price: what doing it yourself is worth
   sellCrops(si,crop){
     if(!nearTraderIdx(si)||G.traders[si].sells!=='food'||!CROPS[crop]||!(S.crops[crop]>0))return false;

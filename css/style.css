@@ -187,14 +187,23 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #dead h2,#ask h2,#pause h2,#travel h2,#online h2{font-size:34px;margin:0 0 6px;color:#f1b0a8}
 #pause h2,#online h2{color:var(--bone)}
 #travel h2{color:var(--amber)}
-/* a field plot */
-#plotbox{align-items:center;justify-content:center;padding:10px}
-#plotbox .sheet{width:min(460px,100%);text-align:center;padding:24px 20px}
-#plotbox h2{font-size:30px;margin:0 0 6px;color:#8fd14f}
-#plotbox p{color:var(--dim);margin:0 0 14px}
-.plbtns{display:grid;gap:8px;margin-bottom:14px}
-.plbtns .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px}
-.plbtns small{font-weight:500;font-size:12px;opacity:.75}
+/* the fields manager */
+#fields{align-items:center;justify-content:center;padding:10px}
+#fields .sheet{width:min(720px,100%);max-height:92vh;overflow:auto;padding:22px 20px}
+#fields h2{font-size:30px;margin:0 0 4px;color:#8fd14f;text-align:center}
+#fields p{color:var(--dim);margin:0 0 12px;text-align:center}
+.fdhelp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.fdhelp .btn,.plot .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px}
+.fdhelp small,.plot small{font-weight:500;font-size:12px;opacity:.75}
+.fdhelp .on{border-color:#8fd14f}
+.fdgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.plot{display:flex;flex-direction:column;gap:6px;padding:10px;background:#15151c;border:1px solid var(--line);min-height:128px}
+.plot.ready{border-color:#8fd14f}
+.plot h4{margin:0;font-size:14px}
+.plot .st{font-size:12px;color:var(--dim)}
+.plot .bar{height:6px;margin:0}
+.plot .bar i{background:#8fd14f}
+.plot .btn{width:100%}
 /* the Adventurers' Guild */
 #guild{align-items:center;justify-content:center;padding:10px}
 #guild .sheet{width:min(640px,100%);max-height:92vh;overflow:auto;padding:22px 20px}

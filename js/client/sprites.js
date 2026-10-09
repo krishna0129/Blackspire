@@ -29,7 +29,7 @@ const SPRITE_NAMES=[
   // the root village
   'village/tree_a', 'village/tree_b', 'village/inn', 'village/guild', 'village/stall', 'village/stall_tint', 'village/counter', 'village/forge',
   'village/witch', 'village/cauldron', 'village/tent_tint', 'village/flag_tint', 'village/well', 'village/pillar', 'village/board', 'village/lamp',
-  'enemies/dummy', 'village/sign', 'village/trunk', 'village/goods_weapons', 'village/goods_gear', 'village/goods_potions', 'village/goods_food'
+  'enemies/dummy', 'village/sign', 'village/signpost', 'village/trunk', 'village/goods_weapons', 'village/goods_gear', 'village/goods_potions', 'village/goods_food'
 ];
 // Sprites drawn finer than the game's pixel grid: 'enemies/thrall':4 means thrall.png is 4 file pixels per game pixel
 // (a 72 x 80 file for an 18 x 20 enemy). Whole numbers from 1 to MAX_RATIO. A sprite's _tint and _eyes files share its

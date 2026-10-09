@@ -74,9 +74,11 @@ function paintVillage(g){
       for(let yy=Math.max(0,cy-R-3|0);yy<=Math.min(H0-1,cy+R+3);yy++)for(let xx=Math.max(0,cx-R-3|0);xx<=Math.min(W0-1,cx+R+3);xx++){
         const dd=Math.hypot(xx-cx,yy-cy)-wob;const i=yy*W0+xx;if(dd<dist[i])dist[i]=dd;}}}
   const inRect=(px,py,[rx,ry,rw,rh])=>px>=rx*T&&py>=ry*T&&px<(rx+rw)*T&&py<(ry+rh)*T;
-  const onFence=(px,py,[rx,ry,rw,rh])=>{const x0=rx*T,y0=ry*T,x1=(rx+rw)*T-1,y1=(ry+rh)*T-1;
+  // gap: [from, to] tiles along the top edge left open as a way in; without it, a gap in the middle of the bottom edge
+  const onFence=(px,py,[rx,ry,rw,rh],gap)=>{const x0=rx*T,y0=ry*T,x1=(rx+rw)*T-1,y1=(ry+rh)*T-1;
     if(px<x0-1||px>x1+1||py<y0-1||py>y1+1)return 0;const side=(py>=y0-1&&py<=y0)||(py>=y1&&py<=y1+1)||(px>=x0-1&&px<=x0)||(px>=x1&&px<=x1+1);
-    if(!side)return 0;if(Math.abs(py-y1)<=1&&Math.abs(px-(x0+x1)/2)<10)return 0;   // a gap to walk in through
+    if(!side)return 0;
+    if(gap?Math.abs(py-y0)<=1&&px>=gap[0]*T&&px<gap[1]*T:Math.abs(py-y1)<=1&&Math.abs(px-(x0+x1)/2)<10)return 0;   // a gap to walk in through
     return((px-x0)%16<2||(py-y0)%16<2)?2:1;};
   const sq=VILLAGE.square,sx=sq.x*T,sy=sq.y*T,sr=sq.r*T;
   for(let py=0;py<H0;py++)for(let px=0;px<W0;px++){
@@ -95,7 +97,7 @@ function paintVillage(g){
     if(ds<sr){const ring=Math.floor(ds/9),ang=Math.atan2(py-sy,px-sx),seg=Math.floor((ang+Math.PI)*(ring+2)/1.2);
       col=ds%9<1||((ang+Math.PI)*(ring+2)/1.2)%1<.06?C.grout:[C.flag,C.flag2,C.flag3][Math.floor(hash2(ring,seg,8)*3)];
       if(ds>sr-3)col=C.rim;if(ds<2.4*T)col=ds>2.4*T-2?C.rune:C.gate;}
-    const f=onFence(px,py,VILLAGE.fields)||onFence(px,py,VILLAGE.yard);if(f)col=f===2?C.fence:C.fence2;
+    const f=onFence(px,py,VILLAGE.fields,VILLAGE.fieldGate)||onFence(px,py,VILLAGE.yard);if(f)col=f===2?C.fence:C.fence2;
     if(m===2&&(edge<3||(ty<4&&tx>=19&&tx<=36))){   // the roots: mottled bark, with moss here and there
       const v=hash2(px>>2,py>>1,14);col=v<.45?C.root:v<.8?C.bark:C.bark2;if(hash2(px>>1,py>>1,15)<.04)col=C.vein2;}
     d[i]=col[0];d[i+1]=col[1];d[i+2]=col[2];d[i+3]=255;}

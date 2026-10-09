@@ -42,7 +42,7 @@ Object.assign(NET,{
       case'auth':case'created':case'kicked':if(this.onMsg)this.onMsg(o);if(o.t==='kicked')showTitle(o.msg);return;
       case'save':{
         S=migrateSave(o.s);if(P){P.S=S;setPlayer(P);calcStats();refreshSprites();refreshHudStatic();bagBadge();}
-        if(mode==='panel')renderPanel();if(mode==='guild')renderGuild();if(mode==='plot')renderPlot();return;}
+        if(mode==='panel')renderPanel();if(mode==='guild')renderGuild();if(mode==='fields')renderFields();return;}
       case'floor':return this.enterFloor(o);
       case's':return this.snapshot(o);
       case'party':this.party=o;if(mode==='pause')renderParty();if(mode==='guild')renderGuild();return;

@@ -17,6 +17,8 @@ const RATION_POTATOES=2;               // a packed ration at the inn
 function plotAt(x=P.x,y=P.y){if(!G.village)return -1;
   return VILLAGE.plots.findIndex(([px,py])=>x>=vx(px)-6&&x<vx(px+3)+6&&y>=vy(py)-6&&y<vy(py+2)+6);}
 const myPlot=i=>(S.plots||[]).find(p=>p.i===i)||null;
+// At the fields: standing on a plot, or by the entrance (its signpost and the two people there, G.fieldDesk).
+const nearFields=(r=40)=>!!G.village&&(plotAt()>=0||(G.fieldDesk||[]).some(q=>hyp(q.x-P.x,q.y-P.y)<r));
 const cropReady=(p,now=Date.now())=>!!p&&!!p.crop&&now-p.t>=CROPS[p.crop].grow;
 // how far a planted plot has grown, 0 to 1
 const cropGrowth=(p,now=Date.now())=>p&&p.crop?Math.min(1,(now-p.t)/CROPS[p.crop].grow):0;

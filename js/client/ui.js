@@ -27,7 +27,7 @@ function updateHud(){
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
   const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
   const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
-    nearGuild()?'guild':nearBoard()?'board':plotAt()>=0?'plot'+plotAt()+plotState(plotAt()):
+    nearGuild()?'guild':nearBoard()?'board':plotAt()>=0?'plot'+plotAt()+plotPrompt(plotAt()):nearFields(24)?'fields':
     wl?'well'+(S.empties>0?S.empties:''):tk?'talk:'+tk.name:'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>E</kbd>';
@@ -39,7 +39,8 @@ function updateHud(){
     else if(near==='stash')elPrompt.innerHTML='Stash<kbd>E</kbd>';
     else if(near==='guild')elPrompt.innerHTML='Adventurers\u2019 Guild<kbd>E</kbd>';
     else if(near==='board')elPrompt.innerHTML='Notice board<kbd>E</kbd>';
-    else if(near.startsWith('plot'))elPrompt.innerHTML=plotPrompt(plotAt())+'<kbd>E</kbd>';
+    else if(near.startsWith('plot'))elPrompt.innerHTML=plotPrompt(plotAt())+': fields<kbd>E</kbd>';
+    else if(near==='fields')elPrompt.innerHTML='Your fields<kbd>E</kbd>';
     else if(near.startsWith('well'))elPrompt.innerHTML=(S.empties>0?`Fill ${S.empties} empty flask${S.empties>1?'s':''} at the well`:'The well')+'<kbd>E</kbd>';
 }
 }
@@ -270,7 +271,7 @@ function interact(){
   const sm=nearSmith();if(sm){openPanel(sm,'smith');return;}
   if(nearGuild()){openGuild(true);return;}
   if(nearBoard()){openGuild(false);return;}
-  if(plotAt()>=0){openPlot();return;}
+  if(nearFields(24)){openFields();return;}
   if(nearWell()){act('fillFlasks',[],n=>{if(n){sfx('pick');log(`Filled ${n} flask${n>1?'s':''} at the well.`);}
     else log('You have no empty flasks to fill. The food and drink stall sells water flasks; drink one and the flask is yours to refill.');hc.near=null;});return;}
   const tk=nearTalker();if(tk){tk.sayUntil=G.time+6;sfx('pick');}
@@ -288,42 +289,41 @@ function confirmChamber(){
   if(NET.on)NET.send({t:'chamber',g:G.gates.indexOf(q)});else enterChamber(q);
 }
 
-/* ---------- the fields ----------
-   The plot you stand on: buy it, plant it, harvest it (js/sim/fields.js). Each player sees only their own plots. */
+/* ---------- the fields manager ----------
+   Every plot in the village's fields on one screen: buy, plant, harvest, and switch the farmhand and the crop broker
+   (js/sim/fields.js). Opened at the field's entrance (its signpost and the two people there) or on any plot. */
 const fmtLeft=ms=>{const m=Math.ceil(ms/60000);return m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min';};
-function plotState(i){const p=myPlot(i);return!p?'sale':!p.crop?'empty':cropReady(p)?'ready':'growing'+Math.ceil((CROPS[p.crop].grow-(Date.now()-p.t))/60000);}
 function plotPrompt(i){const p=myPlot(i);
-  if(!p)return`Field plot for sale, ${plotPrice((S.plots||[]).length)} shards`;
-  if(!p.crop)return'Your plot: plant it';
-  const C=CROPS[p.crop];return cropReady(p)?`Harvest the ${C.plural}`:`${C.name} plot: ${fmtLeft(C.grow-(Date.now()-p.t))} to go`;}
-function openPlot(){if(mode!=='play')return;mode='plot';inp.atk=false;for(const k in keys)keys[k]=false;$('#plotbox').hidden=false;renderPlot();}
-function closePlot(){if(mode!=='plot')return;$('#plotbox').hidden=true;mode='play';hc.near=null;}
-$('#plClose').onclick=closePlot;
-function renderPlot(){
-  if(mode!=='plot')return;const i=plotAt(),p=myPlot(i),el=$('#plBtns');el.innerHTML='';
-  if(i<0){closePlot();return;}
-  const btn=(html,cls,fn,dis)=>{const b=document.createElement('button');b.className='btn '+cls;b.innerHTML=html;b.disabled=!!dis;b.onclick=fn;el.appendChild(b);};
-  const again=()=>{renderPlot();hc.near=null;};
-  if(!p){const pr=plotPrice(S.plots.length);
-    $('#plTitle').textContent='Field plot';
-    $('#plTxt').textContent=`The soil under the tree is rich in what ${G.crops.map(c=>CROPS[c].plural).join(' and ')} need, and little else. This plot can be yours: ${S.plots.length?'each plot costs twice the last.':'your first costs '+pr+' shards.'}`;
-    btn(`Buy this plot<small>${pr} shards</small>`,'primary',()=>act('buyPlot',[],again),S.shards<pr);return;}
-  $('#plTitle').textContent='Your plot';
-  if(!p.crop){$('#plTxt').textContent='Freshly turned soil. What will it be?';
-    for(const c of G.crops){const C=CROPS[c];btn(`Plant ${C.plural}<small>${C.seed} shards for the seed. ${C.desc}</small>`,'primary',()=>act('plant',[c],again),S.shards<C.seed);}return;}
-  const C=CROPS[p.crop];
-  if(cropReady(p)){$('#plTxt').textContent=`The ${C.plural} are ready.`;btn(`Harvest<small>${C.yield[0]} to ${C.yield[1]} ${C.plural}</small>`,'primary',()=>act('harvest',[],again));}
-  else $('#plTxt').textContent=`${C.name} growing: ${fmtLeft(C.grow-(Date.now()-p.t))} to go. It keeps growing while you are away, in the tower or offline.`;
-  fieldHelp(btn,again);
-}
-// Help for the whole field, switched at any of your plots.
-function fieldHelp(btn,again){
-  const F=S.farm||{},w=FARMHAND_WAGE*S.plots.length,h=document.createElement('div');h.className='none';h.style.margin='6px 0 0';
-  h.textContent='Help on your field';$('#plBtns').appendChild(h);
-  if(F.farmer)btn(`Farmhand: working<small>${w} shards a day, next wage in ${fmtLeft(F.paid-Date.now())}. Dismiss</small>`,'',()=>act('farmhand',[false],again));
-  else btn(`Hire the farmhand<small>${w} shards a day (${FARMHAND_WAGE} a plot). Harvests and replants for you, offline too</small>`,'',()=>act('farmhand',[true],again),S.shards<w);
-  if(F.broker)btn(`Crop broker: selling<small>Every harvest sold for you, less their ${BROKER_CUT*100}% cut. Stop</small>`,'',()=>act('broker',[false],again));
-  else btn(`Let the broker sell<small>Every harvest sold for you, less a ${BROKER_CUT*100}% cut. Sell them yourself at the food stall for the full price</small>`,'',()=>act('broker',[true],again));
+  if(!p)return'Field plot for sale';if(!p.crop)return'Your plot, empty';
+  const C=CROPS[p.crop];return cropReady(p)?`${C.name}s ready to harvest`.replace('Potatos','Potatoes'):`${C.name} plot: ${fmtLeft(C.grow-(Date.now()-p.t))} to go`;}
+let fieldsTick=null;
+function openFields(){if(mode!=='play')return;mode='fields';inp.atk=false;for(const k in keys)keys[k]=false;$('#fields').hidden=false;renderFields();
+  clearInterval(fieldsTick);fieldsTick=setInterval(()=>{if(mode==='fields')renderFields();else clearInterval(fieldsTick);},1000);}   // the clocks count down while it is open
+function closeFields(){if(mode!=='fields')return;$('#fields').hidden=true;mode='play';hc.near=null;clearInterval(fieldsTick);}
+$('#fdClose').onclick=closeFields;
+function renderFields(){
+  if(mode!=='fields')return;const F=S.farm||{},now=Date.now(),own=S.plots.length,price=plotPrice(own),again=()=>renderFields();
+  const held=Object.keys(CROPS).filter(c=>(S.crops||{})[c]).map(c=>`${S.crops[c]} ${CROPS[c].plural}`);
+  $('#fdTxt').textContent=`The soil here is rich in what ${G.crops.map(c=>CROPS[c].plural).join(' and ')} need, and little else. Crops keep growing while you are away. `+
+    (held.length?`You have ${held.join(' and ')}: the inn cooks them, the food and drink stall buys them.`:'');
+  const mk=(html,cls,fn,dis)=>{const b=document.createElement('button');b.className='btn '+cls;b.innerHTML=html;b.disabled=!!dis;b.onclick=fn;return b;};
+  // help for the whole field
+  const h=$('#fdHelp');h.innerHTML='';const w=FARMHAND_WAGE*own;
+  h.appendChild(F.farmer?mk(`Farmhand: working<small>${w} shards a day, next wage in ${fmtLeft(F.paid-now)}. Click to dismiss</small>`,'on',()=>act('farmhand',[false],again))
+    :mk(`Hire the farmhand<small>${own?w+' shards a day':FARMHAND_WAGE+' shards a plot a day'}. Harvests and replants for you, offline too</small>`,'',()=>act('farmhand',[true],again),!own||S.shards<w));
+  h.appendChild(F.broker?mk(`Crop broker: selling<small>Every harvest sold for you, less their ${BROKER_CUT*100}% cut. Click to stop</small>`,'on',()=>act('broker',[false],again))
+    :mk(`Let the broker sell<small>Every harvest sold, less a ${BROKER_CUT*100}% cut. Selling yourself at the food stall pays in full</small>`,'',()=>act('broker',[true],again),!own));
+  // every plot
+  const g=$('#fdGrid');g.innerHTML='';
+  VILLAGE.plots.forEach((_,i)=>{const p=myPlot(i),d=document.createElement('div');d.className='plot';
+    const head=t=>{d.innerHTML=`<h4>Plot ${i+1}</h4><div class="st">${t}</div>`;};
+    if(!p){head('For sale');d.appendChild(mk(`Buy<small>${price} shards</small>`,'primary',()=>act('buyPlot',[i],again),S.shards<price));}
+    else if(!p.crop){head('Yours, freshly turned');for(const c of G.crops){const C=CROPS[c];d.appendChild(mk(`Plant ${C.plural}<small>${C.seed} shards, ready in ${fmtLeft(C.grow)}</small>`,'',()=>act('plant',[i,c],again),S.shards<C.seed));}}
+    else{const C=CROPS[p.crop],g2=cropGrowth(p,now);
+      if(g2>=1){d.className+=' ready';head(`${C.plural[0].toUpperCase()+C.plural.slice(1)}, ready`);
+        d.appendChild(mk(`Harvest<small>${C.yield[0]} to ${C.yield[1]} ${C.plural}${F.broker?', sold by the broker':''}</small>`,'primary',()=>act('harvest',[i],again)));}
+      else{head(`${C.name}: ${fmtLeft(C.grow-(now-p.t))} to go`);const b=document.createElement('div');b.className='bar';b.innerHTML=`<i style="width:${(g2*100).toFixed(1)}%"></i>`;d.appendChild(b);}}
+    g.appendChild(d);});
 }
 
 /* ---------- the Adventurers' Guild ----------

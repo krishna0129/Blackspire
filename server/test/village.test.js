@@ -113,24 +113,25 @@ test('the training yard is the one place in the village to fight: scarecrows tak
   assert.strictEqual(run(`[G.enemies[0].x===vx(VILLAGE.scarecrows[0][0]),pl.hp===pl.ST.maxHp].join()`),'true,true','it never moves or strikes back');
 });
 
-test('the fields: buy a plot, plant it, wait for it to grow in real time, harvest it',()=>{
+test('the fields manager: buy, plant and harvest any plot from the field\u2019s entrance; crops grow in real time',()=>{
   const run=village();
-  run(`S.shards=1000;globalThis.onPlot=i=>{const[px,py]=VILLAGE.plots[i];pl.x=vx(px+1.5);pl.y=vy(py+1);};`);
-  assert.strictEqual(run(`runAction('buyPlot',[])`),false,'only standing on a plot');
-  run(`onPlot(0);`);assert.strictEqual(run(`runAction('buyPlot',[])`),true);
-  assert.strictEqual(run(`S.shards`),900,'the first plot is 100 shards');
-  assert.strictEqual(run(`runAction('buyPlot',[])`),false,'already yours');
-  run(`onPlot(1);`);assert.strictEqual(run(`runAction('buyPlot',[])`),true);
-  assert.strictEqual(run(`S.shards`),700,'the second costs twice as much');
-  run(`onPlot(0);`);
-  assert.strictEqual(run(`runAction('plant',['wheat'])`),false,'only what this village grows');
-  assert.strictEqual(run(`runAction('plant',['potato'])`),true);
-  assert.strictEqual(run(`runAction('harvest',[])`),false,'not before it has grown');
-  run(`myPlot(0).t-=CROPS.potato.grow-1000;`);assert.strictEqual(run(`runAction('harvest',[])`),false,'a second early is still early');
-  run(`myPlot(0).t-=2000;`);const n=run(`runAction('harvest',[])`);
+  run(`S.shards=1000;globalThis.atDesk=()=>{const q=G.fieldDesk[0];pl.x=q.x;pl.y=q.y+12;};`);
+  assert.strictEqual(run(`runAction('buyPlot',[0])`),false,'not from across the village');
+  run(`atDesk();`);
+  assert.strictEqual(run(`runAction('buyPlot',[0])`),true);assert.strictEqual(run(`S.shards`),900,'the first plot is 100 shards');
+  assert.strictEqual(run(`runAction('buyPlot',[0])`),false,'already yours');
+  assert.strictEqual(run(`runAction('buyPlot',[5])`),true);assert.strictEqual(run(`S.shards`),700,'the second costs twice as much');
+  assert.strictEqual(run(`runAction('buyPlot',[9])`),false,'there is no tenth plot');
+  assert.strictEqual(run(`runAction('plant',[0,'wheat'])`),false,'only what this village grows');
+  assert.strictEqual(run(`runAction('plant',[0,'potato'])`),true);
+  assert.strictEqual(run(`runAction('plant',[2,'potato'])`),false,'not a plot you don\u2019t own');
+  assert.strictEqual(run(`runAction('harvest',[0])`),false,'not before it has grown');
+  run(`myPlot(0).t-=CROPS.potato.grow-1000;`);assert.strictEqual(run(`runAction('harvest',[0])`),false,'a second early is still early');
+  run(`myPlot(0).t-=2000;`);const n=run(`runAction('harvest',[0])`);
   assert.ok(n>=4&&n<=6,'4 to 6 potatoes: '+n);assert.strictEqual(run(`S.crops.potato`),n);
   assert.strictEqual(run(`myPlot(0).crop`),null,'the plot is empty again');
-  run(`onPlot(2);`);assert.strictEqual(run(`runAction('plant',['potato'])`),false,'not on a plot you don’t own');
+  run(`const[px,py]=VILLAGE.plots[3];pl.x=vx(px+1.5);pl.y=vy(py+1);`);
+  assert.strictEqual(run(`runAction('plant',[5,'glowcap'])`),true,'standing on any plot works too');
 });
 
 test('the innkeeper cooks from your own crops, and packs potatoes as rations',()=>{
@@ -146,7 +147,7 @@ test('the innkeeper cooks from your own crops, and packs potatoes as rations',()
 
 test('the farmhand: paid a day at a time, brings in and replants while you are away, leaves when unpaid',()=>{
   const run=village();
-  run(`S.shards=2000;const[px,py]=VILLAGE.plots[0];pl.x=vx(px+1.5);pl.y=vy(py+1);runAction('buyPlot',[]);runAction('plant',['potato']);
+  run(`S.shards=2000;const[px,py]=VILLAGE.plots[0];pl.x=vx(px+1.5);pl.y=vy(py+1);runAction('buyPlot',[0]);runAction('plant',[0,'potato']);
     globalThis.H=CROPS.potato.grow;`);
   run(`globalThis.s0=S.shards;`);assert.strictEqual(run(`runAction('farmhand',[true])`),true);
   assert.strictEqual(run(`s0-S.shards`),40,'the first day, one plot');
@@ -164,8 +165,8 @@ test('the farmhand: paid a day at a time, brings in and replants while you are a
 
 test('the broker sells harvests for a cut; selling yourself at the food stall pays the full price',()=>{
   const run=village();
-  run(`S.shards=1000;const[px,py]=VILLAGE.plots[0];pl.x=vx(px+1.5);pl.y=vy(py+1);runAction('buyPlot',[]);runAction('plant',['glowcap']);
-    runAction('broker',[true]);myPlot(0).t-=CROPS.glowcap.grow;globalThis.s0=S.shards;globalThis.n=runAction('harvest',[]);`);
+  run(`S.shards=1000;const[px,py]=VILLAGE.plots[0];pl.x=vx(px+1.5);pl.y=vy(py+1);runAction('buyPlot',[0]);runAction('plant',[0,'glowcap']);
+    runAction('broker',[true]);myPlot(0).t-=CROPS.glowcap.grow;globalThis.s0=S.shards;globalThis.n=runAction('harvest',[0]);`);
   assert.strictEqual(run(`S.shards-s0`),run(`Math.floor(n*15*.75)`),'sold, less a quarter');
   assert.ok(!run(`S.crops.glowcap`),'nothing kept');
   run(`runAction('broker',[false]);S.crops.potato=10;const k=G.traders.findIndex(t=>t.sells==='food');globalThis.food=k;pl.x=G.traders[k].x;pl.y=G.traders[k].y+16;globalThis.s1=S.shards;`);
