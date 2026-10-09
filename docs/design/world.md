@@ -1,8 +1,16 @@
 # The world: the tree, its villages, the economy and the story
 
 Status: proposal. The owner's decisions are marked **Decided**. Everything else is a suggestion, open to change.
-**In the game** so far: the trader, hunger and thirst, and trader stock limits. Everything else here is not built yet. It changes where some existing things live (the blacksmith moves out of the
-tower's safe rooms), so it should be settled before more floors are built.
+**In the game** so far: the trader, hunger and thirst, and trader stock limits. Everything else here is not built
+yet. It changes where some existing things live (the blacksmith moves out of the tower's safe rooms), so it should be
+settled before more floors are built.
+
+**Decided, platform:** the game targets **web browsers on a computer** (keyboard and mouse) for now. Phones and
+tablets are not a goal yet, so new features don't need touch controls or small-screen layouts.
+
+**Decided, characters:** online and single player characters stay **separate**. An online character can be
+**imported into single player** to save time, never the other way, so nothing made offline can reach the online
+world.
 
 ## The picture
 
@@ -101,30 +109,38 @@ water keep the meters up.
   can hold or trade the ore, but not wear what it makes.
 - This replaces "premium currency": it's rare because of where it comes from, not because anyone pays for it.
 
-### The market: one pricing rule, by region
+### The market: one pricing rule, from what the NPCs hold
 
-**Decided:** keep it simple. One general rule sets every price from **how much of that good is available in a
-region**, and it is the same code in single player and online. Anti-abuse rules go in before anything else.
+**Decided:** keep it simple. One general rule sets every price, and it is the same code in single player and online.
+Anti-abuse rules go in before anything else.
 
-- A **region** is a village and its part of the tree. Each region keeps a stock level for each good.
-- **Suggested rule:**
+- **Decided:** a price depends only on how much of a good the **NPCs** hold: every blacksmith, arcanist and trader,
+  added together. What players carry in their bags or stash, or list at auction, doesn't count.
+- **Decided:** prices move **while players trade**, like villager trades in Minecraft. Every purchase takes from the
+  NPCs' total, so the next one costs a little more; every sale adds to it, so the next sale pays a little less.
+- **Suggested rule**, per good, per region (a village and its part of the tree):
 
   ```
-  price      = base × clamp(normal stock / current stock, 0.5, 2)
+  NPC stock  = what all the blacksmiths, arcanists and traders in the region hold together
+  price      = base × clamp(normal stock / NPC stock, 0.5, 2)
   sell price = 80% of the buy price         (the spread stops instant buy-low, sell-high loops)
   ```
 
-  - Selling a good adds to the region's stock, so its price there falls; buying takes from it, so the price rises.
-  - Every hour each stock drifts back toward normal (the region uses some and makes some), so prices recover.
-  - The same good can cost different amounts in different villages, which is the only "event" the rule needs:
-    goods from the Wildwood are cheap near the Wildwood and dear at the roots.
+  For example, if the region's traders normally hold 100 water flasks and players have bought 50 of them, flasks
+  cost twice the base price until the traders restock.
+  - Every hour each NPC's stock drifts back toward normal (they use some and make some), so prices recover.
+  - The same good can cost different amounts in different villages: goods from the Wildwood are cheap near the
+    Wildwood and dear at the roots.
+  - The price shown is always the price paid: the screen updates after every purchase or sale, so a player buying
+    ten of something sees it climb as they go.
+- Single player keeps the NPCs' stock in the save. Online, the server keeps one shared stock for everyone, which means
+  players compete for what a trader holds; the online stock sizes are still to be set.
 - **Anti-abuse, first:**
   - the spread, and the 0.5–2× clamp, so no single sale or purchase can swing a price far;
-  - a per-player limit on how much of one good a region takes from them each hour;
+  - a per-player limit on how much of one good the NPCs of a region take from them each hour;
   - everything goes through the server online (it already decides every action), and every sale is logged.
 - The **auction house** handles gear, because every piece rolls differently and has no single price. The market
   takes stackable things: materials, monster drops, crops, mythril ore.
-- Single player keeps its own copy of the regions in the save; online, every player shares the server's.
 
 ### Trading between players (online)
 
@@ -284,6 +300,6 @@ Recommended order, with reasons:
 1. A red gate needs a floor cleared without being hit once. Is that the **whole floor** (every room, every enemy,
    then the boss), or **from the boss chamber on**? The whole floor is very hard on floors of about 80 enemies,
    which may be the point.
-2. Should online and single player characters stay separate (as today), each with their own market regions?
-3. Online, how many supplies should a trader hold, when a party of four shares a safe room? Per player (as now) is
-   simplest.
+2. Is the NPC stock pooled **per region** (a village and its ten floors, as suggested) or across **the whole world**?
+   Per region is what lets the same good cost more in one village than another.
+3. Online stock sizes for traders, now that online stock is shared between players (to set when online gets its pass).
