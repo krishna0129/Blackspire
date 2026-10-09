@@ -109,7 +109,7 @@ function render(){
     else{ctx.fillStyle='#cfc8ff';ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);}}
   // numbers
   for(const n of G.nums){const col=n.kind==='crit'?'#ffd86a':n.kind==='hurt'?'#ff6a5e':n.kind==='bleed'?'#c05a6a':n.kind==='heal'?'#9be08a':n.kind==='evade'?'#6fd6e6':n.kind==='mana'?'#7fa8ff':n.kind==='resist'?'#8e97b5':n.kind==='bane'?'#f2a03c':'#e6e1d3';
-    ctx.globalAlpha=n.t>.5?1-(n.t-.5)/.25:1;drawNum(n.v,n.x-camX,n.y-camY-n.t*18,col);}
+    ctx.globalAlpha=n.t>NUM_LIFE-.15?(NUM_LIFE-n.t)/.15:1;drawNum(n.v,n.x-camX,n.y-camY-n.t*24,col);}
   ctx.globalAlpha=1;
 }
 // Someone else in your party, with their name over their head.

@@ -15,7 +15,7 @@ function targetFor(e){
 }
 const pull=(d,pl,dt)=>{const dist=hyp(d.x-pl.x,d.y-pl.y);if(dist<46){const s=140*dt/Math.max(dist,1);d.x+=(pl.x-d.x)*s;d.y+=(pl.y-d.y)*s;}};
 function simUpdate(dt){
-  if(G.hitstop>0){G.hitstop-=dt;return;}   // freeze-frame after a melee hit (single player only)
+  if(G.hitstop>0){G.hitstop=Math.max(0,G.hitstop-dt);return;}   // freeze-frame after a melee hit (single player only)
   if(!G.players.some(q=>!q.gone))return;
   G.time+=dt;
   for(let i=G.timers.length-1;i>=0;i--){const t=G.timers[i];t.t-=dt;if(t.t<=0){G.timers.splice(i,1);t.fn();}}
