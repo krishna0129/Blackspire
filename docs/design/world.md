@@ -118,7 +118,9 @@ Anti-abuse rules go in before anything else.
   added together. What players carry in their bags or stash, or list at auction, doesn't count.
 - **Decided:** prices move **while players trade**, like villager trades in Minecraft. Every purchase takes from the
   NPCs' total, so the next one costs a little more; every sale adds to it, so the next sale pays a little less.
-- **Suggested rule**, per good, per region (a village and its part of the tree):
+- **Decided:** stock is pooled **per region** (a village and its part of the tree), so prices differ between villages
+  and players can choose where to sell for the most.
+- **Suggested rule**, per good, per region:
 
   ```
   NPC stock  = what all the blacksmiths, arcanists and traders in the region hold together
@@ -208,10 +210,19 @@ blacksmith, except grimoires, which the arcanist makes.
 **Decided:** a red gate is a locked, harder version of a floor (a "double dungeon"). It opens when certain conditions
 are met, not at random.
 
-- **Decided, the first condition:** clear a floor too easily, **without being hit once**, and the next floor has a
-  **40% chance** to be a red gate.
-- **Decided:** the condition that opened a red gate decides **which boss** waits inside, so each condition has its own
-  boss.
+- **Decided:** the next floor has a **40% chance** to be a red gate when a player clears a floor too easily, in one of
+  two ways:
+
+  | Condition | What it takes | Red gate |
+  |---|---|---|
+  | **Untouched boss** | you may be hit on the floor, but you kill its boss without being hit once in the fight | red gate boss A |
+  | **Untouched floor** | you kill **every enemy on the floor**, boss included, without being hit once | red gate boss B |
+
+  Killing every enemy matters for the second: skipping rooms doesn't count.
+- **Decided:** the condition that opened a red gate decides **which boss** waits inside. The untouched-floor boss
+  should be the harder one, with the better loot, since it asks far more.
+- How "hit" is counted: any damage that reaches you. A dodged, evaded or fully blocked blow is not a hit. Thorns,
+  hunger and thirst don't count either, since nothing attacked you.
 - **Suggested conditions for later**, hinted at by quests and notes found in the tower:
   - beat a floor's boss without drinking a potion;
   - clear every elite on a floor before entering the boss chamber;
@@ -297,9 +308,6 @@ Recommended order, with reasons:
 
 ## Open questions
 
-1. A red gate needs a floor cleared without being hit once. Is that the **whole floor** (every room, every enemy,
-   then the boss), or **from the boss chamber on**? The whole floor is very hard on floors of about 80 enemies,
-   which may be the point.
-2. Is the NPC stock pooled **per region** (a village and its ten floors, as suggested) or across **the whole world**?
-   Per region is what lets the same good cost more in one village than another.
-3. Online stock sizes for traders, now that online stock is shared between players (to set when online gets its pass).
+1. Online stock sizes for traders, now that online stock is shared between players (to set when online gets its pass).
+2. In a party, does a red gate condition count for the **whole party** (nobody hit) or **per player**? Whole party
+   is simpler to show and harder to earn.
