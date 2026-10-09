@@ -92,8 +92,8 @@ function killEnemy(e){
     dropLoot(e.boss?'boss':e.elite?'elite':'normal',e.x,e.y);
     if(e.boss){
       const fs=floorState(G.n),first=!fs.boss;fs.boss++;S.best=Math.max(S.best,G.n+1);
-      fs.shops=[];   // a fallen boss restocks this floor's traders
-      bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'The traders on this floor have restocked.',3600);
+      fs.shops=[];floorState(0).shops=[];   // a fallen boss restocks this floor's traders, and the village market
+      bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'This floor’s traders and the village market have restocked.',3600);
       if(!P.dead)P.hp=ST.maxHp;persist();
     }
   });

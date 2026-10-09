@@ -71,6 +71,9 @@ alongside the traders. Six stalls:
 | **The witchcraft room** | the **arcanist** | mutations, skills, gear passives later; **alchemy and potion crafting**. A cauldron, shelves of jars, green light |
 
 Each stall has its own striped awning and its goods on show, so you can tell them apart from across the market.
+**In the game:** the stalls restock whenever you beat any floor's boss, and once a day, when the guild's board
+refreshes. Their gear is always at the level of the highest floor you have reached.
+
 All six count as NPC stock for the region's prices ([world.md](world.md#the-market-one-pricing-rule-from-what-the-npcs-hold)).
 
 ### Elsewhere

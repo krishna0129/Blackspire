@@ -50,7 +50,7 @@ function genFloor(n,seed){
   for(const q of gates)for(const t of q.tiles)map[t[1]*MW+t[0]]=3;
   for(let y=0;y<MH;y++)for(let X=0;X<MW;X++){if(map[y*MW+X])continue;
     out:for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=X+dx,ny=y+dy;if(nx<0||ny<0||nx>=MW||ny>=MH)continue;if(map[ny*MW+nx]===1){map[y*MW+X]=2;break out;}}}
-  const g={n,map,rooms,start,boss,gates,gatesOpen:false,locked:false,enemies:[],chests:[],drops:[],proj:[],pproj:[],fx:[],nums:[],parts:[],tele:[],timers:[],
+  const g={n,seed,map,rooms,start,boss,gates,gatesOpen:false,locked:false,enemies:[],chests:[],drops:[],proj:[],pproj:[],fx:[],nums:[],parts:[],tele:[],timers:[],
     players:[],did:0,seen:new Uint8Array(MW*MH),gate:null,bossAwake:false,bossEnt:null,shake:0,time:0};
   const hpM=1+.38*(n-1),dmgM=1+.22*(n-1);
   g.hpM=hpM;g.dmgM=dmgM;

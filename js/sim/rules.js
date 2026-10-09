@@ -52,6 +52,16 @@ function migrateFloors(s){
   for(let n=1;n<s.best;n++)fl(n).boss=1;   // every floor below the highest one reached was beaten to get there
   delete s.chestFloor;delete s.chestsOpen;delete s.shops;delete s.cleared;
 }
+// Opened chests are remembered by their place in a floor's list of chests, so a list only means something on the
+// layout it was made on. fs.seed is that layout's seed; a list from before it was recorded was made on the
+// character's own seed, which is what single player has always used. Arriving on another layout of the same floor
+// starts the list again, so no chest shows as opened that this player never opened.
+function claimChests(save,g){
+  if(!g.n||g.seed==null)return;
+  const fs=save.floors[g.n]||(save.floors[g.n]={chests:[],shops:[],boss:0});
+  if((fs.seed==null?save.seed:fs.seed)!==g.seed)fs.chests=[];
+  fs.seed=g.seed;
+}
 const xpNeed=l=>Math.round(36+22*Math.pow(l,1.55));
 
 // Derived stats for a character wearing `e`. Pure: it changes nothing, so it can also answer "what if I wore this?".
@@ -105,6 +115,7 @@ function migrateSave(s){
 // A player's runtime on floor G. tp counts moves the rules make for them (a teleport, a respawn): online, the
 // browser normally decides where its player stands, but a newer tp from the server means "jump to where I say". They start at the entrance, or at their last safe room on this floor.
 function makePlayer(id,save){
+  claimChests(save,G);   // every arrival on a floor comes through here, in single player and on the server
   const st=computeStats(save.char,save.equip),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
   return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,food:save.food==null?100:save.food,drink:save.drink==null?100:save.drink,buff:save.buff?Object.assign({},save.buff):null,
     aim:0,face:1,atkCd:0,atkBuf:0,skillCd:0,skillMax:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,

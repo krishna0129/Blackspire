@@ -7,7 +7,13 @@ const nearSmithIdx=si=>{const q=G.smiths[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;
 const nearTraderIdx=si=>{const q=G.traders[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const ACTIONS={
   // make the stock the first time a trader's pack is opened
-  openShop(si){if(!nearTraderIdx(si))return false;const sh=shopOf(si);if(!sh.stock)sh.stock=makeStock(G.traders[si].sells||'all');return true;},
+  openShop(si){
+    if(!nearTraderIdx(si))return false;
+    // The village market restocks with each day's quest board, as well as whenever a boss falls (killEnemy). The
+    // tower's traders only restock when their own floor's boss falls.
+    if(G.village){const f=floorState(0),day=questDay();if(f.day!==day){f.shops=[];f.day=day;}}
+    const sh=shopOf(si);if(!sh.stock)sh.stock=makeStock(G.traders[si].sells||'all');return true;
+  },
   buy(si,i){
     if(!nearTraderIdx(si))return false;const sh=shopOf(si),e=sh.stock&&sh.stock[i];
     if(!e||S.shards<e.price||S.inv.length>=BAG_SIZE)return false;

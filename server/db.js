@@ -1,5 +1,5 @@
 'use strict';
-// Blackspire server: accounts, login sessions and characters, in one SQLite file (server/data/blackspire.db).
+// Blackspire server: accounts, login sessions, characters and the tower's seed, in one SQLite file (server/data/blackspire.db).
 // Passwords are stored only as salted scrypt hashes.
 
 const {DatabaseSync}=require('node:sqlite');
@@ -17,6 +17,7 @@ function open(file){
       salt BLOB NOT NULL, hash BLOB NOT NULL, created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, account INTEGER NOT NULL REFERENCES accounts(id), created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS characters(account INTEGER PRIMARY KEY REFERENCES accounts(id), save TEXT NOT NULL, updated INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
   `);
   const q={
     addAccount:db.prepare('INSERT INTO accounts(name,salt,hash,created) VALUES(?,?,?,?)'),
@@ -27,6 +28,8 @@ function open(file){
     dropSession:db.prepare('DELETE FROM sessions WHERE token=?'),
     getChar:db.prepare('SELECT save FROM characters WHERE account=?'),
     putChar:db.prepare('INSERT INTO characters(account,save,updated) VALUES(?,?,?) ON CONFLICT(account) DO UPDATE SET save=excluded.save, updated=excluded.updated'),
+    getMeta:db.prepare('SELECT value FROM meta WHERE key=?'),
+    putMeta:db.prepare('INSERT INTO meta(key,value) VALUES(?,?)'),
   };
   const hashPw=(pw,salt)=>crypto.scryptSync(pw,salt,64,{N:16384,r:8,p:1});
   const newSession=account=>{const token=crypto.randomBytes(32).toString('hex');q.addSession.run(token,account,Date.now());return token;};
@@ -54,6 +57,12 @@ function open(file){
     logout(token){q.dropSession.run(token);},
     loadChar(account){const r=q.getChar.get(account);return r?JSON.parse(r.save):null;},
     saveChar(account,save){q.putChar.run(account,JSON.stringify(save),Date.now());},
+    // The seed every floor of this server's tower is built from. Picked once, the first time the database is used,
+    // and kept with it, so floor n is the same place for every party and after every restart.
+    worldSeed(){
+      const r=q.getMeta.get('worldSeed');if(r)return Number(r.value);
+      const seed=crypto.randomInt(2**31);q.putMeta.run('worldSeed',String(seed));return seed;
+    },
     close(){db.close();},
   };
 }

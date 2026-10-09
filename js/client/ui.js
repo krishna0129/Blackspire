@@ -507,7 +507,7 @@ function renderDetail(){
     const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Pack one (${RATION_POTATOES} potatoes)`;
     b.disabled=have<RATION_POTATOES;b.onclick=()=>act('packRation',[atSmith],r=>{renderPanel();});a.appendChild(b);el.appendChild(a);return;}
   if(sel&&sel.from==='supply'&&shop){const k=sel.k,s=SUPPLIES[k],pr=supplyPrice(k),left=shop[s.key];
-    el.innerHTML=`<h4>${s.name}</h4><div class="sub">${s.desc} You carry ${S[s.key]||0}. The trader has ${left} left${left?'':': it comes back when this floor\u2019s boss falls'}.</div>`;
+    el.innerHTML=`<h4>${s.name}</h4><div class="sub">${s.desc} You carry ${S[s.key]||0}. The trader has ${left} left${left?'':G.village?': the market restocks each day, and whenever you beat a floor\u2019s boss':': it comes back when this floor\u2019s boss falls'}.</div>`;
     const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Buy for ${pr} shards`;
     b.disabled=S.shards<pr||left<=0;b.onclick=()=>act('buySupply',[atSmith,k],r=>{if(r)sfx('pick');renderPanel();});
     a.appendChild(b);el.appendChild(a);return;}
