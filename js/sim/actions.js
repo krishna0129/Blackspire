@@ -54,6 +54,21 @@ const ACTIONS={
     P.food=Math.min(100,P.food+m.food);P.drink=Math.min(100,P.drink+m.drink);P.buff={id:m.buff,t:BUFF_TIME};
     log(`You eat the ${m.name.toLowerCase()}. ${BUFFS[m.buff].name}: ${BUFFS[m.buff].desc.toLowerCase()}`);sfx('pick');return true;
   },
+  // the Adventurers' Guild: take a quest from today's board, give one up, or hand a finished one in for its reward
+  takeQuest(id){
+    if(!nearGuild(40))return false;const L=questLog(),q=questById(id);
+    if(!q||id in L.active||L.done.includes(id)||Object.keys(L.active).length>=QUEST_MAX)return false;L.active[id]=0;return true;
+  },
+  dropQuest(id){const L=questLog();if(!(id in L.active))return false;delete L.active[id];return true;},
+  handIn(id){
+    if(!nearGuild(40))return false;const L=questLog(),q=questById(id);
+    if(!q||!(id in L.active)||!questReady(q))return false;
+    if(q.kind==='deliver')S.mats[q.mat]-=q.n;
+    delete L.active[id];L.done.push(id);
+    const R=q.reward;S.shards+=R.shards;for(const k in R.mats||{})S.mats[k]=(S.mats[k]||0)+R.mats[k];
+    log(`<span style="color:var(--cyan)">${q.title} handed in: ${R.shards} shards and ${R.xp} experience${R.mats?', and a Spire crystal':''}.</span>`);
+    sfx('lvl');gainXp(R.xp);return true;
+  },
   salvage(i){if(!S.inv[i])return false;salvageItem(S,i);return true;},
   seen(){for(const it of S.inv)delete it.isNew;return true;},
   custom(url){S.char.custom=url||null;return true;},

@@ -34,6 +34,7 @@ js/sim/               the game rules. No page, canvas or sound: the browser runs
   rules.js            players, saves, derived stats, and the list of host functions the rules call
   world.js            floor generation
   village.js          the root village (floor 0): its map, stalls, people and scenery; online, shared in channels
+  quests.js           the Adventurers' Guild's daily quest board
   combat.js           hit detection, damage, skills, spells, loot, the boss chamber
   update.js           one step of a floor: every player, enemy, shot and drop; enemy and boss AI
   floor3.js           floor 3's enemies (Gravecaller, Thornroot, Bloodbloom, Ossuary hermit) and the Pale Collector

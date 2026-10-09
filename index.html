@@ -150,6 +150,15 @@
       <div class="titleBtns"><button class="btn primary" id="btnResume">Resume<kbd>Esc</kbd></button><button class="btn" id="btnSaveQuit">Save and quit to title</button></div></div>
   </div>
 
+  <div id="guild" class="overlay" hidden>
+    <div class="sheet"><h2 id="gTitle">Adventurers' Guild</h2><p id="gTxt"></p>
+      <h3>Your quests <span id="gCount"></span></h3><div class="qlist" id="gMine"></div>
+      <h3>Today's board</h3><div class="qlist" id="gBoard"></div>
+      <h3>Party notices</h3><div class="qlist" id="gNotes"></div>
+      <div class="gpost" id="gPostRow"><input type="text" id="gNoteTxt" maxlength="60" placeholder="Two for floor 3, healer wanted" spellcheck="false"><button class="btn small" id="gPost">Post</button><button class="btn small" id="gUnpost" hidden>Take down</button></div>
+      <div class="titleBtns"><button class="btn" id="gClose">Close<kbd>Esc</kbd></button></div></div>
+  </div>
+
   <div id="travel" class="overlay" hidden>
     <div class="sheet"><h2>Floor gate</h2><p id="travelTxt"></p><div id="travelList"></div>
       <div class="titleBtns"><button class="btn" id="travelClose">Stay here<kbd>Esc</kbd></button></div></div>
@@ -168,6 +177,7 @@
 <script src="js/sim/rules.js"></script>
 <script src="js/sim/world.js"></script>
 <script src="js/sim/village.js"></script>
+<script src="js/sim/quests.js"></script>
 <script src="js/sim/combat.js"></script>
 <script src="js/sim/update.js"></script>
 <script src="js/sim/floor3.js"></script>

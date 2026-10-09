@@ -42,10 +42,11 @@ Object.assign(NET,{
       case'auth':case'created':case'kicked':if(this.onMsg)this.onMsg(o);if(o.t==='kicked')showTitle(o.msg);return;
       case'save':{
         S=migrateSave(o.s);if(P){P.S=S;setPlayer(P);calcStats();refreshSprites();refreshHudStatic();bagBadge();}
-        if(mode==='panel')renderPanel();return;}
+        if(mode==='panel')renderPanel();if(mode==='guild')renderGuild();return;}
       case'floor':return this.enterFloor(o);
       case's':return this.snapshot(o);
-      case'party':this.party=o;if(mode==='pause')renderParty();return;
+      case'party':this.party=o;if(mode==='pause')renderParty();if(mode==='guild')renderGuild();return;
+      case'notices':this.notices=o.list;if(mode==='guild')renderGuild();return;
       // everyone else in your world: your party on a floor, everyone in your channel in the village. A character
       // sheet comes once per person; true means "the one you already have".
       case'world':this.ch=o.ch;for(const q of o.people){if(typeof q.custom==='string')this.sheets.set(q.id,q.custom);else if(q.custom===true)q.custom=this.sheets.get(q.id)||null;}

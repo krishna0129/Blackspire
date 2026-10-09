@@ -8,7 +8,8 @@ the floor gate's way home, the four trader stalls, the forge (the only blacksmit
 and a stash chest), the stash chest by the inn, the well and empty flasks, the arcanist, captains, innkeeper and guild
 clerk (who talk, for now), and no hunger or thirst at home. Online, the village is **shared**: everyone is in a
 channel of up to 30, sees the others there, and parties form and leave through the Teleport Gate together. The
-inn serves meals and the training yard's scarecrows take hits (below). **Not yet:** the guild, the fields.
+inn serves meals, the training yard's scarecrows take hits, and the Adventurers' Guild runs its quest board and party
+notices (below). **Not yet:** the fields.
 
 ![Plan of the root village: the Teleport Gate glowing in the middle of the square under the tower's trunk; winding paths lined with trees, shrubs, flowers and lamps lead to the inn and well, the market of six stalls including the forge and the witchcraft room, the kingdom camps, the fields of plots for sale, and the training yard with scarecrow dummies](img/root-village.svg)
 
@@ -32,6 +33,20 @@ grass, lamps at the corners, smoke from the forge and bubbles from the witchcraf
 - **Teleporting** goes to **safe points you have visited** (decided), plus each floor's entrance.
 
 ### The Adventurers' Guild
+
+**In the game.** How it works now:
+
+- **One board a day per region**, the same for every player, built from the date (it needs no server). The root
+  village's board has three hunts (kill a number of one enemy, on the floor it lives on), two deliveries (bring iron
+  scrap, Emberstone or Spire crystal) and a bounty (beat one floor's boss). Rewards are shards and experience; the
+  bounty adds a Spire crystal.
+- Up to **three quests** taken at once, at the guild clerk by the door. Kills count from when you take a quest;
+  deliveries count what you carry and take it when you hand in. Giving a quest up frees its place.
+- The notice board in the square shows the same board, to read; taking and handing in happen at the guild.
+- The board refreshes at **midnight UTC**, and shows how long until then.
+- **Party notices (online):** a party leader in the village posts one line; anyone online sees it at the guild, with
+  the leader's name, level and class, the party's size and furthest floor, and joins with one click. A notice comes
+  down when the party fills, breaks up, its leader takes it down, or after 30 minutes.
 
 **Decided:** the village has an adventurers' guild, on the square's south side. There players:
 

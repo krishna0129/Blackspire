@@ -27,6 +27,7 @@ function updateHud(){
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
   const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
   const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
+    nearGuild()?'guild':nearBoard()?'board':
     wl?'well'+(S.empties>0?S.empties:''):tk?'talk:'+tk.name:'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>E</kbd>';
@@ -36,6 +37,8 @@ function updateHud(){
     else if(near==='home')elPrompt.innerHTML=(G.village?'Teleport Gate':'Floor gate')+'<kbd>E</kbd>';
     else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>E</kbd>';
     else if(near==='stash')elPrompt.innerHTML='Stash<kbd>E</kbd>';
+    else if(near==='guild')elPrompt.innerHTML='Adventurers\u2019 Guild<kbd>E</kbd>';
+    else if(near==='board')elPrompt.innerHTML='Notice board<kbd>E</kbd>';
     else if(near.startsWith('well'))elPrompt.innerHTML=(S.empties>0?`Fill ${S.empties} empty flask${S.empties>1?'s':''} at the well`:'The well')+'<kbd>E</kbd>';
 }
 }
@@ -264,6 +267,8 @@ function interact(){
   const tr=nearTrader();if(tr){openPanel(tr,'trader');return;}
   const st=nearStash();if(st){openPanel(st,'stash');return;}
   const sm=nearSmith();if(sm){openPanel(sm,'smith');return;}
+  if(nearGuild()){openGuild(true);return;}
+  if(nearBoard()){openGuild(false);return;}
   if(nearWell()){act('fillFlasks',[],n=>{if(n){sfx('pick');log(`Filled ${n} flask${n>1?'s':''} at the well.`);}
     else log('You have no empty flasks to fill. The food and drink stall sells water flasks; drink one and the flask is yours to refill.');hc.near=null;});return;}
   const tk=nearTalker();if(tk){tk.sayUntil=G.time+6;sfx('pick');}
@@ -280,6 +285,56 @@ function confirmChamber(){
   if(mode!=='ask'||!askGate)return;const q=askGate;closeAsk();
   if(NET.on)NET.send({t:'chamber',g:G.gates.indexOf(q)});else enterChamber(q);
 }
+
+/* ---------- the Adventurers' Guild ----------
+   Quests (js/sim/quests.js) are taken and handed in at the clerk by the guild's door; the notice board in the square
+   shows the same board to read. Party notices are online only: the server keeps them. */
+let atGuild=false;
+function openGuild(clerk){
+  if(mode!=='play')return;mode='guild';atGuild=clerk;inp.atk=false;for(const k in keys)keys[k]=false;
+  if(NET.on)NET.send({t:'notices'});
+  $('#guild').hidden=false;renderGuild();
+}
+function closeGuild(){if(mode!=='guild')return;$('#guild').hidden=true;mode='play';$('#gNoteTxt').blur();}
+$('#gClose').onclick=closeGuild;
+const rewardText=r=>`${r.shards} shards, ${r.xp} experience`+(r.mats?Object.keys(r.mats).map(k=>`, ${r.mats[k]} ${MATS[k].name}`).join(''):'');
+function questCard(q,btns,extra=''){
+  const d=document.createElement('div');d.className='quest'+(extra.includes('ready')?' ready':'');
+  d.innerHTML=`<div class="qt"><b>${esc(q.title)}</b><small>${esc(q.desc)}</small><span class="rw">${rewardText(q.reward)}</span>${extra.replace('ready','')}</div>`;
+  for(const[t,cls,fn,dis]of btns){const b=document.createElement('button');b.className='btn small '+cls;b.textContent=t;b.disabled=!!dis;b.onclick=fn;d.appendChild(b);}
+  return d;
+}
+function renderGuild(){
+  if(mode!=='guild')return;
+  const L=questLog(),board=questBoard(questDay()),left=questRefreshIn(),h=Math.floor(left/3600000),mn=Math.floor(left%3600000/60000);
+  const taken=Object.keys(L.active).length,again=()=>renderGuild();
+  $('#gTitle').textContent=atGuild?'Adventurers\u2019 Guild':'Notice board';
+  $('#gTxt').textContent=(atGuild?'Take up to '+QUEST_MAX+' quests and hand them in here when they are done.':'Quests are taken and handed in at the Adventurers\u2019 Guild, south of the square.')+
+    ` A new board goes up in ${h} h ${mn} min; anything taken and not handed in by then is lost.`;
+  $('#gCount').textContent=`${taken} / ${QUEST_MAX}`;
+  const mine=$('#gMine');mine.innerHTML='';
+  for(const id of Object.keys(L.active)){const q=board.find(x=>x.id===id);if(!q)continue;const[have,need]=questProgress(q),ready=have>=need;
+    mine.appendChild(questCard(q,[
+      ...(atGuild?[[ready?'Hand in':'Not done yet','primary',()=>act('handIn',[id],again),!ready]]:[]),
+      ['Give up','',()=>act('dropQuest',[id],again)]],
+      `<span class="pg">${q.kind==='deliver'?'You have':'Progress:'} ${have} / ${need}</span>`+(ready?'ready':'')));}
+  if(!taken){const n=document.createElement('div');n.className='none';n.textContent='None taken.';mine.appendChild(n);}
+  const bd=$('#gBoard');bd.innerHTML='';
+  for(const q of board){if(q.id in L.active)continue;const done=L.done.includes(q.id);
+    bd.appendChild(questCard(q,done?[['Handed in','',()=>{},true]]:atGuild?[['Take','primary',()=>act('takeQuest',[q.id],again),taken>=QUEST_MAX]]:[]));}
+  // party notices
+  const nl=$('#gNotes');nl.innerHTML='';const post=$('#gPostRow');
+  if(!NET.on){nl.innerHTML='<div class="none">Party notices are for online play: post one to find party mates, or join someone else\u2019s party from theirs.</div>';post.hidden=true;return;}
+  const list=NET.notices||[],leader=NET.party&&NET.party.leader===P.id;
+  for(const n of list){const d=document.createElement('div');d.className='quest';
+    d.innerHTML=`<div class="qt"><b>${esc(n.name)}, level ${n.level} ${esc(n.cls.toLowerCase())}</b><small>\u201c${esc(n.text)}\u201d</small><span class="pg">Party of ${n.size} / 4, reached floor ${n.best}. Posted ${n.mins?n.mins+' min ago':'just now'}.</span></div>`;
+    const b=document.createElement('button');b.className='btn small primary';b.textContent=n.own?'Your party':'Join';b.disabled=n.own;
+    b.onclick=()=>{NET.send({t:'join',code:n.code});closeGuild();};d.appendChild(b);nl.appendChild(d);}
+  if(!list.length)nl.innerHTML='<div class="none">No notices up. Post one to find party mates.</div>';
+  post.hidden=!atGuild||!leader;$('#gUnpost').hidden=!list.some(n=>n.own);
+}
+$('#gPost').onclick=()=>{const t=$('#gNoteTxt').value.trim();if(!t)return;NET.send({t:'notice',text:t});$('#gNoteTxt').value='';};
+$('#gUnpost').onclick=()=>NET.send({t:'unnotice'});
 
 /* ---------- floor gate ----------
    Stands in every start room. It takes you to any floor up to the highest you have unlocked. Enemies and the boss

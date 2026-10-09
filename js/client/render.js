@@ -44,6 +44,7 @@ function render(){
   for(const q of G.smiths)list.push({smith:q,y:q.y,r:6});
   for(const q of G.traders||[])list.push({trader:q,y:q.y,r:6});
   for(const q of G.talkers||[])list.push({talker:q,y:q.y,r:6});
+  if(G.guild)list.push({talker:G.guild,y:G.guild.y,r:6});
   for(const q of G.stashes||[])list.push({stash:q,y:q.y,r:0});
   for(const q of G.props||[])list.push({prop:q,y:q.y,r:0});
   list.sort((a,b)=>(a.y+a.r)-(b.y+b.r));

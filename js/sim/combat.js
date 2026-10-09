@@ -88,7 +88,7 @@ function killEnemy(e){
   if(T.corpse&&!e.collect)G.corpses.push({x:e.x,y:e.y,t:6});   // a thrall leaves its body behind, for a Gravecaller to raise
   forPlayers(pl=>{
     S.kills++;if(e.raised)return;   // the raised dead give nothing: no experience, no loot, so raising cannot be farmed
-    gainXp(T.xp*(1+.3*(G.n-1))*(e.elite?3:1));
+    gainXp(T.xp*(1+.3*(G.n-1))*(e.elite?3:1));questKill(e);
     dropLoot(e.boss?'boss':e.elite?'elite':'normal',e.x,e.y);
     if(e.boss){
       const fs=floorState(G.n),first=!fs.boss;fs.boss++;S.best=Math.max(S.best,G.n+1);

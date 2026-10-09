@@ -10,12 +10,13 @@
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 
 const ROOT=path.join(__dirname,'..');
-const SIM_FILES=['util','data','items','rules','world','village','combat','update','floor3','actions'];
+const SIM_FILES=['util','data','items','rules','world','village','quests','combat','update','floor3','actions'];
 const TICK=1/30;          // the rules run 30 times a second
 const SNAP_EVERY=2;       // each player gets a snapshot every second tick (15 a second)
 const VIEW=360;           // enemies and shots further than this from a player are left out of their snapshot
 const PARTY_MAX=4;
 const CHANNEL_MAX=30;     // players in one copy of the village before another opens
+const NOTICE_TTL=30*60*1000,NOTICE_LEN=60;   // party notices at the guild: how long one stays up, and how long it can be
 const SAVE_EVERY=10;      // seconds between writes of changed characters to the database
 
 // The host functions, as the server implements them: everything the rules report becomes an event for the players
@@ -48,6 +49,7 @@ function __lists(){return{SKINS,HAIRS,EYES,OUTFITS,STYLES:STYLES.length,START:[.
 function __actions(){return ACTIONS;}
 function __boxSolid(x,y,r){return boxSolid(x,y,r);}
 function __nearHome(){return nearHome();}
+function __classOf(it){return classOf(it);}
 `;
 function loadRules(){
   const ctx=vm.createContext({console});
@@ -70,7 +72,7 @@ function validSheet(url){
 
 class Game{
   constructor(db){
-    this.db=db;this.R=loadRules();this.parties=new Map();this.byCode=new Map();this.worlds=new Set();this.nextPid=1;this.ticks=0;this.saveT=0;
+    this.db=db;this.R=loadRules();this.parties=new Map();this.byCode=new Map();this.worlds=new Set();this.notices=[];this.nextNotice=1;this.nextPid=1;this.ticks=0;this.saveT=0;
     this.timer=setInterval(()=>this.tick(),1000*TICK);
   }
   stop(){clearInterval(this.timer);for(const p of this.parties.values())for(const m of p.members)this.store(m);}
@@ -179,6 +181,27 @@ class Game{
     m.pl=pl;m.budget=0;m.in={mx:0,my:0,atk:false,block:false};m.pos=null;w.G.players.push(pl);
   }
 
+  /* ---------- party notices ----------
+     The guild's other board: a party leader posts a line ("two for floor 3, healer wanted") and anyone online can join
+     from it. A notice comes down when its party fills up or breaks up, when its leader takes it down, or after 30 minutes. */
+  noticeList(m){
+    const now=Date.now();
+    this.notices=this.notices.filter(n=>{const p=this.parties.get(n.party);return p&&p.members.length<PARTY_MAX&&now-n.t<NOTICE_TTL;});
+    return this.notices.map(n=>{const p=this.parties.get(n.party),L=p.leader.S;
+      return{id:n.id,code:p.code,name:L.char.name,level:L.char.level,cls:this.R.__classOf(L.equip.weapon),size:p.members.length,best:this.partyBest(p),
+        text:n.text,mins:Math.floor((now-n.t)/60000),own:!!m&&m.party===p};});
+  }
+  postNotice(m,text){
+    const p=m.party;
+    if(!m.w||m.w.kind!=='village')return'Party notices are posted at the guild, in the village.';
+    if(p.leader!==m)return'Only the party leader posts the party\u2019s notice.';
+    if(p.members.length>=PARTY_MAX)return'Your party is already full.';
+    text=String(text||'').replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,NOTICE_LEN);
+    if(!text)return'Write what your party is looking for.';
+    this.notices=this.notices.filter(n=>n.party!==p.id);
+    this.notices.push({id:this.nextNotice++,party:p.id,text,t:Date.now()});return null;
+  }
+
   /* ---------- messages to players ---------- */
   send(m,o){if(m.ws.readyState===1)m.ws.send(JSON.stringify(o));}
   sendFloor(m){
@@ -284,6 +307,9 @@ class Game{
         const cp=Number.isInteger(o.cp)&&o.cp>0&&((m.S.points||{})[o.n]||[]).includes(o.cp)?o.cp:0;
         return this.travel(p,o.n,cp);}
       case'join':{const err=this.join(m,o.code);if(err)this.send(m,{t:'err',msg:err});return;}
+      case'notices':return this.send(m,{t:'notices',list:this.noticeList(m)});
+      case'notice':{const err=this.postNotice(m,o.text);if(err)this.send(m,{t:'err',msg:err});return this.send(m,{t:'notices',list:this.noticeList(m)});}
+      case'unnotice':this.notices=this.notices.filter(n=>n.party!==p.id);return this.send(m,{t:'notices',list:this.noticeList(m)});
       case'leave':{const err=this.leave(m);if(err)this.send(m,{t:'err',msg:err});return;}
     }
   }

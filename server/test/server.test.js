@@ -139,6 +139,23 @@ test('online play',async t=>{
     g.worlds.delete(other);
   });
 
+  await t.test('party notices at the guild: the leader posts, someone else joins from it',async()=>{
+    let since=B.msgs.length;B.send({t:'notice',text:'not mine to post'});
+    assert.match((await B.wait(o=>o.t==='err',3000,since)).msg,/leader/);
+    since=A.msgs.length;A.send({t:'notice',text:'  Two for floor 3, <healer> wanted  '});
+    const mine=await A.wait(o=>o.t==='notices'&&o.list.length===1,3000,since);
+    assert.strictEqual(mine.list[0].text,'Two for floor 3, healer wanted','trimmed, and no markup');assert.ok(mine.list[0].own);
+    const C=await player(s.port,'Charlie');C.send({t:'notices'});
+    const seen=await C.wait(o=>o.t==='notices'&&o.list.length===1);
+    assert.strictEqual(seen.list[0].name,'Alpha');assert.ok(!seen.list[0].own);assert.strictEqual(seen.list[0].size,2);
+    since=C.msgs.length;C.send({t:'join',code:seen.list[0].code});
+    const fl=await C.wait(o=>o.t==='floor',3000,since);assert.strictEqual(fl.n,0);
+    await A.wait(o=>o.t==='party'&&o.members.length===3);
+    since=A.msgs.length;A.send({t:'unnotice'});
+    assert.strictEqual((await A.wait(o=>o.t==='notices',3000,since)).list.length,0);
+    C.ws.close();await new Promise(r=>setTimeout(r,100));
+  });
+
   await t.test('characters are saved and come back on the next login',async()=>{
     const g=s.game,m=[...g.parties.values()].flatMap(p=>p.members).find(q=>q.S.char.name==='Alpha');
     m.S.shards=1234;A.ws.close();await new Promise(r=>setTimeout(r,150));
