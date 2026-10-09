@@ -29,7 +29,7 @@ function newState(name,look,wkey,tint){
   return{v:1,seed:(Math.random()*2147483647)|0,
     char:{name,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0},
     equip:{weapon:makeWeapon(wt,1,0,school),armor:makeArmor('tunic',1,0,tint),boots:makeBoots('boots',1,0),trinket:null},
-    inv:[],shards:0,mats:{scrap:0,ember:0,crystal:0},potions:3,rations:2,flasks:2,food:100,drink:100,floor:0,best:1,kills:0,deaths:0,hp:null,
+    inv:[],shards:0,mats:{scrap:0,ember:0,crystal:0},potions:3,rations:2,flasks:2,empties:0,food:100,drink:100,stash:[],floor:0,best:1,kills:0,deaths:0,hp:null,
     floors:{}};
 }
 // What the save remembers about each floor, by floor number: which chests are opened, what each blacksmith sells,
@@ -98,12 +98,13 @@ function migrateSave(s){
   s.mats=Object.assign({scrap:0,ember:0,crystal:0},s.mats);
   for(const k of['rations','flasks'])if(typeof s[k]!=='number')s[k]=2;   // saves from before hunger and thirst
   for(const k of['food','drink'])if(typeof s[k]!=='number')s[k]=100;
+  if(typeof s.empties!=='number')s.empties=0;if(!Array.isArray(s.stash))s.stash=[];
   return s;
 }
 // A player's runtime on floor G. tp counts moves the rules make for them (a teleport, a respawn): online, the
 // browser normally decides where its player stands, but a newer tp from the server means "jump to where I say". They start at the entrance, or at their last safe room on this floor.
 function makePlayer(id,save){
-  const st=computeStats(save.char,save.equip),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.smiths[save.cp]?G.smiths[save.cp]:null;
+  const st=computeStats(save.char,save.equip),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
   return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,food:save.food==null?100:save.food,drink:save.drink==null?100:save.drink,
     aim:0,face:1,atkCd:0,atkBuf:0,skillCd:0,skillMax:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
     guard:0,hot:null,ward:0,tp:0,in:{mx:0,my:0,atk:false,block:false},lastBreak:-9,lastSheath:-9,lastNoMana:-9};

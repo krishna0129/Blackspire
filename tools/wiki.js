@@ -181,7 +181,7 @@ function enhancePage(){
   const out=[HEADER('Enhancement and item stats'),
 `## Enhancing
 
-A blacksmith (in every start room and safe room) enhances weapons, armor and boots up to +${D.ENH_MAX}. Each level adds
+The blacksmith (at the forge, in the root village) enhances weapons, armor and boots up to +${D.ENH_MAX}. Each level adds
 8% to the item's base numbers, so +${D.ENH_MAX} is ×${D.itemMult({plus:D.ENH_MAX})}. Trinkets cannot be enhanced.
 Up to +5 an attempt always works. From +6 it can fail: the level stays, the cost is spent, and that item's next
 attempt gets +10% (shown on the item), until it succeeds.`,

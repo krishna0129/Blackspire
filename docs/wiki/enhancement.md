@@ -5,7 +5,7 @@
 
 ## Enhancing
 
-A blacksmith (in every start room and safe room) enhances weapons, armor and boots up to +10. Each level adds
+The blacksmith (at the forge, in the root village) enhances weapons, armor and boots up to +10. Each level adds
 8% to the item's base numbers, so +10 is ×1.8. Trinkets cannot be enhanced.
 Up to +5 an attempt always works. From +6 it can fail: the level stays, the cost is spent, and that item's next
 attempt gets +10% (shown on the item), until it succeeds.

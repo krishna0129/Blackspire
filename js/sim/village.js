@@ -50,6 +50,7 @@ function genVillage(){
   block(5,6,9,5);prop('village/inn',9.5,11);
   block(23,28,10,4);prop('village/guild',28,32);
   block(15,12,2,1);prop('village/well',16,13);
+  const wells=[{x:vx(16),y:vy(13.1)}],stashes=[{x:vx(7),y:vy(11.9)}];   // the well, and the inn's stash chest by its door
   // the square: the Teleport Gate's four pillars and the notice board
   for(const[x,y]of[[25,14],[30,14],[25,19],[30,19]]){block(x,y,1,1);prop('village/pillar',x+.5,y+1);}
   block(21,16,2,1);prop('village/board',22,17);
@@ -80,6 +81,6 @@ function genVillage(){
   return{n:0,village:true,map,rooms:[],start:{x:VOX+27,y:VOY+21,w:2,h:2},boss:{x:0,y:0,w:0,h:0},gates:[],gatesOpen:true,locked:false,
     enemies:[],chests:[],drops:[],proj:[],pproj:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
     gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],
-    safe:[all],smiths,traders,talkers,props,home:{x:vx(spawn.x),y:vy(spawn.y)}};
+    safe:[all],points:[],smiths,traders,talkers,props,wells,stashes,home:{x:vx(spawn.x),y:vy(spawn.y)}};
 }
 const nearTalker=()=>{for(const q of G.talkers||[])if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;};

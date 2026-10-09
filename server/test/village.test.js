@@ -52,8 +52,33 @@ test('the market stalls each sell their own goods',()=>{
 test('safe points you stand in are remembered for the Teleport Gate',()=>{
   const R=loadRules(),run=code=>vm.runInContext(`{${code}}`,R);
   vm.runInContext(`const s=newState('T',{},'sword','#222');setWorld(genFloor(2,5));const pl=makePlayer(1,s);G.players=[pl];setPlayer(pl);`,R);
-  run(`const q=G.smiths[1];pl.x=q.x;pl.y=q.y+20;`);step(run,.1);
+  run(`const q=G.points[1];pl.x=q.x;pl.y=q.y+20;`);step(run,.1);
   assert.strictEqual(run(`JSON.stringify(S.points)`),'{"2":[1]}');
   run(`S.cp=1;S.cpFloor=2;const p2=makePlayer(2,S);G.players=[p2];setPlayer(p2);`);
   assert.strictEqual(run(`safeIndex(P.x,P.y)`),1,'arriving at that safe point');
+});
+
+test('the stash is one store behind every chest: put away in the tower, take out at the inn',()=>{
+  const R=loadRules(),run=code=>vm.runInContext(`{${code}}`,R);
+  vm.runInContext(`const s=newState('T',{},'sword','#222');s.inv.push(randomItem(1,0),randomItem(1,0));setWorld(genFloor(1,3));const pl=makePlayer(1,s);G.players=[pl];setPlayer(pl);`,R);
+  assert.strictEqual(run(`G.smiths.length`),0,'no blacksmith in the tower');
+  assert.strictEqual(run(`G.stashes.length`),run(`G.traders.length`),'a stash chest by every trader');
+  run(`pl.x+=300;`);assert.strictEqual(run(`runAction('stash',[0])`),false,'only at a stash chest');
+  run(`const q=G.stashes[1];pl.x=q.x;pl.y=q.y+8;`);
+  assert.strictEqual(run(`runAction('stash',[0])`),0);
+  assert.strictEqual(run(`[S.inv.length,S.stash.length].join()`),'1,1');
+  run(`const S0=S;setWorld(genVillage());const p2=makePlayer(1,S0);G.players=[p2];setPlayer(p2);const q=G.stashes[0];p2.x=q.x;p2.y=q.y+8;`);
+  assert.strictEqual(run(`runAction('unstash',[0])`),1);
+  assert.strictEqual(run(`[S.inv.length,S.stash.length].join()`),'2,0');
+});
+
+test('a drunk flask stays as an empty one, and the well fills empties for free',()=>{
+  const run=village();
+  run(`pl.drink=10;S.flasks=2;S.empties=0;drink();`);
+  assert.strictEqual(run(`[S.flasks,S.empties].join()`),'1,1');
+  assert.strictEqual(run(`runAction('fillFlasks',[])`),false,'only at the well');
+  run(`const w=G.wells[0];pl.x=w.x;pl.y=w.y+10;S.shards=7;`);
+  assert.strictEqual(run(`runAction('fillFlasks',[])`),1);
+  assert.strictEqual(run(`[S.flasks,S.empties,S.shards].join()`),'2,0,7');
+  assert.strictEqual(run(`runAction('fillFlasks',[])`),false,'nothing left to fill');
 });

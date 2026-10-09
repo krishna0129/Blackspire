@@ -54,16 +54,15 @@ function genFloor(n,seed){
     players:[],did:0,seen:new Uint8Array(MW*MH),gate:null,bossAwake:false,bossEnt:null,shake:0,time:0};
   const hpM=1+.38*(n-1),dmgM=1+.22*(n-1);
   g.hpM=hpM;g.dmgM=dmgM;
-  // A blacksmith stands in the start room and in each safe room. g.safe[i] is the rectangle around g.smiths[i]; index 0 is the start.
-  // What each one sells is kept in each player's save, not here: see shopOf().
+  // The start room and each safe room hold a trader and a stash chest. g.points[i] is where the trader stands in safe
+  // room i (index 0 is the start room), and g.safe[i] is its rectangle. What each trader sells is kept in each
+  // player's save, not here: see shopOf(). The blacksmith works in the village's forge, not in the tower.
   const safeRooms=[start,...rooms.filter(r=>r.kind==='safe')];
   g.safe=safeRooms.map(r=>({x0:r.x*TILE,y0:r.y*TILE,x1:(r.x+r.w)*TILE,y1:(r.y+r.h)*TILE}));
-  g.smiths=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
-  // A trader stands beside each blacksmith, past the forge, kept inside the room. The start room's top row already
-  // holds the forge and the floor gate, so its trader stands in the bottom corner below the forge.
-  // g.traders[i] belongs to safe room i too.
-  g.traders=g.smiths.map((q,i)=>{const r=safeRooms[i];
-    return Object.assign(i?{x:Math.min(q.x+42,(r.x+r.w-.8)*TILE),y:q.y+5}:{x:(r.x+1.6)*TILE,y:(r.y+r.h-1.5)*TILE},{name:'Trader',sells:'all'});});
+  g.points=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
+  g.smiths=[];
+  g.traders=g.points.map(q=>({x:q.x,y:q.y+5,name:'Trader',sells:'all'}));
+  g.stashes=g.points.map((q,i)=>{const r=safeRooms[i];return{x:Math.min(q.x+30,(r.x+r.w-.8)*TILE),y:q.y+6};});
   const FL=floorDef(n),bag=FL.spawns;g.corpses=[];
   if(FL.thorns)g.thorns=new Uint8Array(MW*MH);
   for(const r of rooms){
@@ -103,6 +102,8 @@ const inSafe=(x,y)=>safeIndex(x,y)>=0;
 const nearHome=()=>G.home&&hyp(G.home.x-P.x,G.home.y-P.y)<20;
 function nearSmith(){for(const q of G.smiths)if(hyp(q.x-P.x,q.y-P.y)<26)return q;return null;}
 function nearTrader(){for(const q of G.traders)if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;}
+function nearStash(r=20){for(const q of G.stashes||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
+function nearWell(r=26){for(const q of G.wells||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
 function nearGate(){
   if(G.gatesOpen||P.locked||!G.bossEnt||G.bossEnt.dead)return null;
   for(const q of G.gates)if(hyp(q.x-P.x,q.y-P.y)<27)return q;

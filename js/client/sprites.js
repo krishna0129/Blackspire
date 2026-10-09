@@ -18,7 +18,7 @@ const SPRITE_NAMES=[
   'enemies/skelarcher_eyes', 'enemies/skelknight', 'enemies/skelknight_eyes', 'enemies/skitter', 'enemies/skitter_eyes',
   'enemies/wisp', 'enemies/wisp_eyes', 'gear/armor_coat_tint', 'gear/armor_leather_tint', 'gear/armor_plate',
   'gear/armor_plate_tint', 'gear/armor_tunic_tint', 'gear/boots_boots_tint', 'gear/boots_greaves', 'gear/boots_greaves_tint',
-  'gear/boots_striders_tint', 'icons/potion', 'icons/trinket_tint', 'npc/smith', 'npc/trader', 'props/anvil',
+  'gear/boots_striders_tint', 'icons/potion', 'icons/trinket_tint', 'npc/smith', 'npc/trader', 'props/anvil', 'props/stash',
   'props/brazier', 'props/chest', 'weapons/bow', 'weapons/bow_over', 'weapons/bow_tint',
   'weapons/dagger', 'weapons/dagger_tint', 'weapons/great', 'weapons/great_tint', 'weapons/grimoire_faith',
   'weapons/grimoire_magic', 'weapons/grimoire_tint', 'weapons/mace', 'weapons/mace_tint', 'weapons/buckler',
@@ -198,6 +198,10 @@ function supplyIcon(cv,k){
   else if(k==='ration'){f('#050508',3,8,18,11);f('#8a5a2a',4,9,16,9);f('#b07a3a',5,9,14,6);f('#e0b36a',6,10,5,2);f('#e0b36a',13,10,4,2);f('#6a2f2a',4,15,16,2);f('#c05a4a',6,15,4,1);}
   else{f('#050508',8,2,8,4);f('#c9b48a',10,3,4,2);f('#050508',5,6,14,15);f('#7a5a3a',6,7,12,13);f('#5aa7e6',7,12,10,7);f('#9fd0f5',8,13,3,2);f('#4a3420',6,9,12,1);}
 }
+// The stash chest: the same universal stash behind every one.
+let STASHSPR=null;
+function drawStash(q){const c=STASHSPR||(STASHSPR=IMG['props/stash']?outlined(IMG['props/stash'],'#050508'):mk(1,1)[0]);
+  put(ctx,c,Math.round(q.x-camX-gw(c)/2),Math.round(q.y-camY-gh(c)+4));}
 let CHESTS=null;
 function chestSheet(){return CHESTS||(CHESTS=IMG['props/chest']?outlined(IMG['props/chest'],'#050508',14,11):mk(28,11)[0]);}
 

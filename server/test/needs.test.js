@@ -47,7 +47,7 @@ test('a trader holds 5 to 10 of each supply, sells only when you stand at the pa
   let bought=0;while(run(`runAction('buySupply',[0,'flask'])`))bought++;
   assert.strictEqual(bought,n[2]);assert.strictEqual(run(`S.flasks`),2+n[2]);
   run(`pl.x+=200;`);assert.strictEqual(run(`runAction('buySupply',[0,'potion'])`),false,'too far from the trader');
-  run(`pl.x=G.smiths[0].x;pl.y=G.smiths[0].y;`);assert.strictEqual(run(`runAction('buySupply',[0,'potion'])`),false,'the blacksmith does not sell supplies');
+  assert.strictEqual(run(`G.smiths.length`),0,'no blacksmith in the tower');
 });
 
 test('a counter from an old save holding 98 potions is brought back into range',()=>{

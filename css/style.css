@@ -39,6 +39,9 @@ button{font:inherit;color:inherit}
 .bar.xp i{background:var(--cyan)}
 /* hunger and thirst: two short meters side by side; they flash once they run low */
 .needs{display:flex;gap:6px;width:78%}
+.slot .empties{position:absolute;left:4px;bottom:3px;font-style:normal;font-size:10px;color:var(--dim)}
+.slot .empties:empty{display:none}
+#sGrid.tall{max-height:160px;overflow-y:auto;padding-right:4px}   /* the stash's 60 slots scroll, so the details stay in view */
 .needs .bar{flex:1;height:6px;border-color:var(--line)}
 .bar.food i{background:#d9a441}
 .bar.drink i{background:#5aa7e6}

@@ -44,9 +44,10 @@ function render(){
   for(const q of G.smiths)list.push({smith:q,y:q.y,r:6});
   for(const q of G.traders||[])list.push({trader:q,y:q.y,r:6});
   for(const q of G.talkers||[])list.push({talker:q,y:q.y,r:6});
+  for(const q of G.stashes||[])list.push({stash:q,y:q.y,r:0});
   for(const q of G.props||[])list.push({prop:q,y:q.y,r:0});
   list.sort((a,b)=>(a.y+a.r)-(b.y+b.r));
-  for(const e of list){if(e===P)drawPlayer();else if(e.other)drawOther(e);else if(e.smith)drawSmith(e.smith,t);else if(e.trader)drawTrader(e.trader,t);else if(e.talker)drawNpc(e.talker);else if(e.prop)drawProp(e.prop,t);else drawEnemy(e,t);}
+  for(const e of list){if(e===P)drawPlayer();else if(e.other)drawOther(e);else if(e.smith)drawSmith(e.smith,t);else if(e.trader)drawTrader(e.trader,t);else if(e.talker)drawNpc(e.talker);else if(e.prop)drawProp(e.prop,t);else if(e.stash)drawStash(e.stash);else drawEnemy(e,t);}
   // projectiles, particles, slashes
   for(const p of G.proj){const x=Math.round(p.x-camX),y=Math.round(p.y-camY);ctx.fillStyle=p.c||'#6fd6e6';
     if(p.arrow){const c=Math.cos(p.a),sn=Math.sin(p.a);for(let i=1;i<7;i++)ctx.fillRect(Math.round(x-c*i),Math.round(y-sn*i),1,1);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);continue;}

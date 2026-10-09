@@ -42,6 +42,11 @@ const ACTIONS={
     log(ok?`<span style="color:var(--cyan)">${esc(it.name)} is now +${it.plus}.</span>`:`The enhancement failed. ${esc(it.name)} stays +${it.plus||0}; the next try is more likely to work.`);
     return ok?'up':'fail';
   },
+  // the universal stash: the same one behind every stash chest. i: a bag slot (stash) or a stash slot (unstash)
+  stash(i){if(!nearStash(40)||!S.inv[i]||S.stash.length>=STASH_SIZE)return false;S.stash.push(S.inv.splice(i,1)[0]);return S.stash.length-1;},
+  unstash(i){if(!nearStash(40)||!S.stash[i]||S.inv.length>=BAG_SIZE)return false;S.inv.push(S.stash.splice(i,1)[0]);return S.inv.length-1;},
+  // the village well fills every empty flask you carry, for nothing
+  fillFlasks(){if(!nearWell(40)||!(S.empties>0))return false;const n=S.empties;S.flasks+=n;S.empties=0;return n;},
   salvage(i){if(!S.inv[i])return false;salvageItem(S,i);return true;},
   seen(){for(const it of S.inv)delete it.isNew;return true;},
   custom(url){S.char.custom=url||null;return true;},

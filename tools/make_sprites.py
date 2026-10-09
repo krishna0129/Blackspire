@@ -537,6 +537,10 @@ def props(layers):
         for r in [(0,2,12,7,'#3a2c22'),(0,2,12,1,'#55402f'),(0,5,12,1,'#6f6a5c'),(5,4,2,3,'#1a1a1a' if op else '#dcb65c')]: rect(c,*r[:4],hx(r[4]),ox)
         for r in ([(1,0,10,2,'#0a0a0d'),(0,0,12,1,'#2a2019')] if op else [(0,0,12,2,'#4a382b'),(0,0,12,1,'#6b5340')]): rect(c,*r[:4],hx(r[4]),ox)
     save(c,'props/chest')
+    st=canvas(20,16)                                                   # the stash: an iron-bound chest with a blue lock
+    for r in [(0,4,18,10,'#2b2e3a'),(0,4,18,1,'#3c4152'),(0,0,18,4,'#3a3f50'),(0,0,18,1,'#5a6070'),(3,0,2,14,'#8d93a0'),(13,0,2,14,'#8d93a0'),
+              (0,6,18,1,'#5a6070'),(7,5,4,4,'#14141c'),(8,6,2,2,'#6fd6e6')]: rect(st,*r[:4],hx(r[4]),1,1)
+    save(st,'props/stash')
     t=canvas(24,24)                                                    # trinket icon (tinted) and potion icon
     for r in [(9,7,6,1,B),(8,8,1,1,B),(15,8,1,1,B),(7,9,1,6,B),(16,9,1,6,B),(8,15,1,1,DK),(15,15,1,1,DK),(9,16,6,1,DK)]: rect(t,*r,0,0)
     save(t,'icons/trinket_tint')
@@ -571,7 +575,6 @@ def building(name,w,h,wall,trim,roof,roofd,roofl,door,deco):
     for y in range(rh+6,h-2,7): d.line([4,y,w-5,y],fill=hx(trim))  # courses of stone or planks
     R2(d,4,h-6,w-8,6,trim)                                         # footing
     d.polygon([(0,rh),(w//2,2),(w-1,rh)],fill=hx(roof))            # the roof, seen from the front
-    shingles(d,0,0,0,0,roofd,roof,roofl)
     for y in range(4,rh,4):
         half=int((w//2)*(y-2)/(rh-2)); d.line([w//2-half,y,w//2+half,y],fill=hx(roofd))
     d.line([0,rh,w//2,2],fill=hx(roofl)); d.line([w//2,2,w-1,rh],fill=hx(roofd)); R2(d,0,rh,w,2,roofd)

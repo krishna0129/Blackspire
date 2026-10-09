@@ -90,8 +90,8 @@ function killEnemy(e){
     dropLoot(e.boss?'boss':e.elite?'elite':'normal',e.x,e.y);
     if(e.boss){
       const fs=floorState(G.n),first=!fs.boss;fs.boss++;S.best=Math.max(S.best,G.n+1);
-      fs.shops=[];   // a fallen boss restocks this floor's blacksmiths
-      bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'The blacksmiths on this floor have restocked.',3600);
+      fs.shops=[];   // a fallen boss restocks this floor's traders
+      bannerMe(first?'Floor '+G.n+' cleared':e.name+' falls again',first?'The chamber is open and the way up is waiting.':'The traders on this floor have restocked.',3600);
       if(!P.dead)P.hp=ST.maxHp;persist();
     }
   });
@@ -237,7 +237,8 @@ function usePotion(){
 // Eating a ration or drinking from a flask: refills its meter. Nothing happens when the meter is already full.
 function useSupply(k){
   const s=SUPPLIES[k];if(P.dead||P.eatCd>0||!s.need||(S[s.key]||0)<=0||P[s.need]>=99)return;
-  S[s.key]--;P.eatCd=.6;P[s.need]=Math.min(100,P[s.need]+s.gives);burst(P.x,P.y,8,s.color,40);sfx('pick');
+  S[s.key]--;if(k==='flask')S.empties=(S.empties||0)+1;   // the flask is kept, empty
+  P.eatCd=.6;P[s.need]=Math.min(100,P[s.need]+s.gives);burst(P.x,P.y,8,s.color,40);sfx('pick');
 }
 // declared as functions so the server can call them on its sandbox (R.eat, R.drink)
 function eat(){useSupply('ration');}

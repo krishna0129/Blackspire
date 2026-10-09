@@ -13,7 +13,7 @@ function updateHud(){
   setTxt('hpTxt',Math.ceil(Math.max(0,P.hp))+' / '+ST.maxHp);
   setStyle('xpw',elXp,'width',(S.char.xp/xpNeed(S.char.level)*100).toFixed(1)+'%');
   setTxt('hLv','Level '+S.char.level+(S.char.pts?' (+'+S.char.pts+')':''));
-  setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));setTxt('foodN',String(S.rations||0));setTxt('drinkN',String(S.flasks||0));
+  setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));setTxt('foodN',String(S.rations||0));setTxt('drinkN',String(S.flasks||0));setTxt('emptyN',S.empties?S.empties+' empty':'');
   for(const k of['food','drink']){const v=clamp((P[k]==null?100:P[k])/100,0,1);setStyle(k+'w',$('#'+k+'Fill'),'width',(v*100).toFixed(1)+'%');
     const low=v*100<NEED_LOW;if(hc[k+'low']!==low){hc[k+'low']=low;$('#'+k+'Fill').parentNode.classList.toggle('low',low);}}
   setStyle('cds',cdSk,'height',(P.skillMax?P.skillCd/P.skillMax*100:0).toFixed(0)+'%');
@@ -24,8 +24,9 @@ function updateHud(){
   setStyle('cdd',cdDo,'height',(P.dodgeCd/.9*100).toFixed(0)+'%');
   setStyle('cdp',cdPo,'height',(P.potCd/1.2*100).toFixed(0)+'%');
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
-  const tr=nearTrader(),tk=nearTalker();
-  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearSmith()?'smith':tk?'talk:'+tk.name:'';
+  const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
+  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
+    wl?'well'+(S.empties>0?S.empties:''):tk?'talk:'+tk.name:'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>E</kbd>';
     else if(near.startsWith('talk:'))elPrompt.innerHTML='Talk to the '+esc(tk.name.toLowerCase().startsWith('captain')?tk.name.replace('Captain','captain'):tk.name.toLowerCase())+'<kbd>E</kbd>';
@@ -33,6 +34,8 @@ function updateHud(){
     else if(near==='boss')elPrompt.innerHTML='Boss chamber gate<kbd>E</kbd>';
     else if(near==='home')elPrompt.innerHTML=(G.village?'Teleport Gate':'Floor gate')+'<kbd>E</kbd>';
     else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>E</kbd>';
+    else if(near==='stash')elPrompt.innerHTML='Stash<kbd>E</kbd>';
+    else if(near.startsWith('well'))elPrompt.innerHTML=(S.empties>0?`Fill ${S.empties} empty flask${S.empties>1?'s':''} at the well`:'The well')+'<kbd>E</kbd>';
 }
 }
 function refreshHudStatic(){
@@ -258,7 +261,10 @@ function interact(){
   if(nearHome()){openTravel();return;}
   const q=nearGate();if(q){askChamber(q);return;}
   const tr=nearTrader();if(tr){openPanel(tr,'trader');return;}
+  const st=nearStash();if(st){openPanel(st,'stash');return;}
   const sm=nearSmith();if(sm){openPanel(sm,'smith');return;}
+  if(nearWell()){act('fillFlasks',[],n=>{if(n){sfx('pick');log(`Filled ${n} flask${n>1?'s':''} at the well.`);}
+    else log('You have no empty flasks to fill. The food and drink stall sells water flasks; drink one and the flask is yours to refill.');hc.near=null;});return;}
   const tk=nearTalker();if(tk){tk.sayUntil=G.time+6;sfx('pick');}
 }
 // The boss chamber asks first: once inside, the gate seals until the boss dies.
@@ -324,7 +330,7 @@ const atForge=()=>atSmith!=null&&atWho==='smith';
 function act(name,args,done){if(NET.on)return NET.act(name,args,done);const r=runAction(name,args);if(done)done(r);}
 function openPanel(npc,who){
   if(mode!=='play')return;mode='panel';inp.atk=false;for(const k in keys)keys[k]=false;sel=null;
-  atWho=npc?who:null;atSmith=npc?(who==='trader'?G.traders:G.smiths).indexOf(npc):null;
+  atWho=npc?who:null;atSmith=npc?(who==='trader'?G.traders:who==='stash'?G.stashes:G.smiths).indexOf(npc):null;
   $('#panel').hidden=false;renderPanel();if(atWho==='trader')act('openShop',[atSmith],()=>{if(mode==='panel')renderPanel();});
 }
 function closePanel(){if(mode!=='panel')return;atSmith=atWho=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
@@ -338,7 +344,8 @@ function cell(it,on,label,bag){
   return b;
 }
 const SLOTL={weapon:'Weapon',armor:'Armor',boots:'Boots',trinket:'Trinket'};
-function selItem(){if(!sel||sel.from==='supply')return null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
+const atStash=()=>atSmith!=null&&atWho==='stash';
+function selItem(){if(!sel||sel.from==='supply')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
 function renderPanel(){
   calcStats();const c=S.char;
   $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
@@ -363,9 +370,12 @@ function renderPanel(){
   $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;$('#pShards').textContent=S.shards;
   $('#pMats').innerHTML=Object.keys(MATS).map(k=>`<span title="${MATS[k].name}"><i class="mat" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('');
   const shop=shopNow();
-  $('#pTitle').textContent=shop?G.traders[atSmith].name:atForge()?'Blacksmith':c.name;
-  $('#shopBox h3').textContent=shop&&G.traders[atSmith].stall?'For sale':'Trader\u2019s pack';
-  $('#shopBox').hidden=!shop;
+  $('#pTitle').textContent=shop?G.traders[atSmith].name:atForge()?'Blacksmith':atStash()?'Stash':c.name;
+  $('#shopBox h3').textContent=atStash()?`Stash ${S.stash.length} / ${STASH_SIZE}`:shop&&G.traders[atSmith].stall?'For sale':'Trader\u2019s pack';
+  $('#shopBox').hidden=!shop&&!atStash();$('#sGrid').classList.toggle('tall',atStash());
+  if(atStash()){const sg=$('#sGrid');sg.innerHTML='';
+    for(let i=0;i<STASH_SIZE;i++){const it=S.stash[i],b=cell(it,sel&&sel.from==='stash'&&sel.i===i,'',false);
+      if(it){b.onclick=()=>{sel={from:'stash',i};renderPanel();};b.ondblclick=()=>act('unstash',[i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();});}sg.appendChild(b);}}
   if(shop){const sg=$('#sGrid');sg.innerHTML='';
     (shop.stock||[]).forEach((e,i)=>{const b=cell(e.it,sel&&sel.from==='shop'&&sel.i===i,'',true);b.dataset.p=e.price;b.title=e.it.name+', '+e.price+' shards';b.onclick=()=>{sel={from:'shop',i};renderPanel();};sg.appendChild(b);});
     for(const k of TRADER_SELLS[G.traders[atSmith].sells||'all'].supplies){const s=SUPPLIES[k],pb=document.createElement('button');pb.className='cell'+(sel&&sel.from==='supply'&&sel.k===k?' on':'');pb.dataset.p=supplyPrice(k);pb.title=s.name;
@@ -387,6 +397,7 @@ function renderDetail(){
     a.appendChild(b);el.appendChild(a);return;}
   if(!it&&shop){el.innerHTML='<p class="muted">Pick something for sale to see it, or to compare it with what you are wearing. Prices are in shards.</p>';return;}
   if(!it&&atForge()){el.innerHTML='<p class="muted">Pick one of your own pieces to enhance it.</p>';return;}
+  if(!it&&atStash()){el.innerHTML='<p class="muted">The same stash waits behind every stash chest: in the inn and in every safe room. Pick something to move it between your bag and the stash, or double-click it.</p>';return;}
   if(!it){el.innerHTML=`<p class="muted">${S.inv.length?'Select an item to compare it with what you are wearing. Double-click an item in the bag to equip it.':'Your bag is empty. Enemies and chests drop weapons, armor, boots and trinkets.'}</p>`;return;}
   const R=RARITY[it.rarity],cur=S.equip[it.slot],other=(sel.from==='bag'||sel.from==='shop')&&cur?cur:null,m=itemMult(it);
   let h=`<h4 style="color:${R.color}">${esc(it.name)}${it.plus?' +'+it.plus:''}</h4>`;
@@ -420,8 +431,11 @@ function renderDetail(){
   if(sel.from==='shop'){const e=shop.stock[sel.i],full=S.inv.length>=BAG_SIZE;
     btn(full?'Bag is full':`Buy for ${e.price} shards`,'primary',()=>act('buy',[atSmith,sel.i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();}),full||S.shards<e.price);
     el.appendChild(acts);return;}
+  if(sel.from==='stash'){btn(S.inv.length>=BAG_SIZE?'Bag is full':'Take it','primary',()=>act('unstash',[sel.i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();}),S.inv.length>=BAG_SIZE);
+    el.appendChild(acts);return;}
   if(sel.from==='bag')btn('Equip','primary',equipSel);
-  if(it.slot!=='trinket'&&!atForge()){const n=document.createElement('span');n.className='muted';n.style.alignSelf='center';n.textContent='Enhancing is done at a blacksmith.';acts.appendChild(n);}
+  if(sel.from==='bag'&&atStash())btn(S.stash.length>=STASH_SIZE?'Stash is full':'Put in the stash','',()=>act('stash',[sel.i],r=>{if(r!==false){sel={from:'stash',i:r};sfx('pick');}renderPanel();}),S.stash.length>=STASH_SIZE);
+  if(it.slot!=='trinket'&&!atForge()){const n=document.createElement('span');n.className='muted';n.style.alignSelf='center';n.textContent='Enhancing is done at the forge, in the root village.';acts.appendChild(n);}
   if(it.slot!=='trinket'&&atForge()){
     if((it.plus||0)>=ENH_MAX)btn('Fully enhanced','',()=>{},true);
     else{const r=enhanceRecipe(it),can=S.shards>=r.shards&&hasMats(S.mats,r.mats),pct=Math.round(r.chance*100);
@@ -466,7 +480,7 @@ function openDebug(){
   add('Full heal',()=>{P.hp=ST.maxHp;P.mp=ST.maxMp;P.food=P.drink=100;});
   add('God mode: '+(god?'on':'off'),()=>{god=!god;},true);
   add('Go to the boss gate',()=>{const q=G.gates[1];P.x=q.x-18;P.y=q.y;P.dash=null;});
-  add('Go to the next blacksmith',()=>{const i=(Math.max(0,G.smiths.findIndex(q=>hyp(q.x-P.x,q.y-P.y)<60))+1)%G.smiths.length,q=G.smiths[i];P.x=q.x;P.y=q.y+24;P.dash=null;});
+  add('Go to the next safe room',()=>{const pts=G.points||[];if(!pts.length)return;const i=(Math.max(0,pts.findIndex(q=>hyp(q.x-P.x,q.y-P.y)<60))+1)%pts.length,q=pts[i];P.x=q.x;P.y=q.y+24;P.dash=null;});
   add('Close',()=>{});
   $('#debug').hidden=false;
 }

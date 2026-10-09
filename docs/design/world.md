@@ -78,7 +78,8 @@ stash. Forging, the arcanist and the market are village-only, which is what make
 - **The trader (decided, in the game):** a travelling merchant under a pack almost as big as they are. They sell gear,
   potions, food and water. Each supply is limited to **5–10** per trader in single player, refilled when the floor's
   boss falls; online numbers come later.
-- Until villages exist, the blacksmith stays in safe rooms next to the trader, for enhancing only.
+- **In the game:** the blacksmith has left the tower for the village's forge. Each safe room holds a trader and a
+  **stash chest**; the stash (60 slots) is one store, the same behind every chest, the inn's included.
 - **Suggested:** the stash is **per character**, with a shared tab between your own characters later.
 
 ### Hunger and thirst

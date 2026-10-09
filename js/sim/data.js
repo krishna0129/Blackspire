@@ -158,7 +158,7 @@ const THORN_SLOW=.6,THORN_DMG=3;   // thorn patches: speed multiplier, and damag
 const SUPPLIES={
   potion:{key:'potions',name:'Health potion',price:25,color:'#d9534f',desc:'Restores 45% of your health.'},
   ration:{key:'rations',name:'Ration',price:12,color:'#d9a441',need:'food',gives:40,desc:'Bread and dried meat. Fills 40% of your hunger meter.'},
-  flask:{key:'flasks',name:'Water flask',price:8,color:'#5aa7e6',need:'drink',gives:50,desc:'Clean water. Fills 50% of your thirst meter.'},
+  flask:{key:'flasks',name:'Water flask',price:8,color:'#5aa7e6',need:'drink',gives:50,desc:'Clean water. Fills 50% of your thirst meter. You keep the flask once it is drunk: the village well fills it again for free.'},
 };
 // What each kind of trader sells: gear slots, and supplies (SUPPLIES keys). Tower traders carry a bit of everything;
 // the village market splits it between stalls.
@@ -179,6 +179,7 @@ const NEEDS={
 const NEED_LOW=25,NEED_HURT=.01;
 // What a trader keeps of each supply: a random amount in this range, refilled when the floor's boss falls.
 const STOCK_RANGE=[5,10];
+const STASH_SIZE=60;   // the universal stash: one store, reached from any stash chest
 const ELITE_CHANCE=.07;   // share of room spawns that are elites: 2.4x health, 1.3x damage, 3x experience, better loot
 // Loot, rolled separately for every player who gets credit. shards: [min,max], scaled by +25% per floor above 1.
 // items: one roll each: chance, rarity bonus (see rollRarity), lowest rarity, item level above the floor's.

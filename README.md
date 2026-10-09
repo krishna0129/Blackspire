@@ -71,7 +71,7 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Roll | Shift or L |
 | Potion | Q |
 | Eat a ration / drink water | R / T |
-| Interact (gates, the Teleport Gate, traders, blacksmith, villagers) | E |
+| Interact (gates, the Teleport Gate, traders, the stash, the forge, the well, villagers) | E |
 | Gear | I or Tab |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Respawn after a death | R or Enter |
