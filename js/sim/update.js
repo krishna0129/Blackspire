@@ -96,6 +96,7 @@ function updatePlayer(dt){
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
   if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:1)*dt);
   updateNeeds(dt);if(P.dead)return;
+  P.farmT=(P.farmT||0)-dt;if(P.farmT<=0){P.farmT=5;if(S.farm&&S.farm.farmer)farmWork();}   // the farmhand, while you play
   // Safe rooms: no fighting in either direction. The last one you stand in is where you wake after dying.
   const si=P.locked?-1:safeIndex(P.x,P.y);P.safe=si>=0;
   if(si>=0&&(S.cp!==si||S.cpFloor!==G.n)){S.cp=si;S.cpFloor=G.n;if(si>0){log('Safe room reached. You will wake here if you fall.');sfx('pick');}}

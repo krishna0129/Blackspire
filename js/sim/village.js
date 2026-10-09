@@ -70,6 +70,11 @@ function genVillage(){
       look:{skin:SKINS[1+KINGDOMS.indexOf(k)],hair:HAIRS[KINGDOMS.indexOf(k)*2],style:KINGDOMS.indexOf(k)+1,eyes:EYES[0]},eq:{armor:{type:k.armor,tint:k.color}}});}
   traders.push({x:vx(9.5),y:vy(11.7),name:'Innkeeper',sells:'inn',
     look:{skin:SKINS[2],hair:HAIRS[2],style:5,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#8a8474'}}});
+  // by the fields: the farmhand you can hire and the crop broker (both switched on at your plots, js/sim/fields.js)
+  talkers.push({x:vx(15.4),y:vy(28.6),name:'Farmhand',line:`Pay me ${FARMHAND_WAGE} shards a plot each day and I'll bring your crops in and plant them again. Hire me at your plots.`,
+    look:{skin:SKINS[3],hair:HAIRS[4],style:1,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#5e4620'}}});
+  talkers.push({x:vx(15.4),y:vy(31.8),name:'Crop broker',line:`I'll sell every harvest for you and keep a quarter. Or haul it to the food stall yourself and keep it all.`,
+    look:{skin:SKINS[1],hair:HAIRS[5],style:3,eyes:EYES[3]},eq:{armor:{type:'coat',tint:'#6b4a2c'}}});
   // the Adventurers' Guild's clerk, at its door: quests and party notices (js/sim/quests.js)
   const guild={x:vx(28),y:vy(32.8),name:'Guild clerk',look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}};
   // scenery

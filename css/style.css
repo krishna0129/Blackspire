@@ -193,7 +193,7 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #plotbox h2{font-size:30px;margin:0 0 6px;color:#8fd14f}
 #plotbox p{color:var(--dim);margin:0 0 14px}
 .plbtns{display:grid;gap:8px;margin-bottom:14px}
-.plbtns .btn{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.plbtns .btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px}
 .plbtns small{font-weight:500;font-size:12px;opacity:.75}
 /* the Adventurers' Guild */
 #guild{align-items:center;justify-content:center;padding:10px}

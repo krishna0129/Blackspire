@@ -87,7 +87,20 @@ const ACTIONS={
   },
   harvest(){
     const p=myPlot(plotAt());if(!cropReady(p))return false;const C=CROPS[p.crop],n=Math.round(rand(C.yield[0],C.yield[1]));
-    S.crops[p.crop]=(S.crops[p.crop]||0)+n;log(`Harvested ${n} ${n>1?C.plural:C.name.toLowerCase()}.`);p.crop=null;p.t=0;sfx('pick');return n;
+    const v=takeHarvest(p.crop,n);log(`Harvested ${n} ${n>1?C.plural:C.name.toLowerCase()}`+(v?`; the broker sold them for ${v} shards.`:'.'));p.crop=null;p.t=0;sfx('pick');return n;
+  },
+  // field help, switched at any of your plots. Hiring the farmhand pays the first day's wage at once.
+  farmhand(on){
+    const F=farmLog();if(myPlot(plotAt())==null)return false;
+    if(!on){F.farmer=false;return true;}
+    if(F.farmer)return false;const w=FARMHAND_WAGE*S.plots.length;if(S.shards<w)return false;
+    S.shards-=w;F.farmer=true;F.paid=Date.now()+FARM_DAY;return true;
+  },
+  broker(on){if(myPlot(plotAt())==null)return false;farmLog().broker=!!on;return true;},
+  // the food and drink stall buys your crops at the full price: what doing it yourself is worth
+  sellCrops(si,crop){
+    if(!nearTraderIdx(si)||G.traders[si].sells!=='food'||!CROPS[crop]||!(S.crops[crop]>0))return false;
+    const n=S.crops[crop],v=cropValue(crop,n);S.crops[crop]=0;S.shards+=v;sfx('pick');log(`Sold ${n} ${CROPS[crop].plural} for ${v} shards.`);return v;
   },
   salvage(i){if(!S.inv[i])return false;salvageItem(S,i);return true;},
   seen(){for(const it of S.inv)delete it.isNew;return true;},

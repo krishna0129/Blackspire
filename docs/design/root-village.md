@@ -119,6 +119,19 @@ player who keeps their flasks only pays for them once, and the well is a reason 
   from two glowcaps instead of charging shards, and packs two potatoes into a ration to take into the tower.
 - Glowcaps going into potions waits for the arcanist's witchcraft room.
 
+**Help on the field (decided, in the game).** Two people by the fields, both switched on and off at any of your plots:
+
+- The **farmhand** brings in ripe crops and replants the same crop, paying the seed from your shards. Their wage is
+  **40 shards a plot each day**, paid at the start of every 24 hours; if you can't pay, they leave. They work while
+  you are in the tower or offline, and catch up the moment you are back.
+- The **crop broker** sells every harvest for you, the farmhand's or your own, and keeps **a quarter**.
+- Doing it yourself pays more: harvest by hand and sell at the food and drink stall at the full price (potatoes 4
+  shards, glowcaps 15). Early on that is the better deal; later, the farmhand and the broker turn the fields into
+  passive income while you spend your time in the tower.
+
+With both hired, one potato plot nets about 80 shards a day and six about 480: a steady side income, below a good
+run in the tower. Easy to tune with the wage, the cut and the crop prices.
+
 - Fields are divided into **plots you buy** with shards. An owned plot is yours alone; nobody else can enter your
   field (decided in world.md).
 - **Each village's soil is rich in one or two nutrients, so only one or two crops grow there.** That's the lore; the

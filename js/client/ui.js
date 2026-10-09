@@ -312,8 +312,18 @@ function renderPlot(){
   if(!p.crop){$('#plTxt').textContent='Freshly turned soil. What will it be?';
     for(const c of G.crops){const C=CROPS[c];btn(`Plant ${C.plural}<small>${C.seed} shards for the seed. ${C.desc}</small>`,'primary',()=>act('plant',[c],again),S.shards<C.seed);}return;}
   const C=CROPS[p.crop];
-  if(cropReady(p)){$('#plTxt').textContent=`The ${C.plural} are ready.`;btn(`Harvest<small>${C.yield[0]} to ${C.yield[1]} ${C.plural}</small>`,'primary',()=>act('harvest',[],again));return;}
-  $('#plTxt').textContent=`${C.name} growing: ${fmtLeft(C.grow-(Date.now()-p.t))} to go. It keeps growing while you are away, in the tower or offline.`;
+  if(cropReady(p)){$('#plTxt').textContent=`The ${C.plural} are ready.`;btn(`Harvest<small>${C.yield[0]} to ${C.yield[1]} ${C.plural}</small>`,'primary',()=>act('harvest',[],again));}
+  else $('#plTxt').textContent=`${C.name} growing: ${fmtLeft(C.grow-(Date.now()-p.t))} to go. It keeps growing while you are away, in the tower or offline.`;
+  fieldHelp(btn,again);
+}
+// Help for the whole field, switched at any of your plots.
+function fieldHelp(btn,again){
+  const F=S.farm||{},w=FARMHAND_WAGE*S.plots.length,h=document.createElement('div');h.className='none';h.style.margin='6px 0 0';
+  h.textContent='Help on your field';$('#plBtns').appendChild(h);
+  if(F.farmer)btn(`Farmhand: working<small>${w} shards a day, next wage in ${fmtLeft(F.paid-Date.now())}. Dismiss</small>`,'',()=>act('farmhand',[false],again));
+  else btn(`Hire the farmhand<small>${w} shards a day (${FARMHAND_WAGE} a plot). Harvests and replants for you, offline too</small>`,'',()=>act('farmhand',[true],again),S.shards<w);
+  if(F.broker)btn(`Crop broker: selling<small>Every harvest sold for you, less their ${BROKER_CUT*100}% cut. Stop</small>`,'',()=>act('broker',[false],again));
+  else btn(`Let the broker sell<small>Every harvest sold for you, less a ${BROKER_CUT*100}% cut. Sell them yourself at the food stall for the full price</small>`,'',()=>act('broker',[true],again));
 }
 
 /* ---------- the Adventurers' Guild ----------
@@ -502,7 +512,12 @@ function renderDetail(){
     b.disabled=S.shards<pr||left<=0;b.onclick=()=>act('buySupply',[atSmith,k],r=>{if(r)sfx('pick');renderPanel();});
     a.appendChild(b);el.appendChild(a);return;}
   if(!it&&shop&&TRADER_SELLS[G.traders[atSmith].sells].meals){el.innerHTML='<p class="muted">Pick a meal. You eat it here, it fills you up, and it leaves you with a buff for 20 minutes.</p>';return;}
-  if(!it&&shop){el.innerHTML='<p class="muted">Pick something for sale to see it, or to compare it with what you are wearing. Prices are in shards.</p>';return;}
+  if(!it&&shop){el.innerHTML='<p class="muted">Pick something for sale to see it, or to compare it with what you are wearing. Prices are in shards.</p>';
+    if(G.traders[atSmith].sells==='food'){const a=document.createElement('div');a.className='acts';   // the food stall buys your crops
+      for(const c in CROPS){const n=(S.crops||{})[c]||0;if(!n)continue;const b=document.createElement('button');b.className='btn small';
+        b.textContent=`Sell ${n} ${CROPS[c].plural} for ${cropValue(c,n)} shards`;b.onclick=()=>act('sellCrops',[atSmith,c],()=>renderPanel());a.appendChild(b);}
+      if(a.children.length)el.appendChild(a);}
+    return;}
   if(!it&&atForge()){el.innerHTML='<p class="muted">Pick one of your own pieces to enhance it.</p>';return;}
   if(!it&&atStash()){el.innerHTML='<p class="muted">The same stash waits behind every stash chest: in the inn and in every safe room. Pick something to move it between your bag and the stash, or double-click it.</p>';return;}
   if(!it){el.innerHTML=`<p class="muted">${S.inv.length?'Select an item to compare it with what you are wearing. Double-click an item in the bag to equip it.':'Your bag is empty. Enemies and chests drop weapons, armor, boots and trinkets.'}</p>`;return;}

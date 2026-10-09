@@ -143,3 +143,33 @@ test('the innkeeper cooks from your own crops, and packs potatoes as rations',()
   run(`globalThis.r0=S.rations;`);assert.strictEqual(run(`runAction('packRation',[inn])`),true);
   assert.strictEqual(run(`[S.crops.potato,S.rations-r0].join()`),'0,1');
 });
+
+test('the farmhand: paid a day at a time, brings in and replants while you are away, leaves when unpaid',()=>{
+  const run=village();
+  run(`S.shards=2000;const[px,py]=VILLAGE.plots[0];pl.x=vx(px+1.5);pl.y=vy(py+1);runAction('buyPlot',[]);runAction('plant',['potato']);
+    globalThis.H=CROPS.potato.grow;`);
+  run(`globalThis.s0=S.shards;`);assert.strictEqual(run(`runAction('farmhand',[true])`),true);
+  assert.strictEqual(run(`s0-S.shards`),40,'the first day, one plot');
+  // five hours pass with nobody around
+  run(`globalThis.now=Date.now();myPlot(0).t-=5*H+60000;globalThis.s1=S.shards;farmWork(now);`);
+  const p=run(`S.crops.potato`);assert.ok(p>=20&&p<=30,'five harvests of 4 to 6: '+p);
+  assert.strictEqual(run(`s1-S.shards`),50,'five replantings at 10 shards');
+  assert.ok(run(`myPlot(0).crop==='potato'&&now-myPlot(0).t<H`),'replanted and growing');
+  // a new day: another wage; then a day with no shards to pay
+  run(`S.shards=40;farmLog().paid=now-1;farmWork(now);`);
+  assert.strictEqual(run(`[S.farm.farmer,S.shards].join()`),'true,0','the wage is paid');
+  run(`farmLog().paid=now-1;farmWork(now);`);
+  assert.strictEqual(run(`S.farm.farmer`),false,'and without it they leave');
+});
+
+test('the broker sells harvests for a cut; selling yourself at the food stall pays the full price',()=>{
+  const run=village();
+  run(`S.shards=1000;const[px,py]=VILLAGE.plots[0];pl.x=vx(px+1.5);pl.y=vy(py+1);runAction('buyPlot',[]);runAction('plant',['glowcap']);
+    runAction('broker',[true]);myPlot(0).t-=CROPS.glowcap.grow;globalThis.s0=S.shards;globalThis.n=runAction('harvest',[]);`);
+  assert.strictEqual(run(`S.shards-s0`),run(`Math.floor(n*15*.75)`),'sold, less a quarter');
+  assert.ok(!run(`S.crops.glowcap`),'nothing kept');
+  run(`runAction('broker',[false]);S.crops.potato=10;const k=G.traders.findIndex(t=>t.sells==='food');globalThis.food=k;pl.x=G.traders[k].x;pl.y=G.traders[k].y+16;globalThis.s1=S.shards;`);
+  assert.strictEqual(run(`runAction('sellCrops',[food,'potato'])`),40);
+  assert.strictEqual(run(`[S.shards-s1,S.crops.potato].join()`),'40,0','ten potatoes at 4 each, all yours');
+  assert.strictEqual(run(`runAction('sellCrops',[0,'potato'])`),false,'only the food and drink stall buys crops');
+});
