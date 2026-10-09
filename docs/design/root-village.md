@@ -21,6 +21,18 @@ grass, lamps at the corners, smoke from the forge and bubbles from the witchcraf
   entrance. So going back to where you left off takes one step, not a walk across the floor.
 - The **notice board** at the square's edge lists **every quest in this region**. The whole board **refreshes once
   every 24 hours**, whether or not a quest is in progress, so the board always shows how long until the next refresh.
+  Quests are taken and handed in at the guild (below).
+- **Teleporting** goes to **safe points you have visited** (decided), plus each floor's entrance.
+
+### The Adventurers' Guild
+
+**Decided:** the village has an adventurers' guild, on the square's south side. There players:
+
+- **accept quests** from the region's board;
+- **hand in** quest items and **collect rewards**. A finished quest must be handed in at the guild, or to the NPC who
+  gave it, **before the board refreshes**; at the refresh it is gone, finished or not (decided);
+- **post notices for party mates**: "two for floor 3, healer wanted". Online, notices are seen by everyone in the
+  village.
 
 ### The market
 
@@ -43,10 +55,16 @@ All six count as NPC stock for the region's prices ([world.md](world.md#the-mark
 
 | Place | What's there |
 |---|---|
-| **Inn** | meals (fill hunger), and the **stash**. The **well** stands outside it: drink to fill thirst, free |
+| **Inn** | meals (fill hunger), and the **stash**. The **well** stands outside it (below) |
 | **Training yard** | **scarecrow dummies** to test skills on. They take hits and show the damage numbers, like enemies do, and never die |
 | **Kingdom camps** | the three companies' tents and banners; their captains say a line or two now and give quests later |
 | **Fields** | plots of farmland that players **buy** to grow crops (below) |
+
+### Water and the well
+
+**Decided:** water from the well is free, but you need a **flask** to take it. Water flasks are bought from traders
+and market stalls; once drunk, a flask becomes an **empty flask**, which the well fills again for nothing. So a
+player who keeps their flasks only pays for them once, and the well is a reason to come home.
 
 ### Fields
 
@@ -97,12 +115,11 @@ ratio.
 3. The inn's meals, the well, the stash in the inn and every safe room.
 4. The training yard's scarecrows.
 5. Online: the village as a shared world (or per party).
-6. Later, with their own features: the notice board's quests, the fields, the captains' quests.
+6. Later, with their own features: the guild and its quests and party notices, the fields, the captains' quests.
 
-## Open questions
+## Decided
 
-1. Online village: **shared** with channels of about 30 (recommended), or **per party**?
-2. The 24-hour refresh drops quests that are in progress. Should a quest you have **already finished** but not handed
-   in still pay out after the refresh? Suggested: yes, so nobody loses a finished quest to the clock.
-3. Teleporting to a safe point: only safe points **you have visited** (suggested), or any on a floor you've reached?
-4. Is a **free well** for thirst all right? Flasks still matter, since you can't take the well into the tower.
+1. Online, the village is **shared**, in copies (channels) of about 30 players.
+2. Quests are handed in at the guild or to their NPC, and a refresh removes them, finished or not.
+3. Teleporting reaches visited safe points only.
+4. The well is free; water needs a flask, and drunk flasks become empty flasks to refill.

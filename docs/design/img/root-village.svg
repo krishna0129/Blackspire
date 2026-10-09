@@ -36,6 +36,7 @@
         <path d="M438,410 C430,450 380,452 360,478 C346,496 320,500 300,512"/>
         <path d="M520,402 C540,440 590,430 610,470 C620,490 640,500 660,512"/>
         <path d="M478,252 C460,220 500,196 484,150"/>
+        <path d="M480,414 C470,440 492,456 482,486"/>
       </g>
       <g stroke="#4a4232" stroke-width="2" stroke-dasharray="3 9">
         <path d="M410,305 C380,270 330,280 300,245 C285,228 262,226 250,224"/>
@@ -50,10 +51,10 @@
     <g>
       <use href="#tree" x="120" y="300"/><use href="#tree" x="90" y="420"/><use href="#tree" x="330" y="180"/><use href="#tree" x="610" y="190"/>
       <use href="#tree" x="350" y="420"/><use href="#tree" x="590" y="420"/><use href="#tree" x="800" y="560"/><use href="#tree" x="120" y="580"/>
-      <use href="#tree" x="700" y="140"/><use href="#tree" x="250" y="140"/><use href="#tree" x="880" y="596"/><use href="#tree" x="470" y="600"/>
+      <use href="#tree" x="700" y="140"/><use href="#tree" x="250" y="140"/><use href="#tree" x="880" y="596"/><use href="#tree" x="590" y="610"/>
       <use href="#shrub" x="360" y="280"/><use href="#shrub" x="330" y="320"/><use href="#shrub" x="600" y="290"/><use href="#shrub" x="620" y="360"/>
       <use href="#shrub" x="400" y="455"/><use href="#shrub" x="565" y="460"/><use href="#shrub" x="300" y="395"/><use href="#shrub" x="455" y="190"/>
-      <use href="#shrub" x="520" y="200"/><use href="#shrub" x="210" y="450"/><use href="#shrub" x="760" y="470"/><use href="#shrub" x="400" y="560"/>
+      <use href="#shrub" x="520" y="200"/><use href="#shrub" x="210" y="450"/><use href="#shrub" x="760" y="470"/><use href="#shrub" x="380" y="590"/>
       <use href="#flowers" x="345" y="300"/><use href="#flowers" x="615" y="330"/><use href="#flowers" x="390" y="440"/><use href="#flowers" x="575" y="440"/>
       <use href="#flowers" x="300" y="270"/><use href="#flowers" x="500" y="215"/><use href="#flowers" x="270" y="395"/><use href="#flowers" x="700" y="480"/>
       <use href="#flowers" x="430" y="470"/><use href="#flowers" x="640" y="270"/>
@@ -77,12 +78,20 @@
     <text x="397" y="347" text-anchor="middle" font-size="10" fill="#d9a441">quests</text>
     <circle cx="452" cy="396" r="5" fill="#e6e1d3"/><text x="478" y="400" font-size="10" fill="#8d8b98">you arrive</text>
 
+    <!-- the adventurers' guild -->
+    <rect x="404" y="494" width="156" height="82" rx="4" fill="#24201a" stroke="#6fd6e6"/>
+    <path d="M396,498 L482,462 L568,498 Z" fill="#2b3350" stroke="#6fd6e6"/>
+    <g stroke="#c3cad6" stroke-width="3" stroke-linecap="round"><path d="M470,470 l24,20"/><path d="M494,470 l-24,20"/></g>
+    <text x="482" y="528" text-anchor="middle" font-weight="600" fill="#6fd6e6">Adventurers' Guild</text>
+    <text x="482" y="546" text-anchor="middle" font-size="11" fill="#8d8b98">take and hand in quests,</text>
+    <text x="482" y="561" text-anchor="middle" font-size="11" fill="#8d8b98">party notices</text>
+
     <!-- inn, stash and the well -->
     <rect x="130" y="180" width="130" height="78" rx="4" fill="#2a2018" stroke="#a07844"/>
     <path d="M124,184 L195,150 L266,184 Z" fill="#4a3324" stroke="#a07844"/>
     <text x="195" y="212" text-anchor="middle" font-weight="600">Inn</text>
     <text x="195" y="230" text-anchor="middle" font-size="11" fill="#8d8b98">meals and the stash</text>
-    <circle cx="282" cy="270" r="11" fill="#24505a" stroke="#5aa7e6" stroke-width="2"/><text x="282" y="296" text-anchor="middle" font-size="10" fill="#5aa7e6">well</text>
+    <circle cx="282" cy="270" r="11" fill="#24505a" stroke="#5aa7e6" stroke-width="2"/><text x="282" y="296" text-anchor="middle" font-size="10" fill="#5aa7e6">well: fills flasks</text>
 
     <!-- the market: six stalls -->
     <path d="M690,170 C760,160 860,168 900,180 L906,470 C840,480 760,470 690,474 Z" fill="#1f1c16" stroke="#3a3326"/>

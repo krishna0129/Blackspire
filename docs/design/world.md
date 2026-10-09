@@ -44,6 +44,7 @@ land at the same moment.
 | **Arcanist** | mutations, skills and skill ranks, special passives on gear; forges grimoires | **Decided** |
 | **Market** | buys and sells materials, drops and crops at prices that move | **Decided** |
 | **Auction house** | players list gear for other players to bid on | **Decided** |
+| **Adventurers' guild** | take and hand in quests, collect rewards, post notices for party mates | **Decided** |
 | **Quest board** | every quest in the region; the whole board refreshes once every 24 hours | **Decided** |
 | **Stash** | the universal stash, reachable from every village and safe point | **Decided** |
 | **Cook** | turns crops into food | suggested |
