@@ -12,7 +12,7 @@ Four separate tracks, each with one job, so none of them overshadows gear:
 |---|---|---|---|
 | **Attributes** (exists) | raw stats: Strength, Dexterity… | 3 points per level | Gear panel |
 | **Class tree** | numbers, through the existing stat keys | skill points | Gear panel, new tab |
-| **Skill rank** | the class skill's own settings (damage, cooldown) | shards + materials, level-gated | blacksmith |
+| **Skill rank** | the class skill's own settings (damage, cooldown) | shards + materials, level-gated | arcanist |
 | **Mutation** | lesser: a small bonus to a skill; greater: how a skill behaves | a capstone node + a boss mutagen | learned once, swapped at safe rooms |
 | **Skill slots** | how many skills you can use at once, up to 4 (one an ultimate) | a runestone every 10 floors | safe rooms |
 
@@ -47,18 +47,18 @@ tier 3 later. That's a real trade-off, but a soft one, because attributes come a
   you hold that class's weapon. Any other weapon still works, with its skill at rank 1 and no tree: fine for
   trying a class out, not for playing it.
 - **Changing class** is deliberately expensive, so players research and pick the class they want: it costs
-  **`150 × level` shards and 2 Spire crystals** at a blacksmith. At level 20 that's 3,000 shards, about five or
+  **`150 × level` shards and 2 Spire crystals** at an arcanist. At level 20 that's 3,000 shards, about five or
   six floor clears' worth, more than a rank 5 upgrade. What it does:
   - points in the old class's branches move to the new class's, unspent;
   - Survival points stay where they are;
   - skill ranks and learned mutations stay with the old class, waiting if you ever come back;
   - lesser mutations (below) are shared by all classes, so they carry over.
-- **Respec** within your class at a blacksmith costs `50 × level` shards. Both respec and the first class change
+- **Respec** within your class at an arcanist costs `50 × level` shards. Both respec and the first class change
   after the trees are rebalanced (`TREE_VERSION`, as in skill-trees.md) are free.
 
 ### Skill rank: improving the class skill
 
-The active skill itself goes from rank 1 to 5 at a blacksmith. Each rank adds **+8% to the skill's damage or
+The active skill itself goes from rank 1 to 5 at an arcanist. Each rank adds **+8% to the skill's damage or
 healing and −4% to its cooldown**. Those are settings in the skills table, so this needs no new mechanics.
 
 | Rank | Level | Shards | Materials |
@@ -68,7 +68,7 @@ healing and −4% to its cooldown**. Those are settings in the skills table, so 
 | 4 | 15 | 1,000 | 3 Spire crystal |
 | 5 | 20 | 2,000 | 5 Spire crystal, **materials not yet discovered** |
 
-Rank 5's last ingredient is a mutagen from a **hidden boss**, which don't exist yet. Until they do, the blacksmith
+Rank 5's last ingredient is a mutagen from a **hidden boss**, which don't exist yet. Until they do, the arcanist
 shows rank 5 with its last row as `??? (not yet discovered)` and won't sell it. That keeps the top rank as
 something to look forward to instead of a grind on the first three bosses.
 
@@ -307,7 +307,7 @@ Following skill-trees.md, with the decisions above making the early steps smalle
 
 1. Settings into the skills table (no behaviour change).
 2. Committed class, the class change fee, the tree and the Survival branch, starting with the Swordsman.
-3. Skill ranks 2–4 at the blacksmith, rank 5 shown as undiscovered.
+3. Skill ranks 2–4 at the arcanist, rank 5 shown as undiscovered.
 4. Mutagen drops and the three lesser mutations: settings only, no riders yet.
 5. The screens, then the other seven classes' trees.
 6. Riders and greater mutations, when the first deeper floor brings a greater mutagen. The Swordsman's three need
