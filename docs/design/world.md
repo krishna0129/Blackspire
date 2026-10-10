@@ -65,7 +65,7 @@ part of the tree. A return gate can take you to any village you have reached.
 **Decided:** fields around each village are safe zones where players grow crops, then cook or craft with them.
 
 - **Decided:** fields are **personal**. Everyone has and sees only their own plots, and nobody can enter anyone
-  else's field. Online, a field is a private copy per player, the way a red gate is a private copy per party.
+  else's field. Online, a field is a private copy per player.
 - **Decided:** plots are **bought**, and each village grows only **one or two crops** (its soil is rich in one or two
   nutrients). See [root-village.md](root-village.md#fields).
 - Crops grow in **real time** (an hour to a day), including while you are offline or in the tower. That gives a
@@ -122,9 +122,8 @@ when work on systems resumes.
     contents are given to every member of the party.
 - **Rewards come from quests**, for now. **Weapons and gear are crafted** from monster drops.
   - Finished gear can still drop, rarely: **under about 5% from common monsters, under about 15–20% from bosses**.
-- **Hidden bosses are a recurring mechanic**, not a one-time one, and are hard to trigger: clearing a floor without
-  being hit gives a **20% chance** of a hidden boss room. They are **never part of the limited-time events**, so
-  their drops stay rare. (More under [Red gates and secret bosses](#red-gates-and-secret-bosses).)
+- **Hidden bosses die once too**, and are **never part of the limited-time events**. Each sleeps in a hidden room
+  off its floor's boss room and gives a one-of-a-kind item: see [Hidden bosses](#hidden-bosses).
 
 **What this replaces in today's game**, to be reworked together:
 
@@ -141,11 +140,9 @@ when work on systems resumes.
 
 **Open:**
 
-- A hidden boss needs a floor cleared without being hit, but the floor's own boss can only be killed once. Whether
-  "the floor" means every monster on it now, with the boss counted only while it is still alive, is to be decided.
 - The gear-drop chance for elites, between the two figures above.
-- What a first-kill reward is: a unique item for the one who lands the last hit, as in the anime, or something for
-  each member of the team.
+- What a floor boss's first-kill reward is: an item for the one who lands the last hit, as in the anime, or
+  something for each member of the team. (One-of-a-kind items are the hidden bosses': see below.)
 
 ## Economy
 
@@ -156,7 +153,7 @@ when work on systems resumes.
 | | What it is | Where it comes from | What it's for |
 |---|---|---|---|
 | **Shards** | the everyday money of the whole world | every enemy, chests, selling | everything ordinary |
-| **Mythril ore** (decided) | the rarest ore, found deep in the tree | quests, branch wardens, red gates, secret bosses | forging the rarest gear |
+| **Mythril ore** (decided) | the rarest ore, found deep in the tree | quests, branch wardens, hidden bosses | forging the rarest gear |
 
 - **Decided:** mythril ore can be traded and auctioned, so it ends up with a price in shards. NPCs never sell it: the
   only way it enters the world is by playing.
@@ -237,6 +234,14 @@ Not built yet:
   - trading opens at level 10;
   - every trade is logged on the server;
   - there's a cap on how many active listings one player can have.
+- **Decided, PvP with stakes:** a fight between players can carry a **deal**. Players bet on who wins, and choose
+  which loot they are willing to stake.
+  - *Suggested:* the server holds every stake from the moment both sides accept until the fight ends, then hands
+    the lot to the winner, so nobody can back out or log off with it.
+  - *Suggested:* duels use the anime's modes (first clean hit, or first to half health), so a wager never needs
+    anyone to die.
+  - A one-of-a-kind item can be staked like anything else, and changes hands if lost.
+  - *Open:* whether onlookers can bet on a fight they are not in.
 - **Shard sinks** stop inflation, which is the usual way MMO economies die: the auction fee, enhancement, forging,
   class changes, respecs, stash upgrades, and the market spread.
 
@@ -320,42 +325,41 @@ cauldron. This gives every family's drop a third use, after forging and selling.
   - "magical defence" needs enemy attacks to be marked physical or magical first. Today only the player's own magic
     is told apart (enemies' `mres`).
 
-## Red gates and secret bosses
+## Hidden bosses
 
-**Decided:** a red gate is a locked, harder version of a floor (a "double dungeon"). It opens when certain conditions
-are met, not at random.
+**Decided. This replaces everything decided earlier about red gates and secret bosses** (the 40% chance, the two
+"untouched" conditions and their two bosses, a private copy per party, and the later 20% chance after an untouched
+floor). Red gates and hidden bosses are now **one and the same thing**.
 
-**Decided since (the newer decision):** hidden bosses **recur**; they are not one-time. Clearing a floor without
-being hit gives a **20% chance** of a hidden boss room. They never appear in limited-time events, and their drops
-stay rare. This is newer than the 40% and the two conditions below, which still need to be squared with it: whether
-the untouched-boss condition stays, and whether the hidden boss room is the red gate or replaces it.
+- A **secret, optional boss sleeps in a hidden room**, reached through a **secret entrance in the floor's boss room**.
+- It can only be found **after the floor's boss has been defeated**. Players **stumble on it at random**, the way
+  they would walk into a trap: nothing announces it.
+- **There is no exit.** Either the hidden boss dies or you do, and dying there costs **some of the loot you carry**.
+- It follows the same death rule as a floor boss: **killed once, it is gone from the server for good**.
+- It gives **unique gear**, meant to be **orders of magnitude better** than anything else.
+- **A unique item is one of a kind.** It cannot be replicated: not forged, not dropped a second time, not copied.
+  It can only be **passed on**, by trade or at auction.
+- Hidden bosses are never part of the limited-time events (decided earlier, still true).
 
-- **Decided:** the next floor has a **40% chance** to be a red gate when a player clears a floor too easily, in one of
-  two ways:
+**Open, to settle before it is built:**
 
-  | Condition | What it takes | Red gate |
-  |---|---|---|
-  | **Untouched boss** | you may be hit on the floor, but you kill its boss without being hit once in the fight | red gate boss A |
-  | **Untouched floor** | you kill **every enemy on the floor**, boss included, without being hit once | red gate boss B |
-
-  Killing every enemy matters for the second: skipping rooms doesn't count.
-- **Decided:** the condition that opened a red gate decides **which boss** waits inside. The untouched-floor boss
-  should be the harder one, with the better loot, since it asks far more.
-- **Decided:** in a party, both conditions are **party-wide**: one hit on anyone breaks it for everyone. They are
-  meant as solo feats, and a solo player has the easiest time meeting them. Conditions built around a whole party
-  come later.
-- How "hit" is counted: any damage that reaches you. A dodged, evaded or fully blocked blow is not a hit. Thorns,
-  hunger and thirst don't count either, since nothing attacked you.
-- **Suggested conditions for later**, hinted at by quests and notes found in the tower:
-  - beat a floor's boss without drinking a potion;
-  - clear every elite on a floor before entering the boss chamber;
-  - carry a sigil forged from a secret boss's drop.
-- **Inside:**
-  - the return gate is sealed until the red boss dies;
-  - online, it holds only your party;
-  - it guarantees mythril ore and has a chance at unique gear.
-- **Secret bosses** live behind red gates. Their mutagens are the undiscovered rank 5 material from
-  [class-trees.md](class-trees.md).
+1. **How much better "orders of magnitude" is, in numbers.** Taken literally (ten or a hundred times the damage),
+   one item would end every fight, every duel and every wager for whoever holds it, and make all other gear
+   pointless. *Suggested:* a unique is clearly the best piece of its kind, about 30–50% ahead of the best forged
+   piece of its level, and carries **one effect nothing else in the game has**. Its pull comes from being the only
+   one, more than from the size of its numbers.
+2. **Staying relevant.** A unique from floor 3 is outclassed by ordinary gear a few floors later unless it can grow.
+   *Suggested:* uniques can be enhanced, and re-tempered at the forge to the holder's current floor.
+3. **How the room is found.** A chance each time someone walks the dead boss's chamber, or a fixed secret spot to
+   discover? And does every floor hide one, or only some?
+4. **What "some of the loot" is.** Today a death costs 20% of your shards and nothing else.
+5. **A failed attempt.** Does the hidden boss heal to full when everyone inside dies? Can a second group enter while
+   one is inside?
+6. **Losing a unique.** Can it be salvaged, destroyed or dropped on death? If its holder stops playing, the world
+   has lost it for good unless something returns it.
+7. **Rank 5 skills** need a hidden boss's mutagen ([class-trees.md](class-trees.md)). With one kill per hidden boss
+   per world, only the team that kills it could ever reach rank 5 from it. The mutagen needs another rule, or
+   another source.
 
 ## Later
 
@@ -435,7 +439,7 @@ Recommended order, with reasons:
    - Online only. It needs a working economy and its anti-abuse rules first.
 7. **Fields, farming and cooking.**
    - A full second loop. Valuable, but separate from climbing, so it waits until the climb is solid.
-8. **Red gates, secret bosses, transmog, and later branches.**
+8. **Hidden bosses, transmog, and later branches.**
 
 ## Open questions
 

@@ -68,6 +68,10 @@ healing and −4% to its cooldown**. Those are settings in the skills table, so 
 | 4 | 15 | 1,000 | 3 Spire crystal |
 | 5 | 20 | 2,000 | 5 Spire crystal, **materials not yet discovered** |
 
+(**Note:** hidden bosses have since been decided to die once per world
+([world.md](world.md#hidden-bosses)), so one mutagen per hidden boss cannot serve every player. This ingredient
+needs a new rule; it is listed as open there.)
+
 Rank 5's last ingredient is a mutagen from a **hidden boss**, which don't exist yet. Until they do, the arcanist
 shows rank 5 with its last row as `??? (not yet discovered)` and won't sell it. That keeps the top rank as
 something to look forward to instead of a grind on the first three bosses.
