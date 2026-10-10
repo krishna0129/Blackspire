@@ -16,7 +16,9 @@ for now; that is a question for later, if the game turns out well. So rules agai
 priority, and what exists (village channels, the exchange's selling limit) stays as it is.
 
 **Decided, order of work:** adding systems is **paused**. The **visual overhaul comes first**; movement and combat
-are to be redesigned after it (the playstyle is still being chosen). Single player is built first, and every rule
+are to be redesigned after it (the playstyle is still being chosen). The **skill system will be redesigned from
+scratch** once the playstyle is settled, so [skill-trees.md](skill-trees.md) and [class-trees.md](class-trees.md)
+are on hold, and mutagens may not be part of the new one. Single player is built first, and every rule
 keeps running on the server so the online game follows.
 
 ## The picture
@@ -122,8 +124,9 @@ when work on systems resumes.
     contents are given to every member of the party.
 - **Rewards come from quests**, for now. **Weapons and gear are crafted** from monster drops.
   - Finished gear can still drop, rarely: **under about 5% from common monsters, under about 15–20% from bosses**.
-- **Hidden bosses die once too**, and are **never part of the limited-time events**. Each sleeps in a hidden room
-  off its floor's boss room and gives a one-of-a-kind item: see [Hidden bosses](#hidden-bosses).
+- **Hidden bosses** are **never part of the limited-time events**. Some floors have one, in a chamber under the
+  boss room; it gives a one-of-a-kind item and comes back only about once in six months: see
+  [Hidden bosses](#hidden-bosses).
 
 **What this replaces in today's game**, to be reworked together:
 
@@ -141,8 +144,8 @@ when work on systems resumes.
 **Open:**
 
 - The gear-drop chance for elites, between the two figures above.
-- What a floor boss's first-kill reward is: an item for the one who lands the last hit, as in the anime, or
-  something for each member of the team. (One-of-a-kind items are the hidden bosses': see below.)
+- What a floor boss's first-kill reward is. Decided so far: the party that lands the last hit gets more than the
+  others ([Bosses are for parties](#bosses-are-for-parties)).
 
 ## Economy
 
@@ -325,41 +328,90 @@ cauldron. This gives every family's drop a third use, after forging and selling.
   - "magical defence" needs enemy attacks to be marked physical or magical first. Today only the player's own magic
     is told apart (enemies' `mres`).
 
+## Bosses are for parties
+
+**Decided:** bosses become **much harder**. Today one player can beat a floor boss alone in three or four minutes;
+the game is meant to push players to **form parties** to take bosses on. The numbers and mechanics are set with the
+new combat.
+
+- **Decided:** when a boss falls, **the party that lands the last hit gets more than the others**, and **the player
+  who lands the last hit gets the one-of-a-kind item**, where there is one. It does not go to the whole party.
+- *Suggested:* make the difficulty come from mechanics that need more than one player, not from a bigger health
+  bar alone, which only makes a fight longer:
+  - something to intercept while someone else holds the boss (the Pale Collector's thralls already work this way);
+  - openings that only a second player can use (the anime's "switch");
+  - a way to get a fallen ally back on their feet inside the fight, so one death is a setback and not the end;
+  - a time limit after which the boss hits much harder, sized for a full party's damage.
+- **Open: single player.** If bosses need a party, a lone player cannot climb. *Suggested:* in single player, and
+  when friends are offline, fighters can be hired from the kingdom camps to fill the party. The story already puts
+  the three companies in the tower beside you.
+- **Known consequence:** a prize for the last hit means players will hold back their strongest blow for the end,
+  and healers and shield-bearers will rarely win it. That is true to the anime; it is noted so it is a choice.
+
 ## Hidden bosses
 
 **Decided. This replaces everything decided earlier about red gates and secret bosses** (the 40% chance, the two
 "untouched" conditions and their two bosses, a private copy per party, and the later 20% chance after an untouched
 floor). Red gates and hidden bosses are now **one and the same thing**.
 
-- A **secret, optional boss sleeps in a hidden room**, reached through a **secret entrance in the floor's boss room**.
-- It can only be found **after the floor's boss has been defeated**. Players **stumble on it at random**, the way
-  they would walk into a trap: nothing announces it.
+- A **secret, optional boss sleeps in a hidden chamber** under the floor's boss room. **Only some floors have one.**
+- The way in is a **trapdoor in the boss room**. It stays **sealed until the floor's boss has been defeated**. After
+  that, when a player steps on it, their **whole party is taken into the secret chamber**.
 - **There is no exit.** Either the hidden boss dies or you do, and dying there costs **some of the loot you carry**.
-- It follows the same death rule as a floor boss: **killed once, it is gone from the server for good**.
-- It gives **unique gear**, meant to be **orders of magnitude better** than anything else.
-- **A unique item is one of a kind.** It cannot be replicated: not forged, not dropped a second time, not copied.
-  It can only be **passed on**, by trade or at auction.
+- If **everyone inside dies, the boss heals to full**.
+- **Respawn:** a hidden boss comes back about **once every six months**. It gives its drops once, then goes back on
+  its timer. (This replaces "killed once, gone for good", so that an item whose holder stops playing is not lost to
+  the world for ever.)
+- It gives **unique gear**. The **player who lands the last hit** gets it.
+- **A unique item is one of a kind.** It cannot be replicated: not forged, not copied.
+  - It can be **traded** or **auctioned**, and **staked** in a duel.
+  - It is **dropped on death** if its holder was carrying or wearing it.
+  - It **cannot be salvaged or destroyed**.
+  - It **can be enhanced, but not without limit**, and the **chance of failure rises in step with the number of
+    enhancements already on it**. The aim is a unique that stays worth using for **about the next ten floors**
+    (an estimate).
 - Hidden bosses are never part of the limited-time events (decided earlier, still true).
+
+**The trapdoor: suggestions** (asked for; none decided):
+
+- **Hard to see, not invisible.** Before the boss dies it looks like any other flagstone. Afterwards it has one
+  small tell (a hairline seam, dust that falls now and then, a faint draught). First-timers walk onto it; players
+  who know what to look for can choose to.
+- **Who goes down:** party members who are **in the boss room** when it opens. A member in the village or elsewhere
+  on the floor is not pulled in, and cannot follow.
+- **A few seconds of warning.** The floor cracks and shakes for two or three seconds before it gives way, so the
+  rest of the party can step on, or the one who triggered it knows what is about to happen. Stepping off does not
+  stop it.
+- **The boss sleeps until someone comes close or strikes it.** The party lands at the far end of the chamber and
+  gets a moment to see what they have walked into, heal and set up. There is still no way out.
+- **One party at a time.** While a party is inside, the trapdoor is sealed to everyone else.
+- **Leaving the game inside counts as dying there.** Otherwise logging out is the exit.
+- **Tuned well above its floor**, about as far above as its reward: if the item is worth ten floors, the fight
+  should be a floor-plus-ten fight. A party that finds it early will probably die; one that comes back many floors
+  later wins an item that is merely level with what they already have. That keeps the reward honest without any
+  level cap on who may enter.
+- **Which floors:** no pattern a player could count (not "every fifth"), and never the same spot in the room, so
+  knowing one floor's secret does not give away the next.
+- **What a death there costs:** *suggested* a share of the materials and monster drops carried, plus any unique
+  being carried. What is lost **stays in the chamber**, and the party that finally kills the boss takes it. That is
+  where a dropped unique goes when its holder dies down there.
 
 **Open, to settle before it is built:**
 
-1. **How much better "orders of magnitude" is, in numbers.** Taken literally (ten or a hundred times the damage),
-   one item would end every fight, every duel and every wager for whoever holds it, and make all other gear
-   pointless. *Suggested:* a unique is clearly the best piece of its kind, about 30–50% ahead of the best forged
-   piece of its level, and carries **one effect nothing else in the game has**. Its pull comes from being the only
-   one, more than from the size of its numbers.
-2. **Staying relevant.** A unique from floor 3 is outclassed by ordinary gear a few floors later unless it can grow.
-   *Suggested:* uniques can be enhanced, and re-tempered at the forge to the holder's current floor.
-3. **How the room is found.** A chance each time someone walks the dead boss's chamber, or a fixed secret spot to
-   discover? And does every floor hide one, or only some?
-4. **What "some of the loot" is.** Today a death costs 20% of your shards and nothing else.
-5. **A failed attempt.** Does the hidden boss heal to full when everyone inside dies? Can a second group enter while
-   one is inside?
-6. **Losing a unique.** Can it be salvaged, destroyed or dropped on death? If its holder stops playing, the world
-   has lost it for good unless something returns it.
-7. **Rank 5 skills** need a hidden boss's mutagen ([class-trees.md](class-trees.md)). With one kill per hidden boss
-   per world, only the team that kills it could ever reach rank 5 from it. The mutagen needs another rule, or
-   another source.
+1. **Six-month respawn against "one of a kind".** If a respawned boss drops the same unique while the first still
+   exists, there are two. *Suggested:* each hidden boss has one item. It drops it again only if the item has left
+   the world (its holder has not played for those six months, and the item returns to the boss). Otherwise the
+   rematch pays in rare materials.
+2. **How strong a unique is.** "Worth using for the next ten floors" now sets it: about the strength of gear ten
+   floors on. With today's item levels that is about 3 times a forged piece of its own floor in base stats on
+   floor 1, 2.5 times on floor 3 and 1.7 times on floor 10, plus one effect nothing else has. This replaces "orders of magnitude" unless that was meant literally.
+3. **Dying with a unique outside a hidden chamber:** where it falls, and who may pick it up.
+4. **Several parties** are implied by "the party that lands the last hit". Parties are four players today and each
+   fights alone; boss fights that take more than one party are a feature of their own.
+
+**No longer a question:** the skill system is to be redesigned from scratch once the playstyle is chosen, and
+mutagens may not survive it, so the "rank 5 needs a hidden boss's mutagen" problem is dropped (see the notes at the
+top of [class-trees.md](class-trees.md) and [skill-trees.md](skill-trees.md)).
 
 ## Later
 

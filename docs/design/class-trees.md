@@ -1,5 +1,9 @@
 # Class trees: theorycraft
 
+> **On hold (decided).** The skill system will be redesigned from scratch once the game's playstyle is chosen
+> ([world.md](world.md)). Mutagens may not be part of the new system. Read this as a record of earlier thinking,
+> not as the plan.
+
 Status: proposal, with the first round of decisions folded in (see [Decisions](#decisions)). Builds on the rules in [skill-trees.md](skill-trees.md): tree nodes only grant
 stats the game already has, mutations only change a skill's settings and add riders from a fixed list. Nothing here
 is in the game yet.
@@ -67,10 +71,6 @@ healing and −4% to its cooldown**. Those are settings in the skills table, so 
 | 3 | 10 | 500 | 5 Emberstone, 1 Spire crystal |
 | 4 | 15 | 1,000 | 3 Spire crystal |
 | 5 | 20 | 2,000 | 5 Spire crystal, **materials not yet discovered** |
-
-(**Note:** hidden bosses have since been decided to die once per world
-([world.md](world.md#hidden-bosses)), so one mutagen per hidden boss cannot serve every player. This ingredient
-needs a new rule; it is listed as open there.)
 
 Rank 5's last ingredient is a mutagen from a **hidden boss**, which don't exist yet. Until they do, the arcanist
 shows rank 5 with its last row as `??? (not yet discovered)` and won't sell it. That keeps the top rank as
