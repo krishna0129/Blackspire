@@ -3,14 +3,14 @@
 // copy of a floor per party and shared copies (channels) of the root village, and turns the rules' host calls into
 // messages for the players in each.
 //
-// Who decides what: the server runs combat, damage, loot, saves, shops and enhancement. Each browser moves its own
+// Who decides what: the server runs combat, damage, loot, saves, shops, the market and enhancement. Each browser moves its own
 // player (so movement answers at once) and reports where it is; checkMove() accepts a report only if it is reachable
 // at that player's speed without passing through a wall.
 
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 
 const ROOT=path.join(__dirname,'..');
-const SIM_FILES=['util','data','items','rules','world','village','quests','fields','combat','update','floor3','actions'];
+const SIM_FILES=['util','data','items','rules','world','village','quests','fields','market','combat','update','floor3','actions'];
 const TICK=1/30;          // the rules run 30 times a second
 const SNAP_EVERY=2;       // each player gets a snapshot every second tick (15 a second)
 const VIEW=360;           // enemies and shots further than this from a player are left out of their snapshot
@@ -72,10 +72,14 @@ function validSheet(url){
 
 class Game{
   constructor(db){
-    this.db=db;this.R=loadRules();this.seed=db.worldSeed();this.parties=new Map();this.byCode=new Map();this.worlds=new Set();this.notices=[];this.nextNotice=1;this.nextPid=1;this.ticks=0;this.saveT=0;
+    this.db=db;this.R=loadRules();this.seed=db.worldSeed();
+    // the root village's market: one book for everybody, whichever channel they are in (js/sim/market.js)
+    this.market=db.loadMarket('root')||{t:Date.now(),stock:{}};this.marketStored=JSON.stringify(this.market);
+    this.parties=new Map();this.byCode=new Map();this.worlds=new Set();this.notices=[];this.nextNotice=1;this.nextPid=1;this.ticks=0;this.saveT=0;
     this.timer=setInterval(()=>this.tick(),1000*TICK);
   }
-  stop(){clearInterval(this.timer);for(const p of this.parties.values())for(const m of p.members)this.store(m);}
+  stop(){clearInterval(this.timer);for(const p of this.parties.values())for(const m of p.members)this.store(m);this.storeMarket();}
+  storeMarket(){const j=JSON.stringify(this.market);if(j!==this.marketStored){this.db.saveMarket('root',this.market);this.marketStored=j;}}
   // online characters, for the character screen; floor 0 is the village
   charSummary(m){return m.S?{name:m.S.char.name,level:m.S.char.level,floor:m.S.floor==null?1:m.S.floor}:null;}
 
@@ -132,7 +136,7 @@ class Game{
     let best=null;for(const w of this.worlds)if(w.kind==='village'&&w.members.length+k<=CHANNEL_MAX&&(!best||w.members.length>best.members.length))best=w;
     if(best)return best;
     let ch=1;while([...this.worlds].some(w=>w.kind==='village'&&w.ch===ch))ch++;
-    const w={kind:'village',n:0,seed:0,ch,members:[],G:this.R.genVillage()};this.worlds.add(w);return w;
+    const w={kind:'village',n:0,seed:0,ch,members:[],G:this.R.genVillage()};w.G.market=this.market;this.worlds.add(w);return w;
   }
   enterWorld(w,m){
     m.w=w;w.members.push(m);this.placePlayer(w,m);
@@ -264,6 +268,7 @@ class Game{
         }
       }catch(err){console.error(w.kind,w.ch||w.n,'tick failed:',err);}
     }
+    if(saveNow)this.storeMarket();
   }
   // Accepts the browser's reported position if the player could have got there since the last report: within their
   // speed budget (faster while a dodge-roll the server knows about is under way) and without passing through a wall.

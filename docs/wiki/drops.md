@@ -80,7 +80,8 @@ floor's item level (bosses: one higher), which raises base numbers by 22% per le
 
 Every monster belongs to a **family**, and each family has its own drop. A monster only ever drops its own
 family’s, on top of everything above; chests have no family and drop none. The blacksmith and the arcanist turn
-them into gear against that family: see [Forging](forging.md).
+them into gear against that family: see [Forging](forging.md). The exchange buys and sells them: see
+[The market](market.md).
 
 | Family | Drop | Ordinary monsters (chance per kill) | Elites | Bosses |
 |---|---|---|---|---|

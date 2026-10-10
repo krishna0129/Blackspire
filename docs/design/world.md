@@ -1,9 +1,8 @@
 # The world: the tree, its villages, the economy and the story
 
 Status: proposal. The owner's decisions are marked **Decided**. Everything else is a suggestion, open to change.
-**In the game** so far: the trader, hunger and thirst, and trader stock limits. Everything else here is not built
-yet. It changes where some existing things live (the blacksmith moves out of the tower's safe rooms), so it should be
-settled before more floors are built.
+**In the game** so far: the root village, the trader and the stash, hunger and thirst, the fields, enemy families
+and forging, and the exchange. Each section says what of it is built; everything else is not built yet.
 
 **Decided, platform:** the game targets **web browsers on a computer** (keyboard and mouse) for now. Phones and
 tablets are not a goal yet, so new features don't need touch controls or small-screen layouts.
@@ -11,6 +10,16 @@ tablets are not a goal yet, so new features don't need touch controls or small-s
 **Decided, characters:** online and single player characters stay **separate**. An online character can be
 **imported into single player** to save time, never the other way, so nothing made offline can reach the online
 world.
+
+**Decided, scope:** the target for now is a game for **3 or 4 friends on one server**. It is not being published
+for now; that is a question for later, if the game turns out well. So rules against abuse by strangers are not a
+priority, and what exists (village channels, the exchange's selling limit) stays as it is.
+
+**Decided, order of work:** adding systems is **paused**. The **visual overhaul comes first**; movement and combat
+are to be redesigned after it (the playstyle is still being chosen). The **skill system will be redesigned from
+scratch** once the playstyle is settled, so [skill-trees.md](skill-trees.md) and [class-trees.md](class-trees.md)
+are on hold, and mutagens may not be part of the new one. Single player is built first, and every rule
+keeps running on the server so the online game follows.
 
 ## The picture
 
@@ -58,7 +67,7 @@ part of the tree. A return gate can take you to any village you have reached.
 **Decided:** fields around each village are safe zones where players grow crops, then cook or craft with them.
 
 - **Decided:** fields are **personal**. Everyone has and sees only their own plots, and nobody can enter anyone
-  else's field. Online, a field is a private copy per player, the way a red gate is a private copy per party.
+  else's field. Online, a field is a private copy per player.
 - **Decided:** plots are **bought**, and each village grows only **one or two crops** (its soil is rich in one or two
   nutrients). See [root-village.md](root-village.md#fields).
 - Crops grow in **real time** (an hour to a day), including while you are offline or in the tower. That gives a
@@ -96,6 +105,48 @@ water keep the meters up.
 - Dying wakes you at least half fed and half watered, so nobody gets stuck starving in a loop.
 - Later, cooked food from the fields replaces rations as the main source.
 
+## What happens once, and what comes back
+
+**Decided, not built yet.** The world follows the anime: it is one shared place, and some things in it happen once.
+Today's game does the opposite in several places (listed at the end of this section), so this is a change to make
+when work on systems resumes.
+
+- **Floor bosses never respawn.** A boss is killed once for the whole world, and the next floor opens for everyone.
+  - **First-kill rewards belong to the team that cleared it**, and to nobody else, ever.
+- **Monsters respawn** after a regular window. There is **no protection against camping** a spawn or a hunting
+  ground: whoever is there hunts it.
+- **Limited-time events** (later) bring bosses back to be fought for their **monster drops only**: no first-kill
+  rewards. A player can fight a boss they have already beaten, or one they have not, if they meet its level
+  requirement.
+- **Chests:** no chest stands in the open. They are found only **deep inside dungeons** and in **hidden or secret
+  rooms**, which also leaves room for trapped chests later.
+  - A chest is **shared by all players: opened once for the whole world**. Opened by someone in a party, its
+    contents are given to every member of the party.
+- **Rewards come from quests**, for now. **Weapons and gear are crafted** from monster drops.
+  - Finished gear can still drop, rarely: **under about 5% from common monsters, under about 15–20% from bosses**.
+- **Hidden bosses** are **never part of the limited-time events**. Some floors have one, in a chamber under the
+  boss room; it gives a one-of-a-kind item and comes back only about once in six months: see
+  [Hidden bosses](#hidden-bosses).
+
+**What this replaces in today's game**, to be reworked together:
+
+- Each party gets a fresh copy of a floor, and enemies and the boss are back on every arrival. Floors become
+  persistent: one copy for the world, which remembers its dead boss, its opened chests and its respawn timers.
+- Chests stand in about 40% of ordinary rooms, and every player opens each one for themselves.
+- Monsters drop finished gear 13% of the time, elites 70%, and a boss always drops three pieces.
+- Forging only makes Rare gear against one family. As the main source of gear it needs plain gear, tiers by floor
+  and a way to better rarities.
+- The guild's daily bounty ("defeat the boss of floor N") cannot exist once bosses stay dead.
+- The village stalls restock when any boss falls; only the daily restock remains.
+- Spire crystals come almost only from bosses and are needed to enhance past +6. With one kill per boss they need
+  another source: the events, the exchange, or something new.
+
+**Open:**
+
+- The gear-drop chance for elites, between the two figures above.
+- What a floor boss's first-kill reward is. Decided so far: the party that lands the last hit gets more than the
+  others ([Bosses are for parties](#bosses-are-for-parties)).
+
 ## Economy
 
 **Decided:** the game is free-to-play with **no microtransactions**.
@@ -105,7 +156,7 @@ water keep the meters up.
 | | What it is | Where it comes from | What it's for |
 |---|---|---|---|
 | **Shards** | the everyday money of the whole world | every enemy, chests, selling | everything ordinary |
-| **Mythril ore** (decided) | the rarest ore, found deep in the tree | quests, branch wardens, red gates, secret bosses | forging the rarest gear |
+| **Mythril ore** (decided) | the rarest ore, found deep in the tree | quests, branch wardens, hidden bosses | forging the rarest gear |
 
 - **Decided:** mythril ore can be traded and auctioned, so it ends up with a price in shards. NPCs never sell it: the
   only way it enters the world is by playing.
@@ -146,7 +197,30 @@ Anti-abuse rules go in before anything else.
   - a per-player limit on how much of one good the NPCs of a region take from them each hour;
   - everything goes through the server online (it already decides every action), and every sale is logged.
 - The **auction house** handles gear, because every piece rolls differently and has no single price. The market
-  takes stackable things: materials, monster drops, crops, mythril ore.
+  takes stackable things: materials, monster drops, mythril ore.
+- **Decided:** only the exchange's prices move. **Crops are not traded on it**: they are sold to the inn and the
+  food stall for income, or cooked. The **other stalls keep fixed prices**.
+
+**In the game** (`MARKET` in `js/sim/data.js`, the rules in `js/sim/market.js`; the numbers are on
+[the wiki's market page](../wiki/market.md)):
+
+- **The exchange**, a desk at the bottom of the root village's market, buys and sells the three enhancement
+  materials and the four monster drops. The rule is the one above: `base × clamp(normal stock / stock, 0.5, 2)`,
+  selling at 80%, one unit at a time, so a bulk trade walks the price as it goes.
+- Each hour a stock moves a tenth of its normal size back toward normal.
+- One seller can sell half a good's normal stock per hour. The count is kept per character.
+- Single player keeps the stock in the save. Online, one server keeps one stock for the root village, shared by
+  every channel and kept in its database, so players move each other's prices. A trade names the price the player's
+  screen showed, and the server refuses it if the price has moved against them since.
+- The guild's daily board now asks for one enhancement material and one monster drop, and pays 30% over the usual
+  price, where the exchange usually pays 80% of it.
+
+- **Decided:** these prices and stock sizes are fine for a first version.
+
+Not built yet:
+
+- **A second region**, and so prices that differ between villages, waits for the first branch village.
+- **A log of sales** for the server's owner, and **mythril ore**, which nothing drops yet.
 
 ### Trading between players (online)
 
@@ -163,6 +237,35 @@ Anti-abuse rules go in before anything else.
   - trading opens at level 10;
   - every trade is logged on the server;
   - there's a cap on how many active listings one player can have.
+- **Decided, PvP with stakes:** a fight between players can carry a **deal**. Players bet on who wins, and choose
+  which loot they are willing to stake.
+  - *Suggested:* the server holds every stake from the moment both sides accept until the fight ends, then hands
+    the lot to the winner, so nobody can back out or log off with it.
+  - *Suggested:* duels use the anime's modes (first clean hit, or first to half health), so a wager never needs
+    anyone to die.
+  - A one-of-a-kind item can be staked like anything else, and changes hands if lost.
+  - *Open:* whether onlookers can bet on a fight they are not in.
+- **Decided:** PvP matters **very little** in this game. It must not turn the world into a killing ground for the
+  strongest players, with newer and weaker ones as their victims.
+- **Keeping PvP in its place (suggested, in answer to "how is this balanced?"):**
+  - **By consent only.** Nobody can be attacked who has not accepted a duel and its terms. That one rule removes
+    victims: there is no ambush, no hunting of newcomers, and no revenge beyond asking for a rematch. It is also the
+    anime's own rule inside towns.
+  - **The wager balances the fight, so the fight need not be even.** Stakes are negotiated and need not match: the
+    side with the unique can be asked to put up three to one. The screen shows both fighters' levels and gear
+    before anyone accepts, so nobody bets blind.
+  - **Two kinds of duel.** *As you are*: gear and level count, stakes allowed. *On even terms*: both are brought to
+    the same level and gear strength, skill decides, and no stakes heavier than shards. The second is the one for
+    bragging, and later for records.
+  - **A unique's edge fades by itself.** It is worth 10 to 15 floors, others keep climbing, and each enhancement is
+    likelier to fail than the last.
+  - **Give the strongest players better things to do than fight the weak:** first kills, hidden bosses, and a
+    reward (rare materials, or a standing with the guild) for joining a lower party's boss fight scaled down to its
+    level.
+  - **Against pestering:** a declined challenge cannot be repeated to the same player for a while.
+  - **Open-world PvP is left out.** If it is ever wanted, it belongs in marked lawless places only, with the
+    anime's criminal mark: whoever strikes first is barred from villages, can be attacked freely by anyone, and
+    loses more when they fall.
 - **Shard sinks** stop inflation, which is the usual way MMO economies die: the auction fee, enhancement, forging,
   class changes, respecs, stash upgrades, and the market spread.
 
@@ -228,43 +331,120 @@ blacksmith, except grimoires, which the arcanist makes.
 - This moves skill ranks, respecs and class changes from the blacksmith to the arcanist in
   [class-trees.md](class-trees.md).
 
-## Red gates and secret bosses
+### Brewing potions from monster drops
 
-**Decided:** a red gate is a locked, harder version of a floor (a "double dungeon"). It opens when certain conditions
-are met, not at random.
+**Decided, not built yet:** monster drops can also be brewed into potions by the arcanist, at the witchcraft room's
+cauldron. This gives every family's drop a third use, after forging and selling.
 
-- **Decided:** the next floor has a **40% chance** to be a red gate when a player clears a floor too easily, in one of
-  two ways:
+- Brewed potions give **buffs**, not health. The first ideas:
+  - **physical defence** for a while;
+  - **magical defence** for a while;
+  - a temporary **physical damage** or **magic damage** boost;
+  - and others in the same spirit: a wider variety is the point.
+- Still to work out when this is built:
+  - which family's drop makes which potion (the natural link is by family: a potion against, or from, what the drop
+    came from), and what else a recipe needs: shards, glowcaps from the fields, emberstone;
+  - how long a buff lasts, and whether it shares the one buff slot the inn's meals use or gets its own;
+  - how many you can carry, and whether the potion stall sells any ready-made;
+  - "magical defence" needs enemy attacks to be marked physical or magical first. Today only the player's own magic
+    is told apart (enemies' `mres`).
 
-  | Condition | What it takes | Red gate |
-  |---|---|---|
-  | **Untouched boss** | you may be hit on the floor, but you kill its boss without being hit once in the fight | red gate boss A |
-  | **Untouched floor** | you kill **every enemy on the floor**, boss included, without being hit once | red gate boss B |
+## Bosses are for parties
 
-  Killing every enemy matters for the second: skipping rooms doesn't count.
-- **Decided:** the condition that opened a red gate decides **which boss** waits inside. The untouched-floor boss
-  should be the harder one, with the better loot, since it asks far more.
-- **Decided:** in a party, both conditions are **party-wide**: one hit on anyone breaks it for everyone. They are
-  meant as solo feats, and a solo player has the easiest time meeting them. Conditions built around a whole party
-  come later.
-- How "hit" is counted: any damage that reaches you. A dodged, evaded or fully blocked blow is not a hit. Thorns,
-  hunger and thirst don't count either, since nothing attacked you.
-- **Suggested conditions for later**, hinted at by quests and notes found in the tower:
-  - beat a floor's boss without drinking a potion;
-  - clear every elite on a floor before entering the boss chamber;
-  - carry a sigil forged from a secret boss's drop.
-- **Inside:**
-  - the return gate is sealed until the red boss dies;
-  - online, it holds only your party;
-  - it guarantees mythril ore and has a chance at unique gear.
-- **Secret bosses** live behind red gates. Their mutagens are the undiscovered rank 5 material from
-  [class-trees.md](class-trees.md).
+**Decided:** bosses become **much harder**. Today one player can beat a floor boss alone in three or four minutes;
+the game is meant to push players to **form parties** to take bosses on. The numbers and mechanics are set with the
+new combat.
+
+- **Decided:** when a boss falls, **the party that lands the last hit gets more than the others**, and **the player
+  who lands the last hit gets the one-of-a-kind item**, where there is one. It does not go to the whole party.
+- **Decided:** the difficulty comes from **mechanics**, not from a bigger health bar alone, which only makes a fight
+  longer. Ideas so far:
+  - something to intercept while someone else holds the boss (the Pale Collector's thralls already work this way);
+  - openings that only a second player can use (the anime's "switch");
+  - a way to get a fallen ally back on their feet inside the fight, so one death is a setback and not the end.
+- **Decided:** boss fights have a **time limit**, after which the boss hits much harder. Without one, players can
+  stall a fight and win it by patience.
+- **Decided: two versions.** Single player's bosses are **easier**: beatable alone by a player who understands the
+  mechanics and has a certain level of skill. The online version is the one built for parties.
+  - In single player, **dying does not drop loot**: shards are still lost, gear is kept. That lets a player learn a
+    boss's mechanics by trying again.
+- **Known consequence:** a prize for the last hit means players will hold back their strongest blow for the end,
+  and healers and shield-bearers will rarely win it. That is true to the anime; it is noted so it is a choice.
+
+## Hidden bosses
+
+**Decided. This replaces everything decided earlier about red gates and secret bosses** (the 40% chance, the two
+"untouched" conditions and their two bosses, a private copy per party, and the later 20% chance after an untouched
+floor). Red gates and hidden bosses are now **one and the same thing**.
+
+- A **secret, optional boss sleeps in a hidden chamber** under the floor's boss room. **Only some floors have one.**
+- The way in is a **trapdoor in the boss room**. It stays **sealed until the floor's boss has been defeated**. After
+  that, when a player steps on it, their **whole party is taken into the secret chamber**.
+- **There is no exit.** Either the hidden boss dies or you do, and dying there costs **some of the loot you carry**.
+- If **everyone inside dies, the boss heals to full**.
+- **Respawn:** a hidden boss comes back about **once every six months**. It gives its drops once, then goes back on
+  its timer. (This replaces "killed once, gone for good".)
+  - Its unique **stays one of a kind**. The respawned boss drops it again only if the item has **come back to the
+    world**: its holder has been **inactive for more than 20 days**, or it was dropped and never claimed. Otherwise
+    the rematch pays **a good amount of rare materials**.
+- It gives **unique gear**. The **player who lands the last hit** gets it.
+- **How strong (decided):** a unique stays worth using for **10 to 15 floors above** the one it came from. No more
+  than that ("orders of magnitude" was an exaggeration), so that its holder cannot corner the markets or bully others
+  in duels and auctions, while the prize is still worth racing for the last hit.
+- **A unique item is one of a kind.** It cannot be replicated: not forged, not copied.
+  - It can be **traded** or **auctioned**, and **staked** in a duel.
+  - It is **dropped on death** if its holder was carrying or wearing it.
+  - It **cannot be salvaged or destroyed**.
+  - It **can be enhanced, but not without limit**, and the **chance of failure rises in step with the number of
+    enhancements already on it**.
+- Hidden bosses are never part of the limited-time events (decided earlier, still true).
+
+**The trapdoor (decided: every point below is agreed):**
+
+- **Hard to see, not invisible.** Before the boss dies it looks like any other flagstone. Afterwards it has one
+  small tell (a hairline seam, dust that falls now and then, a faint draught). First-timers walk onto it; players
+  who know what to look for can choose to.
+- **Who goes down:** party members who are **in the boss room** when it opens. A member in the village or elsewhere
+  on the floor is not pulled in, and cannot follow.
+- **A few seconds of warning.** The floor cracks and shakes for two or three seconds before it gives way, so the
+  rest of the party can step on, or the one who triggered it knows what is about to happen. Stepping off does not
+  stop it.
+- **The boss sleeps until someone comes close or strikes it.** The party lands at the far end of the chamber and
+  gets a moment to see what they have walked into, heal and set up. There is still no way out.
+- **One party at a time.** While a party is inside, the trapdoor is sealed to everyone else.
+- **Leaving the game inside counts as dying there.** Otherwise logging out is the exit.
+- **Tuned well above its floor**, about as far above as its reward: if the item is worth ten floors, the fight
+  should be a floor-plus-ten fight. A party that finds it early will probably die; one that comes back many floors
+  later wins an item that is merely level with what they already have. That keeps the reward honest without any
+  level cap on who may enter.
+- **Which floors:** no pattern a player could count (not "every fifth"), and never the same spot in the room, so
+  knowing one floor's secret does not give away the next.
+- **What a death there costs:** a share of the materials and monster drops carried, plus any unique being carried. What is lost **stays in the chamber**, and the party that finally kills the boss takes it. That is
+  where a dropped unique goes when its holder dies down there.
+
+**Open, to settle before it is built:**
+
+1. **The numbers behind "10 to 15 floors".** With today's item levels, gear ten floors on is about 3 times a
+   forged piece of the same floor in base stats on floor 1, 2.5 times on floor 3 and 1.7 times on floor 10. The new
+   gear scaling will set the real figure.
+2. **When a 20-day-inactive holder's item returns**, the boss may be months from its next respawn. Whether the item
+   waits for that respawn, or brings it forward, is to be decided.
+3. **Dying with a unique outside a hidden chamber:** where it falls, and who may pick it up.
+4. **Several parties** are implied by "the party that lands the last hit". Parties are four players today and each
+   fights alone; boss fights that take more than one party are a feature of their own.
+
+**No longer a question:** the skill system is to be redesigned from scratch once the playstyle is chosen, and
+mutagens may not survive it, so the "rank 5 needs a hidden boss's mutagen" problem is dropped (see the notes at the
+top of [class-trees.md](class-trees.md) and [skill-trees.md](skill-trees.md)).
 
 ## Later
 
 - **Transmog:** on hold until there's enough gear to dress up in. It's a natural job for the arcanist or a tailor.
   Keep it earned, from achievements and rare drops.
 - **The dual-wield secret:** on hold (**Decided**).
+- **Records:** fastest floor clear and fastest boss kill, per character and, online, per server, in the spirit of
+  The King's Avatar. **On hold (decided)** until every gameplay feature is in: a record only means something once
+  the classes, skills and gear it was set with have stopped changing.
 
 ## Story (draft)
 
@@ -308,6 +488,9 @@ how the tree tests whether the next person can carry it.
 
 ## Priority
 
+**Paused (decided):** no new systems until the visual overhaul and the new movement and combat are in. The order
+below is for when that work is done, and the arcanist's trees wait for the new combat in any case.
+
 Recommended order, with reasons:
 
 1. **The root village as a hub.**
@@ -319,18 +502,20 @@ Recommended order, with reasons:
    - Recipes at the blacksmith, family tags on the existing enemies, the first family gear.
    - Forging is the core verb of the pitch ("use monster drops to forge powerful gear"), and today gear only
      drops or is bought.
-3. **The market and the quest board.**
+3. **The market and the quest board.** (**In the game:** the exchange for materials and monster drops, and
+   deliveries of monster drops at the guild. Mythril ore is still to join.)
    - Drops become worth shards and mythril ore, and the quest board gives them a second use.
    - Works the same in single player and online.
 4. **The arcanist.**
-   - Skill ranks, class trees and mutations (already designed), and gear passives.
+   - Skill ranks, class trees and mutations (already designed), gear passives, and brewing buff potions from
+     monster drops.
 5. **Floors 4–10, the first branch warden, and the first branch village.** (**Decided:** agreed.)
    - Act 1 of the story goes in here. New floors can be built alongside steps 2–4 whenever content is needed.
 6. **Player trading and the auction house.**
    - Online only. It needs a working economy and its anti-abuse rules first.
 7. **Fields, farming and cooking.**
    - A full second loop. Valuable, but separate from climbing, so it waits until the climb is solid.
-8. **Red gates, secret bosses, transmog, and later branches.**
+8. **Hidden bosses, transmog, and later branches.**
 
 ## Open questions
 
