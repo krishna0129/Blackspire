@@ -68,4 +68,4 @@ From the normal stock, in shards for the whole lot:
   exchange is running very low on that good.
 - Monster drops are what [forged gear](forging.md) is made from, and enhancement materials are what
   [enhancing](enhancement.md) costs. Whatever the exchange pays, check you will not need them first.
-- Crops are not traded here: the food and drink stall buys those at a fixed price.
+- Crops are not traded here: the food and drink stall buys those at a fixed price, and the inn cooks them.

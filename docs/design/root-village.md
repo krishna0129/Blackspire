@@ -75,7 +75,7 @@ Each stall has its own striped awning and its goods on show, so you can tell the
 **In the game:** the stalls restock whenever you beat any floor's boss, and once a day, when the guild's board
 refreshes. Their gear is always at the level of the highest floor you have reached.
 
-Today only the exchange's stock sets prices; the six stalls join the same rule later ([world.md](world.md#the-market-one-pricing-rule-from-what-the-npcs-hold)).
+**Decided:** only the exchange's prices move with its stock; the six stalls keep fixed prices ([world.md](world.md#the-market-one-pricing-rule-from-what-the-npcs-hold)).
 
 ### Elsewhere
 

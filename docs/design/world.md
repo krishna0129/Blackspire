@@ -1,9 +1,8 @@
 # The world: the tree, its villages, the economy and the story
 
 Status: proposal. The owner's decisions are marked **Decided**. Everything else is a suggestion, open to change.
-**In the game** so far: the trader, hunger and thirst, and trader stock limits. Everything else here is not built
-yet. It changes where some existing things live (the blacksmith moves out of the tower's safe rooms), so it should be
-settled before more floors are built.
+**In the game** so far: the root village, the trader and the stash, hunger and thirst, the fields, enemy families
+and forging, and the exchange. Each section says what of it is built; everything else is not built yet.
 
 **Decided, platform:** the game targets **web browsers on a computer** (keyboard and mouse) for now. Phones and
 tablets are not a goal yet, so new features don't need touch controls or small-screen layouts.
@@ -11,6 +10,14 @@ tablets are not a goal yet, so new features don't need touch controls or small-s
 **Decided, characters:** online and single player characters stay **separate**. An online character can be
 **imported into single player** to save time, never the other way, so nothing made offline can reach the online
 world.
+
+**Decided, scope:** the target for now is a game for **3 or 4 friends on one server**. It is not being published
+for now; that is a question for later, if the game turns out well. So rules against abuse by strangers are not a
+priority, and what exists (village channels, the exchange's selling limit) stays as it is.
+
+**Decided, order of work:** adding systems is **paused**. The **visual overhaul comes first**; movement and combat
+are to be redesigned after it (the playstyle is still being chosen). Single player is built first, and every rule
+keeps running on the server so the online game follows.
 
 ## The picture
 
@@ -96,6 +103,50 @@ water keep the meters up.
 - Dying wakes you at least half fed and half watered, so nobody gets stuck starving in a loop.
 - Later, cooked food from the fields replaces rations as the main source.
 
+## What happens once, and what comes back
+
+**Decided, not built yet.** The world follows the anime: it is one shared place, and some things in it happen once.
+Today's game does the opposite in several places (listed at the end of this section), so this is a change to make
+when work on systems resumes.
+
+- **Floor bosses never respawn.** A boss is killed once for the whole world, and the next floor opens for everyone.
+  - **First-kill rewards belong to the team that cleared it**, and to nobody else, ever.
+- **Monsters respawn** after a regular window. There is **no protection against camping** a spawn or a hunting
+  ground: whoever is there hunts it.
+- **Limited-time events** (later) bring bosses back to be fought for their **monster drops only**: no first-kill
+  rewards. A player can fight a boss they have already beaten, or one they have not, if they meet its level
+  requirement.
+- **Chests:** no chest stands in the open. They are found only **deep inside dungeons** and in **hidden or secret
+  rooms**, which also leaves room for trapped chests later.
+  - A chest is **shared by all players: opened once for the whole world**. Opened by someone in a party, its
+    contents are given to every member of the party.
+- **Rewards come from quests**, for now. **Weapons and gear are crafted** from monster drops.
+  - Finished gear can still drop, rarely: **under about 5% from common monsters, under about 15–20% from bosses**.
+- **Hidden bosses are a recurring mechanic**, not a one-time one, and are hard to trigger: clearing a floor without
+  being hit gives a **20% chance** of a hidden boss room. They are **never part of the limited-time events**, so
+  their drops stay rare. (More under [Red gates and secret bosses](#red-gates-and-secret-bosses).)
+
+**What this replaces in today's game**, to be reworked together:
+
+- Each party gets a fresh copy of a floor, and enemies and the boss are back on every arrival. Floors become
+  persistent: one copy for the world, which remembers its dead boss, its opened chests and its respawn timers.
+- Chests stand in about 40% of ordinary rooms, and every player opens each one for themselves.
+- Monsters drop finished gear 13% of the time, elites 70%, and a boss always drops three pieces.
+- Forging only makes Rare gear against one family. As the main source of gear it needs plain gear, tiers by floor
+  and a way to better rarities.
+- The guild's daily bounty ("defeat the boss of floor N") cannot exist once bosses stay dead.
+- The village stalls restock when any boss falls; only the daily restock remains.
+- Spire crystals come almost only from bosses and are needed to enhance past +6. With one kill per boss they need
+  another source: the events, the exchange, or something new.
+
+**Open:**
+
+- A hidden boss needs a floor cleared without being hit, but the floor's own boss can only be killed once. Whether
+  "the floor" means every monster on it now, with the boss counted only while it is still alive, is to be decided.
+- The gear-drop chance for elites, between the two figures above.
+- What a first-kill reward is: a unique item for the one who lands the last hit, as in the anime, or something for
+  each member of the team.
+
 ## Economy
 
 **Decided:** the game is free-to-play with **no microtransactions**.
@@ -146,7 +197,9 @@ Anti-abuse rules go in before anything else.
   - a per-player limit on how much of one good the NPCs of a region take from them each hour;
   - everything goes through the server online (it already decides every action), and every sale is logged.
 - The **auction house** handles gear, because every piece rolls differently and has no single price. The market
-  takes stackable things: materials, monster drops, crops, mythril ore.
+  takes stackable things: materials, monster drops, mythril ore.
+- **Decided:** only the exchange's prices move. **Crops are not traded on it**: they are sold to the inn and the
+  food stall for income, or cooked. The **other stalls keep fixed prices**.
 
 **In the game** (`MARKET` in `js/sim/data.js`, the rules in `js/sim/market.js`; the numbers are on
 [the wiki's market page](../wiki/market.md)):
@@ -162,12 +215,10 @@ Anti-abuse rules go in before anything else.
 - The guild's daily board now asks for one enhancement material and one monster drop, and pays 30% over the usual
   price, where the exchange usually pays 80% of it.
 
-Not built yet, and kept out on purpose so each can be decided on its own:
+- **Decided:** these prices and stock sizes are fine for a first version.
 
-- **Crops** still sell at the food and drink stall at a fixed price. The fields' income (the farmhand, the broker's
-  cut) was tuned around that; moving crops onto the moving price changes that balance.
-- **The stalls' own goods** (potions, rations, water, gear) keep their fixed prices and their 5–10 stock. "Every NPC
-  in the region counts" starts when they join the rule.
+Not built yet:
+
 - **A second region**, and so prices that differ between villages, waits for the first branch village.
 - **A log of sales** for the server's owner, and **mythril ore**, which nothing drops yet.
 
@@ -274,6 +325,11 @@ cauldron. This gives every family's drop a third use, after forging and selling.
 **Decided:** a red gate is a locked, harder version of a floor (a "double dungeon"). It opens when certain conditions
 are met, not at random.
 
+**Decided since (the newer decision):** hidden bosses **recur**; they are not one-time. Clearing a floor without
+being hit gives a **20% chance** of a hidden boss room. They never appear in limited-time events, and their drops
+stay rare. This is newer than the 40% and the two conditions below, which still need to be squared with it: whether
+the untouched-boss condition stays, and whether the hidden boss room is the red gate or replaces it.
+
 - **Decided:** the next floor has a **40% chance** to be a red gate when a player clears a floor too easily, in one of
   two ways:
 
@@ -352,6 +408,9 @@ how the tree tests whether the next person can carry it.
 
 ## Priority
 
+**Paused (decided):** no new systems until the visual overhaul and the new movement and combat are in. The order
+below is for when that work is done, and the arcanist's trees wait for the new combat in any case.
+
 Recommended order, with reasons:
 
 1. **The root village as a hub.**
@@ -364,7 +423,7 @@ Recommended order, with reasons:
    - Forging is the core verb of the pitch ("use monster drops to forge powerful gear"), and today gear only
      drops or is bought.
 3. **The market and the quest board.** (**In the game:** the exchange for materials and monster drops, and
-   deliveries of monster drops at the guild. Crops, the stalls' own goods and mythril ore are still to join.)
+   deliveries of monster drops at the guild. Mythril ore is still to join.)
    - Drops become worth shards and mythril ore, and the quest board gives them a second use.
    - Works the same in single player and online.
 4. **The arcanist.**
