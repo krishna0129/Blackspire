@@ -245,6 +245,27 @@ Not built yet:
     anyone to die.
   - A one-of-a-kind item can be staked like anything else, and changes hands if lost.
   - *Open:* whether onlookers can bet on a fight they are not in.
+- **Decided:** PvP matters **very little** in this game. It must not turn the world into a killing ground for the
+  strongest players, with newer and weaker ones as their victims.
+- **Keeping PvP in its place (suggested, in answer to "how is this balanced?"):**
+  - **By consent only.** Nobody can be attacked who has not accepted a duel and its terms. That one rule removes
+    victims: there is no ambush, no hunting of newcomers, and no revenge beyond asking for a rematch. It is also the
+    anime's own rule inside towns.
+  - **The wager balances the fight, so the fight need not be even.** Stakes are negotiated and need not match: the
+    side with the unique can be asked to put up three to one. The screen shows both fighters' levels and gear
+    before anyone accepts, so nobody bets blind.
+  - **Two kinds of duel.** *As you are*: gear and level count, stakes allowed. *On even terms*: both are brought to
+    the same level and gear strength, skill decides, and no stakes heavier than shards. The second is the one for
+    bragging, and later for records.
+  - **A unique's edge fades by itself.** It is worth 10 to 15 floors, others keep climbing, and each enhancement is
+    likelier to fail than the last.
+  - **Give the strongest players better things to do than fight the weak:** first kills, hidden bosses, and a
+    reward (rare materials, or a standing with the guild) for joining a lower party's boss fight scaled down to its
+    level.
+  - **Against pestering:** a declined challenge cannot be repeated to the same player for a while.
+  - **Open-world PvP is left out.** If it is ever wanted, it belongs in marked lawless places only, with the
+    anime's criminal mark: whoever strikes first is barred from villages, can be attacked freely by anyone, and
+    loses more when they fall.
 - **Shard sinks** stop inflation, which is the usual way MMO economies die: the auction fee, enhancement, forging,
   class changes, respecs, stash upgrades, and the market spread.
 
@@ -336,15 +357,17 @@ new combat.
 
 - **Decided:** when a boss falls, **the party that lands the last hit gets more than the others**, and **the player
   who lands the last hit gets the one-of-a-kind item**, where there is one. It does not go to the whole party.
-- *Suggested:* make the difficulty come from mechanics that need more than one player, not from a bigger health
-  bar alone, which only makes a fight longer:
+- **Decided:** the difficulty comes from **mechanics**, not from a bigger health bar alone, which only makes a fight
+  longer. Ideas so far:
   - something to intercept while someone else holds the boss (the Pale Collector's thralls already work this way);
   - openings that only a second player can use (the anime's "switch");
-  - a way to get a fallen ally back on their feet inside the fight, so one death is a setback and not the end;
-  - a time limit after which the boss hits much harder, sized for a full party's damage.
-- **Open: single player.** If bosses need a party, a lone player cannot climb. *Suggested:* in single player, and
-  when friends are offline, fighters can be hired from the kingdom camps to fill the party. The story already puts
-  the three companies in the tower beside you.
+  - a way to get a fallen ally back on their feet inside the fight, so one death is a setback and not the end.
+- **Decided:** boss fights have a **time limit**, after which the boss hits much harder. Without one, players can
+  stall a fight and win it by patience.
+- **Decided: two versions.** Single player's bosses are **easier**: beatable alone by a player who understands the
+  mechanics and has a certain level of skill. The online version is the one built for parties.
+  - In single player, **dying does not drop loot**: shards are still lost, gear is kept. That lets a player learn a
+    boss's mechanics by trying again.
 - **Known consequence:** a prize for the last hit means players will hold back their strongest blow for the end,
   and healers and shield-bearers will rarely win it. That is true to the anime; it is noted so it is a choice.
 
@@ -360,19 +383,23 @@ floor). Red gates and hidden bosses are now **one and the same thing**.
 - **There is no exit.** Either the hidden boss dies or you do, and dying there costs **some of the loot you carry**.
 - If **everyone inside dies, the boss heals to full**.
 - **Respawn:** a hidden boss comes back about **once every six months**. It gives its drops once, then goes back on
-  its timer. (This replaces "killed once, gone for good", so that an item whose holder stops playing is not lost to
-  the world for ever.)
+  its timer. (This replaces "killed once, gone for good".)
+  - Its unique **stays one of a kind**. The respawned boss drops it again only if the item has **come back to the
+    world**: its holder has been **inactive for more than 20 days**, or it was dropped and never claimed. Otherwise
+    the rematch pays **a good amount of rare materials**.
 - It gives **unique gear**. The **player who lands the last hit** gets it.
+- **How strong (decided):** a unique stays worth using for **10 to 15 floors above** the one it came from. No more
+  than that ("orders of magnitude" was an exaggeration), so that its holder cannot corner the markets or bully others
+  in duels and auctions, while the prize is still worth racing for the last hit.
 - **A unique item is one of a kind.** It cannot be replicated: not forged, not copied.
   - It can be **traded** or **auctioned**, and **staked** in a duel.
   - It is **dropped on death** if its holder was carrying or wearing it.
   - It **cannot be salvaged or destroyed**.
   - It **can be enhanced, but not without limit**, and the **chance of failure rises in step with the number of
-    enhancements already on it**. The aim is a unique that stays worth using for **about the next ten floors**
-    (an estimate).
+    enhancements already on it**.
 - Hidden bosses are never part of the limited-time events (decided earlier, still true).
 
-**The trapdoor: suggestions** (asked for; none decided):
+**The trapdoor (decided: every point below is agreed):**
 
 - **Hard to see, not invisible.** Before the boss dies it looks like any other flagstone. Afterwards it has one
   small tell (a hairline seam, dust that falls now and then, a faint draught). First-timers walk onto it; players
@@ -392,19 +419,16 @@ floor). Red gates and hidden bosses are now **one and the same thing**.
   level cap on who may enter.
 - **Which floors:** no pattern a player could count (not "every fifth"), and never the same spot in the room, so
   knowing one floor's secret does not give away the next.
-- **What a death there costs:** *suggested* a share of the materials and monster drops carried, plus any unique
-  being carried. What is lost **stays in the chamber**, and the party that finally kills the boss takes it. That is
+- **What a death there costs:** a share of the materials and monster drops carried, plus any unique being carried. What is lost **stays in the chamber**, and the party that finally kills the boss takes it. That is
   where a dropped unique goes when its holder dies down there.
 
 **Open, to settle before it is built:**
 
-1. **Six-month respawn against "one of a kind".** If a respawned boss drops the same unique while the first still
-   exists, there are two. *Suggested:* each hidden boss has one item. It drops it again only if the item has left
-   the world (its holder has not played for those six months, and the item returns to the boss). Otherwise the
-   rematch pays in rare materials.
-2. **How strong a unique is.** "Worth using for the next ten floors" now sets it: about the strength of gear ten
-   floors on. With today's item levels that is about 3 times a forged piece of its own floor in base stats on
-   floor 1, 2.5 times on floor 3 and 1.7 times on floor 10, plus one effect nothing else has. This replaces "orders of magnitude" unless that was meant literally.
+1. **The numbers behind "10 to 15 floors".** With today's item levels, gear ten floors on is about 3 times a
+   forged piece of the same floor in base stats on floor 1, 2.5 times on floor 3 and 1.7 times on floor 10. The new
+   gear scaling will set the real figure.
+2. **When a 20-day-inactive holder's item returns**, the boss may be months from its next respawn. Whether the item
+   waits for that respawn, or brings it forward, is to be decided.
 3. **Dying with a unique outside a hidden chamber:** where it falls, and who may pick it up.
 4. **Several parties** are implied by "the party that lands the last hit". Parties are four players today and each
    fights alone; boss fights that take more than one party are a feature of their own.
