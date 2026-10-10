@@ -148,6 +148,29 @@ Anti-abuse rules go in before anything else.
 - The **auction house** handles gear, because every piece rolls differently and has no single price. The market
   takes stackable things: materials, monster drops, crops, mythril ore.
 
+**In the game** (`MARKET` in `js/sim/data.js`, the rules in `js/sim/market.js`; the numbers are on
+[the wiki's market page](../wiki/market.md)):
+
+- **The exchange**, a desk at the bottom of the root village's market, buys and sells the three enhancement
+  materials and the four monster drops. The rule is the one above: `base × clamp(normal stock / stock, 0.5, 2)`,
+  selling at 80%, one unit at a time, so a bulk trade walks the price as it goes.
+- Each hour a stock moves a tenth of its normal size back toward normal.
+- One seller can sell half a good's normal stock per hour. The count is kept per character.
+- Single player keeps the stock in the save. Online, one server keeps one stock for the root village, shared by
+  every channel and kept in its database, so players move each other's prices. A trade names the price the player's
+  screen showed, and the server refuses it if the price has moved against them since.
+- The guild's daily board now asks for one enhancement material and one monster drop, and pays 30% over the usual
+  price, where the exchange usually pays 80% of it.
+
+Not built yet, and kept out on purpose so each can be decided on its own:
+
+- **Crops** still sell at the food and drink stall at a fixed price. The fields' income (the farmhand, the broker's
+  cut) was tuned around that; moving crops onto the moving price changes that balance.
+- **The stalls' own goods** (potions, rations, water, gear) keep their fixed prices and their 5–10 stock. "Every NPC
+  in the region counts" starts when they join the rule.
+- **A second region**, and so prices that differ between villages, waits for the first branch village.
+- **A log of sales** for the server's owner, and **mythril ore**, which nothing drops yet.
+
 ### Trading between players (online)
 
 **Decided:** both direct trades and an auction house.
@@ -228,6 +251,24 @@ blacksmith, except grimoires, which the arcanist makes.
 - This moves skill ranks, respecs and class changes from the blacksmith to the arcanist in
   [class-trees.md](class-trees.md).
 
+### Brewing potions from monster drops
+
+**Decided, not built yet:** monster drops can also be brewed into potions by the arcanist, at the witchcraft room's
+cauldron. This gives every family's drop a third use, after forging and selling.
+
+- Brewed potions give **buffs**, not health. The first ideas:
+  - **physical defence** for a while;
+  - **magical defence** for a while;
+  - a temporary **physical damage** or **magic damage** boost;
+  - and others in the same spirit: a wider variety is the point.
+- Still to work out when this is built:
+  - which family's drop makes which potion (the natural link is by family: a potion against, or from, what the drop
+    came from), and what else a recipe needs: shards, glowcaps from the fields, emberstone;
+  - how long a buff lasts, and whether it shares the one buff slot the inn's meals use or gets its own;
+  - how many you can carry, and whether the potion stall sells any ready-made;
+  - "magical defence" needs enemy attacks to be marked physical or magical first. Today only the player's own magic
+    is told apart (enemies' `mres`).
+
 ## Red gates and secret bosses
 
 **Decided:** a red gate is a locked, harder version of a floor (a "double dungeon"). It opens when certain conditions
@@ -265,6 +306,9 @@ are met, not at random.
 - **Transmog:** on hold until there's enough gear to dress up in. It's a natural job for the arcanist or a tailor.
   Keep it earned, from achievements and rare drops.
 - **The dual-wield secret:** on hold (**Decided**).
+- **Records:** fastest floor clear and fastest boss kill, per character and, online, per server, in the spirit of
+  The King's Avatar. **On hold (decided)** until every gameplay feature is in: a record only means something once
+  the classes, skills and gear it was set with have stopped changing.
 
 ## Story (draft)
 
@@ -319,11 +363,13 @@ Recommended order, with reasons:
    - Recipes at the blacksmith, family tags on the existing enemies, the first family gear.
    - Forging is the core verb of the pitch ("use monster drops to forge powerful gear"), and today gear only
      drops or is bought.
-3. **The market and the quest board.**
+3. **The market and the quest board.** (**In the game:** the exchange for materials and monster drops, and
+   deliveries of monster drops at the guild. Crops, the stalls' own goods and mythril ore are still to join.)
    - Drops become worth shards and mythril ore, and the quest board gives them a second use.
    - Works the same in single player and online.
 4. **The arcanist.**
-   - Skill ranks, class trees and mutations (already designed), and gear passives.
+   - Skill ranks, class trees and mutations (already designed), gear passives, and brewing buff potions from
+     monster drops.
 5. **Floors 4–10, the first branch warden, and the first branch village.** (**Decided:** agreed.)
    - Act 1 of the story goes in here. New floors can be built alongside steps 2–4 whenever content is needed.
 6. **Player trading and the auction house.**

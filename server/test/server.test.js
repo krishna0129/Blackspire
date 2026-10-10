@@ -146,6 +146,27 @@ test('online play',async t=>{
     assert.strictEqual((await A.wait(o=>o.t==='ar'&&o.id===43)).r,false,'grimoires are the arcanist\u2019s');
   });
 
+  await t.test('the market is one book for everybody: what one player buys, the next pays for',async()=>{
+    const ma=member('Alpha'),mb=member('Bravo'),ex=ma.w.G.traders.find(q=>q.sells==='market');
+    for(const m of[ma,mb]){m.pl.x=ex.x;m.pl.y=ex.y+14;}
+    ma.S.shards=99999;mb.S.shards=99999;
+    A.send({t:'act',id:50,name:'market',args:[]});const book=(await A.wait(o=>o.t==='ar'&&o.id===50)).r;
+    assert.strictEqual(book.stock.ember,40,'a new server starts every good at its normal stock');
+    A.send({t:'act',id:51,name:'marketBuy',args:['ember',15,99999]});const bought=(await A.wait(o=>o.t==='ar'&&o.id===51)).r;
+    assert.ok(bought.ok);assert.strictEqual(bought.book.stock.ember,25);assert.strictEqual(ma.S.mats.ember,114,'15 more than the 99 the enhancing test left');
+    B.send({t:'act',id:52,name:'market',args:[]});const seen=(await B.wait(o=>o.t==='ar'&&o.id===52)).r;
+    assert.strictEqual(seen.stock.ember,25,'Bravo sees what Alpha left');
+    B.send({t:'act',id:53,name:'marketBuy',args:['ember',1,22]});const stale=(await B.wait(o=>o.t==='ar'&&o.id===53)).r;
+    assert.deepStrictEqual([stale.ok,stale.why],[false,'price'],'the usual price no longer buys one');
+    B.send({t:'act',id:54,name:'marketBuy',args:['ember',1,35]});const paid=(await B.wait(o=>o.t==='ar'&&o.id===54)).r;
+    assert.ok(paid.ok);assert.strictEqual(paid.total,35,'22 x 40 / 25, rounded');
+    assert.strictEqual(s.game.market.stock.ember,24);
+    assert.strictEqual(mb.S.market,undefined,'no book hides in a character\u2019s save');
+    // it goes into the database with the next save, and comes back from it
+    s.game.storeMarket();assert.strictEqual(s.db.loadMarket('root').stock.ember,24);
+    assert.strictEqual(s.db.loadMarket('nowhere'),null);
+  });
+
   await t.test('a full channel opens another',async()=>{
     const g=s.game,w=member('Alpha').w,pad=[];
     while(w.members.length+pad.length<30)pad.push({});

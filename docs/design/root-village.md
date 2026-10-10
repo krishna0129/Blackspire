@@ -59,7 +59,7 @@ grass, lamps at the corners, smoke from the forge and bubbles from the witchcraf
 ### The market
 
 The blacksmith and the arcanist don't have their own corners of the village. They are **stalls in the market**,
-alongside the traders. Six stalls:
+alongside the traders. Six stalls, and the exchange's desk across the bottom:
 
 | Stall | Who | What |
 |---|---|---|
@@ -68,13 +68,14 @@ alongside the traders. Six stalls:
 | **Potions** | a trader | health potions, and later what the witchcraft room brews |
 | **Food and drink** | a trader | rations, water flasks, cooked meals |
 | **The forge** | the **blacksmith** | enhancing, and forging weapons, armour and boots from monster drops (in the game). An anvil, a glowing hearth, sparks |
-| **The witchcraft room** | the **arcanist** | grimoires from monster drops (in the game); mutations, skills, gear passives later; **alchemy and potion crafting**. A cauldron, shelves of jars, green light |
+| **The witchcraft room** | the **arcanist** | grimoires from monster drops (in the game); mutations, skills, gear passives later; **brewing buff potions from monster drops** (decided, not built: [world.md](world.md#brewing-potions-from-monster-drops)). A cauldron, shelves of jars, green light |
+| **The exchange** | a broker | buys and sells materials and monster drops at prices that move with its stock (in the game: [world.md](world.md#the-market-one-pricing-rule-from-what-the-npcs-hold)). A desk, crates, and the day's prices chalked on a board |
 
 Each stall has its own striped awning and its goods on show, so you can tell them apart from across the market.
 **In the game:** the stalls restock whenever you beat any floor's boss, and once a day, when the guild's board
 refreshes. Their gear is always at the level of the highest floor you have reached.
 
-All six count as NPC stock for the region's prices ([world.md](world.md#the-market-one-pricing-rule-from-what-the-npcs-hold)).
+Today only the exchange's stock sets prices; the six stalls join the same rule later ([world.md](world.md#the-market-one-pricing-rule-from-what-the-npcs-hold)).
 
 ### Elsewhere
 

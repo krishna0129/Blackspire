@@ -36,7 +36,7 @@ test('hunger and thirst hold still at home',()=>{
 test('the market stalls each sell their own goods',()=>{
   const run=village();
   run(`S.shards=1e6;`);
-  const sells=run(`G.traders.map(t=>t.sells).join()`);assert.strictEqual(sells,'weapons,gear,potions,food,inn');
+  const sells=run(`G.traders.map(t=>t.sells).join()`);assert.strictEqual(sells,'weapons,gear,potions,food,inn,market');
   const at=i=>`pl.x=G.traders[${i}].x;pl.y=G.traders[${i}].y+16;`;
   run(at(0)+`runAction('openShop',[0]);`);
   assert.ok(run(`shopOf(0).stock.length>0&&shopOf(0).stock.every(e=>e.it.slot==='weapon')`),'weapons stall: weapons only');

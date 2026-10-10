@@ -1,5 +1,6 @@
 'use strict';
-// Blackspire server: accounts, login sessions, characters and the tower's seed, in one SQLite file (server/data/blackspire.db).
+// Blackspire server: accounts, login sessions, characters, the tower's seed and the market's stock, in one SQLite file
+// (server/data/blackspire.db).
 // Passwords are stored only as salted scrypt hashes.
 
 const {DatabaseSync}=require('node:sqlite');
@@ -30,6 +31,7 @@ function open(file){
     putChar:db.prepare('INSERT INTO characters(account,save,updated) VALUES(?,?,?) ON CONFLICT(account) DO UPDATE SET save=excluded.save, updated=excluded.updated'),
     getMeta:db.prepare('SELECT value FROM meta WHERE key=?'),
     putMeta:db.prepare('INSERT INTO meta(key,value) VALUES(?,?)'),
+    setMeta:db.prepare('INSERT INTO meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value'),
   };
   const hashPw=(pw,salt)=>crypto.scryptSync(pw,salt,64,{N:16384,r:8,p:1});
   const newSession=account=>{const token=crypto.randomBytes(32).toString('hex');q.addSession.run(token,account,Date.now());return token;};
@@ -63,6 +65,9 @@ function open(file){
       const r=q.getMeta.get('worldSeed');if(r)return Number(r.value);
       const seed=crypto.randomInt(2**31);q.putMeta.run('worldSeed',String(seed));return seed;
     },
+    // The market's book for a region: what its exchange holds of each good (js/sim/market.js). One for everybody.
+    loadMarket(region){const r=q.getMeta.get('market:'+region);try{const b=r&&JSON.parse(r.value);return b&&typeof b==='object'&&b.stock&&typeof b.stock==='object'?b:null;}catch(e){return null;}},
+    saveMarket(region,book){q.setMeta.run('market:'+region,JSON.stringify(book));},
     close(){db.close();},
   };
 }

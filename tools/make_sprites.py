@@ -616,6 +616,24 @@ def counter():
     im,d=V(84,16); R2(d,2,0,80,4,'#8a6a3a'); R2(d,2,0,80,1,'#c9a46a'); R2(d,4,4,76,12,'#5e4620')
     for x in range(10,80,14): R2(d,x,6,2,10,'#3e2c1e')
     save(im,'village/counter')
+def exchange():
+    """the market exchange: the day's prices chalked on a board, crates of goods either side (the desk is village/counter)"""
+    im,d=V(84,36)
+    for x in (20,62): R2(d,x,2,2,34,'#4a3324'); R2(d,x,2,1,34,'#6b4a2c')                 # posts
+    R2(d,16,0,52,24,'#4a3324'); R2(d,17,1,50,22,'#1b2329')                               # the board
+    for y in (6,12,18): R2(d,19,y,46,1,'#26323a')                                        # ruled lines
+    up=[(20,19),(26,16),(31,17),(37,11),(42,13),(48,7),(53,8),(58,4)]                     # one price climbing
+    dn=[(20,5),(27,8),(33,7),(39,12),(45,11),(51,16),(57,15),(63,20)]                     # one price falling
+    d.line(up,fill=hx('#8fd14f'),width=1); d.line(dn,fill=hx('#e2b93b'),width=1)
+    for (x,y) in up[::2]: R2(d,x,y-1,2,2,'#c8f0b8')
+    def crate(x,y,w,h,mark):
+        R2(d,x,y,w,h,'#5e4620'); R2(d,x,y,w,1,'#8a6a3a'); R2(d,x,y+h-1,w,1,'#3e2c1e')
+        for sx in range(x+3,x+w-1,4): R2(d,sx,y+1,1,h-2,'#4a3324')
+        cx,cy=x+w//2,y+h//2
+        for i in range(-2,3): R2(d,cx-(2-abs(i)),cy+i,5-2*abs(i),1,mark)                 # what is inside, as its diamond
+    crate(1,18,14,18,'#d86fb6'); crate(3,8,10,10,'#7fb04a')
+    crate(69,16,14,20,'#e6dfc4'); crate(71,7,10,9,'#b5533c')
+    save(im,'village/exchange')
 def forge():
     im,d=V(84,66)
     R2(d,22,0,16,30,'#4a4a52'); R2(d,20,0,20,4,'#5e5e68')                                 # chimney
@@ -693,7 +711,7 @@ def village_art():
     tree('tree_b','#22301a','#34482a','#4d6233',(27,10,'#6f8050'))
     building('inn',152,124,'#4a3a2c','#3a2c20','#5e2a24','#43201c','#7a3a30','#5e4620',inn_deco)
     building('guild',168,132,'#3d3d48','#2e2e38','#2b3350','#1e2440','#3c4a72','#4a3324',guild_deco)
-    stall_back(); counter(); forge(); witch(); tent(); small(); trunk()
+    stall_back(); counter(); forge(); witch(); tent(); small(); trunk(); exchange()
     swords=lambda d:[(R2(d,x,26,2,12,'#c3cad6'),R2(d,x-2,36,6,2,'#8d8674')) for x in (14,24,34,44,54,64)]
     goods('weapons',[swords,lambda d:[R2(d,x,47,10,6,'#8d93a0') for x in (14,32,50)]])
     goods('gear',[lambda d:[(R2(d,x,26,10,10,'#5a6070'),R2(d,x+2,28,6,6,'#8d93a0')) for x in (14,30,46,62)],lambda d:[R2(d,x,47,8,6,'#4a3524') for x in (14,26,38,50,62)]])

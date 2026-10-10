@@ -14,7 +14,7 @@ const STALLS=[   // the market: x, y of the stall's top-left tile; 5 x 2 tiles e
   {x:42,y:14,kind:'potions',name:'Potion stall',awning:'#5a2a6a'},
   {x:48,y:14,kind:'food',name:'Food and drink stall',awning:'#6b4a2c'},
 ];
-const FORGE={x:42,y:21},WITCH={x:48,y:21};   // rows far enough apart that a stall's roof never hangs over the lane above it
+const FORGE={x:42,y:21},WITCH={x:48,y:21},EXCHANGE={x:45,y:26};   // the exchange: a desk across the bottom of the market   // rows far enough apart that a stall's roof never hangs over the lane above it
 const KINGDOMS=[
   {x:6.5,y:20,name:'Iron Crown',color:'#8e97b5',armor:'plate',line:'The Iron Crown holds floor after floor. We could use another blade.'},
   {x:10.5,y:22,name:'Sun Choir',color:'#e6d9a8',armor:'coat',line:'The Choir prays for every climber. Come back alive and we will pray less.'},
@@ -22,7 +22,7 @@ const KINGDOMS=[
 ];
 const VILLAGE={
   square:{x:28,y:17,r:5.5},
-  market:[40,5,14,22],
+  market:[40,5,14,24],
   fields:[3,27,13,7],fieldGate:[13,15],fieldSign:[15.7,27],plots:[[4,28],[8,28],[12,28],[4,31],[8,31],[12,31]],
   yard:[38,29,13,6],
   // worn dirt paths, each a cubic curve: start, two control points, end
@@ -65,12 +65,18 @@ function genVillage(){
   // the arcanist writes grimoires from monster drops, the way the forge makes everything else (ACTIONS.forge)
   talkers.push({x:vx(WITCH.x+4),y:vy(WITCH.y+1.3),name:'Arcanist',arcanist:true,line:'Bring me what the tower’s monsters leave behind and I will write you a grimoire against them.',
     look:{skin:SKINS[5],hair:HAIRS[5],style:2,eyes:EYES[5]},eq:{armor:{type:'coat',tint:'#3c2c52'}}});
+  // the exchange: a broker at a desk, with the day's prices chalked up behind (js/sim/market.js). Last in the list of
+  // traders but one, so the stalls keep their places in every save's list of shops.
+  block(EXCHANGE.x,EXCHANGE.y,5,1);prop('village/exchange',EXCHANGE.x+2.5,EXCHANGE.y+.6);prop('village/counter',EXCHANGE.x+2.5,EXCHANGE.y+1.2);
+  const exchange={x:vx(EXCHANGE.x+2.5),y:vy(EXCHANGE.y+.3),name:'Exchange',sells:'market',stall:true,
+    look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[3]},eq:{armor:{type:'coat',tint:'#2f4a3a'}}};
   // the kingdom camps, each with its captain out front
   for(const k of KINGDOMS){block(Math.floor(k.x)-1,k.y-2,3,2);prop('village/tent',k.x,k.y,{tint:k.color});
     talkers.push({x:vx(k.x),y:vy(k.y+.8),name:'Captain of the '+k.name,line:k.line,
       look:{skin:SKINS[1+KINGDOMS.indexOf(k)],hair:HAIRS[KINGDOMS.indexOf(k)*2],style:KINGDOMS.indexOf(k)+1,eyes:EYES[0]},eq:{armor:{type:k.armor,tint:k.color}}});}
   traders.push({x:vx(9.5),y:vy(11.7),name:'Innkeeper',sells:'inn',
     look:{skin:SKINS[2],hair:HAIRS[2],style:5,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#8a8474'}}});
+  traders.push(exchange);
   // the fields' entrance (top right, where the path arrives): a signpost, the farmhand and the crop broker. Any of
   // them, or any plot, opens the fields manager (js/sim/fields.js).
   const[sgx,sgy]=VILLAGE.fieldSign;block(Math.floor(sgx),Math.floor(sgy)-1,1,1);prop('village/signpost',sgx,sgy);
