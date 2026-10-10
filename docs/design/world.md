@@ -111,13 +111,17 @@ water keep the meters up.
 Today's game does the opposite in several places (listed at the end of this section), so this is a change to make
 when work on systems resumes.
 
-- **Floor bosses never respawn.** A boss is killed once for the whole world, and the next floor opens for everyone.
-  - **First-kill rewards belong to the team that cleared it**, and to nobody else, ever.
+- **Floor bosses can be fought again** (this replaces the earlier "floor bosses never respawn").
+  - The **first team to clear a floor gets the good rewards**, and nobody else ever does. With that kill the floor
+    is cleared and the **next floor is unlocked**.
+  - After that, players who come later have the **option to fight the boss**. It then gives **rare materials
+    only**: less than the first clear's rewards, but still rare.
+  - Later this becomes the way to **farm boss materials**: for crafting weapons and gear, and for mutagens if the
+    new skill system keeps them.
 - **Monsters respawn** after a regular window. There is **no protection against camping** a spawn or a hunting
   ground: whoever is there hunts it.
-- **Limited-time events** (later) bring bosses back to be fought for their **monster drops only**: no first-kill
-  rewards. A player can fight a boss they have already beaten, or one they have not, if they meet its level
-  requirement.
+- **Limited-time events** (later) were decided, before rematches were, as the way to fight bosses again for their
+  **monster drops only**. With rematches always on offer, what an event adds is open (below).
 - **Chests:** no chest stands in the open. They are found only **deep inside dungeons** and in **hidden or secret
   rooms**, which also leaves room for trapped chests later.
   - A chest is **shared by all players: opened once for the whole world**. Opened by someone in a party, its
@@ -131,21 +135,31 @@ when work on systems resumes.
 **What this replaces in today's game**, to be reworked together:
 
 - Each party gets a fresh copy of a floor, and enemies and the boss are back on every arrival. Floors become
-  persistent: one copy for the world, which remembers its dead boss, its opened chests and its respawn timers.
+  persistent: one copy for the world, which remembers who cleared it first, its opened chests and its respawn
+  timers. A boss rematch is something a party asks for, not a boss that is simply standing there again.
 - Chests stand in about 40% of ordinary rooms, and every player opens each one for themselves.
 - Monsters drop finished gear 13% of the time, elites 70%, and a boss always drops three pieces.
 - Forging only makes Rare gear against one family. As the main source of gear it needs plain gear, tiers by floor
   and a way to better rarities.
-- The guild's daily bounty ("defeat the boss of floor N") cannot exist once bosses stay dead.
-- The village stalls restock when any boss falls; only the daily restock remains.
-- Spire crystals come almost only from bosses and are needed to enhance past +6. With one kill per boss they need
-  another source: the events, the exchange, or something new.
+- A boss rematch drops the same loot as the first kill. It becomes rare materials only.
+
+Rematches mean three things in today's game **keep working** as they are: the guild's daily bounty on a floor's
+boss, the village stalls restocking when a boss falls, and bosses as the source of Spire crystals.
 
 **Open:**
 
 - The gear-drop chance for elites, between the two figures above.
 - What a floor boss's first-kill reward is. Decided so far: the party that lands the last hit gets more than the
   others ([Bosses are for parties](#bosses-are-for-parties)).
+- **How often a rematch can be fought.** Without a limit it is the best farm in the game. *Suggested:* each player
+  can earn a boss's rematch reward once a day, or once a week for the highest floors.
+- **Whether a newcomer must beat a floor's boss to go up.** As decided, the first clear unlocks the next floor for
+  everyone, so a new player could walk straight to the highest floor reached. *Suggested:* leave it open, as in the
+  anime; the monsters up there are the gate.
+- **What limited-time events are for now.** *Suggested:* keep them for what a rematch does not give: double
+  materials for a weekend, or a boss in a harder form.
+- **The trapdoor and a rematch.** *Suggested:* the trapdoor works only while no boss fight is under way in the room,
+  so nobody drops into the hidden chamber in the middle of a rematch.
 
 ## Economy
 
@@ -247,7 +261,9 @@ Not built yet:
   - *Open:* whether onlookers can bet on a fight they are not in.
 - **Decided:** PvP matters **very little** in this game. It must not turn the world into a killing ground for the
   strongest players, with newer and weaker ones as their victims.
-- **Keeping PvP in its place (suggested, in answer to "how is this balanced?"):**
+- **Decided:** the points below are accepted. Beyond them it is **left to the players**: they can arrange contests
+  among themselves, with a unique as the prize if they like.
+- **Keeping PvP in its place:**
   - **By consent only.** Nobody can be attacked who has not accepted a duel and its terms. That one rule removes
     victims: there is no ambush, no hunting of newcomers, and no revenge beyond asking for a rematch. It is also the
     anime's own rule inside towns.
