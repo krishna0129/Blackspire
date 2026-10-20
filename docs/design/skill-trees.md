@@ -1,5 +1,9 @@
 # Skill trees and mutations
 
+> **On hold (decided).** The skill system will be redesigned from scratch once the game's playstyle is chosen
+> ([world.md](world.md)). Mutagens may not be part of the new system. Read this as a record of earlier thinking,
+> not as the plan.
+
 Status: proposal. Goal: depth without a system nobody can reason about. The rule of thumb: **new content should be
 data, and new code should be rare and deliberate.**
 

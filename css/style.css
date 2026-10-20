@@ -179,6 +179,9 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #fFams button{color:var(--bone)}
 #fFams button b{font-weight:600;color:var(--dim);margin-left:4px}
 .cell.cant canvas{opacity:.4}
+.cell s.dear{color:var(--amber)}
+.cell s.cheap{color:var(--cyan)}
+.detail .note{color:var(--amber);font-size:13px;margin-top:8px}
 .detail{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;min-height:150px}
 .detail h4{margin:0;font-size:18px;font-weight:700}
 .detail .sub{color:var(--dim);font-size:12px;margin-bottom:6px}

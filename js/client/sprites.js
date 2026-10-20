@@ -29,7 +29,7 @@ const SPRITE_NAMES=[
   // the root village
   'village/tree_a', 'village/tree_b', 'village/inn', 'village/guild', 'village/stall', 'village/stall_tint', 'village/counter', 'village/forge',
   'village/witch', 'village/cauldron', 'village/tent_tint', 'village/flag_tint', 'village/well', 'village/pillar', 'village/board', 'village/lamp',
-  'enemies/dummy', 'village/sign', 'village/signpost', 'village/trunk', 'village/goods_weapons', 'village/goods_gear', 'village/goods_potions', 'village/goods_food'
+  'enemies/dummy', 'village/sign', 'village/signpost', 'village/trunk', 'village/goods_weapons', 'village/goods_gear', 'village/goods_potions', 'village/goods_food', 'village/exchange'
 ];
 // Sprites drawn finer than the game's pixel grid: 'enemies/thrall':4 means thrall.png is 4 file pixels per game pixel
 // (a 72 x 80 file for an 18 x 20 enemy). Whole numbers from 1 to MAX_RATIO. A sprite's _tint and _eyes files share its
@@ -197,6 +197,17 @@ function supplyIcon(cv,k){
   if(k==='potion'){f('#050508',8,3,8,3);f('#050508',6,6,12,13);f('#e6e1d3',10,4,4,2);f('#d9534f',7,9,10,9);f('#f1b0a8',8,10,2,3);}
   else if(k==='ration'){f('#050508',3,8,18,11);f('#8a5a2a',4,9,16,9);f('#b07a3a',5,9,14,6);f('#e0b36a',6,10,5,2);f('#e0b36a',13,10,4,2);f('#6a2f2a',4,15,16,2);f('#c05a4a',6,15,4,1);}
   else{f('#050508',8,2,8,4);f('#c9b48a',10,3,4,2);f('#050508',5,6,14,15);f('#7a5a3a',6,7,12,13);f('#5aa7e6',7,12,10,7);f('#9fd0f5',8,13,3,2);f('#4a3420',6,9,12,1);}
+}
+// Materials at the exchange, 24 x 24: an enhancement material is a cut stone, a monster drop its diamond, the same
+// shapes they have lying on the ground. Kept in the top of the cell, clear of the price along the bottom.
+function matIcon(cv,k){
+  const x=uiCtx(cv,24,24),M=MATS[k],hi=shade(M.color,.4),lo=shade(M.color,-.35),f=(c,a,b,w,h)=>{x.fillStyle=c;x.fillRect(a,b,w,h);};
+  f('#262630',0,0,24,24);
+  if(M.fam){
+    for(let i=-7;i<=7;i++)f('#050508',12-(7-Math.abs(i)),9+i,15-2*Math.abs(i),1);
+    for(let i=-5;i<=5;i++){const w=11-2*Math.abs(i),x0=12-(5-Math.abs(i));f(M.color,x0,9+i,w,1);if(i<0)f(hi,x0,9+i,Math.min(2,w),1);else if(i>0)f(lo,x0+w-Math.min(2,w),9+i,Math.min(2,w),1);}
+    f('#fff',10,6,1,1);
+  }else{f('#050508',6,2,13,13);f(M.color,7,3,11,11);f(hi,7,3,11,2);f(hi,7,3,2,11);f(lo,7,12,11,2);f(lo,16,3,2,11);f('#fff',10,6,2,1);}
 }
 // The stash chest: the same universal stash behind every one.
 let STASHSPR=null;

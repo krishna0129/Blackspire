@@ -424,6 +424,8 @@ let sel=null; // {from:'bag',i} | {from:'eq',slot}
 let atSmith=null,atWho=null;   // which trader, stash, blacksmith or talker is open (its index), and which kind ('trader', 'stash', 'smith', 'arcanist')
 const shopNow=()=>atSmith==null||atWho!=='trader'?null:shopOf(atSmith);
 const atForge=()=>atSmith!=null&&atWho==='smith';
+// the exchange: materials and monster drops at moving prices (js/sim/market.js)
+const atExchange=()=>atSmith!=null&&atWho==='trader'&&!!G.traders[atSmith]&&!!TRADER_SELLS[G.traders[atSmith].sells||'all'].market;
 const atMaker=()=>atSmith!=null&&(atWho==='smith'||atWho==='arcanist');   // someone who forges from monster drops
 // Runs a player action (js/sim/actions.js). Single player: right here. Online: on the server, which answers with the
 // result and the updated save (net.js), and then done(result) runs.
@@ -432,6 +434,7 @@ function openPanel(npc,who){
   if(mode!=='play')return;mode='panel';inp.atk=false;for(const k in keys)keys[k]=false;sel=null;
   atWho=npc?who:null;atSmith=npc?(who==='trader'?G.traders:who==='stash'?G.stashes:who==='arcanist'?G.talkers:G.smiths).indexOf(npc):null;
   $('#panel').hidden=false;renderPanel();if(atWho==='trader')act('openShop',[atSmith],()=>{if(mode==='panel')renderPanel();});
+  if(atExchange())openExchange();
 }
 function closePanel(){if(mode!=='panel')return;atSmith=atWho=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
 function cell(it,on,label,bag){
@@ -445,7 +448,7 @@ function cell(it,on,label,bag){
 }
 const SLOTL={weapon:'Weapon',armor:'Armor',boots:'Boots',trinket:'Trinket'};
 const atStash=()=>atSmith!=null&&atWho==='stash';
-function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal'||sel.from==='pack'||sel.from==='forge')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
+function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal'||sel.from==='pack'||sel.from==='forge'||sel.from==='market')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
 function renderPanel(){
   calcStats();const c=S.char;
   $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
@@ -482,10 +485,11 @@ function renderPanel(){
       const c=document.createElement('canvas');mealIcon(c,k);b.appendChild(c);b.onclick=()=>{sel={from:'meal',k};renderPanel();};sg.appendChild(b);}
     const rb=document.createElement('button');rb.className='cell'+(sel&&sel.from==='pack'?' on':'');rb.title='Packed ration';
     const rc=document.createElement('canvas');supplyIcon(rc,'ration');rb.appendChild(rc);rb.onclick=()=>{sel={from:'pack'};renderPanel();};sg.appendChild(rb);}
+  if(atExchange())renderExchange();
   if(atStash()){const sg=$('#sGrid');sg.innerHTML='';
     for(let i=0;i<STASH_SIZE;i++){const it=S.stash[i],b=cell(it,sel&&sel.from==='stash'&&sel.i===i,'',false);
       if(it){b.onclick=()=>{sel={from:'stash',i};renderPanel();};b.ondblclick=()=>act('unstash',[i],r=>{if(r!==false){sel={from:'bag',i:r};sfx('pick');}renderPanel();});}sg.appendChild(b);}}
-  if(shop&&!TRADER_SELLS[G.traders[atSmith].sells].meals){const sg=$('#sGrid');sg.innerHTML='';
+  if(shop&&!TRADER_SELLS[G.traders[atSmith].sells].meals&&!atExchange()){const sg=$('#sGrid');sg.innerHTML='';
     (shop.stock||[]).forEach((e,i)=>{const b=cell(e.it,sel&&sel.from==='shop'&&sel.i===i,'',true);b.dataset.p=e.price;b.title=e.it.name+', '+e.price+' shards';b.onclick=()=>{sel={from:'shop',i};renderPanel();};sg.appendChild(b);});
     for(const k of TRADER_SELLS[G.traders[atSmith].sells||'all'].supplies){const s=SUPPLIES[k],pb=document.createElement('button');pb.className='cell'+(sel&&sel.from==='supply'&&sel.k===k?' on':'');pb.dataset.p=supplyPrice(k);pb.title=s.name;
       const pc=document.createElement('canvas');supplyIcon(pc,k);
@@ -499,6 +503,8 @@ function renderPanel(){
 function cmp(a,b,dec=0){const d=a-b;if(Math.abs(d)<(dec?.05:.5))return'';return`<i class="${d>0?'up':'down'}">${d>0?'+':''}${d.toFixed(dec)}</i>`;}
 function renderDetail(){
   const el=$('#pDetail'),it=selItem(),shop=shopNow();
+  if(sel&&sel.from==='market'&&atExchange()){exchangeDetail(el);return;}
+  if(!it&&atExchange()){el.innerHTML='<p class="muted">The exchange buys and sells materials and monster drops. Its prices move as people trade: each one bought makes the next dearer, each one sold makes the next cheaper, and over a few hours they drift back to normal. Pick a good to trade it.</p>';return;}
   if(sel&&sel.from==='meal'&&shop){const k=sel.k,m=MEALS[k],pr=mealPrice(k),B=BUFFS[m.buff];
     const fills=[m.food&&`${m.food}% of your hunger`,m.drink&&`${m.drink}% of your thirst`].filter(Boolean).join(' and ');
     el.innerHTML=`<h4>${m.name}</h4><div class="sub">${m.desc} Fills ${fills}.</div><div class="pas" style="color:var(--cyan)">${B.name} for ${BUFF_TIME/60} minutes: ${B.desc.toLowerCase()}</div>`+
@@ -645,6 +651,48 @@ function forgeDetail(el){
   const have=k=>{const n=S.mats[k]||0;return`${r.mats[k]} ${MATS[k].name} <span style="color:var(--${n>=r.mats[k]?'hp':'red'})">(you have ${n})</span>`;};
   need.innerHTML=`Costs ${r.shards} shards, ${Object.keys(r.mats).map(have).join(' and ')}. ${MATS[F.mat].name} drops from ${F.them}. Salvaging the piece later returns ${Math.floor(FORGING[slot].drops/3)} of it.`;
   acts.appendChild(need);el.appendChild(acts);
+}
+/* ---------- the exchange ----------
+   Materials and monster drops at prices that move with the exchange's stock (js/sim/market.js). Single player reads
+   the book in its own save. Online the book is the server's, shared by everyone: the browser keeps the copy each
+   answer brings (G.market) and asks again every few seconds while the screen is open, so prices tick as others trade. */
+let exchangeTick=null,exchangeMsg='';
+function takeBook(b){if(NET.on&&b&&b.stock)G.market=b;}
+function openExchange(){
+  exchangeMsg='';const ask=()=>act('market',[],r=>{takeBook(r);if(mode==='panel'&&atExchange())renderPanel();});
+  ask();clearInterval(exchangeTick);
+  exchangeTick=setInterval(()=>{if(mode!=='panel'||!atExchange()){clearInterval(exchangeTick);return;}if(NET.on)ask();else renderPanel();},4000);
+}
+function renderExchange(){
+  $('#shopBox h3').textContent='Bought and sold today';const sg=$('#sGrid');sg.innerHTML='';
+  for(const k in MARKET){const M=MARKET[k],p=buyAt(k,marketStock(k)),have=S.mats[k]||0,b=document.createElement('button');
+    b.className='cell'+(sel&&sel.from==='market'&&sel.k===k?' on':'');b.dataset.p=p;b.title=`${MATS[k].name}: ${p} shards to buy, ${sellAt(k,marketStock(k))} to sell`;
+    const c=document.createElement('canvas');matIcon(c,k);b.appendChild(c);
+    if(have){const e=document.createElement('em');e.textContent='x'+have;b.appendChild(e);}
+    if(p!==M.base){const t=document.createElement('s');t.className=p>M.base?'dear':'cheap';t.textContent=p>M.base?'\u25B2':'\u25BC';b.appendChild(t);b.title+=p>M.base?' (dearer than usual)':' (cheaper than usual)';}
+    b.onclick=()=>{sel={from:'market',k};exchangeMsg='';renderPanel();};sg.appendChild(b);}
+}
+const EXCHANGE_WHY={price:'The price moved while you were deciding. It is up to date now.',stock:'The exchange does not hold that many.',shards:'You do not have the shards.',
+  have:'You do not carry that many.',limit:'The exchange will not take that many from you this hour.'};
+function exchangeDetail(el){
+  const k=sel.k,M=MARKET[k],T=MATS[k],s=marketStock(k),have=S.mats[k]||0,buy=buyAt(k,s),sell=sellAt(k,s),room=Math.max(0,marketRoom(k)),off=Math.round((marketFactor(k,s)-1)*100);
+  const ln=(l,v)=>`<div class="ln"><span>${l}</span><span>${v}</span></div>`;
+  el.innerHTML=`<h4 style="color:${T.color}">${T.name}</h4><div class="sub">${T.fam?`A monster drop, from ${FAMILIES[T.fam].them}. The forge and the arcanist make gear against them from it.`:'An enhancement material. The forge uses it to enhance and to forge.'}</div>`+
+    ln('Buy one',buy+' shards')+ln('Sell one',sell+' shards')+ln('Usual price',M.base+' shards')+ln('The exchange holds',`${s} <i class="muted">usually ${M.stock}</i>`)+ln('You carry',have)+
+    `<div class="pas" style="color:var(--${off>0?'amber':off<0?'cyan':'dim'})">${off>0?`${off}% above its usual price: the exchange is running low.`:off<0?`${-off}% below its usual price: the exchange has more than it needs.`:'At its usual price.'}</div>`+
+    (exchangeMsg?`<div class="note">${exchangeMsg}</div>`:'');
+  const acts=document.createElement('div');acts.className='acts';
+  const trade=(side,n,total)=>act(side==='buy'?'marketBuy':'marketSell',[k,n,total],r=>{
+    if(r&&r.book)takeBook(r.book);exchangeMsg=r&&r.ok?'':r&&EXCHANGE_WHY[r.why]||'The exchange could not do that.';if(r&&r.ok)save();renderPanel();});
+  const btn=(t,cls,fn,dis)=>{const b=document.createElement('button');b.className='btn small '+cls;b.textContent=t;b.disabled=!!dis;b.onclick=fn;acts.appendChild(b);};
+  for(const n of[1,5,20]){const q=marketQuote('buy',k,n);if(q==null){if(n===1)btn('Sold out','',()=>{},true);break;}
+    btn(`Buy ${n} for ${q}`,n===1?'primary':'',()=>trade('buy',n,q),S.shards<q);}
+  const most=Math.min(have,room),sizes=[1,5].filter(n=>n<=most);if(most>1&&most!==5)sizes.push(most);
+  for(const n of sizes){const q=marketQuote('sell',k,n);btn(`Sell ${n===have&&n>5?'all '+n:n} for ${q}`,'',()=>trade('sell',n,q));}
+  if(have&&!most)btn('Nothing more this hour','',()=>{},true);
+  const note=document.createElement('div');note.className='muted';note.style.width='100%';
+  note.textContent=`The exchange takes ${marketCap(k)} ${T.name} an hour from one seller`+(room<marketCap(k)?`; ${room} more from you this hour.`:'.')+' Buying several at once costs more for each one, as the stock runs down.';
+  acts.appendChild(note);el.appendChild(acts);
 }
 function equipSel(){
   const it=selItem();if(!it||sel.from!=='bag')return;

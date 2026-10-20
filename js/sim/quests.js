@@ -8,7 +8,8 @@ const QUEST_DAY=86400000;          // ms: the board refreshes once a day
 const questDay=(now=Date.now())=>Math.floor(now/QUEST_DAY);
 const questRefreshIn=(now=Date.now())=>QUEST_DAY-now%QUEST_DAY;   // ms until the next board
 
-// The root village's board for a day: three hunts, two deliveries and a boss, from floors 1 to the highest that exists.
+// The root village's board for a day: three hunts, two deliveries (a material and a monster drop) and a boss, from
+// floors 1 to the highest that exists.
 // kind: 'hunt' (kill n of type), 'deliver' (bring n of a material), 'boss' (beat floor f's boss).
 function questBoard(day){
   const rng=mulberry32((Math.imul(day,2654435761)^0x9e3779b9)>>>0),pick=a=>a[Math.floor(rng()*a.length)],ri=(a,b)=>a+Math.floor(rng()*(b-a+1));
@@ -19,10 +20,12 @@ function questBoard(day){
     out.push({kind:'hunt',type,f,n,title:`Hunt: ${E.name}`,desc:`Kill ${n} ${E.name.toLowerCase()}${n>1&&!/s$/.test(E.name)?'s':''}. They are found on floor ${f}.`,
       reward:{shards:Math.round(n*4*mult(f)),xp:Math.round(n*E.xp*1.5*mult(f))}});
   }
-  const DELIVER={scrap:[6,12,5],ember:[2,4,22],crystal:[1,2,70]};   // how many to ask for, and what one is worth in shards
-  const first=pick(['scrap','scrap','ember']),second=pick(['ember','crystal'].filter(m=>m!==first));
-  for(const mat of[first,second]){const[lo,hi,per]=DELIVER[mat],n=ri(lo,hi);
-    out.push({kind:'deliver',mat,n,title:`Delivery: ${MATS[mat].name}`,desc:`Bring ${n} ${MATS[mat].name} to the guild. The smiths are running short.`,
+  // Deliveries: one enhancement material and one monster drop. How many to ask for; what one is worth in shards is its
+  // base price at the exchange (MARKET), and the guild pays 30% over that.
+  const DELIVER={scrap:[6,12],ember:[2,4],crystal:[1,2],essence:[4,8],bone:[4,8],thornwood:[3,6],chitin:[2,4]};
+  const first=pick(['scrap','scrap','ember','ember','crystal']),second=pick(Object.keys(MATS).filter(m=>MATS[m].fam));
+  for(const mat of[first,second]){const[lo,hi]=DELIVER[mat],per=MARKET[mat].base,n=ri(lo,hi);
+    out.push({kind:'deliver',mat,n,title:`Delivery: ${MATS[mat].name}`,desc:`Bring ${n} ${MATS[mat].name} to the guild. ${MATS[mat].fam?'The forge has orders waiting on it.':'The smiths are running short.'}`,
       reward:{shards:Math.round(n*per*1.3),xp:n*per}});}
   const f=ri(1,top),B=FLOORS[f-1].boss;
   out.push({kind:'boss',f,n:1,title:`Bounty: ${B.name}`,desc:`Defeat ${B.name}, the boss of floor ${f}.`,reward:{shards:Math.round(150*mult(f)),xp:Math.round(120*mult(f)),mats:{crystal:1}}});

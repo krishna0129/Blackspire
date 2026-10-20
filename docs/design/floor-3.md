@@ -92,6 +92,10 @@ optional weaknesses (`plant: fire ×1.5`). New weapon affixes roll on any weapon
 *Pruning* (+% damage to plants), *Banishing* (+% damage to shadows). The monster wiki then lists, for each enemy, the
 affixes that work on it and where they drop.
 
+**Superseded:** unique items are now decided to be **one of a kind**, from hidden bosses only, never repeated and
+with no drop chance or pity counter ([world.md](world.md#hidden-bosses)). The table below is kept for its ideas for
+special effects, not for how the items are obtained.
+
 **Unique items** in a `UNIQUES` table, each with fixed bonuses and one special effect, dropped by specific enemies:
 
 | Unique | Type | Special | Source | Chance |

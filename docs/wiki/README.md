@@ -4,5 +4,6 @@
 
 - [Drops](drops.md): what every enemy, elite, boss and chest drops, rarity odds, where each enemy appears, each family’s monster drop.
 - [Forging](forging.md): gear made from monster drops, against one family of monsters: where, what it costs, what it gives.
+- [The market](market.md): the exchange that buys and sells materials and monster drops, and how its prices move.
 - [Enhancement and item stats](enhancement.md): costs and odds for every level, the stat range of every item, bonus ranges by rarity.
 - [Monsters](monsters.md): health, damage and experience by floor, each monster’s family, how it fights and how to beat it, the bosses.

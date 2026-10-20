@@ -11,7 +11,7 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {loadRules}=require('../server/game.js');
 const R=loadRules(),D=vm.runInContext(`({ETYPES,RARITY,WTYPES,ATYPES,BTYPES,TTYPES,PASSIVES,GEAR_AFFIX,GRIM,MATS,LOOT,FLOORS,ELITE_CHANCE,SUPPLIES,STOCK_RANGE,
-  ENH_CHANCE,ENH_MAX,SKILLS,FAMILIES,FORGING,FORGE_RARITY,ilvlMult,itemMult,enhanceRecipe,enhanceCost,salvageValue,salvageMats})`,R);
+  ENH_CHANCE,ENH_MAX,SKILLS,FAMILIES,FORGING,FORGE_RARITY,MARKET,MARKET_MIN,MARKET_MAX,MARKET_SPREAD,MARKET_DRIFT,MARKET_SELL_SHARE,buyAt,sellAt,marketCap,ilvlMult,itemMult,enhanceRecipe,enhanceCost,salvageValue,salvageMats})`,R);
 const OUT=path.join(__dirname,'..','docs','wiki');
 const SHOWN=[1,2,3];   // floors the tables show
 
@@ -169,7 +169,8 @@ table(['Floor','Enemies (share of room spawns)','Also','Boss'],D.FLOORS.map((f,i
 
 Every monster belongs to a **family**, and each family has its own drop. A monster only ever drops its own
 family\u2019s, on top of everything above; chests have no family and drop none. The blacksmith and the arcanist turn
-them into gear against that family: see [Forging](forging.md).`,
+them into gear against that family: see [Forging](forging.md). The exchange buys and sells them: see
+[The market](market.md).`,
 table(['Family','Drop','Ordinary monsters (chance per kill)','Elites','Bosses'],Object.keys(D.FAMILIES).map(f=>{const F=D.FAMILIES[f],boss=famBosses(f);
   return[F.name,IMG('drop-'+F.mat,MAT(F.mat),28)+' '+MAT(F.mat),famMonsters(f).map(t=>`${D.ETYPES[t].name}: ${famRoll(famDropOf(t))}`).join('<br>'),famRoll(L.elite.fam),
     boss.length?boss.map(b=>`${b}: ${famRoll(L.boss.fam)}`).join('<br>'):'none yet'];})),
@@ -320,14 +321,68 @@ material is on the [Drops](drops.md#monster-drops) page.`,
   return out.join('\n\n')+'\n';
 }
 
+function marketPage(){
+  const M=D.MARKET,goods=Object.keys(M),icon=k=>IMG('drop-'+k,MAT(k),28)+' '+MAT(k);
+  // n bought, or sold, one after another, starting from the normal stock
+  const bulk=(k,n,side)=>{let s=M[k].stock,t=0;for(let i=0;i<n;i++){if(side==='buy'){if(s<1)return null;t+=D.buyAt(k,s);s--;}else{t+=D.sellAt(k,s);s++;}}return t;};
+  const hrs=Math.round(1/D.MARKET_DRIFT);
+  const out=[HEADER('The market'),
+`The **exchange** is the desk at the bottom of the root village\u2019s market, under the board with the day\u2019s
+prices. It buys and sells the enhancement materials and every family\u2019s monster drop. Talk to the broker (E) and pick a good.`,
+`## How prices move
+
+One rule sets every price, from how much of the good the exchange holds:
+
+\`\`\`
+buy price  = usual price × (normal stock ÷ stock now), never under ${pct(D.MARKET_MIN)} or over ${pct(D.MARKET_MAX)} of the usual price
+sell price = ${pct(D.MARKET_SPREAD)} of the buy price
+\`\`\`
+
+- Every one you **buy** leaves the exchange with one less, so the next costs a little more.
+- Every one you **sell** leaves it with one more, so the next pays a little less.
+- A trade of several is made one at a time, each at the price the one before left. The screen shows the total before
+  you agree to it, and that total is what you pay or get.
+- Each hour, every stock moves **${pct(D.MARKET_DRIFT)} of its normal size** back toward normal. A good bought out completely stays
+  at its dearest for ${Math.round(hrs*(1-1/D.MARKET_MAX))} hours, then eases back to its usual price by hour ${hrs}. A glut clears at the same rate.
+- One seller can sell **${pct(D.MARKET_SELL_SHARE)} of a good\u2019s normal stock per hour**. The count starts again on the hour.
+- Buying one and selling it straight back always loses shards: that is what the ${pct(1-D.MARKET_SPREAD)} gap is for.`,
+`## The goods`,
+table(['Good','Usual price','Sells for','Cheapest / dearest to buy','Least / most it sells for','Normal stock','You can sell per hour'],goods.map(k=>[icon(k),M[k].base,D.sellAt(k,M[k].stock),
+  `${D.buyAt(k,M[k].stock*4)} / ${D.buyAt(k,1)}`,`${D.sellAt(k,M[k].stock*4)} / ${D.sellAt(k,1)}`,M[k].stock,D.marketCap(k)])),
+`Rare goods have small stocks, so each trade moves their price further: three ${MAT('crystal')}s are ${pct(3/M.crystal.stock)} of what the
+exchange holds, three ${MAT('scrap')} are ${pct(3/M.scrap.stock)}.`,
+`## Trading several at once
+
+From the normal stock, in shards for the whole lot:`,
+table(['Good','Buy 1','Buy 5','Buy 20','Sell 1','Sell 5','Sell 20'],goods.map(k=>[MAT(k),...[1,5,20].map(n=>{const t=bulk(k,n,'buy');return t==null?'not enough stock':t;}),
+  ...[1,5,20].map(n=>n>D.marketCap(k)?`over the hourly ${D.marketCap(k)}`:bulk(k,n,'sell'))])),
+`## Single player and online
+
+- **Single player:** the exchange\u2019s stock is part of your save. Only you move its prices, and the hourly drift
+  goes on while you are away.
+- **Online:** a server keeps one stock for the root village, shared by every channel, so everyone moves the same
+  prices. If someone trades between your looking and your clicking and the price moves against you, the trade is
+  refused and the screen shows the new price; nothing is taken.`,
+`## Other uses for what you carry
+
+- The **guild\u2019s board** asks for one enhancement material and one monster drop each day and pays **30% over the
+  usual price**, plus experience. The exchange usually pays ${pct(D.MARKET_SPREAD)} of it, so a delivery is the better deal unless the
+  exchange is running very low on that good.
+- Monster drops are what [forged gear](forging.md) is made from, and enhancement materials are what
+  [enhancing](enhancement.md) costs. Whatever the exchange pays, check you will not need them first.
+- Crops are not traded here: the food and drink stall buys those at a fixed price, and the inn cooks them.`];
+  return out.join('\n\n')+'\n';
+}
+
 function indexPage(){return HEADER('Blackspire wiki')+`
 - [Drops](drops.md): what every enemy, elite, boss and chest drops, rarity odds, where each enemy appears, each family\u2019s monster drop.
 - [Forging](forging.md): gear made from monster drops, against one family of monsters: where, what it costs, what it gives.
+- [The market](market.md): the exchange that buys and sells materials and monster drops, and how its prices move.
 - [Enhancement and item stats](enhancement.md): costs and odds for every level, the stat range of every item, bonus ranges by rarity.
 - [Monsters](monsters.md): health, damage and experience by floor, each monster\u2019s family, how it fights and how to beat it, the bosses.
 `;}
 
-const pages={'README.md':indexPage(),'drops.md':dropsPage(),'forging.md':forgingPage(),'enhancement.md':enhancePage(),'monsters.md':monstersPage()};
+const pages={'README.md':indexPage(),'drops.md':dropsPage(),'forging.md':forgingPage(),'market.md':marketPage(),'enhancement.md':enhancePage(),'monsters.md':monstersPage()};
 pages['img/rarity-odds.svg']=rarityChart();pages['img/enhance-odds.svg']=enhanceChart();
 if(process.argv.includes('--check')){
   const stale=Object.keys(pages).filter(f=>{try{return fs.readFileSync(path.join(OUT,f),'utf8')!==pages[f];}catch(e){return true;}});

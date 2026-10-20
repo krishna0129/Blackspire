@@ -166,6 +166,19 @@ const FORGING={
   boots:{drops:6,scrap:2,shards:40,bonus:[5,10]},
 };
 const FORGE_RARITY=2;
+/* The market: what the village's exchange buys and sells, at prices that move with its stock (js/sim/market.js).
+   base: shards for one when the exchange holds its normal stock. stock: that normal stock; the smaller it is, the
+   harder each trade moves the price. Keep every stock at 10 or more: below that, the rounding and the 2x cap leave
+   room to buy one and sell it back for more (the market test walks every stock level to make sure none does). */
+const MARKET={
+  scrap:{base:5,stock:120},ember:{base:22,stock:40},crystal:{base:70,stock:12},
+  essence:{base:6,stock:60},bone:{base:6,stock:60},thornwood:{base:10,stock:40},chitin:{base:12,stock:30},
+};
+const MARKET_MIN=.5,MARKET_MAX=2;   // a price never leaves this share of its base
+const MARKET_SPREAD=.8;             // selling pays this share of the buy price
+const MARKET_DRIFT=.1;              // each hour a stock moves this share of its normal size back toward normal
+const MARKET_SELL_SHARE=.5;         // one player can sell this share of a good's normal stock per hour
+const MARKET_HOUR=3600000;
 // Everything that makes one floor different from another. Floors past the end of the list repeat the last one.
 //   theme: index into THEMES (client/paint.js), the floor's stone
 //   spawns: what ordinary rooms spawn, as a bag drawn from evenly (repeats make a type more common)
@@ -203,6 +216,7 @@ const TRADER_SELLS={
   potions:{gear:[],supplies:['potion']},
   food:{gear:[],supplies:['ration','flask']},
   inn:{gear:[],supplies:[],meals:true},   // the innkeeper: meals, eaten at the table
+  market:{gear:[],supplies:[],market:true},   // the exchange: materials and monster drops, at moving prices (MARKET)
 };
 // The inn's meals. cook: the crops from your own field the innkeeper can cook it from instead of charging. Eaten on the spot, not carried: each fills the meters by food and drink and gives its buff
 // (BUFFS) for BUFF_TIME seconds. One buff at a time; a new meal replaces it, and it is lost when you fall.

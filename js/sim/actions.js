@@ -6,6 +6,10 @@
 const nearSmithIdx=si=>{const q=G.smiths[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const nearTraderIdx=si=>{const q=G.traders[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const owns=(o,k)=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k);   // a real key of a table, not something inherited
+function marketTrade(fn,k,n,bound){
+  if(!nearExchange()||!owns(MARKET,k)||!Number.isInteger(n)||n<1||n>999||!(bound==null||Number.isFinite(bound)))return false;
+  const r=fn(k,n,bound);if(r.ok)sfx('pick');return r;
+}
 const ACTIONS={
   // make the stock the first time a trader's pack is opened
   openShop(si){
@@ -126,6 +130,11 @@ const ACTIONS={
     log(`<span style="color:${RARITY[it.rarity].color}">${esc(it.name)}</span> ${grim?'written':'forged'}: ${famText(it).toLowerCase()}.`);
     return S.inv.length-1;
   },
+  // The exchange (js/sim/market.js). market: its book, to show. marketBuy, marketSell: n of good k; bound is what the
+  // player's screen showed for all n (the most to pay, the least to take), so a price that moved since is refused.
+  market(){return nearExchange()?marketView():false;},
+  marketBuy(k,n,bound){return marketTrade(marketBuy,k,n,bound);},
+  marketSell(k,n,bound){return marketTrade(marketSell,k,n,bound);},
   salvage(i){if(!S.inv[i])return false;salvageItem(S,i);return true;},
   seen(){for(const it of S.inv)delete it.isNew;return true;},
   custom(url){S.char.custom=url||null;return true;},

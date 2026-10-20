@@ -1,5 +1,9 @@
 # Class trees: theorycraft
 
+> **On hold (decided).** The skill system will be redesigned from scratch once the game's playstyle is chosen
+> ([world.md](world.md)). Mutagens may not be part of the new system. Read this as a record of earlier thinking,
+> not as the plan.
+
 Status: proposal, with the first round of decisions folded in (see [Decisions](#decisions)). Builds on the rules in [skill-trees.md](skill-trees.md): tree nodes only grant
 stats the game already has, mutations only change a skill's settings and add riders from a fixed list. Nothing here
 is in the game yet.

@@ -37,6 +37,7 @@ js/sim/               the game rules. No page, canvas or sound: the browser runs
   village.js          the root village (floor 0): its map, stalls, people and scenery; online, shared in channels
   quests.js           the Adventurers' Guild's daily quest board
   fields.js           the village fields: plots, crops and growing
+  market.js           the exchange: moving prices, buying and selling materials and monster drops
   combat.js           hit detection, damage, skills, spells, loot, the boss chamber
   update.js           one step of a floor: every player, enemy, shot and drop; enemy and boss AI
   floor3.js           floor 3's enemies (Gravecaller, Thornroot, Bloodbloom, Ossuary hermit) and the Pale Collector
@@ -59,7 +60,7 @@ tools/wiki.js         writes docs/wiki (pages and charts) from the game's data
 tools/wiki-images.js  renders the wiki's game pictures with the game's own drawing code (needs Playwright)
 tools/concept-floor3.js  concept art for docs/design/floor-3.md, drawn through the game's renderer (needs Playwright)
 server/               the online server (Node): index.js (HTTP and WebSocket), game.js (parties, running floors),
-                      db.js (accounts, characters and the tower's seed), test/
+                      db.js (accounts, characters, the tower's seed and the market's stock), test/
 ```
 
 ## Controls
@@ -94,7 +95,7 @@ Move with WASD or the arrow keys. You attack in the direction you face.
   take the party up the stairs after a boss. Heal reaches everyone nearby.
 - **One tower:** a server picks the tower's seed once and keeps it in its database, so floor n has the same rooms
   and the same chests for every party, and after every restart. Each party still fights in its own copy of it.
-- **Who decides what:** the server runs combat, loot, saves, shops and enhancement, using the same rule files as
+- **Who decides what:** the server runs combat, loot, saves, shops, the market and enhancement, using the same rule files as
   single player (`js/sim`). Your browser moves your character so movement answers at once, and the server checks
   every reported position against your speed and the walls.
 - The world does not pause online: the menu and the gear panel leave your character standing where it is.
@@ -129,9 +130,19 @@ damage" bonus (a forged weapon's, Giant-slaying, Executioner's, Sunder's mark) a
 tables are `FAMILIES` and `FORGING` in `js/sim/data.js`; the [wiki's forging page](docs/wiki/forging.md) has the
 numbers.
 
+## The market
+
+The **exchange**, a desk at the bottom of the village market, buys and sells the three enhancement materials and the
+four monster drops. One rule sets every price: `base × normal stock ÷ stock now`, held between half and double, and
+selling pays 80% of it. Buying makes the next one dearer and selling makes the next one cheaper; each hour the stock
+drifts a tenth of the way back to normal. One seller can sell half a good's normal stock per hour. Single player
+keeps the stock in the save; online, the server keeps one stock for everybody, so players move each other's prices.
+The guild's daily board also asks for monster drops and pays 30% over the usual price. The table is `MARKET` in
+`js/sim/data.js`, the rules are `js/sim/market.js`, and the [wiki's market page](docs/wiki/market.md) has the numbers.
+
 ## Docs
 
-- [docs/wiki](docs/wiki/README.md): the player wiki (drops, forging, enhancement, monsters), generated from the game's data
+- [docs/wiki](docs/wiki/README.md): the player wiki (drops, forging, the market, enhancement, monsters), generated from the game's data
   by `npm run wiki`. `npm test` fails if it is out of date. Its pictures (monsters, items, boss attacks) are
   rendered by the game itself with `npm run wiki:images`, which needs Playwright and a Chromium
   (`npx playwright install chromium`); rerun it after changing sprites.
