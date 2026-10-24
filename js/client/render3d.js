@@ -46,7 +46,7 @@ me.init=async function(){
     const hurt=$('#hurt');stage.insertBefore(canvas,hurt);stage.insertBefore(over,hurt);
     renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:'high-performance'});
   }catch(e){console.warn('3D is not available here, drawing in 2D',e);me.failed=true;return;}
-  renderer.shadowMap.type=THREE.PCFShadowMap;renderer.info.autoReset=false;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+  renderer.shadowMap.type=THREE.PCFShadowMap;renderer.info.autoReset=false;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.96;   // a touch darker than neutral: the tower is meant to be gloomy
   scene=new THREE.Scene();scene.background=new THREE.Color('#030304');scene.fog=new THREE.FogExp2('#05060a',.016);
   camera=new THREE.PerspectiveCamera(30,1,.5,400);
   hemi=new THREE.HemisphereLight('#4a5a80','#0b0806',.3);scene.add(hemi);
@@ -268,8 +268,12 @@ const bone=(root,n)=>root.getObjectByName(n)||root.getObjectByName(n.replace('.'
 function makeActor(key,o){
   const free=FREE.get(key);if(free&&free.length){const a=free.pop();a.root.visible=true;scene.add(a.root);a.cur=null;a.curName='';for(const x of Object.values(a.acts))x.stop();return a;}
   let root,mats=[];
-  if(o.orb){root=new THREE.Group();const core=new THREE.Mesh(new THREE.SphereGeometry(.22,14,10),new THREE.MeshBasicMaterial({color:new THREE.Color(o.orb).multiplyScalar(4),fog:false}));
-    const g1=sprite(o.orb,2.4,.7),g2=sprite('#ffffff',.8,.9);for(const m of[core,g1,g2])m.position.y=1.3;root.add(core,g1,g2);}
+  if(o.orb){   // a wisp: a small skull adrift in a cold flame, not a ball of light
+    root=new THREE.Group();const sk=single('skull');sk.scale.setScalar(.55);sk.position.y=1.15;
+    sk.traverse(c=>{if(c.isMesh){c.castShadow=false;c.material=c.material.clone();c.material.color=new THREE.Color('#b8e6ee');c.material.emissive=new THREE.Color(o.orb);c.material.emissiveIntensity=.35;mats.push(c.material);}});
+    root.add(sk);root.userData.flame=[];
+    for(let i=0;i<3;i++){const f=sprite(o.orb,.6-i*.14,.5-i*.1);f.position.y=1.45+i*.2;root.add(f);root.userData.flame.push(f);}
+    const halo=sprite(o.orb,1.1,.2);halo.position.y=1.2;root.add(halo);}
   else if(o.bloom){root=new THREE.Group();const stem=new THREE.MeshStandardMaterial({color:'#2f3d22',roughness:.9}),pet=new THREE.MeshStandardMaterial({color:'#7a1424',roughness:.6,emissive:'#3a0610'});
     const st=new THREE.Mesh(new THREE.CylinderGeometry(.06,.1,1,6),stem);st.position.y=.5;root.add(st);
     for(let i=0;i<6;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(.32,8,6),pet);p.scale.set(1,.35,.55);const a=i/6*TAU;p.position.set(Math.cos(a)*.32,1.05,Math.sin(a)*.32);p.rotation.y=-a;p.rotation.z=.5;root.add(p);}
@@ -353,7 +357,8 @@ const ATK=d=>d.two?'2H_Melee_Attack_Chop':'1H_Melee_Attack_Chop';
 function animFoe(a,e,dt){
   const d=a.o,nx=wx(e.x),nz=wz(e.y),mx=nx-a.x,mz=nz-a.z,moved=Math.hypot(mx,mz)/Math.max(dt,1e-3);
   a.x=nx;a.z=nz;let y=0;
-  if(d.orb)y=Math.sin(G.time*5+(e.ph||0))*.25;
+  if(d.orb){y=Math.sin(G.time*3+(e.ph||0))*.18;   // it drifts, and its flame licks upward
+    a.root.userData.flame.forEach((f,i)=>{f.position.x=Math.sin(G.time*7+i*1.7)*.06*(i+1);f.material.opacity=(.45-i*.1)*(.75+.25*Math.sin(G.time*11+i));});}
   a.root.position.set(nx,y,nz);
   // where it looks: at whoever is nearest while it attacks, else where it walks
   const st=e.state,fighting=st==='windup'||st==='strike'||st==='draw'||st==='cast'||st==='channel'||st==='charge'||st==='shell';
@@ -472,7 +477,7 @@ function frame3d(){
   const reachX=dist*.27*camera.aspect+5,reachZ=dist*.62+4;   // about what the camera sees, and a little more
   for(const e of G.enemies){if(Math.abs(wx(e.x)-camT.x)>reachX||Math.abs(wz(e.y)-camT.z)>reachZ)continue;
     const a=foeActor(e);seenIds.add('e'+e.id);a.last=e;a.seen=now;animFoe(a,e,dt);
-    if(a.o.orb)DLIGHTS.push({x:a.x,y:1.4,z:a.z,col:a.o.orb,int:6,dist:6,pri:0});
+    if(a.o.orb)DLIGHTS.push({x:a.x,y:1.4,z:a.z,col:a.o.orb,int:3,dist:5,pri:0});
     if(e.boss)DLIGHTS.push({x:a.x,y:5.5*(a.o.s||1)/2.7,z:a.z+1,col:'#ff3020',int:40,dist:16,pri:9});
     if(e.burrowed){const m=take(P_MOUND);m.position.set(wx(e.x),0,wz(e.y));m.scale.set(1+.1*Math.sin(t*8),.35,1);}
     if(e.state==='channel'&&e.cx!=null){const sx=a.x,sz=a.z,ex=wx(e.cx),ez=wz(e.cy);
