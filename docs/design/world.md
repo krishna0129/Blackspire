@@ -21,6 +21,15 @@ scratch** once the playstyle is settled, so [skill-trees.md](skill-trees.md) and
 are on hold, and mutagens may not be part of the new one. Single player is built first, and every rule
 keeps running on the server so the online game follows.
 
+**The visual overhaul, where it stands.** The look is the Path of Exile / Lost Ark kind: 3D models under a fixed
+high camera, with the rules still the flat 2D world underneath. The models are KayKit's free CC0 packs, since there
+is no artist. Phase 1 is **in the game**: the tower floors are drawn in 3D (`js/client/render3d.js`), in single
+player and online, and the HUD has the new framed look. Still to come:
+- phase 2, the root village in 3D (it is still pixel art);
+- the menus and panels in the new look;
+- models of their own for floor 1's spirits and floor 3's roots and hermits, which borrow skeletons for now;
+- the player's look (the character creator's choices and uploaded sheets) on the 3D models, which go by weapon for now.
+
 ## The picture
 
 The Blackspire is a **world tree**. Its trunk is a dungeon of 100 floors. Villages sit on its leaves and branches,
