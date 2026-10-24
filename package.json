@@ -6,7 +6,9 @@
     "start": "node --no-warnings=ExperimentalWarning server/index.js",
     "test": "node --no-warnings=ExperimentalWarning --test server/test/*.test.js",
     "wiki": "node --no-warnings=ExperimentalWarning tools/wiki.js",
-    "wiki:images": "node tools/wiki-images.js"
+    "wiki:images": "node tools/wiki-images.js",
+    "vendor": "esbuild tools/three-entry.js --bundle --format=iife --global-name=THREE --minify --legal-comments=inline --outfile=js/vendor/three.js",
+    "models": "node tools/pack-models.mjs"
   },
   "engines": {
     "node": ">=22.5"
@@ -15,6 +17,12 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "playwright": "^1.56.1"
+    "@gltf-transform/core": "^4.2.1",
+    "@gltf-transform/extensions": "^4.2.1",
+    "@gltf-transform/functions": "^4.2.1",
+    "esbuild": "^0.25.10",
+    "meshoptimizer": "^0.25.0",
+    "playwright": "^1.56.1",
+    "three": "^0.185.1"
   }
 }

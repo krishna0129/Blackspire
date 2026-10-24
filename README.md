@@ -1,6 +1,8 @@
 # Blackspire
 
-A web based MMO RPG pixel game: a dark, pixel-art floor climber that runs in the browser. No build step and no dependencies.
+A web based MMO RPG: a dark floor climber that runs in the browser. The tower's floors are drawn in 3D under a fixed
+high camera (three.js, with KayKit's free CC0 models); the root village is still pixel art. No build step: everything
+it needs is in this folder.
 
 ## Run it
 
@@ -19,7 +21,20 @@ The title screen offers **Single player** and **Online**.
   `PORT` and `DB` (the database file, default `server/data/blackspire.db`) change where it listens and what it
   writes. `npm test` runs the server's tests.
 
-The only outside request is the pixel font from Google Fonts. Offline, the game falls back to a monospace font.
+The only outside requests are the fonts, from Google Fonts. Offline, the game falls back to the browser's own fonts.
+
+## Graphics
+
+The tower's floors are 3D: the rules underneath are the same flat map as ever, and only the drawing changed, so
+single player and online look the same. The village is still drawn in 2D for now. The **Graphics** button in the
+Gear panel switches between **3D**, **3D (fast)** (no shadows or glow, for slower machines and phones) and **2D**;
+the choice is kept in the browser. A browser without WebGL gets 2D. The mouse wheel zooms the 3D view.
+
+The models (characters, skeletons, the dungeon and its props) are by Kay Lousberg ([kaylousberg.com](https://kaylousberg.com)),
+from the KayKit packs Dungeon Remastered, Character Pack: Adventurers, Character Pack: Skeletons and Halloween Bits,
+all released under CC0. They are packed into `js/vendor/models.js` by `tools/pack-models.mjs` (its header says how to
+fetch the packs and rerun it), and three.js (MIT) is bundled into `js/vendor/three.js` by `npm run vendor`. Both files
+are generated: rebuild them rather than editing them.
 
 ## Layout
 
@@ -48,14 +63,19 @@ js/client/            everything on screen, loaded after js/sim in the order ind
   sprites.js          loads the PNG sprites; colouring, outlines, item icons
   paint.js            paints a floor's tiles
   input.js            canvas sizing, light mask, keyboard, mouse, touch, sound
-  render.js           drawing the world
+  render.js           drawing the world in 2D: the village, and the floors when 3D is off
+  render3d.js         drawing the tower floors in 3D: rooms, props, lights, characters and their animations,
+                      effects, and the numbers and health bars over them
   ui.js               HUD, title flow, character creator, gear panel, blacksmith and forging, floor gate, debug menu
   net.js              online play: the connection, snapshots, smoothing other players and enemies
   main.js             start-up and the main loop
+js/vendor/            generated: three.js as one plain script, and the 3D models (see Graphics)
 assets/sprites/       every sprite, as PNG (see assets/README.md)
 assets/templates/     a full-colour character sheet to repaint
 tools/make_sprites.py regenerates the default sprite PNGs (needs Pillow)
 tools/build.py        optional: packs single player into dist/blackspire.html
+tools/pack-models.mjs packs the 3D models into js/vendor/models.js (npm run models)
+tools/three-entry.js  what js/vendor/three.js is built from (npm run vendor)
 tools/wiki.js         writes docs/wiki (pages and charts) from the game's data
 tools/wiki-images.js  renders the wiki's game pictures with the game's own drawing code (needs Playwright)
 tools/concept-floor3.js  concept art for docs/design/floor-3.md, drawn through the game's renderer (needs Playwright)
@@ -78,6 +98,7 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Interact (gates, the Teleport Gate, traders, the stash, the forge, the well, villagers) | E |
 | Gear | I or Tab |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
+| Zoom the 3D view | mouse wheel |
 | Respawn after a death | R or Enter |
 | Debug menu (only with `?debug`, see below) | ` (backquote) |
 

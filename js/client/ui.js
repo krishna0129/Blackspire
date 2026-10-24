@@ -9,7 +9,7 @@ const elHp=$('#hpFill'),elXp=$('#xpFill'),elBoss=$('#bossFill'),cdSk=$('#slSkill
 function updateHud(){
   const hp=clamp(P.hp/ST.maxHp,0,1);
   setStyle('hpw',elHp,'width',(hp*100).toFixed(1)+'%');
-  setStyle('hpc',elHp,'background',hp>.5?'var(--hp)':hp>.25?'var(--amber)':'var(--red)');
+  const hlow=hp<=.25;if(hc.hlow!==hlow){hc.hlow=hlow;elHp.parentNode.classList.toggle('low',hlow);}   // red always; it pulses when you are close to falling
   setTxt('hpTxt',Math.ceil(Math.max(0,P.hp))+' / '+ST.maxHp);
   setStyle('xpw',elXp,'width',(S.char.xp/xpNeed(S.char.level)*100).toFixed(1)+'%');
   setTxt('hLv','Level '+S.char.level+(S.char.pts?' (+'+S.char.pts+')':''));
@@ -726,6 +726,8 @@ function closeDebug(){if(mode!=='debug')return;$('#debug').hidden=true;mode='pla
 $('#pDebug').hidden=!DEBUG;   // and hidden online: see renderPanel
 $('#pDebug').onclick=()=>{closePanel();openDebug();};
 $('#pMute').onclick=toggleMute;
+$('#pGfx').textContent='Graphics: '+R3.label();$('#pGfx').hidden=R3.failed;
+$('#pGfx').onclick=()=>{$('#pGfx').textContent='Graphics: '+R3.cycle();};
 $('#pQuit').onclick=quitToTitle;
 $('#btnBag').addEventListener('click',e=>{e.currentTarget.blur();openPanel();});
 holdBtn($('#slAtk'),()=>{inp.atk=true;press('atk');},()=>{inp.atk=false;});

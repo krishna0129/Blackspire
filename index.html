@@ -6,7 +6,7 @@
 <title>Blackspire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Cinzel:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -127,7 +127,7 @@
           <div class="detail" id="pDetail"></div>
         </section>
       </div>
-      <div class="foot"><span class="muted" id="saveNote" style="flex:1"></span><button class="btn small" id="pDebug">Debug</button><button class="btn small" id="pMute">Sound: on</button><button class="btn small" id="pQuit">Save and quit to title</button></div>
+      <div class="foot"><span class="muted" id="saveNote" style="flex:1"></span><button class="btn small" id="pDebug">Debug</button><button class="btn small" id="pGfx">Graphics: 3D</button><button class="btn small" id="pMute">Sound: on</button><button class="btn small" id="pQuit">Save and quit to title</button></div>
     </div>
   </div>
 
@@ -191,12 +191,15 @@
 <script src="js/sim/update.js"></script>
 <script src="js/sim/floor3.js"></script>
 <script src="js/sim/actions.js"></script>
+<script src="js/vendor/three.js"></script>
+<script src="js/vendor/models.js"></script>
 <script src="js/client/store.js"></script>
 <script src="js/client/host.js"></script>
 <script src="js/client/sprites.js"></script>
 <script src="js/client/paint.js"></script>
 <script src="js/client/input.js"></script>
 <script src="js/client/render.js"></script>
+<script src="js/client/render3d.js"></script>
 <script src="js/client/ui.js"></script>
 <script src="js/client/net.js"></script>
 <script src="js/client/main.js"></script>

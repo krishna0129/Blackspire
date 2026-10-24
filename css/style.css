@@ -11,6 +11,8 @@ body{background:var(--ink);color:var(--bone);font-family:'Pixelify Sans',ui-mono
   font-size:15px;line-height:1.35;overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
 [hidden]{display:none!important}
 #stage{position:relative;width:100%;height:100%;overflow:hidden;background:var(--ink)}
+#game3d,#over{position:absolute;left:0;top:0;width:100%;height:100%;display:block;touch-action:none}
+#over{pointer-events:none}
 #game{position:absolute;left:0;top:0;touch-action:none;image-rendering:pixelated;image-rendering:crisp-edges;display:block}
 .layer{position:absolute;inset:0;pointer-events:none;touch-action:none}
 .layer>*{pointer-events:auto}
@@ -241,3 +243,55 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #dead p,#ask p,#pause p,#travel p,#online p{color:var(--dim);margin:0 0 18px}
 #ask .titleBtns,#pause .titleBtns,#travel .titleBtns,#online .titleBtns{justify-content:center}
 @media (prefers-reduced-motion:reduce){.bar i,#hurt{transition:none}.toast{animation-name:toastfade}}
+
+/* ---------- HUD, the 3D look: framed panels, Cinzel lettering, gold edges ----------
+   Scoped to #hud, so the menus keep their own look until their pass. */
+#hud{--gold:#c9a45c;--gold-dim:#7a6436;--frame:#2a2219;--parch:#e9dfc8;--frameBg:linear-gradient(rgba(20,16,12,.94),rgba(10,8,6,.94));
+  --edge:0 0 0 1px #000,0 0 0 2px var(--frame),0 0 0 3px var(--gold-dim);font-family:'Cormorant Garamond',Georgia,serif;color:var(--parch)}
+#hud .vitals{left:16px;top:16px;width:min(320px,62vw);padding:9px 12px 11px;background:var(--frameBg);box-shadow:var(--edge)}
+#hud .who{font-family:Cinzel,Georgia,serif;font-weight:700;font-size:16px;letter-spacing:.02em;text-shadow:none}
+#hud .who span:last-child{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:15px;color:#a89a7c}
+#hud .bar{border:0;clip-path:none;background:#0d0a08;box-shadow:inset 0 0 0 1px #000;margin-top:6px;height:18px}
+#hud .bar i{background:linear-gradient(#e2545a,#b3262c 55%,#7a1418)}
+#hud .bar b{justify-content:center;padding:0;font-family:Cinzel,Georgia,serif;font-size:11px;font-weight:700;color:var(--parch);text-shadow:0 1px 1px #000}
+#hud .bar.low i{animation:hplow .8s ease-in-out infinite alternate}
+@keyframes hplow{to{filter:brightness(1.6)}}
+#hud .bar.mp{height:12px;width:100%}
+#hud .bar.mp i{background:linear-gradient(#6f96f0,#2a52b8 55%,#1a3480)}
+#hud .bar.mp b{font-size:9px}
+#hud .bar.xp{height:4px;width:100%;margin-top:6px}
+#hud .bar.xp i{background:linear-gradient(90deg,#8e6f30,var(--gold))}
+#hud .needs{width:100%;gap:8px}
+#hud .needs .bar{height:4px;margin-top:6px}
+#hud .bar.food i{background:#d9a441}
+#hud .bar.drink i{background:#5aa7e6}
+#hud .needs .bar.low{animation:needlow3 1s steps(2) infinite}
+@keyframes needlow3{50%{box-shadow:inset 0 0 0 1px var(--red)}}
+#hud #hBuff{font-size:14px;font-weight:600;color:#8fd8e4;text-shadow:none;margin-top:6px}
+#hud #hFloor{font-size:14px;font-weight:600;color:#a89a7c;text-shadow:none;margin-top:4px}
+#hud .topRight{right:16px;top:16px;gap:10px}
+#hud #mini{width:200px;height:134px;border:0;background:rgba(8,7,6,.86);box-shadow:var(--edge)}
+#hud .shards{font-family:Cinzel,Georgia,serif;font-size:15px;text-shadow:0 1px 0 #000}
+#hud .btn{font-family:Cinzel,Georgia,serif;font-size:12px;font-weight:600;background:var(--frameBg);border:0;box-shadow:var(--edge);color:var(--parch);padding:6px 10px}
+#hud .btn:hover{box-shadow:0 0 0 1px #000,0 0 0 2px var(--frame),0 0 0 3px var(--gold)}
+#hud .btn kbd,#hud .slot kbd{font-family:Cinzel,Georgia,serif;color:#bba982;background:none;border:0}
+#hud .btn.primary{color:var(--ink);background:linear-gradient(#efe2c2,#c9b48a)}
+#hud .btn.primary kbd{color:#4a3d24}
+#hud #boss{top:18px;width:min(560px,50vw)}
+#hud #bossName{font-family:Cinzel,Georgia,serif;font-size:20px;letter-spacing:.08em;color:#efe2c2;text-shadow:0 2px 0 #000,0 0 12px #000;margin-bottom:6px}
+#hud #boss .bar{height:13px;margin:0;box-shadow:0 0 0 1px #000,0 0 0 2px var(--frame),0 0 0 3px var(--gold-dim)}
+#hud #boss .bar i{background:linear-gradient(#cf3b37,#701216)}
+#hud #banMain{font-family:Cinzel,Georgia,serif;letter-spacing:.08em;color:#efe2c2}
+#hud #banSub{font-size:18px;font-weight:600;color:#bfae8a}
+#hud #log{font-size:15px;font-weight:600;text-shadow:0 1px 0 #000,0 0 6px #000}
+#hud .slots{gap:8px;bottom:18px}
+#hud .slot{width:64px;height:60px;border:0;background:linear-gradient(#17120d,#0b0907);box-shadow:inset 0 0 0 1px #000,0 0 0 2px var(--frame),0 0 0 3px var(--gold-dim);color:var(--parch)}
+#hud .slot:hover{box-shadow:inset 0 0 0 1px #000,0 0 0 2px var(--frame),0 0 0 3px var(--gold)}
+#hud .slot .nm{font-family:Cinzel,Georgia,serif;font-size:10px;font-weight:600;letter-spacing:.02em}
+#hud .slot b{font-family:Cinzel,Georgia,serif;font-size:15px;color:#e2545a}
+#hud .slot em{font-family:Cinzel,Georgia,serif;color:#8fb0ff}
+#hud .slot .cd{background:rgba(0,0,0,.62)}
+#hud #prompt{bottom:96px}
+#hud .toast{font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;background:var(--frameBg);border:0;box-shadow:var(--edge)}
+#hud .toast.big{font-size:20px}
+@media (pointer:coarse){#hud .slot{width:70px;height:64px}}
