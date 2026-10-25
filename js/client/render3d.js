@@ -11,10 +11,13 @@ const U=2/TILE;                                   // world units per game pixel
 const wx=px=>px*U,wz=py=>py*U;
 const Q={off:false,low:false};                    // graphics setting: 3D (high), 3D (low: no shadows or bloom), or 2D
 try{const v=localStorage.getItem('blackspire.gfx');Q.off=v==='2d';Q.low=v==='low';}catch(e){}
+// The look. soft: KayKit as it comes. The others harden it: a colour grade, ink outlines, faceted shading.
+const STYLES=[{name:'soft'},{name:'gritty',grade:[1.3,.6,1,.06]},{name:'ink',grade:[1.3,.6,1,.06],ink:true},{name:'ink, faceted',grade:[1.3,.6,1,.06],ink:true,flat:true}];
+let STYLE=STYLES[2];
 const me={ready:false,failed:false,Q,g:null,cycle,label:()=>Q.off?'2D':Q.low?'3D (fast)':'3D'};
 
 /* ---------- start-up: the renderer and the models ---------- */
-let renderer,scene,camera,composer,bloom,canvas,over,octx,moon,hemi,lantern;
+let renderer,scene,camera,composer,bloom,grade,canvas,over,octx,moon,hemi,lantern;
 let PROTO={},CHARS={},CLIP={},FLOOR=null,DYN=null;
 const T={};   // three.js classes, looked up once
 // A KayKit body comes in ten parts (head, arms, legs...), each its own draw call. They share one skeleton and one
@@ -72,11 +75,21 @@ me.init=async function(){
     vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     fragmentShader:'uniform sampler2D tDiffuse;uniform float k;varying vec2 v;void main(){vec4 c=texture2D(tDiffuse,v);vec2 d=v-.5;d.x*=1.6;float f=smoothstep(.95,.25,length(d));c.rgb*=mix(1.-k,1.,f);gl_FragColor=c;}'}));
   composer.addPass(new THREE.OutputPass());
+  // the grade, on the finished picture: harder contrast, drained colour, cold shadows, a little film grain
+  grade=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},con:{value:1},sat:{value:1},cold:{value:0},grain:{value:0},seed:{value:0}},
+    vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:`uniform sampler2D tDiffuse;uniform float con,sat,cold,grain,seed;varying vec2 v;
+      float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+seed)*43758.5453);}
+      void main(){vec3 c=texture2D(tDiffuse,v).rgb;float l=dot(c,vec3(.299,.587,.114));
+        c=mix(vec3(l),c,sat);c=(c-.5)*con+.5;
+        c=mix(c,c*vec3(.86,.96,1.08),cold*(1.-smoothstep(.0,.45,l)));   // shadows lean cold, light stays warm
+        c+=(h(v*1000.)-.5)*grain;gl_FragColor=vec4(clamp(c,0.,1.),1.);}`});
+  composer.addPass(grade);
   // the 3D canvas covers the 2D one, so it takes the mouse too
   canvas.addEventListener('pointerdown',e=>cv.dispatchEvent(new PointerEvent('pointerdown',e)));
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
   canvas.addEventListener('wheel',e=>{if(mode!=='play')return;zoom=clamp(zoom*(e.deltaY>0?1.08:1/1.08),.75,1.45);e.preventDefault();},{passive:false});
-  me.ready=true;
+  applyStyle();me.ready=true;
 };
 // The graphics setting, in turn: 3D, 3D (fast), 2D. Kept in this browser.
 function cycle(){const next=Q.off?'3d':Q.low?'2d':'low';Q.off=next==='2d';Q.low=next==='low';
@@ -115,11 +128,25 @@ function instance(group,placed){
     const flat=key.startsWith('floor_');
     for(const ms of chunks.values())for(const part of P_.parts){
       const im=new THREE.InstancedMesh(part.geo,CUTKEYS.test(key)?cutaway(part.mat):part.mat,ms.length);ms.forEach((M,i)=>im.setMatrixAt(i,tmp.multiplyMatrices(M,part.m)));
-      im.castShadow=!flat;im.receiveShadow=true;im.computeBoundingSphere();group.add(im);}
+      im.castShadow=!flat;im.receiveShadow=true;im.computeBoundingSphere();group.add(im);
+      if(STYLE.ink&&!flat&&!/^(wall_|pillar)/.test(key)){   // outlines on the props, sized to the prop's own (quantized) units
+        const sc=new THREE.Vector3().setFromMatrixScale(part.m),o=new THREE.InstancedMesh(part.geo,inkMat(.04/Math.max(sc.x,sc.y,sc.z)),ms.length);
+        o.instanceMatrix=im.instanceMatrix;o.boundingSphere=im.boundingSphere;group.add(o);}}
   }
 }
 // One model placed on its own, to move or change later (chests, the boss gates, a held weapon).
 function single(key){const P_=PROTO[key];const o=P_.node.clone(true);o.position.set(0,0,0);o.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;if(CUTKEYS.test(key))c.material=cutaway(c.material);}});return o;}
+
+/* ---------- ink: dark outlines, the model drawn again a little larger and inside out ---------- */
+const INK=new Map();
+function inkMat(w){if(INK.has(w))return INK.get(w);const m=new THREE.MeshBasicMaterial({color:'#07060a',side:THREE.BackSide,fog:true});
+  m.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <begin_vertex>','vec3 transformed=position+normalize(normal)*'+w.toFixed(4)+';');};
+  m.customProgramCacheKey=()=>'ink'+w;INK.set(w,m);return m;}
+// Gives every mesh under o an outline. Skinned meshes get one that follows the same skeleton.
+function ink(o,w){const add=[];o.traverse(c=>{if(!c.isMesh||c.userData.ink||c.userData.eyes)return;
+    const m=c.isSkinnedMesh?new THREE.SkinnedMesh(c.geometry,inkMat(w)):new THREE.Mesh(c.geometry,inkMat(w));
+    if(c.isSkinnedMesh)m.bind(c.skeleton,c.bindMatrix);m.userData.ink=true;m.castShadow=false;m.frustumCulled=false;add.push([c,m]);});
+  for(const[c,m]of add){if(c.isSkinnedMesh)c.parent.add(m);else{m.position.copy(c.position);m.quaternion.copy(c.quaternion);m.scale.copy(c.scale);c.parent.add(m);}m.visible=c.visible;c.userData.inkMesh=m;}}
 
 /* ---------- glows and flames ---------- */
 let glowTex=null;
@@ -263,6 +290,12 @@ const FOE={
   collector:{m:'Skeleton_Mage',tint:'#d8d4e6',s:2.5,r:'Skeleton_Staff',caster:true},
 };
 const ACTORS=new Map(),DYING=[],FREE=new Map();
+// KayKit's people are drawn chibi: a big head on a short body. After the animation poses a skeleton each frame, the
+// head is shrunk and the legs and spine lengthened (the joint after each lengthened bone is scaled back), so the
+// figures stand taller and leaner. A model is lifted by what its legs gained (makeActor).
+const BUILD=typeof THREE==='undefined'?[]:[['head',new THREE.Vector3(.68,.68,.68)],['spine',new THREE.Vector3(1,1.2,1)],['chest',new THREE.Vector3(1,1/1.2,1)],
+  ['upperleg.l',new THREE.Vector3(1,1.2,1)],['upperleg.r',new THREE.Vector3(1,1.2,1)],['foot.l',new THREE.Vector3(1,1/1.2,1)],['foot.r',new THREE.Vector3(1,1/1.2,1)]];
+function upd(a,dt){if(!a.mixer)return;a.mixer.update(dt);if(a.build)for(const[b,v]of a.build)b.scale.multiply(v);}
 const bone=(root,n)=>root.getObjectByName(n)||root.getObjectByName(n.replace('.',''));
 // A character model, ready to animate. key: what it is (for reuse), o: {m, hold, r, l, s, ghost, tint, eyes}
 function makeActor(key,o){
@@ -291,14 +324,23 @@ function makeActor(key,o){
     });
     for(const[slot,w]of[['handslot.r',o.r],['handslot.l',o.l]])if(w){const b=bone(root,slot);if(b){const wm=single(w);if(o.ghost)wm.traverse(c=>{if(c.isMesh){c.material=c.material.clone();c.material.emissive=new THREE.Color(o.ghost);c.material.emissiveIntensity=.35;}});b.add(wm);}}
   }
-  for(const m of mats)m.userData.base=[m.emissive?m.emissive.clone():null,m.emissiveIntensity||0];
+  for(const m of mats){m.userData.base=[m.emissive?m.emissive.clone():null,m.emissiveIntensity||0];if(STYLE.flat){m.flatShading=true;m.needsUpdate=true;}}
+  let model=null,build=null;
+  if(o.m){   // a person or a skeleton: wrapped, so it can be lifted onto its longer legs
+    model=root;root=new THREE.Group();root.add(model);
+    build=(me.chibi?[]:BUILD).map(([n,v])=>[bone(model,n),v]).filter(q=>q[0]);
+    model.updateMatrixWorld(true);const toe=bone(model,'toes.l'),y0=toe?toe.getWorldPosition(new THREE.Vector3()).y:0;
+    for(const[b,v]of build)b.scale.multiply(v);model.updateMatrixWorld(true);
+    const y1=toe?toe.getWorldPosition(new THREE.Vector3()).y:0;for(const[b,v]of build)b.scale.divide(v);
+    model.position.y=y0-y1;}
+  if(STYLE.ink)ink(root,o.s&&o.s>2?.02:.045);
   root.scale.setScalar(o.s||1);scene.add(root);
-  const a={key,root,mats,mixer:root.isGroup&&!o.m?null:new THREE.AnimationMixer(root),acts:{},cur:null,curName:'',face:0,o,lock:0,swT:-1,st:'',n:0,x:0,z:0,alpha:1,seen:0};
+  const a={key,root,model,build,mats,mixer:model?new THREE.AnimationMixer(model):null,acts:{},cur:null,curName:'',face:0,o,lock:0,swT:-1,st:'',n:0,x:0,z:0,alpha:1,seen:0};
   return a;
 }
 function dropActor(a){scene.remove(a.root);a.root.visible=false;if(a.mixer)a.mixer.stopAllAction();a.cur=null;a.curName='';a.dead=false;a.alpha=1;fade(a,1);
   (FREE.get(a.key)||FREE.set(a.key,[]).get(a.key)).push(a);}
-function fade(a,al){if(a.alpha===al)return;a.alpha=al;for(const m of a.mats){m.transparent=al<1;m.opacity=al;}}
+function fade(a,al){if(a.alpha===al)return;a.alpha=al;a.root.traverse(c=>{if(c.userData.inkMesh)c.userData.inkMesh.visible=c.visible&&al>=1;});for(const m of a.mats){m.transparent=al<1;m.opacity=al;}}
 // Plays a clip: loops by default; once: plays through and holds the last frame. A new clip fades in over `fade` s.
 function play(a,name,o={}){
   if(!a.mixer||!CLIP[name])return null;
@@ -323,7 +365,7 @@ function heroActor(id,wt){
 }
 function animHero(a,pl,wt,dt){
   const h=HERO[wt]||HERO.sword;a.root.position.set(wx(pl.x),0,wz(pl.y));a.root.visible=pl.x>-900;
-  if(pl.dead){if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});a.mixer.update(dt);return;}
+  if(pl.dead){if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
   const sw=pl.swing;let ang=DIR_ANGLE[pl.dir||0];
   if(sw){ang=sw.a??ang;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing
       const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;
@@ -338,7 +380,7 @@ function animHero(a,pl,wt,dt){
   }
   turn(a,faceOf(ang),dt);
   flash(a,pl.inv>0&&!pl.dash&&Math.floor(G.time*12)%2,'#ff3a2a',.3);
-  a.mixer.update(dt);
+  upd(a,dt);
 }
 
 // An enemy: picks its model and its clip from its state.
@@ -380,7 +422,7 @@ function animFoe(a,e,dt){
     else if(st==='exposed')play(a,'Hit_B',{fade:.08});
     else if(st==='emerge'){play(a,'Spawn_Ground',{once:true,fade:.05});a.lock=.8;}
   }
-  if(a.lock>0&&st!=='windup'){a.mixer.update(dt);return;}
+  if(a.lock>0&&st!=='windup'){upd(a,dt);return;}
   if(st==='windup'||st==='strike'){}
   else if(st==='draw')play(a,'2H_Ranged_Aiming',{fade:.1});
   else if(st==='cast')play(a,e.boss?'Spellcasting':'Spellcast_Shoot',{fade:.1});
@@ -390,7 +432,7 @@ function animFoe(a,e,dt){
   else if(e.stun>0)play(a,'Hit_A',{fade:.05});
   else if(moved>.6)play(a,moved>7?'Running_A':'Walking_A',{speed:clamp(moved/(moved>7?9:4),.6,1.8),fade:.15});
   else play(a,st==='idle'?'Idle':'Idle_Combat',{fade:.25});
-  a.mixer.update(dt);
+  upd(a,dt);
 }
 function nearestHero(e){let best=null,bd=1e9;for(const q of[P,...(NET.on?NET.others:[])]){if(!q||q.dead||q.x<-900)continue;const d=hyp(q.x-e.x,q.y-e.y);if(d<bd){bd=d;best=q;}}return best;}
 
@@ -491,7 +533,7 @@ function frame3d(){
     const e=a.last,dead=e&&!present.has(id)&&(e.dead||(NET.on&&!e.boss&&hyp(e.x-P.x,e.y-P.y)<VIEW_DEAD));
     if(id.startsWith('e')&&dead&&a.mixer){play(a,a.o.m&&a.o.m.startsWith('Skeleton')&&!a.o.ghost?'Death_C_Skeletons':'Death_A',{once:true,fade:.05,speed:1.2});a.dead=1.8;DYING.push(a);}
     else dropActor(a);}
-  for(let i=DYING.length-1;i>=0;i--){const a=DYING[i];a.dead-=dt;a.mixer.update(dt);if(a.dead<.6)fade(a,Math.max(0,a.dead/.6));if(a.dead<=0){DYING.splice(i,1);dropActor(a);}}
+  for(let i=DYING.length-1;i>=0;i--){const a=DYING[i];a.dead-=dt;upd(a,dt);if(a.dead<.6)fade(a,Math.max(0,a.dead/.6));if(a.dead<=0){DYING.splice(i,1);dropActor(a);}}
   // the floor gate home (amber) and the way up (cyan)
   for(const[q,col,hi]of[[G.home,'#e2b93b','#f5e2a8'],[G.gate,'#6fd6e6','#c8f3fa']]){if(!q)continue;const x=wx(q.x),z=wz(q.y),pu=Math.sin(t*3)*.08;
     ring(x,z,1.5+pu,col,.9);ring(x,z,1.05,hi,.6);disc(x,z,1.5,col,.18);glow(x,.4,z,col,3.6,.55);
@@ -539,7 +581,7 @@ function frame3d(){
   placeLights(dt,camT.x,camT.z);
   endPools();
   parts();
-  composer.render(dt);
+  grade.uniforms.seed.value=(t*7.13)%10;composer.render(dt);
   overlay();
 }
 const VIEW_DEAD=300;
@@ -584,10 +626,13 @@ function overlay(){
 function npcs(dt){
   (G.traders||[]).forEach((q,i)=>{const id='n'+i;let a=ACTORS.get(id);if(!a){a=makeActor('npc',{m:'Rogue_Hooded',hold:[]});ACTORS.set(id,a);a.face=0;play(a,'Idle');}
     seenIds.add(id);a.root.position.set(wx(q.x),0,wz(q.y));const d=hyp(P.x-q.x,P.y-q.y);
-    turn(a,d<90?Math.atan2(wx(P.x-q.x),wz(P.y-q.y)):0,dt,4);a.mixer.update(dt);});
+    turn(a,d<90?Math.atan2(wx(P.x-q.x),wz(P.y-q.y)):0,dt,4);upd(a,dt);});
 }
 
 me.info=()=>renderer&&Object.assign({},renderer.info.render,{geometries:renderer.info.memory.geometries,actors:ACTORS.size});
+function applyStyle(){const g=STYLE.grade||[1,1,0,0],u=grade.uniforms;u.con.value=g[0];u.sat.value=g[1];u.cold.value=g[2];u.grain.value=g[3];
+  for(const k in PROTO)for(const p of PROTO[k].parts)if(p.mat.flatShading!==!!STYLE.flat){p.mat.flatShading=!!STYLE.flat;p.mat.needsUpdate=true;}}
+me.style=i=>{if(i!=null){STYLE=STYLES[i];applyStyle();me.g=null;for(const a of ACTORS.values())dropActor(a);ACTORS.clear();FREE.clear();}return STYLE.name;};
 me.zoom=z=>{if(z)zoom=z;return zoom;};
 me.use=()=>me.ready&&!Q.off&&!!G&&!G.village&&!!P;
 me.draw=function(){
