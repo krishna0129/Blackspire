@@ -291,11 +291,15 @@ const FOE={
 };
 const ACTORS=new Map(),DYING=[],FREE=new Map();
 // KayKit's people are drawn chibi: a big head on a short body. After the animation poses a skeleton each frame, the
-// head is shrunk and the legs and spine lengthened (the joint after each lengthened bone is scaled back), so the
-// figures stand taller and leaner. A model is lifted by what its legs gained (makeActor).
-const BUILD=typeof THREE==='undefined'?[]:[['head',new THREE.Vector3(.68,.68,.68)],['spine',new THREE.Vector3(1,1.2,1)],['chest',new THREE.Vector3(1,1/1.2,1)],
-  ['upperleg.l',new THREE.Vector3(1,1.2,1)],['upperleg.r',new THREE.Vector3(1,1.2,1)],['foot.l',new THREE.Vector3(1,1/1.2,1)],['foot.r',new THREE.Vector3(1,1/1.2,1)]];
-function upd(a,dt){if(!a.mixer)return;a.mixer.update(dt);if(a.build)for(const[b,v]of a.build)b.scale.multiply(v);}
+// head is shrunk, the body narrowed, and the legs and spine lengthened (the joint after each lengthened bone is scaled
+// back), so the figures stand taller and leaner. A model is lifted by what its legs gained (makeActor).
+const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+const BUILD=typeof THREE==='undefined'?[]:[['hips',V3(.8,1,.84)],['spine',V3(.92,1.2,.92)],['chest',V3(1,1/1.2,1)],
+  ['head',V3(.58/(.8*.92),.58,.58/(.84*.92))],['upperleg.l',V3(1,1.2,1)],['upperleg.r',V3(1,1.2,1)],['foot.l',V3(1,1/1.2,1)],['foot.r',V3(1,1/1.2,1)]];
+// (The change is taken back before each update: a clip without a scale track for a bone leaves the scale alone, and
+// it would otherwise compound frame after frame.)
+function upd(a,dt){if(!a.mixer)return;if(a.build&&a.built)for(const[b,v]of a.build)b.scale.divide(v);
+  a.mixer.update(dt);if(a.build){for(const[b,v]of a.build)b.scale.multiply(v);a.built=true;}}
 const bone=(root,n)=>root.getObjectByName(n)||root.getObjectByName(n.replace('.',''));
 // A character model, ready to animate. key: what it is (for reuse), o: {m, hold, r, l, s, ghost, tint, eyes}
 function makeActor(key,o){
