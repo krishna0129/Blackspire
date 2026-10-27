@@ -15,15 +15,16 @@ const RARITY=[
   {name:'Legendary',color:'#e8b24a',mult:1.85,aff:2},
 ];
 // One weapon type = one class = one skill. aspd = attacks per second, range px, arc degrees (under 50 = thrust).
-// ranged:true fires arrows, magic:true fires bolts; for both, range is how far the shot flies.
+// ranged:true fires arrows, magic:true fires bolts; for both, range is how far the shot flies. tags: the basic attack's
+// (TAGS): the grimoire's bolts are lightning.
 const WTYPES={
-  sword:{name:'Longsword',cls:'Swordsman',dmg:12,aspd:1.6,range:26,arc:110,kb:40,skill:'circle',shield:'buckler',blurb:'Longsword and buckler'},
-  dagger:{name:'Dagger',cls:'Rogue',dmg:6.5,aspd:3.2,range:19,arc:80,kb:10,crit:12,skill:'blink',blurb:'Fastest, shortest reach'},
-  great:{name:'Greatsword',cls:'Slayer',dmg:26,aspd:0.85,range:34,arc:150,kb:90,skill:'sunder',blurb:'Slow, wide, heavy'},
-  mace:{name:'Mace',cls:'Tank',dmg:16,aspd:1.25,range:24,arc:100,kb:70,def:8,skill:'guard',shield:'shield',blurb:'Mace and heavy shield'},
-  spear:{name:'Spear',cls:'Lancer',dmg:13,aspd:1.4,range:44,arc:24,kb:30,skill:'pierce',blurb:'Longest melee reach, narrow'},
-  bow:{name:'Bow',cls:'Archer',dmg:10,aspd:1.5,range:150,arc:0,kb:25,crit:5,ranged:true,skill:'volley',blurb:'Arrows from range, scales with dexterity'},
-  grimoire:{name:'Grimoire',cls:'Mage',dmg:9,aspd:1.5,range:135,arc:0,kb:20,magic:true,skill:'fireball',blurb:'Ranged bolts'},
+  sword:{tags:['melee','physical','sword'],name:'Longsword',cls:'Swordsman',dmg:12,aspd:1.6,range:26,arc:110,kb:40,skill:'circle',shield:'buckler',blurb:'Longsword and buckler'},
+  dagger:{tags:['melee','physical','dagger'],name:'Dagger',cls:'Rogue',dmg:6.5,aspd:3.2,range:19,arc:80,kb:10,crit:12,skill:'blink',blurb:'Fastest, shortest reach'},
+  great:{tags:['melee','area','physical','greatsword'],name:'Greatsword',cls:'Slayer',dmg:26,aspd:0.85,range:34,arc:150,kb:90,skill:'sunder',blurb:'Slow, wide, heavy'},
+  mace:{tags:['melee','physical','mace'],name:'Mace',cls:'Tank',dmg:16,aspd:1.25,range:24,arc:100,kb:70,def:8,skill:'guard',shield:'shield',blurb:'Mace and heavy shield'},
+  spear:{tags:['melee','physical','spear'],name:'Spear',cls:'Lancer',dmg:13,aspd:1.4,range:44,arc:24,kb:30,skill:'pierce',blurb:'Longest melee reach, narrow'},
+  bow:{tags:['projectile','physical','bow'],name:'Bow',cls:'Archer',dmg:10,aspd:1.5,range:150,arc:0,kb:25,crit:5,ranged:true,skill:'volley',blurb:'Arrows from range, scales with dexterity'},
+  grimoire:{tags:['projectile','lightning','grimoire'],name:'Grimoire',cls:'Mage',dmg:9,aspd:1.5,range:135,arc:0,kb:20,magic:true,skill:'fireball',blurb:'Ranged bolts'},
 };
 // Off-hand shields. cut: share of a blow from the front that blocking removes. sure: the same for a boss's
 // telegraphed attacks. arc: how wide "the front" is, in degrees. cost: mana per blocked blow. slow: move speed while blocking.
@@ -31,16 +32,37 @@ const SHIELDS={
   buckler:{name:'Buckler',cut:.6,sure:.3,arc:130,cost:4,slow:.55,w:9,h:9},
   shield:{name:'Heavy shield',cut:1,sure:.6,arc:170,cost:7,slow:.3,w:11,h:13},
 };
-// Every skill has a cooldown (seconds) and a mana cost.
+// Damage types. Every hit is one of these. physical is weapons and arrows; the rest are elements, which an enemy's
+// mres (its resistance to magic) also cuts, and rot, which only a family's own resistance does (FAMILIES[].res).
+// status: what each will do when the new combat gives elements their effects (docs/design/skills.md).
+const DTYPES={
+  physical:{name:'Physical',color:'#d9d4c4',status:'bleed'},
+  fire:{name:'Fire',color:'#f08a3c',status:'burn',elem:true},
+  cold:{name:'Cold',color:'#8fd8f0',status:'chill',elem:true},
+  lightning:{name:'Lightning',color:'#e8e070',status:'shock',elem:true},
+  rot:{name:'Rot',color:'#9be08a',status:'wither'},
+};
+// Tags: a closed list. Every hit carries some (the skill's, or the basic attack's: WTYPES[].tags), and the skill tree
+// and, later, gear only ever add damage to a tag, never to one skill, so a new skill works with them from the start.
+const TAGS={
+  melee:{name:'Melee'},projectile:{name:'Projectile'},area:{name:'Area'},chain:{name:'Chain'},channel:{name:'Channelled'},
+  totem:{name:'Totem'},trap:{name:'Trap'},mine:{name:'Mine'},minion:{name:'Minion'},aura:{name:'Aura'},warcry:{name:'Warcry'},
+  movement:{name:'Movement'},guard:{name:'Guard'},overtime:{name:'Over time'},
+  physical:{name:'Physical'},fire:{name:'Fire'},cold:{name:'Cold'},lightning:{name:'Lightning'},rot:{name:'Rot'},
+  sword:{name:'Longsword'},greatsword:{name:'Greatsword'},mace:{name:'Mace'},spear:{name:'Spear'},dagger:{name:'Dagger'},bow:{name:'Bow'},grimoire:{name:'Grimoire'},
+};
+// The damage type of a hit with these tags: the first type among them, else physical.
+const dtypeOf=tags=>(tags||[]).find(t=>DTYPES[t])||'physical';
+// Every skill has a cooldown (seconds) and a mana cost, and tags (TAGS) for what it is.
 const SKILLS={
-  circle:{name:'Circular slash',cd:5,mp:14,desc:'One full spin that cuts everything around you and throws it back.'},
-  blink:{name:'Shadowstep',cd:5,mp:14,desc:'Appear behind the nearest enemy for a guaranteed critical.'},
-  sunder:{name:'Sunder',cd:6,mp:16,desc:'A huge cleave. Enemies hit take 25% more damage for 4s.'},
-  guard:{name:'Bulwark',cd:12,mp:18,desc:'Take 60% less damage for 5 seconds.'},
-  pierce:{name:'Piercing line',cd:5,mp:14,desc:'A long thrust that passes through every enemy in a line.'},
-  volley:{name:'Volley',cd:6,mp:16,desc:'Five arrows in a fan.'},
-  fireball:{name:'Fireball',cd:5,mp:18,desc:'A slow orb that bursts on impact and hits everything in the blast. Intelligence raises its damage.'},
-  heal:{name:'Heal',cd:9,mp:24,desc:'Restores health to you and every ally near you. It never affects enemies. Faith raises the amount.'},
+  circle:{tags:['melee','area','physical','sword'],name:'Circular slash',cd:5,mp:14,desc:'One full spin that cuts everything around you and throws it back.'},
+  blink:{tags:['melee','movement','physical','dagger'],name:'Shadowstep',cd:5,mp:14,desc:'Appear behind the nearest enemy for a guaranteed critical.'},
+  sunder:{tags:['melee','area','physical','greatsword'],name:'Sunder',cd:6,mp:16,desc:'A huge cleave. Enemies hit take 25% more damage for 4s.'},
+  guard:{tags:['guard','mace'],name:'Bulwark',cd:12,mp:18,desc:'Take 60% less damage for 5 seconds.'},
+  pierce:{tags:['melee','physical','spear'],name:'Piercing line',cd:5,mp:14,desc:'A long thrust that passes through every enemy in a line.'},
+  volley:{tags:['projectile','physical','bow'],name:'Volley',cd:6,mp:16,desc:'Five arrows in a fan.'},
+  fireball:{tags:['projectile','area','fire','grimoire'],name:'Fireball',cd:5,mp:18,desc:'A slow orb that bursts on impact and hits everything in the blast. Intelligence raises its damage.'},
+  heal:{tags:['aura','grimoire'],name:'Heal',cd:9,mp:24,desc:'Restores health to you and every ally near you. It never affects enemies. Faith raises the amount.'},
 };
 const skillOf=it=>it.school==='faith'?'heal':WTYPES[it.type].skill;
 const classOf=it=>it.school==='faith'?'Healer':WTYPES[it.type].cls;
@@ -109,15 +131,17 @@ const STYLES=['Short','Spiked','Long','Tail','Bob','Buzz'];
 // Enemy families. Every monster belongs to one: ETYPES[].fam, and a boss takes FLOORS[].boss.fam. A family has its own
 // drop (mat, a MATS key), and the forge turns those drops into gear against that family: weapons that hit it harder,
 // armour and boots that take less from it (FORGING, below). them: how the family reads in a sentence. bane, ward: the
-// names forged weapons and armour carry. tint, cloth: their colours (blades and bows; armour and boots).
+// names forged weapons and armour carry. tint, cloth: their colours (blades and bows; armour and boots). res: percent
+// less damage taken of a type (DTYPES), negative for a weakness; only for types no weapon deals yet, so nothing today changes.
 const FAMILIES={
-  spirit:{name:'Spirits',them:'spirits',mat:'essence',bane:'Shadebane',ward:'Shadeward',tint:'#d86fb6',cloth:'#5a2e52'},
-  undead:{name:'Undead',them:'the undead',mat:'bone',bane:'Gravebane',ward:'Graveward',tint:'#e6dfc4',cloth:'#8a8474'},
-  plant:{name:'Plants',them:'plants',mat:'thornwood',bane:'Thornbane',ward:'Thornward',tint:'#7fb04a',cloth:'#3c5a2a'},
-  beast:{name:'Beasts',them:'beasts',mat:'chitin',bane:'Beastbane',ward:'Beastward',tint:'#b5533c',cloth:'#6a3226'},
+  spirit:{res:{rot:-25,cold:25},name:'Spirits',them:'spirits',mat:'essence',bane:'Shadebane',ward:'Shadeward',tint:'#d86fb6',cloth:'#5a2e52'},
+  undead:{res:{rot:50,cold:25},name:'Undead',them:'the undead',mat:'bone',bane:'Gravebane',ward:'Graveward',tint:'#e6dfc4',cloth:'#8a8474'},
+  plant:{res:{cold:-25,rot:25},name:'Plants',them:'plants',mat:'thornwood',bane:'Thornbane',ward:'Thornward',tint:'#7fb04a',cloth:'#3c5a2a'},
+  beast:{res:{rot:-25},name:'Beasts',them:'beasts',mat:'chitin',bane:'Beastbane',ward:'Beastward',tint:'#b5533c',cloth:'#6a3226'},
 };
 // e: an enemy, or anything that carries a family (a shot remembers who fired it)
 const famOf=e=>e?e.fam||(ETYPES[e.type]&&ETYPES[e.type].fam)||null:null;
+// dtype: the damage type of its attacks (DTYPES), physical if not given.
 // famDrop on a type: its own roll for its family's drop, instead of the LOOT table's ([chance, min, max])
 const ETYPES={
   // the training yard's scarecrows: they take hits and show the numbers, never move, strike back or die
@@ -134,11 +158,11 @@ const ETYPES={
   // Floor 3: roots and the restless dead (docs/design/floor-3.md). rooted: never moves or gets knocked back.
   // weak: damage taken from a kind of attack is multiplied (fire = Fireball and its burn). corpse: leaves a body behind.
   thrall:{fam:'undead',name:'Rotting thrall',hp:70,dmg:15,speed:30,r:6,reach:7,windup:.6,recover:.9,xp:16,eye:'#d6f07a',line:'#4d5a36',heavy:true,corpse:true},
-  gravecaller:{fam:'undead',name:'Gravecaller',hp:38,dmg:12,speed:38,r:6,ranged:true,pspeed:105,pcol:'#9be08a',xp:24,eye:'#9be08a',line:'#3f3452',ai:'gravecaller'},
+  gravecaller:{fam:'undead',dtype:'rot',name:'Gravecaller',hp:38,dmg:12,speed:38,r:6,ranged:true,pspeed:105,pcol:'#9be08a',xp:24,eye:'#9be08a',line:'#3f3452',ai:'gravecaller'},
   thornroot:{fam:'plant',name:'Thornroot',hp:80,dmg:16,speed:0,r:8,xp:18,eye:'#f2a03c',line:'#33421f',ai:'thornroot',rooted:true,heavy:true,plant:true,weak:{fire:2},famDrop:[.6,1,1]},
   bloodbloom:{fam:'plant',name:'Bloodbloom',hp:30,dmg:0,speed:0,r:6,xp:14,eye:'#9be08a',line:'#4e1520',ai:'bloodbloom',rooted:true,plant:true},
   hermit:{fam:'beast',name:'Ossuary hermit',hp:120,dmg:20,speed:52,r:9,xp:30,eye:'#f2a03c',line:'#2b261c',ai:'hermit',heavy:true,famDrop:[1,1,2]},
-  wisp:{fam:'spirit',name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
+  wisp:{fam:'spirit',dtype:'cold',name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
   boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d'},
 };
 // Materials. The first three are for enhancing, from common to rare: enemies, chests and bosses drop them, and

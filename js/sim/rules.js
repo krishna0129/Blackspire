@@ -65,7 +65,7 @@ function claimChests(save,g){
 const xpNeed=l=>Math.round(36+22*Math.pow(l,1.55));
 
 // Derived stats for a character wearing `e`. Pure: it changes nothing, so it can also answer "what if I wore this?".
-function computeStats(c,e){
+function computeStats(c,e,tree){
   const w=e.weapon,WT=WTYPES[w.type];
   // strength: melee. dexterity: bows, crit, evade. agility: move + attack speed. vitality: health.
   // intelligence: mage damage. faith: healing and healer damage. mind: max mana. spirit: mana regen.
@@ -81,7 +81,7 @@ function computeStats(c,e){
   st.healPow=(1+st.fai*.05)*(1+(st.p.heal||0)/100);
   st.aspd=WT.aspd*(1+c.agi*.012);
   st.shield=WT.shield||null;
-  st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;st.skill=skillOf(w);st.thrust=!st.magic&&!st.ranged&&WT.arc<50;
+  st.tags=WT.tags;st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;st.skill=skillOf(w);st.thrust=!st.magic&&!st.ranged&&WT.arc<50;
   for(const k of['armor','boots','trinket']){const it=e[k];if(!it)continue;const m=itemMult(it);
     st.def+=(it.base.def||0)*m;st.maxHp+=(it.base.hp||0)*m;st.movePct+=it.base.move||0;
     for(const a of it.aff)st.g[a.id]=(st.g[a.id]||0)+a.v;
@@ -92,12 +92,13 @@ function computeStats(c,e){
   st.maxMp=Math.round(50+c.mnd*10+(st.g.mana||0));st.mpRegen=(1.5+c.spr*.25)*(1+(st.g.mregen||0)/100);
   if(st.p.reach){st.range*=1+st.p.reach/100;st.arc=Math.min(360,st.arc*(1+st.p.reach/100));}
   st.cdr=Math.min(60,(st.p.focus||0)+(st.g.cdr||0));
+  treeApply(st,tree);   // the skill tree (tree.js)
   st.move=64*(1+st.movePct/100);
   st.maxHp=Math.round(st.maxHp);st.def=Math.round(st.def);
   return st;
 }
 // Recomputes the current player's stats. Call after anything that changes their attributes or gear.
-function calcStats(){ST=computeStats(S.char,S.equip);if(P&&P.S===S){P.ST=ST;P.hp=Math.min(P.hp,ST.maxHp);P.mp=Math.min(P.mp,ST.maxMp);}}
+function calcStats(){ST=computeStats(S.char,S.equip,S.tree);if(P&&P.S===S){P.ST=ST;P.hp=Math.min(P.hp,ST.maxHp);P.mp=Math.min(P.mp,ST.maxMp);}}
 const healAmount=()=>Math.round((24+ST.maxHp*.1)*ST.healPow);
 
 // Brings a save from any earlier version up to date. Returns null if it is not a Blackspire save at all.
@@ -111,6 +112,7 @@ function migrateSave(s){
   fix(s.equip.weapon);if(Array.isArray(s.inv))s.inv.forEach(fix);
   migrateFloors(s);
   s.mats=Object.assign({scrap:0,ember:0,crystal:0},s.mats);
+  if(!Array.isArray(s.tree))s.tree=[];s.tree=s.tree.filter(id=>TREE[id]&&!TREE[id].soon);   // saves from before the skill tree, and nodes since removed
   for(const k of['rations','flasks'])if(typeof s[k]!=='number')s[k]=2;   // saves from before hunger and thirst
   for(const k of['food','drink'])if(typeof s[k]!=='number')s[k]=100;
   if(typeof s.empties!=='number')s.empties=0;if(!Array.isArray(s.stash))s.stash=[];
@@ -121,7 +123,7 @@ function migrateSave(s){
 // browser normally decides where its player stands, but a newer tp from the server means "jump to where I say". They start at the entrance, or at their last safe room on this floor.
 function makePlayer(id,save){
   claimChests(save,G);   // every arrival on a floor comes through here, in single player and on the server
-  const st=computeStats(save.char,save.equip),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
+  const st=computeStats(save.char,save.equip,save.tree),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
   return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,food:save.food==null?100:save.food,drink:save.drink==null?100:save.drink,buff:save.buff?Object.assign({},save.buff):null,
     aim:0,face:1,atkCd:0,atkBuf:0,skillCd:0,skillMax:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
     guard:0,hot:null,ward:0,tp:0,in:{mx:0,my:0,atk:false,block:false},lastBreak:-9,lastSheath:-9,lastNoMana:-9};

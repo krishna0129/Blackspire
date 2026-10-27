@@ -8,7 +8,8 @@
     "wiki": "node --no-warnings=ExperimentalWarning tools/wiki.js",
     "wiki:images": "node tools/wiki-images.js",
     "vendor": "esbuild tools/three-entry.js --bundle --format=iife --global-name=THREE --minify --legal-comments=inline --outfile=js/vendor/three.js",
-    "models": "node tools/pack-models.mjs"
+    "models": "node tools/pack-models.mjs",
+    "balance": "node --no-warnings=ExperimentalWarning tools/balance.js"
   },
   "engines": {
     "node": ">=22.5"

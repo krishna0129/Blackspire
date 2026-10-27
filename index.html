@@ -29,6 +29,7 @@
       <div class="shards"><span class="gem"></span><span id="hShards">0</span></div>
       <div class="hudBtns">
         <button class="btn small" id="btnBag" tabindex="-1">Gear<b id="bagNew"></b><kbd>I</kbd></button>
+        <button class="btn small" id="btnTree" tabindex="-1">Tree<b id="treeNew"></b><kbd>P</kbd></button>
         <button class="btn small" id="btnMenu" tabindex="-1">Menu<kbd>Esc</kbd></button>
       </div>
     </div>
@@ -171,6 +172,14 @@
       <div class="titleBtns"><button class="btn" id="travelClose">Stay here<kbd>Esc</kbd></button></div></div>
   </div>
 
+  <div id="treeView" hidden>
+    <canvas id="treeCv"></canvas>
+    <div class="treeHead"><div><b id="treePts"></b><span id="treeSub"></span></div>
+      <div class="treeBtns"><button class="btn small" id="treeReset">Reset all</button><button class="btn small" id="treeClose">Close<kbd>P</kbd></button></div></div>
+    <div class="treeHelp">Drag to look around · wheel or pinch to zoom · click a glowing node to take it</div>
+    <div id="treeTip" hidden></div>
+  </div>
+
   <div id="dead" class="overlay" hidden>
     <div class="sheet"><h2>You fell</h2><p id="deadTxt"></p><button class="btn primary" id="btnRespawn"><span id="respawnTxt">Respawn</span><kbd>R</kbd></button></div>
   </div>
@@ -180,6 +189,7 @@
      js/sim is the game rules (the server runs the same files); js/client is everything on screen. -->
 <script src="js/sim/util.js"></script>
 <script src="js/sim/data.js"></script>
+<script src="js/sim/tree.js"></script>
 <script src="js/sim/items.js"></script>
 <script src="js/sim/rules.js"></script>
 <script src="js/sim/world.js"></script>
@@ -201,6 +211,7 @@
 <script src="js/client/render.js"></script>
 <script src="js/client/render3d.js"></script>
 <script src="js/client/ui.js"></script>
+<script src="js/client/treeui.js"></script>
 <script src="js/client/net.js"></script>
 <script src="js/client/main.js"></script>
 </body>

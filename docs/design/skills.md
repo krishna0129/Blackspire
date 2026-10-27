@@ -150,8 +150,13 @@ Tree nodes and gear are measured the same way: the runner adds a node to a build
 
 ## Order of work
 
-1. **Now, before combat is settled:** tags on today's skills and enemies; damage types and resistances; the tree as
-   data (nodes, links, starts) with today's stats; the tree screen; the balance runner against today's eight skills.
+1. **Now, before combat is settled** (**in the game**): tags on today's skills and attacks (`TAGS`, data.js);
+   damage types (`DTYPES`), with family resistances to the new ones and resistances from the tree; the tree as data
+   (`js/sim/tree.js`, 196 nodes) with today's stats; the tree screen (P); the balance runner (`tools/balance.js`,
+   [docs/balance.md](../balance.md)) against today's eight weapons and skills. Its first run already says things:
+   the greatsword deals 75 to 95% more than the median, the faith grimoire 30 to 40% less, and for most builds each
+   floor's boss falls in 11 to 25 seconds at the right level, far short of the mechanic-heavy fights the bosses are
+   meant to be.
 2. **With the new combat:** set R per floor; the wave 1 skills (24), through the runner.
 3. **Wave 2:** the advanced skills (about 50), a start at a time.
 4. **Wave 3:** the rest of the catalogue, a few at a time, and masteries.

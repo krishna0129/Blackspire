@@ -11,6 +11,16 @@ function marketTrade(fn,k,n,bound){
   const r=fn(k,n,bound);if(r.ok)sfx('pick');return r;
 }
 const ACTIONS={
+  // the skill tree (tree.js): take a node next to what you own; or give them all back, for shards, somewhere safe
+  treeTake(id){
+    if(!treeCanTake(S,id))return false;
+    if(!treeOf(S).length)S.treeStart=startKey(S.equip.weapon);   // the first point fixes where you build from
+    S.tree.push(id);calcStats();return true;
+  },
+  treeReset(){
+    const cost=treeResetCost(S);if(!treeOf(S).length||!P.safe||S.shards<cost)return false;
+    S.shards-=cost;S.tree=[];S.treeStart=null;calcStats();return true;
+  },
   // make the stock the first time a trader's pack is opened
   openShop(si){
     if(!nearTraderIdx(si))return false;

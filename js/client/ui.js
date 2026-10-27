@@ -13,6 +13,7 @@ function updateHud(){
   setTxt('hpTxt',Math.ceil(Math.max(0,P.hp))+' / '+ST.maxHp);
   setStyle('xpw',elXp,'width',(S.char.xp/xpNeed(S.char.level)*100).toFixed(1)+'%');
   setTxt('hLv','Level '+S.char.level+(S.char.pts?' (+'+S.char.pts+')':''));
+  {const n=treeLeft(S);setTxt('treeNew',n>0?String(n):'');}   // unspent tree points
   setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));setTxt('foodN',String(S.rations||0));setTxt('drinkN',String(S.flasks||0));setTxt('emptyN',S.empties?S.empties+' empty':'');
   setTxt('hBuff',P.buff?`${BUFFS[P.buff.id].name}, ${Math.max(1,Math.ceil(P.buff.t/60))} min`:'');
   for(const k of['food','drink']){const v=clamp((P[k]==null?100:P[k])/100,0,1);setStyle(k+'w',$('#'+k+'Fill'),'width',(v*100).toFixed(1)+'%');
@@ -595,7 +596,7 @@ const DIFF=[['Health',s=>s.maxHp,0],['Defense',s=>s.def,0],['Evade chance',s=>s.
   ['Damage reflected',s=>s.g.thorns||0,0,'%'],['Experience',s=>s.g.xp||0,0,'% more'],
   ...Object.keys(FAMILIES).map(f=>['Damage from '+FAMILIES[f].them,s=>s.res[f]||0,0,'% less'])];
 function equipDiff(it){
-  const now=computeStats(S.char,S.equip),alt=computeStats(S.char,{...S.equip,[it.slot]:it});
+  const now=computeStats(S.char,S.equip,S.tree),alt=computeStats(S.char,{...S.equip,[it.slot]:it},S.tree);
   const rows=DIFF.filter(([,f,dec])=>Math.abs(f(alt)-f(now))>=(dec?.05:.5)).map(([l,f,dec,u=''])=>`<div class="ln"><span>${l}</span><span>${f(alt).toFixed(dec)}${u}${cmp(f(alt),f(now),dec)}</span></div>`);
   return`<div class="sub" style="margin-top:8px">${S.equip[it.slot]?'If you wear this instead':'If you wear this'}</div>`+(rows.join('')||'<div class="muted">No change to your totals.</div>');
 }

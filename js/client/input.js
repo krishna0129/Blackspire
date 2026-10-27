@@ -33,7 +33,7 @@ const keys={},inp={mx:0,my:0,atk:false,touch:!!(window.matchMedia&&matchMedia('(
 const BIND={
   up:['KeyW','ArrowUp'],down:['KeyS','ArrowDown'],left:['KeyA','ArrowLeft'],right:['KeyD','ArrowRight'],
   attack:['KeyJ'],skill:['KeyK','Space'],block:['KeyH','KeyF'],dodge:['ShiftLeft','ShiftRight','KeyL'],potion:['KeyQ'],eat:['KeyR'],drink:['KeyT'],
-  interact:['KeyE','Enter','NumpadEnter'],gear:['KeyI','Tab'],menu:['Escape'],mute:['KeyM'],debug:['Backquote'],
+  interact:['KeyE','Enter','NumpadEnter'],gear:['KeyI','Tab'],tree:['KeyP'],menu:['Escape'],mute:['KeyM'],debug:['Backquote'],
   respawn:['KeyR','Enter','NumpadEnter'],
 };
 const is=(action,code)=>BIND[action].includes(code);
@@ -50,6 +50,7 @@ addEventListener('keydown',e=>{
     else if(is('drink',c))press('drink');
     else if(is('interact',c))interact();
     else if(is('gear',c)){openPanel();e.preventDefault();}
+    else if(is('tree',c))openTree();
     else if(is('menu',c))openPause();
     else if(is('mute',c))toggleMute();
     else if(is('debug',c))openDebug();

@@ -32,7 +32,11 @@ function hitLine(ang,len,wid,mult,o){
 }
 // Quickening: one stack per attack that lands (a swing, a shot, a skill), however many enemies it hits.
 function gainMomentum(){if(ST.p.momentum){P.mom=Math.min(5,P.mom+1);P.momT=3;}}
+// How much of a blow of this type an enemy shrugs off (a fraction; negative is a weakness). Elements are cut by its
+// resistance to magic (mres) and its family's resistance to that element; rot and physical by its family's only.
+function resOf(e,type){const F=FAMILIES[famOf(e)],r=(F&&F.res&&F.res[type]||0)/100;return DTYPES[type]&&DTYPES[type].elem?(e.mres||0)+r:r;}
 // Returns true if the blow landed, false if it was blocked or the target was already dead.
+// o.tags: the blow's tags (TAGS), when it is not the basic attack; o.type: its damage type, if not the tags'.
 function damageEnemy(e,mult,o={}){
   if(e.dead||e.burrowed)return false;   // an Ossuary hermit under the floor is out of reach
   // A bone knight's shield stops anything that comes from the side it faces, unless it is mid-swing or reeling.
@@ -42,8 +46,12 @@ function damageEnemy(e,mult,o={}){
       if(G.time-(e.blkT??-9)>.6){e.blkT=G.time;addNum(e.x,e.y-e.r-13,'BLOCK','resist');sfx('block');}
       burst(e.x+Math.cos(fa)*7,e.y+Math.sin(fa)*7,3,'#c3cad6',40);if(e.state==='idle')e.state='chase';return false;}
   }
+  // What the blow is: its tags (the skill's, or the basic attack's) and so its damage type.
+  const tags=o.tags||ST.tags,type=o.type||(o.burn?'fire':dtypeOf(tags));   // burn: a fire blast
   let d=ST.dmg*mult*rand(.9,1.1);const crit=o.crit||Math.random()*100<ST.crit;
   if(crit)d*=ST.critDmg/100;
+  // "Increased" damage from the skill tree: every tag the blow carries adds its share, all in one sum.
+  let inc=0;for(const t of tags)inc+=ST.inc[t]||0;d*=1+inc/100;
   // Everything that reads "% more damage" adds up in one bucket and is applied once, so no two of them multiply each
   // other: Executioner's, Giant-slaying, Sunder's mark, and a forged weapon's bonus against this enemy's family.
   const bane=ST.vs[famOf(e)]||0;
@@ -53,11 +61,11 @@ function damageEnemy(e,mult,o={}){
   if(e.sunder>0)more+=25;
   d*=1+more/100;
   const T=ETYPES[e.type];
-  if(o.burn&&T.weak&&T.weak.fire)d*=T.weak.fire;   // fire: Fireball's blast (its burn is scaled the same way below)
+  if(T.weak&&T.weak[type])d*=T.weak[type];        // a weakness to a type: Thornroot to fire (its burn is scaled the same way below)
   if(e.state==='shell')d*=.4;                       // a hermit's skull shell
   // melee hits land with a beat of freeze-frame and stagger whatever they hit
   if(o.melee){hitstop(crit?.075:.045);if(!e.boss&&!ETYPES[e.type].heavy){e.stun=Math.max(e.stun,.2);if(e.state==='windup'||e.state==='draw')e.state='chase';}}   // a hit breaks a light enemy's attack
-  const resisted=ST.magic&&e.mres>0;if(resisted)d*=1-e.mres;
+  const res=resOf(e,type),resisted=res>0;d*=1-res;
   d=Math.max(1,Math.round(d));
   e.hp-=d;e.flash=.09;e.hurtT=4;if(e.state==='idle'){if(e.boss)wakeBoss();else e.state='chase';}
   addNum(e.x,e.y-e.r-5,d,resisted?'resist':crit?'crit':bane?'bane':'hit');
@@ -156,6 +164,7 @@ function hurtPlayer(dmg,src,sure,from,ground){
   if(!sure&&ST.evade>0&&Math.random()*100<ST.evade){P.inv=.2;addNum(P.x,P.y-16,'DODGE','evade');return;}
   let d=dmg*100/(100+ST.def);if(P.ward>0&&ST.p.ward)d*=1-ST.p.ward/100;if(P.guard>0)d*=.4;
   d*=1-(ST.res[famOf(from)||famOf(src)]||0)/100;
+  const type=(from&&from.dtype)||(src&&ETYPES[src.type]&&ETYPES[src.type].dtype)||'physical';d*=1-(ST.eres[type]||0)/100;   // resistances from the skill tree
   d=Math.max(1,Math.round(d));
   P.hp-=d;P.inv=.45;shake(4,true);addNum(P.x,P.y-16,d,'hurt');sfx('hurt');hurtFlash();
   if(ST.g.thorns&&src&&!src.dead){const t=Math.max(1,Math.round(dmg*ST.g.thorns/100));src.hp-=t;src.flash=.09;addNum(src.x,src.y-src.r-5,t,'bleed');if(src.hp<=0)killEnemy(src);}
@@ -184,35 +193,35 @@ function sheathed(){if(G.time-P.lastSheath>3.5){P.lastSheath=G.time;log('Weapons
 function useSkill(){
   if(P.dead||P.skillCd>0)return;
   if(P.safe){sheathed();return;}
-  const id=ST.skill,sk=SKILLS[id],a=P.aim;
+  const id=ST.skill,sk=SKILLS[id],a=P.aim,tags=sk.tags;
   if(P.mp<sk.mp){if(G.time-P.lastNoMana>.8){P.lastNoMana=G.time;addNum(P.x,P.y-18,'NO MANA','mana');}return;}
   P.mp-=sk.mp;
   P.skillMax=P.skillCd=sk.cd*(1-ST.cdr/100)*(id==='heal'?1-(ST.p.quick||0)/100:1);sfx(id==='heal'?'heal':'skill');
-  if(id==='circle'){hitArc(0,360,ST.range*1.35,2.2,{kb:120});slashFx(a,360,ST.range*1.35,1,.24);shake(4);}
+  if(id==='circle'){hitArc(0,360,ST.range*1.35,2.2,{kb:120,tags});slashFx(a,360,ST.range*1.35,1,.24);shake(4);}
   else if(id==='blink'){
     let best=null,bd=150;for(const e of G.enemies){if(e.dead)continue;const d=hyp(e.x-P.x,e.y-P.y);if(d<bd&&los(P.x,P.y,e.x,e.y)){bd=d;best=e;}}
     burst(P.x,P.y,10,'#55556a',50);
     if(best){const dir=Math.atan2(best.y-P.y,best.x-P.x);let tx=best.x+Math.cos(dir)*(best.r+9),ty=best.y+Math.sin(dir)*(best.r+9);
       if(boxSolid(tx,ty,P.cr)){tx=best.x-Math.cos(dir)*(best.r+9);ty=best.y-Math.sin(dir)*(best.r+9);}
       if(!boxSolid(tx,ty,P.cr)){P.x=tx;P.y=ty;P.tp++;}
-      P.dir=dirOf(Math.atan2(best.y-P.y,best.x-P.x));P.aim=DIR_ANGLE[P.dir];P.inv=Math.max(P.inv,.35);if(damageEnemy(best,3,{crit:true,melee:true}))gainMomentum();slashFx(P.aim,120,ST.range+6);}
+      P.dir=dirOf(Math.atan2(best.y-P.y,best.x-P.x));P.aim=DIR_ANGLE[P.dir];P.inv=Math.max(P.inv,.35);if(damageEnemy(best,3,{crit:true,melee:true,tags}))gainMomentum();slashFx(P.aim,120,ST.range+6);}
     else{P.dash={t:.12,vx:Math.cos(a)*300,vy:Math.sin(a)*300};P.inv=Math.max(P.inv,.2);}
   }
-  else if(id==='sunder'){hitArc(a,170,ST.range*1.35,2.8,{sunder:4,kb:90});slashFx(a,170,ST.range*1.35,1,.22);shake(6);}
+  else if(id==='sunder'){hitArc(a,170,ST.range*1.35,2.8,{sunder:4,kb:90,tags});slashFx(a,170,ST.range*1.35,1,.22);shake(6);}
   else if(id==='guard'){P.guard=5;vfx({k:'ring',x:P.x,y:P.y,r:24,t:0,d:.3});burst(P.x,P.y,12,'#e6e1d3',50);}
-  else if(id==='pierce'){hitLine(a,120,9,2.5,{kb:50});vfx({k:'line',x:P.x,y:P.y,a,len:122,t:0,d:.2,w:1});shake(3);}
-  else if(id==='volley'){for(let i=-2;i<=2;i++)fireArrow(a+i*.15,.8);}
+  else if(id==='pierce'){hitLine(a,120,9,2.5,{kb:50,tags});vfx({k:'line',x:P.x,y:P.y,a,len:122,t:0,d:.2,w:1});shake(3);}
+  else if(id==='volley'){for(let i=-2;i<=2;i++)fireArrow(a+i*.15,.8,tags);}
   else if(id==='fireball'){G.pproj.push({k:'fire',owner:P.id,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*135,vy:Math.sin(a)*135,life:1.25});}
   else if(id==='heal')castHeal();
 }
 /* ---------- shots and spells ---------- */
 function castBolt(){const a=P.aim,v=190;G.pproj.push({k:'bolt',owner:P.id,mult:1,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
-function fireArrow(a,mult){const v=260;G.pproj.push({k:'arrow',owner:P.id,a,mult,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
+function fireArrow(a,mult,tags){const v=260;G.pproj.push({k:'arrow',owner:P.id,a,mult,tags,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
 // Fire burns bodies to ash: they can no longer be raised.
 function burnCorpses(x,y,R){G.corpses=G.corpses.filter(c=>{if(hyp(c.x-x,c.y-y)>R+4)return true;burst(c.x,c.y,10,'#f08a3c',50);burst(c.x,c.y,6,'#3a3a3a',30);return false;});}
 function explode(x,y){
   const R=30*(1+(ST.p.blast||0)/100);
-  let n=0;for(const e of G.enemies){if(!e.dead&&hyp(e.x-x,e.y-y)<R+e.r&&los(x,y,e.x,e.y)&&damageEnemy(e,2.6,{kb:70,fx:x,fy:y,burn:true}))n++;}
+  let n=0;for(const e of G.enemies){if(!e.dead&&hyp(e.x-x,e.y-y)<R+e.r&&los(x,y,e.x,e.y)&&damageEnemy(e,2.6,{kb:70,fx:x,fy:y,burn:true,tags:SKILLS.fireball.tags}))n++;}
   if(n)gainMomentum();
   burnCorpses(x,y,R);
   vfx({k:'boom',x,y,r:R,t:0,d:.34});burst(x,y,22,'#f08a3c',110);burst(x,y,10,'#ffe9a8',60);shake(4);sfx('boom');

@@ -295,3 +295,23 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #hud .toast{font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;background:var(--frameBg);border:0;box-shadow:var(--edge)}
 #hud .toast.big{font-size:20px}
 @media (pointer:coarse){#hud .slot{width:70px;height:64px}}
+
+/* ---------- the skill tree screen ---------- */
+#treeView{position:absolute;inset:0;background:#07060a;z-index:5;font-family:'Cormorant Garamond',Georgia,serif;color:#e9dfc8}
+#treeCv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+#treeCv:active{cursor:grabbing}
+.treeHead{position:absolute;left:16px;right:16px;top:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
+.treeHead b{display:block;font-family:Cinzel,Georgia,serif;font-size:22px;letter-spacing:.04em;color:#efe2c2;text-shadow:0 2px 0 #000}
+.treeHead span{font-size:16px;font-weight:600;color:#a89a7c}
+.treeBtns{display:flex;gap:8px;pointer-events:auto}
+#treeView .btn{font-family:Cinzel,Georgia,serif;font-size:12px;font-weight:600;background:linear-gradient(rgba(20,16,12,.94),rgba(10,8,6,.94));border:0;color:#e9dfc8;
+  box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #7a6436;padding:6px 10px}
+#treeView .btn kbd{color:#bba982;background:none;border:0}
+.treeHelp{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:15px;color:#7c705a;pointer-events:none}
+#treeTip{position:absolute;width:240px;padding:9px 11px;background:linear-gradient(rgba(20,16,12,.97),rgba(10,8,6,.97));box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #7a6436;pointer-events:none}
+#treeTip b{font-family:Cinzel,Georgia,serif;font-size:15px;color:#efe2c2}
+#treeTip i{display:block;font-style:normal;font-size:13px;color:#a89a7c}
+#treeTip p{margin:5px 0;font-size:16px;line-height:1.25}
+#treeTip small{font-size:14px;font-weight:600;color:#c9a45c}
+#btnTree b{color:#e9c87a;margin-left:6px;font-weight:600}
+#btnTree b:empty{display:none}
