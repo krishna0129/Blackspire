@@ -17,8 +17,10 @@ priority, and what exists (village channels, the exchange's selling limit) stays
 
 **Decided, order of work:** adding systems is **paused**. The **visual overhaul comes first**; movement and combat
 are to be redesigned after it (the playstyle is still being chosen). The **skill system will be redesigned from
-scratch** once the playstyle is settled, so [skill-trees.md](skill-trees.md) and [class-trees.md](class-trees.md)
-are on hold, and mutagens may not be part of the new one. Single player is built first, and every rule
+scratch**: a passive tree in the manner of Path of Exile, where skill nodes take the place of keystones and diverge
+into advanced skills ([skills.md](skills.md)). Its structure and balance tools can be built now; its numbers wait for
+the playstyle. [skill-trees.md](skill-trees.md) and [class-trees.md](class-trees.md) are replaced by it, and
+mutagens may not be part of the new system. Single player is built first, and every rule
 keeps running on the server so the online game follows.
 
 **The visual overhaul, where it stands.** The look is the Path of Exile / Lost Ark kind: 3D models under a fixed
