@@ -23,6 +23,15 @@ the playstyle. [skill-trees.md](skill-trees.md) and [class-trees.md](class-trees
 mutagens may not be part of the new system. Single player is built first, and every rule
 keeps running on the server so the online game follows.
 
+**Decided, fatigue and the inn (in the game).** Fatigue is play time since the last sleep, up to 7 hours, in four
+tiers (rested, weary from 2 h, tired from 4 h, exhausted from 6 h) that lengthen cooldowns and cut move speed, dodge
+and mana regeneration; players who accept the difficulty can keep grinding, so it never stops play. The inn rents a
+room for the day: sleeping there clears fatigue and leaves you well rested, the stash is in the room, and logging off
+in it counts as sleep. A sleeping bag from the food and drink stall sleeps you in any safe area (no bonus), and a safe
+room's campfire takes half the fatigue once an hour of play. Breakfast after sleeping, the inn bed as where you wake
+after a fall (single player), and a barkeep's rumours came with it. Held for later: a bard's party buff, room upgrades
+with a trophy shelf, a mailbox between rooms.
+
 **The visual overhaul, where it stands.** The look is the Path of Exile / Lost Ark kind: 3D models under a fixed
 high camera, with the rules still the flat 2D world underneath. The models are KayKit's free CC0 packs, since there
 is no artist. Phase 1 is **in the game**: the tower floors are drawn in 3D (`js/client/render3d.js`), in single

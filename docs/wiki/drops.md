@@ -13,10 +13,10 @@ On the ground: <img src="img/drop-shard.png" alt="shards" width="36"> shards <im
 
 | Source | Shards (floor 1 / 2 / 3) | Items | Potions, rations, water | Materials | Its family’s drop |
 |---|---|---|---|---|---|
-| Ordinary enemy | 1–4 / 1–5 / 2–6 | 13% | 5.5% health potion<br>4.0% ration<br>5.0% water flask | Iron scrap: 30% for 1<br>Emberstone: 3.0% for 1 | 30% for 1 |
-| Elite enemy | 14 / 18 / 21 | 70%, at least uncommon | 30% health potion<br>25% ration<br>30% water flask | Iron scrap: 1 to 3<br>Emberstone: 40% for 1<br>Spire crystal: 4.0% for 1 | 2 to 3 |
-| Floor boss | 60 / 75 / 90 | 1 (item level +1), at least rare<br>1 (item level +1), at least uncommon<br>1 (item level +1), at least uncommon | 2 health potions<br>1 ration<br>1 water flask | Iron scrap: 4 to 6<br>Emberstone: 2 to 3<br>Spire crystal: 1 | 6 to 8 |
-| Chest | 8–16 / 10–20 / 12–24 | 1<br>35% | 50% health potion<br>40% ration<br>50% water flask | Iron scrap: 1 to 2<br>Emberstone: 25% for 1 | – |
+| Ordinary enemy | 1–4 / 1–5 / 2–6 | 13% | 5.5% health potion<br>4.0% ration<br>NaN% sleeping bag<br>5.0% water flask | Iron scrap: 30% for 1<br>Emberstone: 3.0% for 1 | 30% for 1 |
+| Elite enemy | 14 / 18 / 21 | 70%, at least uncommon | 30% health potion<br>25% ration<br>NaN% sleeping bag<br>30% water flask | Iron scrap: 1 to 3<br>Emberstone: 40% for 1<br>Spire crystal: 4.0% for 1 | 2 to 3 |
+| Floor boss | 60 / 75 / 90 | 1 (item level +1), at least rare<br>1 (item level +1), at least uncommon<br>1 (item level +1), at least uncommon | 2 health potions<br>1 ration<br>NaN% sleeping bag<br>1 water flask | Iron scrap: 4 to 6<br>Emberstone: 2 to 3<br>Spire crystal: 1 | 6 to 8 |
+| Chest | 8–16 / 10–20 / 12–24 | 1<br>35% | 50% health potion<br>40% ration<br>NaN% sleeping bag<br>50% water flask | Iron scrap: 1 to 2<br>Emberstone: 25% for 1 | – |
 
 Rations and water flasks refill the hunger and thirst meters. Traders in safe rooms also sell them, 5–10 of each supply, restocked when the floor’s boss falls.
 

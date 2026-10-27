@@ -90,6 +90,12 @@ button{font:inherit;color:inherit}
 #btnBag.has{border-color:var(--cyan)}
 #btnBag b{color:var(--cyan);margin-left:6px;font-weight:600}
 #btnBag b:empty{display:none}
+#tired{position:absolute;inset:0;pointer-events:none;opacity:0;box-shadow:inset 0 0 160px 60px rgba(6,6,12,.85);transition:opacity 2s}
+#sleepFade{position:absolute;inset:0;z-index:20;background:#000;opacity:0;pointer-events:none}
+#sleepFade.go{animation:sleepfade 4.2s ease-in-out forwards}
+@keyframes sleepfade{0%{opacity:0}30%,65%{opacity:1}100%{opacity:0}}
+#room .sheet{max-width:480px;padding:20px}
+#hud .bar.fat i{background:#8a6fc8}
 #hurt{position:absolute;inset:0;pointer-events:none;opacity:0;box-shadow:inset 0 0 120px 30px rgba(190,30,30,.75);transition:opacity .35s}
 #stick{position:absolute;width:96px;height:96px;margin:-48px 0 0 -48px;border:1px solid var(--line2);border-radius:50%;pointer-events:none}
 #stick i{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:rgba(230,225,211,.35)}

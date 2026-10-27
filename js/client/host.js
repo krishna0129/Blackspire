@@ -19,9 +19,10 @@ function persist(){save();}
 function mapChanged(){G.mapCv=paintMap(G);}
 function onDeath(lost,cp){
   mode='dead';
-  $('#deadTxt').textContent=`You lose ${lost} shard${lost===1?'':'s'}. You wake ${cp?'in the last safe room you reached':'at the entrance of floor '+G.n}. `+
+  const inn=!cp&&!NET.on&&G.n>0&&S.room===questDay();   // single player: no safe room yet, but a room at the inn
+  $('#deadTxt').textContent=`You lose ${lost} shard${lost===1?'':'s'}. You wake ${cp?'in the last safe room you reached':inn?'in your bed at the inn':'at the entrance of floor '+G.n}. `+
     (NET.on?'The fight goes on without you until then. ':'Enemies on this floor return, so you can fight them again for experience. ')+'Chests you opened stay empty. Gear and levels stay.';
-  $('#respawnTxt').textContent=cp?'Respawn at the safe room':'Respawn at the entrance';
+  $('#respawnTxt').textContent=cp?'Respawn at the safe room':inn?'Wake at the inn':'Respawn at the entrance';
   setTimeout(()=>{if(mode==='dead')$('#dead').hidden=false;},700);
 }
 

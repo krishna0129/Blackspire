@@ -15,7 +15,8 @@ function updateHud(){
   setTxt('hLv','Level '+S.char.level+(S.char.pts?' (+'+S.char.pts+')':''));
   {const n=treeLeft(S);setTxt('treeNew',n>0?String(n):'');}   // unspent tree points
   setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));setTxt('foodN',String(S.rations||0));setTxt('drinkN',String(S.flasks||0));setTxt('emptyN',S.empties?S.empties+' empty':'');
-  setTxt('hBuff',P.buff?`${BUFFS[P.buff.id].name}, ${Math.max(1,Math.ceil(P.buff.t/60))} min`:'');
+  {const ft=fatigueTier(P.fat);setTxt('hBuff',[P.buff&&`${BUFFS[P.buff.id].name}, ${Math.max(1,Math.ceil(P.buff.t/60))} min`,P.rested>0&&`Well rested, ${Math.ceil(P.rested/60)} min`,ft&&FATIGUE[ft].name].filter(Boolean).join(' · '));
+    setStyle('fatw',$('#fatFill'),'width',(clamp(P.fat/FATIGUE_MAX,0,1)*100).toFixed(1)+'%');setStyle('tired',$('#tired'),'opacity',String(ft>=3?.8:ft===2?.35:0));}
   for(const k of['food','drink']){const v=clamp((P[k]==null?100:P[k])/100,0,1);setStyle(k+'w',$('#'+k+'Fill'),'width',(v*100).toFixed(1)+'%');
     const low=v*100<NEED_LOW;if(hc[k+'low']!==low){hc[k+'low']=low;$('#'+k+'Fill').parentNode.classList.toggle('low',low);}}
   setStyle('cds',cdSk,'height',(P.skillMax?P.skillCd/P.skillMax*100:0).toFixed(0)+'%');
@@ -29,7 +30,7 @@ function updateHud(){
   const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
   const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
     nearGuild()?'guild':nearBoard()?'board':plotAt()>=0?'plot'+plotAt()+plotPrompt(plotAt()):nearFields(24)?'fields':
-    wl?'well'+(S.empties>0?S.empties:''):tk?'talk:'+tk.name:'';
+    wl?'well'+(S.empties>0?S.empties:''):nearFire()?'fire':tk?'talk:'+tk.name:'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>E</kbd>';
     else if(near.startsWith('talk:')&&tk.arcanist)elPrompt.innerHTML='Arcanist<kbd>E</kbd>';
@@ -43,6 +44,7 @@ function updateHud(){
     else if(near==='board')elPrompt.innerHTML='Notice board<kbd>E</kbd>';
     else if(near.startsWith('plot'))elPrompt.innerHTML=plotPrompt(plotAt())+': fields<kbd>E</kbd>';
     else if(near==='fields')elPrompt.innerHTML='Your fields<kbd>E</kbd>';
+    else if(near==='fire')elPrompt.innerHTML='Rest by the fire<kbd>E</kbd>';
     else if(near.startsWith('well'))elPrompt.innerHTML=(S.empties>0?`Fill ${S.empties} empty flask${S.empties>1?'s':''} at the well`:'The well')+'<kbd>E</kbd>';
 }
 }
@@ -79,6 +81,7 @@ function enterFloor(n,cp){
   if(cp!=null){S.cp=cp;S.cpFloor=n;}
   S.floor=n;S.best=Math.max(S.best||1,n);
   startWorld(n);
+  if(S.wakeInn&&G.village){delete S.wakeInn;const q=G.traders.find(t=>TRADER_SELLS[t.sells].meals);if(q){P.x=q.x;P.y=q.y+18;}setTimeout(()=>log('You wake in your bed at the inn, aching.'),400);}
   if(S.hp!=null&&S.hp>0)P.hp=Math.min(ST.maxHp,S.hp);
   refreshSprites();refreshHudStatic();reveal();drawMini();
   for(const k in hc)delete hc[k];
@@ -240,7 +243,10 @@ $('#pCustomDel').onclick=()=>{CUSTOM=null;$('#pCustomMsg').textContent='';act('c
 $('#pCustomTpl').onclick=()=>saveTemplate(S.char.look,S.equip,m=>{$('#pCustomMsg').textContent=m;});
 $('#btnContinue').onclick=()=>{$('#title').hidden=true;startFloor(S.floor==null?1:S.floor);};
 // Only once the "You fell" dialog is showing, so a key still held from the fight does not skip it.
-function respawn(){if(mode!=='dead'||$('#dead').hidden)return;$('#dead').hidden=true;if(NET.on){NET.send({t:'respawn'});return;}S.hp=null;startFloor(G.n);}
+function respawn(){if(mode!=='dead'||$('#dead').hidden)return;$('#dead').hidden=true;if(NET.on){NET.send({t:'respawn'});return;}S.hp=null;
+  // no safe room reached on this floor, and a room at the inn: you wake in your bed instead of at the entrance
+  if(G.n>0&&!(S.cpFloor===G.n&&S.cp>0)&&S.room===questDay()){S.wakeInn=true;startFloor(0);return;}
+  startFloor(G.n);}
 $('#btnRespawn').onclick=respawn;
 
 /* ---------- pause menu ---------- */
@@ -267,6 +273,28 @@ $('#partyLeave').onclick=()=>NET.send({t:'leave'});
 function closePause(){if(mode!=='pause')return;$('#pause').hidden=true;mode='play';}
 function quitToTitle(){save();showTitle();}   // online, showTitle disconnects
 
+/* ---------- fatigue and the inn ---------- */
+// What your fatigue is doing to you now, in words.
+function fatigueText(){const F=FATIGUE[fatigueTier(P.fat)];if(!F.cd)return'no penalty';
+  return[F.cd&&`skills take ${F.cd}% longer to come back`,F.move&&`${F.move}% slower`,F.dodge&&`${F.dodge}% less chance to dodge`,F.mregen&&`mana comes back ${F.mregen}% slower`].filter(Boolean).join(', ');}
+// Your room at the inn: sleep, the stash, or back downstairs.
+function openRoom(){mode='room';inp.atk=false;for(const k in keys)keys[k]=false;renderRoom();$('#room').hidden=false;save();}
+function renderRoom(){const F=FATIGUE[fatigueTier(P.fat)],h=Math.floor(P.fat/3600),m=Math.floor(P.fat%3600/60);
+  $('#roomTxt').textContent=`You have been up for ${h?h+' h ':''}${m} min of play. You are ${F.name.toLowerCase()}${F.cd?': '+fatigueText():''}.`+(P.rested>0?` Well rested for ${Math.ceil(P.rested/60)} more minutes.`:'');}
+function leaveRoom(){if(mode!=='room')return;act('leaveRoom');$('#room').hidden=true;mode='play';hc.near=null;save();}
+function sleepNow(){const f=$('#sleepFade');f.hidden=false;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');
+  setTimeout(()=>act('sleep',[],r=>{if(r){sfx('heal');bannerMe('Well rested',`Fatigue gone, and ${REST_XP}% more experience for an hour of play. Breakfast is on downstairs.`,3600);}renderRoom();}),1600);
+  setTimeout(()=>{f.hidden=true;},4200);}
+// B: a sleeping bag, in a safe area
+function sleepBag(){if(mode!=='play'||P.dead)return;
+  if(!(S.bags>0)){log('You have no sleeping bag. The food and drink stall in the village sells them.');return;}
+  if(!P.safe){log('Not here: a sleeping bag is for safe rooms and safe places.');return;}
+  if(P.fat<1){log('You are not tired.');return;}
+  act('sleepBag',[],r=>{if(r){const f=$('#sleepFade');f.hidden=false;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');setTimeout(()=>{f.hidden=true;},4200);
+    sfx('heal');log('You sleep in your bag. You wake with your fatigue gone.');}});}
+$('#roomSleep').onclick=sleepNow;$('#roomLeave').onclick=leaveRoom;
+$('#roomStash').onclick=()=>{$('#room').hidden=true;mode='play';const st=nearStash();if(st)openPanel(st,'stash');};
+
 /* ---------- E: gates, the floor gate, blacksmiths ---------- */
 function interact(){
   if(mode!=='play'||P.dead)return;
@@ -281,7 +309,10 @@ function interact(){
   if(nearFields(24)){openFields();return;}
   if(nearWell()){act('fillFlasks',[],n=>{if(n){sfx('pick');log(`Filled ${n} flask${n>1?'s':''} at the well.`);}
     else log('You have no empty flasks to fill. The food and drink stall sells water flasks; drink one and the flask is yours to refill.');hc.near=null;});return;}
+  if(nearFire()){act('restFire',[],r=>{if(r){sfx('heal');log('You rest a while by the fire. Some of the weariness goes.');}
+      else log(P.fireCd>0?`The fire has done what it can for now. Try again in ${Math.ceil(P.fireCd/60)} minutes of play.`:'You are not tired enough to need it.');hc.near=null;});return;}
   const tk=nearTalker();if(tk&&tk.arcanist){openPanel(tk,'arcanist');return;}
+  if(tk&&tk.rumours){act('rumour',[],i=>{if(i!==false){tk.line=RUMOURS[i];tk.sayUntil=G.time+9;sfx('pick');}});return;}
   if(tk){tk.sayUntil=G.time+6;sfx('pick');}
 }
 // The boss chamber asks first: once inside, the gate seals until the boss dies.
@@ -451,6 +482,7 @@ function askPending(n,commit,discard,go){
   $('#pendYes').onclick=()=>{a.hidden=true;commit(()=>go());};$('#pendNo').onclick=()=>{a.hidden=true;discard();go();};$('#pendStay').onclick=()=>{a.hidden=true;};
 }
 function closePanel(){if(mode!=='panel')return;
+  if(P.room&&atWho==='stash'&&!Object.keys(attrPend).length){$('#panel').hidden=true;atSmith=atWho=null;mode='play';openRoom();return;}   // the stash in your room: back to the room
   const n=Object.values(attrPend).reduce((a,b)=>a+b,0);if(n)return askPending(n,commitAttrs,()=>{attrPend={};},()=>closePanel());atSmith=atWho=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
 function cell(it,on,label,bag){
   const b=document.createElement('button');b.className='cell'+(on?' on':'')+(it?'':' empty');
@@ -502,10 +534,11 @@ function renderPanel(){
   $('#shopBox').hidden=!shop&&!atStash()&&!atMaker();$('#sGrid').classList.toggle('tall',atStash());
   $('#fFams').hidden=!atMaker();if(atMaker())renderForge();
   if(shop&&TRADER_SELLS[G.traders[atSmith].sells].meals){$('#shopBox h3').textContent='Today\u2019s menu';const sg=$('#sGrid');sg.innerHTML='';
-    for(const k in MEALS){const b=document.createElement('button');b.className='cell'+(sel&&sel.from==='meal'&&sel.k===k?' on':'');b.dataset.p=mealPrice(k);b.title=MEALS[k].name;
+    for(const k in MEALS){if(MEALS[k].morning&&!(P.awake<BREAKFAST_WINDOW))continue;const b=document.createElement('button');b.className='cell'+(sel&&sel.from==='meal'&&sel.k===k?' on':'');b.dataset.p=mealPrice(k);b.title=MEALS[k].name;
       const c=document.createElement('canvas');mealIcon(c,k);b.appendChild(c);b.onclick=()=>{sel={from:'meal',k};renderPanel();};sg.appendChild(b);}
     const rb=document.createElement('button');rb.className='cell'+(sel&&sel.from==='pack'?' on':'');rb.title='Packed ration';
-    const rc=document.createElement('canvas');supplyIcon(rc,'ration');rb.appendChild(rc);rb.onclick=()=>{sel={from:'pack'};renderPanel();};sg.appendChild(rb);}
+    const rc=document.createElement('canvas');supplyIcon(rc,'ration');rb.appendChild(rc);rb.onclick=()=>{sel={from:'pack'};renderPanel();};sg.appendChild(rb);
+    const rm=document.createElement('button');rm.className='cell room'+(sel&&sel.from==='room'?' on':'');rm.title='A room';rm.textContent='Room';rm.onclick=()=>{sel={from:'room'};renderPanel();};sg.appendChild(rm);}
   if(atExchange())renderExchange();
   if(atStash()){const sg=$('#sGrid');sg.innerHTML='';
     for(let i=0;i<STASH_SIZE;i++){const it=S.stash[i],b=cell(it,sel&&sel.from==='stash'&&sel.i===i,'',false);
@@ -536,6 +569,13 @@ function renderDetail(){
       const o=document.createElement('button');o.className='btn small';o.textContent=`Cook it from your own ${need}`;o.disabled=!can;
       o.onclick=()=>act('eatMeal',[atSmith,k,true],r=>{renderPanel();});a.appendChild(o);}
     el.appendChild(a);return;}
+  if(sel&&sel.from==='room'&&shop){const rented=S.room===questDay(),pr=roomPrice(S.char.level),F=FATIGUE[fatigueTier(P.fat)];
+    el.innerHTML=`<h4>A room upstairs</h4><div class="sub">A bed and a door that locks, for the day. Sleep there and your fatigue is gone and you wake well rested (${REST_XP}% more experience for an hour of play), with breakfast waiting. Your stash is in the room, and logging off in it counts as a night's sleep.</div>
+      <div class="pas">You are ${F.name.toLowerCase()}: ${fatigueText()}.</div>`;
+    const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';
+    if(rented){b.textContent='Go to your room';b.onclick=()=>act('enterRoom',[atSmith],r=>{if(r){closePanel();openRoom();}});}
+    else{b.textContent=`Rent it for ${pr} shards`;b.disabled=S.shards<pr;b.onclick=()=>act('rentRoom',[atSmith],r=>{if(r)sfx('pick');renderPanel();});}
+    a.appendChild(b);el.appendChild(a);return;}
   if(sel&&sel.from==='pack'&&shop){const have=S.crops.potato||0;
     el.innerHTML=`<h4>Packed ration</h4><div class="sub">${RATION_POTATOES} of your potatoes, cooked and wrapped to take into the tower. A ration fills 40% of your hunger. You have ${have} potato${have===1?'':'es'} and ${S.rations||0} ration${S.rations===1?'':'s'}.</div>`;
     const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';b.textContent=`Pack one (${RATION_POTATOES} potatoes)`;

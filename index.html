@@ -13,6 +13,7 @@
 <div id="stage">
   <canvas id="game"></canvas>
   <div id="hurt"></div>
+  <div id="tired"></div>
 
   <div id="hud" class="layer" hidden>
     <div class="vitals">
@@ -20,7 +21,7 @@
       <div class="bar"><i id="hpFill"></i><b id="hpTxt"></b></div>
       <div class="bar mp"><i id="mpFill"></i><b id="mpTxt"></b></div>
       <div class="bar xp"><i id="xpFill"></i></div>
-      <div class="needs"><div class="bar food" title="Hunger"><i id="foodFill"></i></div><div class="bar drink" title="Thirst"><i id="drinkFill"></i></div></div>
+      <div class="needs"><div class="bar food" title="Hunger"><i id="foodFill"></i></div><div class="bar drink" title="Thirst"><i id="drinkFill"></i></div><div class="bar fat" title="Fatigue: play time since you last slept"><i id="fatFill"></i></div></div>
       <div id="hBuff"></div>
       <div id="hFloor"></div>
     </div>
@@ -132,6 +133,12 @@
       <div class="foot"><span class="muted" id="saveNote" style="flex:1"></span><button class="btn small" id="pDebug">Debug</button><button class="btn small" id="pGfx">Graphics: 3D</button><button class="btn small" id="pMute">Sound: on</button><button class="btn small" id="pQuit">Save and quit to title</button></div>
     </div>
   </div>
+
+  <div id="room" class="overlay" hidden>
+    <div class="sheet"><h2>Your room at the inn</h2><p id="roomTxt"></p>
+      <div class="titleBtns"><button class="btn primary" id="roomSleep">Sleep</button><button class="btn" id="roomStash">Stash</button><button class="btn" id="roomLeave">Go back downstairs<kbd>Esc</kbd></button></div></div>
+  </div>
+  <div id="sleepFade" hidden></div>
 
   <div id="ask" class="overlay" hidden>
     <div class="sheet"><h2>Boss chamber</h2><p id="askTxt"></p>

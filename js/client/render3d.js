@@ -230,10 +230,10 @@ function build(){
       for(const[i,j]of[[1,1],[r.w-2,1]]){put('candle_triple',(r.x+i)*2+1,0,(r.y+j)*2+1,0);torches.push({x:(r.x+i)*2+1,y:1.4,z:(r.y+j)*2+1,col:'#ff3a24',int:18,dist:9});flames.warm.push((r.x+i)*2+1,1.2,(r.y+j)*2+1);}
       continue;
     }
-    if(safe){   // a camp: shelves and barrels along the walls; in a safe room, a fire beside the trader (who stands mid-room)
+    if(safe){   // a camp: shelves and barrels along the walls; in a safe room, the fire the rules keep (g.fires), to rest by
       put('shelf_large',(r.x+r.w/2)*2,0,r.y*2+.9,0);put('barrel_large',r.x*2+1.1,0,(r.y+r.h-1)*2+.6,0);put('barrel_small_stack',r.x*2+1,0,(r.y+r.h-2)*2+.6,.4);
       put('crates_stacked',(r.x+r.w-1)*2+.6,0,(r.y+r.h-1)*2+.6,-.3);
-      if(r.kind==='safe'){const fx=(r.x+Math.max(1.5,r.w/2-2.5))*2,fz=(r.y+r.h/2+1.2)*2;camp(group,fx,fz);flames.warm.push(fx,.55,fz);torches.push({x:fx,y:1.3,z:fz,col:'#ff9a48',int:34,dist:16,fire:true});}
+      if(r.kind==='safe'){const fi=g.rooms.filter(q=>q.kind==='safe').indexOf(r),fp=(g.fires||[])[fi]||{x:(r.x+r.w/2)*TILE,y:(r.y+r.h/2)*TILE},fx=wx(fp.x),fz=wz(fp.y);camp(group,fx,fz);flames.warm.push(fx,.55,fz);torches.push({x:fx,y:1.3,z:fz,col:'#ff9a48',int:34,dist:16,fire:true});}
       continue;
     }
     // an ordinary room: its floor's lights near the walls, clutter in a corner or two, the dead's leftovers

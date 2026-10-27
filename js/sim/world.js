@@ -61,6 +61,8 @@ function genFloor(n,seed){
   g.safe=safeRooms.map(r=>({x0:r.x*TILE,y0:r.y*TILE,x1:(r.x+r.w)*TILE,y1:(r.y+r.h)*TILE}));
   g.points=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
   g.smiths=[];
+  // a campfire in each safe room past the start, beside its trader (render3d.js draws it here)
+  g.fires=rooms.filter(r=>r.kind==='safe').map(r=>({x:(r.x+Math.max(1.5,r.w/2-2.5))*TILE,y:(r.y+r.h/2+1.2)*TILE}));
   g.traders=g.points.map(q=>({x:q.x,y:q.y+5,name:'Trader',sells:'all'}));
   g.stashes=g.points.map((q,i)=>{const r=safeRooms[i];return{x:Math.min(q.x+30,(r.x+r.w-.8)*TILE),y:q.y+6};});
   const FL=floorDef(n),bag=FL.spawns;g.corpses=[];
@@ -103,7 +105,11 @@ const inSafe=(x,y)=>safeIndex(x,y)>=0;
 const nearHome=()=>G.home&&hyp(G.home.x-P.x,G.home.y-P.y)<20;
 function nearSmith(){for(const q of G.smiths)if(hyp(q.x-P.x,q.y-P.y)<26)return q;return null;}
 function nearTrader(){for(const q of G.traders)if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;}
-function nearStash(r=20){for(const q of G.stashes||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
+function nearStash(r=20){if(P&&P.room&&G.village)return(G.stashes||[])[0]||null;   // your room at the inn has the stash
+  for(const q of G.stashes||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
+// a safe room's campfire (g.fires, genFloor), near enough to rest by
+function nearFire(r=30){for(const q of G.fires||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
+const nearTalkerKind=(k,r=30)=>(G.talkers||[]).find(q=>q[k]&&hyp(q.x-P.x,q.y-P.y)<r)||null;
 function nearWell(r=26){for(const q of G.wells||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
 function nearGate(){
   if(G.gatesOpen||P.locked||!G.bossEnt||G.bossEnt.dead)return null;

@@ -101,6 +101,7 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Interact (gates, the Teleport Gate, traders, the stash, the forge, the well, villagers) | E |
 | Gear | I or Tab |
 | Skill board (out of combat) | P, or the Tree button |
+| Sleep in a sleeping bag (safe areas) | B |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Zoom the 3D view | mouse wheel |
 | Respawn after a death | R or Enter |
@@ -174,6 +175,22 @@ The guild's daily board also asks for monster drops and pays 30% over the usual 
 - [docs/design](docs/design): design proposals: [skills and the skill tree](docs/design/skills.md), the earlier
   [skill trees and mutations](docs/design/skill-trees.md) and [class trees](docs/design/class-trees.md) it replaces,
   [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md).
+
+## Fatigue and the inn
+
+Fatigue is play time since you last slept (time logged off does not count), up to 7 hours. Weary from 2 hours, tired
+from 4, exhausted from 6: skills take longer to come back, you move slower, dodge less and regain mana slower. It never
+stops you playing. To clear it:
+
+- **A room at the inn**, rented from the innkeeper for the day: sleep there and the fatigue is gone, you wake well
+  rested (10% more experience for an hour of play), and breakfast is on for ten minutes. Your stash is in the room,
+  and logging off in it counts as a night's sleep. In single player, falling on a floor before reaching its safe room
+  wakes you in that bed instead of at the entrance.
+- **A sleeping bag** (food and drink stall, used once): B in any safe room or safe point clears it, without the bonus.
+- **A safe room's campfire**: E beside it takes half, once every hour of play.
+
+The barkeep outside the inn has a rumour for you each time you talk to him. The numbers are `FATIGUE` and its
+neighbours in `js/sim/data.js`.
 
 ## Classes and the skill board
 

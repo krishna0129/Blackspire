@@ -93,9 +93,13 @@ function updatePlayer(dt){
   const buff=P.buff&&P.buff.id;
   P.mp=Math.min(ST.maxMp,P.mp+ST.mpRegen*(P.drink<NEED_LOW?.5:1)*(buff==='clear'?1.25:1)*dt);
   if(P.buff){P.buff.t-=dt;if(P.buff.t<=0){log(BUFFS[P.buff.id].name+' has worn off.');P.buff=null;}}if(P.guard>0)P.guard-=dt;if(P.ward>0)P.ward-=dt;if(P.hot){heal(P.hot.rate*dt);P.hot.t-=dt;if(P.hot.t<=0)P.hot=null;}
+  // fatigue: play time since you last slept (not while in your room at the inn)
+  if(!P.room){const was=fatigueTier(P.fat);P.fat=Math.min(FATIGUE_MAX,P.fat+dt);const now=fatigueTier(P.fat);
+    if(now!==was){calcStats();log({1:'You are growing weary: your skills come back slower and you dodge less. Sleep at the inn soon.',2:'You are tired: slower on your feet, slower to cast. Find a bed.',3:'You are exhausted. Everything is harder now. Rest.'}[now]);}}
+  P.rested=Math.max(0,P.rested-dt);P.awake=Math.min(1e9,P.awake+dt);P.fireCd=Math.max(0,P.fireCd-dt);
   P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
-  if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:1)*dt);
+  if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:buff==='morning'?1.25:1)*dt);
   updateNeeds(dt);if(P.dead)return;
   P.farmT=(P.farmT||0)-dt;if(P.farmT<=0){P.farmT=5;if(S.farm&&S.farm.farmer)farmWork();}   // the farmhand, while you play
   // Safe rooms: no fighting in either direction. The last one you stand in is where you wake after dying.
@@ -141,7 +145,7 @@ function steerPlayer(dt){
     if(Math.random()<.7)part({x:P.x,y:P.y+rand(-6,4),vx:0,vy:0,t:0,d:.22,c:'#4a4a5e'});
     if(D.t<=0)P.dash=null;
   }else{
-    const sp=ST.move*(P.swing?(ST.magic||ST.ranged?.3:0):P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1);   // you plant your feet to swing
+    const sp=ST.move*(P.swing?(ST.magic||ST.ranged?.3:0):P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1)*(P.buff&&P.buff.id==='morning'?1.08:1);   // you plant your feet to swing
     if(P.lunge>0){P.lunge-=dt;if(!P.remote)moveEnt(P,Math.cos(P.aim)*110*dt,Math.sin(P.aim)*110*dt);}
     if(!P.remote)moveEnt(P,mx*sp*dt,my*sp*dt);
     P.moving=m>.1;if(P.moving)P.walk+=dt*(sp/64)*7;

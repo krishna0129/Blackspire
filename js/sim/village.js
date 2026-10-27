@@ -83,6 +83,7 @@ function genVillage(){
   const farmhand={x:vx(12.2),y:vy(26.5),name:'Farmhand',fields:true,look:{skin:SKINS[3],hair:HAIRS[4],style:1,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#5e4620'}}};
   const broker={x:vx(17.4),y:vy(27.7),name:'Crop broker',fields:true,look:{skin:SKINS[1],hair:HAIRS[5],style:3,eyes:EYES[3]},eq:{armor:{type:'coat',tint:'#6b4a2c'}}};
   talkers.push(farmhand,broker);
+  talkers.push({x:vx(11.6),y:vy(12.3),name:'Barkeep',rumours:true,line:'Pull up a stool. I hear things.',look:{skin:SKINS[2],hair:HAIRS[1],style:5,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#7a3a2a'}}});   // rumours (RUMOURS, data.js)
   const fieldDesk=[{x:vx(sgx),y:vy(sgy-.3),name:'Fields'},farmhand,broker];
   // the Adventurers' Guild's clerk, at its door: quests and party notices (js/sim/quests.js)
   const guild={x:vx(28),y:vy(32.8),name:'Guild clerk',look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}};

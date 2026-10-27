@@ -3,6 +3,7 @@
 // Single player calls them directly; online, the client asks the server to run them, so the server's copy of the
 // save is the only one that counts. Each acts on the current player (setPlayer) and returns a result, or false.
 
+const nearInn=si=>nearTraderIdx(si)&&!!TRADER_SELLS[G.traders[si].sells||'all'].meals;
 const nearSmithIdx=si=>{const q=G.smiths[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const nearTraderIdx=si=>{const q=G.traders[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const owns=(o,k)=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k);   // a real key of a table, not something inherited
@@ -29,6 +30,21 @@ const ACTIONS={
     if(i<0){S.vars[id]=null;return true;}const v=q.vars[i];if(!v||!varOpen(S,q,v))return false;
     S.vars[id]=i;return true;
   },
+  // The inn (data.js: FATIGUE). A room is rented for the day from the innkeeper (si); in it you can sleep, and reach
+  // your stash. Logging off in it counts as a night's sleep (makePlayer).
+  rentRoom(si){
+    if(!nearInn(si)||S.room===questDay())return false;const pr=roomPrice(S.char.level);if(S.shards<pr)return false;
+    S.shards-=pr;S.room=questDay();return true;
+  },
+  enterRoom(si){if(!nearInn(si)||S.room!==questDay())return false;P.room=true;S.inRoom=true;storeNeeds(P);return true;},
+  leaveRoom(){if(!P.room)return false;P.room=false;S.inRoom=false;return true;},
+  sleep(){if(!P.room)return false;wake(P);P.hp=ST.maxHp;P.mp=ST.maxMp;calcStats();storeNeeds(P);return true;},
+  // a sleeping bag (SUPPLIES.bag): a night's sleep in any safe area, without the inn's well-rested bonus
+  sleepBag(){if(!P.safe||!(S.bags>0)||P.room||P.fat<1)return false;S.bags--;P.fat=0;P.fireCd=0;calcStats();storeNeeds(P);return true;},
+  // resting by a safe room's campfire: half your fatigue, once every FIRE_EVERY seconds of play
+  restFire(){const f=nearFire();if(!f||P.fireCd>0||P.fat<60)return false;P.fat=Math.floor(P.fat/2);P.fireCd=FIRE_EVERY;calcStats();storeNeeds(P);return true;},
+  // the barkeep's next rumour (its index)
+  rumour(){if(!nearTalkerKind('rumours'))return false;const i=(S.rumour||0)%RUMOURS.length;S.rumour=i+1;return i;},
   // attribute points, also confirmed together: add is a JSON object {attribute: points}
   attrCommit(add){
     let o;try{o=JSON.parse(add);}catch(e){return false;}const c=S.char;if(!o||typeof o!=='object')return false;
@@ -88,6 +104,7 @@ const ACTIONS={
   // own: cooked from your own crops (m.cook) instead of paid for
   eatMeal(si,k,own){
     const m=MEALS[k];if(!m||!nearTraderIdx(si)||!TRADER_SELLS[G.traders[si].sells||'all'].meals)return false;const pr=mealPrice(k);
+    if(m.morning&&!(P.awake<BREAKFAST_WINDOW))return false;   // breakfast: only for those who just woke here
     if(own){if(!m.cook||Object.keys(m.cook).some(c=>(S.crops[c]||0)<m.cook[c]))return false;for(const c in m.cook)S.crops[c]-=m.cook[c];}
     else{if(S.shards<pr)return false;S.shards-=pr;}
     P.food=Math.min(100,P.food+m.food);P.drink=Math.min(100,P.drink+m.drink);P.buff={id:m.buff,t:BUFF_TIME};

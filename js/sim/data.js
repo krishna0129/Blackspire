@@ -230,6 +230,7 @@ const THORN_SLOW=.6,THORN_DMG=3;   // thorn patches: speed multiplier, and damag
 const SUPPLIES={
   potion:{key:'potions',name:'Health potion',price:25,color:'#d9534f',desc:'Restores 45% of your health.'},
   ration:{key:'rations',name:'Ration',price:12,color:'#d9a441',need:'food',gives:40,desc:'Bread and dried meat. Fills 40% of your hunger meter.'},
+  bag:{key:'bags',name:'Sleeping bag',price:40,color:'#8a6a44',desc:'A night\u2019s sleep in any safe room or safe point, away from the inn: all your fatigue is gone (without the inn\u2019s well-rested bonus). Used once. B to sleep.'},
   flask:{key:'flasks',name:'Water flask',price:8,color:'#5aa7e6',need:'drink',gives:50,desc:'Clean water. Fills 50% of your thirst meter. You keep the flask once it is drunk: the village well fills it again for free.'},
 };
 // What each kind of trader sells: gear slots, and supplies (SUPPLIES keys). Tower traders carry a bit of everything;
@@ -239,7 +240,7 @@ const TRADER_SELLS={
   weapons:{gear:['weapon'],supplies:[]},
   gear:{gear:['armor','boots','trinket'],supplies:[]},
   potions:{gear:[],supplies:['potion']},
-  food:{gear:[],supplies:['ration','flask']},
+  food:{gear:[],supplies:['ration','flask','bag']},
   inn:{gear:[],supplies:[],meals:true},   // the innkeeper: meals, eaten at the table
   market:{gear:[],supplies:[],market:true},   // the exchange: materials and monster drops, at moving prices (MARKET)
 };
@@ -248,14 +249,41 @@ const TRADER_SELLS={
 const MEALS={
   stew:{name:'Root stew',price:15,cook:{potato:3},food:100,drink:20,buff:'fed',desc:'Potatoes and roots, slow-cooked under the tree.'},
   roast:{name:'Roast boar and bread',price:30,food:100,drink:0,buff:'hearty',desc:'The innkeeper\u2019s best. A whole evening\u2019s worth.'},
+  breakfast:{name:'Innkeeper\u2019s breakfast',price:12,food:100,drink:100,buff:'morning',morning:true,desc:'Eggs, bread and strong tea, served to the ones who slept here. Only in the first ten minutes after you wake.'},
   tea:{name:'Glowcap tea',price:10,cook:{glowcap:2},food:0,drink:100,buff:'clear',desc:'Brewed from the mushrooms on the roots. Faintly glowing.'},
 };
 const BUFFS={
   fed:{name:'Well fed',desc:'Hunger and thirst drain half as fast.'},
   hearty:{name:'Hearty',desc:'Natural healing is 50% faster.'},
   clear:{name:'Clear-headed',desc:'Mana comes back 25% faster.'},
+  morning:{name:'Fresh start',desc:'You move 8% faster and heal 25% faster.'},
 };
 const BUFF_TIME=20*60;
+// Fatigue: play time since you last slept, in seconds (time logged off does not count). Each tier from the time it
+// starts: cd (skill cooldowns, % longer), move (% slower), dodge (% less chance to dodge), mregen (% slower mana).
+// It never stops you playing; it makes fighting harder. Sleeping in a rented room at the inn (or logging off in it)
+// clears it and leaves you well rested (WELL_RESTED seconds of +REST_XP% experience); a sleeping bag clears it in any
+// safe area; a safe room's campfire takes half of it, once every FIRE_EVERY seconds of play.
+const FATIGUE=[
+  {at:0,name:'Rested'},
+  {at:2*3600,name:'Weary',cd:10,dodge:15},
+  {at:4*3600,name:'Tired',cd:20,move:8,dodge:35,mregen:20},
+  {at:6*3600,name:'Exhausted',cd:35,move:15,dodge:60,mregen:40},
+];
+const FATIGUE_MAX=7*3600,WELL_RESTED=3600,REST_XP=10,FIRE_EVERY=3600,BREAKFAST_WINDOW=600;
+const fatigueTier=sec=>{let i=0;for(let k=0;k<FATIGUE.length;k++)if(sec>=FATIGUE[k].at)i=k;return i;};
+const roomPrice=level=>20+4*level;   // a room at the inn, for the day
+// The barkeep's rumours: one each time you talk to him, in turn.
+const RUMOURS=[
+  'They say the Gate Warden calls skitters to it when it is hurt. Kill the little ones first, or do not, and be quick.',
+  'The bone soldiers of the second floor shrug off magic. Bring steel, or bring friends who do.',
+  'Fire burns the roots on the third floor twice over, and a body that is burned cannot be raised again.',
+  'Some say a trapdoor waits in a boss room or two, sealed until the boss is dead. Some say a lot of things.',
+  'Sleep in a bed before you climb. A tired adventurer is a slow one, and the tower does not wait.',
+  'A safe room\u2019s fire will not give you a night\u2019s sleep, but it will take the edge off. Once in a while.',
+  'Gravecallers raise the dead they find. Kill them first, then burn what they were reaching for.',
+  'The exchange pays less for whatever everyone else is selling. Sell what is rare.',
+];
 // Hunger and thirst. Each meter runs from 100 (full) to 0 and drains while you are on a floor: food in about 25 minutes,
 // drink in about 15. Below NEED_LOW you are weakened (hungry: no natural healing and 10% slower; thirsty: half mana
 // regeneration). At 0, each empty meter costs NEED_HURT of your max health every second.

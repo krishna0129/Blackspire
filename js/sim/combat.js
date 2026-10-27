@@ -140,7 +140,7 @@ function dropLoot(kind,x,y,e){
 function dropMats(x,y,m){for(const id in m)if(m[id]>0)drop({k:'mat',id,amt:m[id],x:x+rand(-9,9),y:y+rand(-9,9)},x,y);}
 function dropItem(x,y,it,ox=x,oy=y){drop({k:'item',item:it,x,y},ox,oy);}
 function gainXp(v){
-  const c=S.char;c.xp+=Math.round(v*(1+(ST.g.xp||0)/100));
+  const c=S.char;c.xp+=Math.round(v*(1+(ST.g.xp||0)/100)*(P.rested>0?1+REST_XP/100:1));   // well rested: a night at the inn
   while(c.xp>=xpNeed(c.level)){c.xp-=xpNeed(c.level);c.level++;c.pts+=3;calcStats();P.hp=ST.maxHp;P.mp=ST.maxMp;
     bannerMe('Level '+c.level,'3 attribute points to spend. Open Gear.',2600);sfx('lvl');burst(P.x,P.y,24,'#6fd6e6',90);}
 }
@@ -200,7 +200,7 @@ function useSkill(){
   const id=ST.skill,sk=SKILLS[id],a=P.aim,tags=sk.tags,use={skill:id,hits:0};
   if(P.mp<sk.mp){if(G.time-P.lastNoMana>.8){P.lastNoMana=G.time;addNum(P.x,P.y-18,'NO MANA','mana');}return;}
   P.mp-=sk.mp;skillCount(id,'use');
-  P.skillMax=P.skillCd=sk.cd*(1-ST.cdr/100)*(id==='heal'?1-(ST.p.quick||0)/100:1);sfx(id==='heal'?'heal':'skill');
+  P.skillMax=P.skillCd=sk.cd*(1-ST.cdr/100)*ST.cdMult*(id==='heal'?1-(ST.p.quick||0)/100:1);sfx(id==='heal'?'heal':'skill');
   if(id==='circle'){hitArc(0,360,ST.range*1.35,2.2,{kb:120,tags,use});slashFx(a,360,ST.range*1.35,1,.24);shake(4);}
   else if(id==='blink'){
     let best=null,bd=150;for(const e of G.enemies){if(e.dead)continue;const d=hyp(e.x-P.x,e.y-P.y);if(d<bd&&los(P.x,P.y,e.x,e.y)){bd=d;best=e;}}
