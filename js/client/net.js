@@ -75,7 +75,7 @@ Object.assign(NET,{
     if(!G)return;const keep=new Map(this.others.map(q=>[q.id,q]));
     this.others=this.people.filter(m=>!P||m.id!==P.id).map(m=>{
       const q=keep.get(m.id)||{id:m.id,other:true,x:-999,y:-999,dir:0,walk:0,hp:1,maxHp:1,r:5};
-      const sig=JSON.stringify(m);if(q.sig!==sig){q.sig=sig;q.name=m.name;const W=WTYPES[m.weapon.type];
+      const sig=JSON.stringify(m);if(q.sig!==sig){q.sig=sig;q.name=m.name;q.wtype=m.weapon.type;const W=WTYPES[m.weapon.type];
         q.st={ranged:!!W.ranged,magic:!!W.magic,arc:W.arc,thrust:!W.magic&&!W.ranged&&W.arc<50,shield:W.shield||null};
         q.wspr=buildWeapon(m.weapon.type,m.weapon.tint,m.weapon.school);q.bowf=m.weapon.type==='bow'?bowFrames(m.weapon.tint):null;
         q.av=buildAvatar(m.look,{armor:m.armor,boots:m.boots},null);

@@ -12,11 +12,11 @@ function frame(now){
     if(mode==='play'){saveT+=dt;if(saveT>20){saveT=0;save();}}}
   else if(G){G.time+=dt;if(mode==='dead')updateCosmetics(dt);}
   if(G&&P&&(mode==='play'||mode==='dead')){miniT-=dt;if(miniT<=0){miniT=.15;reveal();drawMini();}updateHud();}
-  if(G&&P)render();
+  if(G&&P){if(R3.use())R3.draw();else{R3.hide();render();}}   // the tower in 3D when it can be; the village, and any browser without WebGL, in 2D
   requestAnimationFrame(frame);
 }
 resize();
-loadSprites().then(()=>{resize();showTitle();requestAnimationFrame(frame);});   // nothing is drawn until every sprite file is in
+Promise.all([loadSprites(),R3.init()]).then(()=>{resize();showTitle();requestAnimationFrame(frame);});   // nothing is drawn until every sprite file is in
 
 // small hook for testing and for wiring a server later
 window.BLACKSPIRE={Store,get state(){return S;},get stats(){return ST;},get floor(){return G;},get player(){return P;},enterFloor,randomItem,makeWeapon,calcStats};
