@@ -499,7 +499,9 @@ function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal'||sel.from==='
 function renderPanel(){
   calcStats();const c=S.char;
   $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${CLASSES[c.cls].name.toLowerCase()}${ST.offClass?' (off-class weapon: no skill)':''}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
-  drawPreview($('#pPrev'),c.look,S.equip,c.custom?CUSTOM:null);
+  // in 3D, your own model turning; in 2D, the pixel avatar (and its sprite sheet options)
+  const pv3=$('#pPrev3d');pv3.hidden=!(R3.ready&&!R3.Q.off);$('#pPrev').hidden=!pv3.hidden;$('#pCustomRow').hidden=!pv3.hidden;$('#pCustomMsg').hidden=!pv3.hidden;
+  if(!pv3.hidden)R3.preview(pv3);else drawPreview($('#pPrev'),c.look,S.equip,c.custom?CUSTOM:null);
   $('#pCustomDel').hidden=!c.custom;
   const eq=$('#pEquip');eq.innerHTML='';
   for(const s of['weapon','armor','boots','trinket']){const it=S.equip[s],b=cell(it,sel&&sel.from==='eq'&&sel.slot===s,SLOTL[s]);if(it)b.onclick=()=>{sel={from:'eq',slot:s};renderPanel();};eq.appendChild(b);}

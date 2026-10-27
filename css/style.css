@@ -350,3 +350,50 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 @media (max-width:640px){.tier{grid-template-columns:1fr}.node,.node.key,.node.skill{width:100%}}
 #btnTree b{color:#e9c87a;margin-left:6px;font-weight:600}
 #btnTree b:empty{display:none}
+
+/* ---------- the new look, for every menu and screen ----------
+   The menus follow the HUD: Cormorant for reading, Cinzel for names and buttons, dark framed panels with gold edges.
+   (Pixelify Sans stays only on the 2D village and floors' own drawing.) */
+:root{--gold:#c9a45c;--gold-dim:#7a6436;--frame:#2a2219;--parch:#e9dfc8;--muted3:#9a8c6e;
+  --edge:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #7a6436;--edgeHi:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #c9a45c}
+body{font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;color:var(--parch)}
+kbd{font-family:Cinzel,Georgia,serif;font-size:10px;color:#bba982;border:0;background:none}
+.btn{font-family:Cinzel,Georgia,serif;font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--parch);border:0;
+  background:linear-gradient(rgba(26,21,15,.96),rgba(12,10,8,.96));box-shadow:var(--edge)}
+.btn:hover{border:0;box-shadow:var(--edgeHi)}
+.btn:disabled{box-shadow:var(--edge)}
+.btn.primary{color:#0a0907;background:linear-gradient(#efe2c2,#c9b48a);box-shadow:0 0 0 1px #000,0 0 0 2px #5a4a2a}
+.btn.primary:hover{background:linear-gradient(#fff4d8,#d8c39a)}
+.btn.small{font-size:12px}
+.overlay{background:radial-gradient(ellipse at 50% 40%,rgba(10,8,6,.55),rgba(4,3,2,.82))}
+.sheet{border:0;background:linear-gradient(rgba(22,18,13,.97),rgba(10,8,6,.97));box-shadow:var(--edge),0 18px 60px rgba(0,0,0,.6)}
+.sheet header{border-bottom:1px solid #2a2219}
+.sheet header h2,.sheet>h2,#dead h2,#ask h2,#pause h2{font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.04em;color:#efe2c2}
+.sheet header span{color:var(--muted3);font-size:16px;font-weight:600}
+h3{font-family:Cinzel,Georgia,serif;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.muted{color:var(--muted3)}
+.foot{background:linear-gradient(rgba(16,13,10,.98),rgba(10,8,6,.98));border-top:1px solid #2a2219}
+.opts button{font-family:Cinzel,Georgia,serif;font-size:12px;background:linear-gradient(#1a150f,#0c0a08);border:0;box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219}
+.opts button.on{background:#2a2219;box-shadow:0 0 0 1px #000,0 0 0 2px var(--gold)}
+input[type=text],input[type=password]{font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;background:#0a0806;border:0;box-shadow:inset 0 0 0 1px #3a2f22;color:var(--parch)}
+.cell{background:linear-gradient(#17120d,#0b0907);border:0;box-shadow:inset 0 0 0 1px #000,0 0 0 1px #2a2219}
+.cell.on{outline:0;box-shadow:inset 0 0 0 1px #000,0 0 0 2px var(--gold)}
+.cell em{font-family:Cinzel,Georgia,serif}
+.cell.empty::after{font-family:Cinzel,Georgia,serif;color:#4a4030}
+.detail{border-top:1px solid #2a2219}
+.detail h4{font-family:Cinzel,Georgia,serif;font-size:18px;color:#efe2c2}
+.detail .sub{color:var(--muted3);font-size:15px}
+.detail .ln{font-size:16px}
+.detail .pas{font-size:15px;color:#8fd8e4}
+.bagHead{color:var(--muted3);font-size:15px}
+.stats dt{color:var(--muted3)}
+.attr b{font-family:Cinzel,Georgia,serif;font-size:13px;width:150px}
+.attr span{color:var(--muted3);font-size:14px}
+.wpick button{background:linear-gradient(#1a150f,#0c0a08);border:0;box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219}
+.wpick button.on{background:#241c13;box-shadow:0 0 0 1px #000,0 0 0 2px var(--gold)}
+.wpick span{font-family:Cinzel,Georgia,serif;font-size:13px}
+.wpick small{color:var(--muted3);font-size:13px}
+.titleBlock h1{font-family:Cinzel,Georgia,serif;letter-spacing:.06em;color:#efe2c2;text-shadow:0 4px 0 #000,0 0 30px rgba(0,0,0,.8)}
+.titleBlock p{color:#bfb090;font-size:19px}
+.pv{background:radial-gradient(circle at 50% 62%,#2a2219 0,#0d0a08 62%)}
+.pv3{display:block;width:180px;height:220px;margin:0 auto 10px;background:radial-gradient(ellipse at 50% 70%,#2e2418 0,#0d0a08 68%);box-shadow:var(--edge)}

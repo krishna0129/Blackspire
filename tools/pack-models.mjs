@@ -41,6 +41,16 @@ for(const n of['ribcage','bone_A','bone_B','bone_C','skull','coffin','coffin_dec
   'gravestone','grave_A_destroyed','lantern_standing','skull_candle','shrine_candles','lantern_hanging','post_skull','post_lantern','candle_melted'])PROPS[n]=[HAL,n+'.gltf'];
 for(const n of['Skeleton_Blade','Skeleton_Axe','Skeleton_Crossbow','Skeleton_Staff','Skeleton_Shield_Large_A','Skeleton_Shield_Small_A','Skeleton_Arrow'])PROPS[n]=[SKL,n+'.gltf'];
 for(const n of['arrow','spellbook_open'])PROPS[n]=[ADV,n+'.gltf'];
+// the root village: KayKit Medieval Hexagon (buildings, trees, camps), Restaurant Bits and Furniture Bits
+const MED='KayKit-Medieval-Hexagon-Pack-1.0',RES='KayKit-Restaurant-Bits-1.0',FUR='KayKit-Furniture-Bits-1.0';
+for(const n of['building_tavern_red','building_blacksmith_red','building_church_blue','building_market_red','building_market_blue','building_market_green',
+  'building_market_yellow','building_well_blue','building_windmill_yellow','building_home_A_red','building_home_B_blue','building_home_A_yellow','building_grain',
+  'building_archeryrange_red','building_tower_A_blue','tent','flag_red','flag_blue','flag_yellow','flag_green','target','trees_A_large','trees_A_medium','trees_B_large',
+  'trees_B_medium','tree_single_A','tree_single_B','rock_single_A','rock_single_B','rock_single_C','hills_A_trees','hills_B_trees','mountain_A_grass_trees',
+  'mountain_B_grass_trees','mountain_C_grass_trees','fence_wood_straight','barrel','crate_A_big','crate_B_small','sack','wheelbarrow','weaponrack','bucket_water',
+  'resource_lumber','pallet'])PROPS[n]=[MED,n+'.gltf'];
+for(const n of['pot_large','table_round_A','crate_potatoes','crate_carrots','crate_tomatoes'])PROPS[n]=[RES,n+'.gltf'];
+for(const n of['table_medium','table_medium_long','chair_A_wood','lamp_standing'])PROPS[n]=[FUR,n+'.gltf'];
 const CHARS={Knight:ADV,Barbarian:ADV,Mage:ADV,Rogue:ADV,Rogue_Hooded:ADV,Skeleton_Warrior:SKL,Skeleton_Mage:SKL,Skeleton_Minion:SKL,Skeleton_Rogue:SKL};
 const CLIPS=['Idle','Idle_B','Idle_Combat','Unarmed_Idle','2H_Melee_Idle','Walking_A','Walking_D_Skeletons','Running_A','Running_B',
   '1H_Melee_Attack_Slice_Horizontal','1H_Melee_Attack_Slice_Diagonal','1H_Melee_Attack_Chop','1H_Melee_Attack_Stab',
@@ -70,6 +80,8 @@ const out={};
   for(const b of doc.getRoot().listBuffers().slice(1))b.dispose();
   for(const a of doc.getRoot().listAccessors())a.setBuffer(doc.getRoot().listBuffers()[0]);
   doc.getRoot().setDefaultScene(scene);
+  {const {getBounds}=await import('@gltf-transform/functions');const sz={};for(const h of scene.listChildren()){const b=getBounds(h);sz[h.getName()]=[b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]].map(v=>+v.toFixed(2));}
+    fs.writeFileSync('/tmp/claude-0/-home-claude/b2c8b46c-bdce-538a-96a6-f470e8d698c7/scratchpad/sizes.json',JSON.stringify(sz));}
   out.props=await squeeze(doc);
 }
 // the clips, from one skeleton (every character has the same rig)
