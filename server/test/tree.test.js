@@ -13,54 +13,81 @@ function world(wkey='sword',n=1){
   return run;
 }
 
-test('the tree is one web: links go both ways, every node can be reached from a start, each start has three skills that branch in two',()=>{
+test('classes and their boards: six classes, five tiers each, every base skill with two variations behind challenges',()=>{
   const run=world();
-  assert.deepStrictEqual(plain(run(`Object.values(TREE).filter(q=>q.to.some(t=>!TREE[t]||!TREE[t].to.includes(q.id))).map(q=>q.id)`)),[],'links are mutual');
-  assert.ok(run(`(()=>{const seen=new Set(TREE_STARTS),todo=[...TREE_STARTS];while(todo.length)for(const t of TREE[todo.pop()].to)if(!seen.has(t)){seen.add(t);todo.push(t);}return seen.size===Object.keys(TREE).length;})()`),'all connected');
-  for(const w of run(`TREE_STARTS`)){
-    const skills=plain(run(`Object.values(TREE).filter(q=>q.k==='skill'&&q.id.startsWith('${w}.'))`));
-    assert.strictEqual(skills.length,3,w);
-    for(const q of skills)assert.strictEqual(q.to.filter(t=>run(`TREE['${t}'].k`)==='adv').length,2,q.name);}
-  const n=run(`Object.keys(TREE).length`);assert.ok(n>=180&&n<=220,`about 200 nodes, ${n}`);
-  assert.deepStrictEqual(plain(run(`Object.values(TREE).filter(q=>q.fx&&q.fx.inc&&Object.keys(q.fx.inc).some(t=>!TAGS[t])).map(q=>q.id)`)),[],'nodes only name real tags');
-  assert.deepStrictEqual(plain(run(`Object.values(TREE).filter(q=>q.fx&&q.fx.res&&Object.keys(q.fx.res).some(t=>!DTYPES[t])).map(q=>q.id)`)),[],'and real damage types');
-  assert.ok(run(`Object.values(TREE).every(q=>q.k==='start'||q.soon||treeDesc(q).length>5)`),'every node says what it does');
+  assert.deepStrictEqual(plain(run(`Object.keys(CLASSES)`)),['marauder','duelist','ranger','shadow','witch','templar']);
+  for(const c of run(`Object.keys(CLASSES)`)){
+    assert.strictEqual(run(`BOARD_PLAN.${c}.length`),5,c+': five tiers');
+    assert.ok(run(`boardOf('${c}').filter(q=>q.k==='key').length`)>=1,c+': a capstone');
+    // every class weapon's skill is a known (now) skill on the board
+    for(const w of plain(run(`CLASSES.${c}.weapons`))){const sk=run(`skillOf({type:'${w.split(':')[0]}',school:${w.includes(':')?`'${w.split(':')[1]}'`:'undefined'}})`);
+      assert.ok(run(`!!nowNode('${c}','${sk}')`),`${c} knows ${sk}`);}}
+  assert.ok(run(`Object.values(TREE).filter(q=>q.k==='skill').every(q=>q.vars.length===2&&q.vars.every(v=>v.ch&&v.ch.n>0))`),'two variations each, with a challenge');
+  assert.deepStrictEqual(plain(run(`Object.values(TREE).filter(q=>q.fx&&((q.fx.inc&&Object.keys(q.fx.inc).some(t=>!TAGS[t]))||(q.fx.res&&Object.keys(q.fx.res).some(t=>!DTYPES[t])))).map(q=>q.id)`)),[],'nodes name real tags and types');
+  assert.ok(run(`Object.values(TREE).every(q=>treeDesc(q).length>5)`),'every node says what it does');
+  assert.ok(run(`Object.values(TREE).filter(q=>q.k==='skill').every(q=>q.vars.every(v=>chDesc(v.ch).length>5))`),'and every challenge');
 });
 
-test('points: one a level and one a first boss kill; nodes are taken next to what you own, from the start you build from',()=>{
+test('points are placed in batches, in open tiers only, out of combat; a full reset costs 20 shards a point',()=>{
   const run=world();
-  assert.strictEqual(run(`treeLeft(S)`),0,'level 1, no boss: nothing to spend');
-  run(`S.char.level=4;S.floors[1]={chests:[],shops:[],boss:2};S.floors[2]={chests:[],shops:[],boss:0};`);
-  assert.strictEqual(run(`treeEarned(S)`),4,'3 levels and one boss beaten (however many times)');
-  assert.strictEqual(run(`runAction('treeTake',['spear.in510'])`),false,'not next to the longsword start');
-  assert.strictEqual(run(`runAction('treeTake',['sword.in330'])`),false,'not next to anything owned');
-  assert.strictEqual(run(`runAction('treeTake',['sword.b0.skill'])`),false,'skills to come cannot be taken');
-  assert.strictEqual(run(`runAction('treeTake',['sword.in510'])`),true);
-  assert.strictEqual(run(`S.treeStart`),'sword','the first point fixes the start');
-  assert.strictEqual(run(`runAction('treeTake',['sword.in420'])&&runAction('treeTake',['sword.in330'])&&runAction('treeTake',['sword.sp55'])`),true);
-  assert.strictEqual(run(`runAction('treeTake',['sword.sp95'])`),false,'out of points');
-  // a new weapon does not move the start once points are spent
-  run(`S.equip.weapon=makeWeapon('bow',1,0);calcStats();`);
-  assert.strictEqual(run(`treeStart(S)`),'sword');
-  // reset: somewhere safe, for shards
-  run(`P.safe=false;S.shards=1e4;`);
-  assert.strictEqual(run(`runAction('treeReset',[])`),false,'not in the open');
-  run(`P.safe=true;`);const cost=run(`treeResetCost(S)`);
+  assert.strictEqual(run(`S.char.cls`),'duelist','a longsword makes a duelist by default');
+  run(`S.char.level=10;S.floors[1]={chests:[],shops:[],boss:2};S.floors[2]={chests:[],shops:[],boss:0};`);
+  assert.strictEqual(run(`treeEarned(S)`),10,'9 levels and one boss beaten (however many times)');
+  const B=x=>run(`runAction('boardCommit',[${JSON.stringify(JSON.stringify(x))}])`);
+  assert.strictEqual(B({'duelist.precision':1}),false,'tier 2 opens at 3 points');
+  assert.strictEqual(B({'marauder.thick-hide':1}),false,'not another class’s board');
+  assert.strictEqual(B({'duelist.riposte':1}),false,'skills are not bought with points');
+  assert.strictEqual(B({'duelist.footwork':4}),false,'Footwork has 3 ranks');
+  assert.strictEqual(run(`S.tree['duelist.footwork']||0`),0,'a refused batch spends nothing');
+  assert.strictEqual(B({'duelist.footwork':3,'duelist.precision':2}),true,'3 in tier 1 open tier 2, in the same batch');
+  assert.strictEqual(run(`treeSpent(S)+'|'+treeLeft(S)`),'5|5');
+  run(`P.fightT=G.time;P.safe=false;`);
+  assert.strictEqual(B({'duelist.precision':1}),false,'not in a fight');
+  run(`G.time+=6;`);
+  assert.strictEqual(B({'duelist.precision':1}),true,'five seconds later');
+  assert.strictEqual(B({'duelist.showman':1}),false,'tier 5 opens at 15');
+  run(`S.shards=1000;`);
+  assert.strictEqual(run(`treeResetCost(S)`),120,'6 points, 20 shards each');
   assert.strictEqual(run(`runAction('treeReset',[])`),true);
-  assert.strictEqual(run(`S.shards`),1e4-cost);
-  assert.strictEqual(run(`S.tree.length+'|'+treeStart(S)`),'0|bow','empty, and the next point builds from the weapon now carried');
+  assert.strictEqual(run(`S.shards+'|'+treeSpent(S)`),'880|0');
 });
 
-test('nodes add up into the stats, and "increased damage" counts only for hits with that tag',()=>{
+test('an off-class weapon brings no skill; nodes add up into the stats; increased damage counts only for its tags',()=>{
   const run=world();
-  const base=plain(run(`({hp:ST.maxHp,crit:ST.crit})`));
-  run(`S.char.level=20;['sword.in510','sword.in420','sword.in330','sword.sp55','sword.sp95','sword.notable'].forEach(id=>runAction('treeTake',[id]));`);
-  assert.deepStrictEqual(plain(run(`ST.inc`)),{melee:6+6+16,sword:8},'two melee nodes and Duellist, one sword node');
-  assert.ok(run(`ST.crit`)>base.crit,'Duellist and a crit node');
+  assert.strictEqual(run(`ST.skill`),'circle');
+  run(`S.equip.weapon=makeWeapon('bow',1,0);calcStats();`);
+  assert.strictEqual(run(`ST.skill`),null,'a duelist with a bow: basic attack only');
+  assert.strictEqual(run(`P.mp=1e3;const m=P.mp;useSkill();m-P.mp`),0,'and no skill to use');
+  run(`S.equip.weapon=makeWeapon('sword',1,0);S.char.level=20;runAction('boardCommit',[JSON.stringify({'duelist.footwork':3,'duelist.precision':3,'duelist.finesse':3})]);`);
+  assert.deepStrictEqual(plain(run(`ST.inc`)),{sword:18},'Finesse, three ranks');
   const e=run(`globalThis.e=foe('dummy');1`);
-  const melee=run(`hit(e,{})`),spell=run(`hit(e,{tags:['projectile','fire']})`);
-  assert.ok(Math.abs(melee/spell-1.36)<.05,`a sword hit is 36% up (melee and sword), a fire bolt is not: ${melee/spell}`);
-  assert.strictEqual(run(`computeStats(S.char,S.equip,[]).maxHp`),run(`computeStats(S.char,S.equip).maxHp`),'no tree, no change');
+  const sword=run(`hit(e,{})`),fire=run(`hit(e,{tags:['projectile','fire']})`);
+  assert.ok(Math.abs(sword/fire-1.18)<.04,`a sword hit is 18% up, a fire bolt is not: ${sword/fire}`);
+  assert.strictEqual(run(`computeStats(S.char,S.equip,{}).maxHp`),run(`computeStats(S.char,S.equip).maxHp`),'no board, no change');
+});
+
+test('challenges count the class skill’s uses, crowds and kills; a met challenge opens its variation, free, one in use at a time',()=>{
+  const run=world();
+  run(`P.mp=1e6;ST.maxMp=1e6;P.safe=false;for(let i=0;i<4;i++){const e=foe('shade');e.hp=e.maxHp=1;e.x=P.x+10;e.y=P.y+(i-1.5)*4;}P.skillCd=0;useSkill();`);
+  assert.strictEqual(run(`progOf(S,'duelist.circular-slash',{k:'multi',min:3})`),1,'one spin that hit three or more');
+  assert.strictEqual(run(`progOf(S,'duelist.circular-slash',{k:'kills'})`),4,'four kills');
+  assert.strictEqual(run(`runAction('setVar',['duelist.circular-slash',0])`),false,'Reave is still sealed');
+  run(`S.prog[progKey('duelist.circular-slash',{k:'multi',min:3})]=60;`);
+  assert.strictEqual(run(`runAction('setVar',['duelist.circular-slash',0])`),true,'60 crowds: Reave opens, for no points');
+  assert.strictEqual(run(`treeSpent(S)`),0);
+  assert.strictEqual(run(`S.vars['duelist.circular-slash']`),0,'in use');
+  assert.strictEqual(run(`runAction('setVar',['duelist.circular-slash',1])`),false,'the other still needs its own challenge');
+  assert.strictEqual(run(`runAction('setVar',['duelist.circular-slash',-1])&&S.vars['duelist.circular-slash']`),null,'and none can be in use');
+});
+
+test('attribute points wait to be confirmed, and are spent together',()=>{
+  const run=world();
+  run(`S.char.pts=5;`);
+  assert.strictEqual(run(`runAction('attrCommit',[JSON.stringify({str:3,vit:3})])`),false,'more than there is to spend');
+  assert.strictEqual(run(`S.char.str`),0,'nothing spent');
+  assert.strictEqual(run(`runAction('attrCommit',[JSON.stringify({str:3,vit:2})])`),true);
+  assert.strictEqual(run(`S.char.str+'|'+S.char.vit+'|'+S.char.pts`),'3|2|0');
+  assert.strictEqual(run(`runAction('attrCommit',[JSON.stringify({luck:1})])`),false,'no such attribute');
 });
 
 test('damage types: the grimoire’s bolts and Fireball are elements the dead shrug off; family resistances; shots carry their type',()=>{

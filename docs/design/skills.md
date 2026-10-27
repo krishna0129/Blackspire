@@ -1,87 +1,72 @@
 # Skills and the skill tree
 
-Status: **proposal**. It replaces [skill-trees.md](skill-trees.md) and [class-trees.md](class-trees.md), which stay as
-a record of earlier thinking. Nothing here is in the game yet. The numbers wait for the new movement and combat
+Status: **partly in the game** (classes, boards, challenges, tags, the balance runner). It replaces [skill-trees.md](skill-trees.md) and [class-trees.md](class-trees.md), which stay as
+a record of earlier thinking. The numbers wait for the new movement and combat
 ([world.md](world.md)): how fast a fight is decides what a second of damage is worth. The structure, the tags, the
 budget rules and the balance runner do not wait, and can be built first.
 
 ## Decided
 
-- **A passive tree in the manner of Path of Exile**: one shared web of nodes, taken one next to another with points.
-  Smaller than theirs, and laid out, named and drawn as our own: the mechanics are borrowed, the content is not.
-- **No keystones as Path of Exile has them** (nodes that break a rule, such as "you cannot be critically hit").
-  Where their tree has a keystone, ours has a **skill node**: a node that teaches an active skill. A skill node then
-  **diverges into advanced skills** further along the tree.
-- **Compatibility between skills is not designed for now.** Skill nodes are separate nodes, so two skills that
-  would interact badly are simply never on the same build's path. A skill that only works by clashing with the
-  interesting ones is left out rather than patched.
+- **Classes, one board each.** The first idea, one shared web after Path of Exile's, looked like a copy of it, so it
+  became a board per class. The classes are taken from Path of Exile for now, to be made our own later, and more
+  classes or advanced forms of these come later too (there is no Scion for now).
+- **No keystones as Path of Exile has them.** A board has **skill nodes** instead, and each skill **diverges into
+  variations**.
+- **Variations are earned, not bought.** Each one is sealed behind a challenge for its base skill: use it so many
+  times, hit a crowd with it so many times, kill so many enemies (or elites, or one family) with it. A met challenge
+  opens the variation for free. A character can have both of a skill's variations, and uses one at a time.
+- **Off-class weapons**: anyone can carry anything, but only a class weapon brings its skill; the rest give the
+  basic attack and nothing more. A weapon or class proficiency, later, will pull players toward their own class.
+- **Points wait to be confirmed**, on the board and for attributes alike: a click places a point, − takes a placed
+  one back, Confirm spends them all, and leaving with points placed asks to confirm or discard them.
+- **The board only opens out of combat**: in a safe room or the village, or five seconds after the last blow struck
+  or taken.
+- **Resets are full resets only**, at 20 shards for each point spent, so a long-built board is a dear one to undo.
+- **Compatibility between skills is not designed for now.** A skill that only works by clashing with the interesting
+  ones is left out rather than patched.
 - **Every skill on the long list is in scope** (the catalogue below). The work is balancing them, not choosing.
 
-## The tree
+## Classes and boards
 
-### Shape
-
-- **About 200 nodes**, against Path of Exile's 1,300: enough for real choices, few enough that every node can be
-  checked by the balance runner.
-- **Seven starting points, one per weapon**: longsword, greatsword, mace, spear, dagger, bow and grimoire (with the
-  grimoire's start split into its magic and faith sides). There are no classes. Your weapon picks where you start,
-  and anyone may walk across the web toward another weapon's skills, paying the points it takes to get there.
-- **Points**: one per level, and one per floor boss cleared for the first time (as now). Refunds cost shards, and
-  grow dearer with each refund in a week, so a build is a decision and not a toggle.
-- **Skills equipped at once**: the basic attack plus **four skill slots** (proposal; the game has one today). A skill
-  node teaches a skill; a slot is where you put the ones you use.
-
-### Kinds of node
-
-| Node | What it gives | How many | Example |
+| Class | Main attributes | Weapons | Base skills (today's in bold) |
 |---|---|---|---|
-| Small | one tag's number, a little | about 140 | +8% fire damage; +6% area of effect |
-| Notable | a bundle, at the end of a short spur | about 30 | +20% projectile damage, projectiles pierce one more enemy |
-| Skill node | teaches a base skill | about 24 (wave 1) | Fireball |
-| Advanced skill node | teaches an advanced skill, reached through its base skill's node | about 50 | Firestorm, Flameblast |
-| Mastery (later) | small choices that shape one skill: more area or more damage, faster or heavier | one per base skill | Fireball: bursts twice, each for 60% |
+| Marauder | strength, vitality | greatsword, mace | **Sunder**, **Bulwark**, Heavy Strike, Leap Slam, Enduring Cry |
+| Duelist | strength, agility | longsword, spear | **Circular Slash**, **Piercing Line**, Riposte, Double Strike, Spear Throw |
+| Ranger | dexterity, agility | bow | **Volley**, Lightning Arrow, Caustic Arrow, Rain of Arrows |
+| Shadow | dexterity, intelligence | dagger | **Shadowstep**, Viper Strike, Blade Vortex |
+| Witch | intelligence, mind | grimoire of magic | **Fireball**, Frostbolt, Arc, Raise Zombie |
+| Templar | strength, faith | mace, grimoire of faith | **Heal**, **Bulwark**, Smite, Essence Drain, Storm Call |
 
-Small and notable nodes **only ever name tags** ("+8% area damage"), never a single skill. That is what keeps the tree
-from needing an edit every time a skill is added: a new skill carries its tags, and every node that names one of them
-already works with it.
+A character picks a class when it is made, then one of its weapons. Characters from before classes took the class of
+the weapon they carried.
 
-### Base skills and where they diverge
+Each board has **five tiers**. A tier opens once enough points are spent on the board (0, 3, 6, 10, 15); inside an
+open tier any node can be taken. Points: one a level, and one for each floor whose boss you were the first to beat.
 
-Each start carries three base skills near it. Each base skill's node leads on to two advanced skills. **Open question:
-does taking one advanced branch close the other?** The proposal is no: both stay open, but the second costs the
-points to walk there, so most builds will take one.
+| Node | What it is |
+|---|---|
+| Skill | A base skill, with its two variations and their challenges. Today's skills are known from the start, free; the rest come with the new combat. |
+| Passive | Ranks (three to five) of a small bonus: a tag's damage, health, defence, a resistance, speed. |
+| Capstone | One rank of something big, in the top tier: two per class. |
 
-| Start | Base skill (wave 1) | Advanced skills (wave 2) |
+Bonuses only ever name **tags** ("+6% longsword damage"), never a single skill, so a new skill works with every
+board the day it arrives. The boards and their numbers are `BOARD_PLAN` in `js/sim/tree.js`.
+
+### Variations and their challenges
+
+Each base skill has two (the full list is in `BOARD_PLAN`). Some examples:
+
+| Base | Variation | Challenge |
 |---|---|---|
-| Longsword | Double Strike | Blade Flurry · Flicker Strike |
-| | Riposte | Parry (timed, buckler) · Shield Charge |
-| | Frost Blades | Molten Strike · Smite |
-| Greatsword | Ground Slam | Earthquake · Sunder |
-| | Cyclone | Reave · Bladestorm |
-| | Heavy Strike | Boneshatter · Tectonic Slam |
-| Mace | Leap Slam | Dominating Blow · Animate Guardian |
-| | Enduring Cry | Seismic Cry · Battlemage's Cry |
-| | Steelskin | Molten Shell · Bone Armour |
-| Spear | Spear Lunge | Phase Run · Berserk |
-| | Spear Throw (and recall) | Lightning Warp · Storm Call |
-| | Lacerate | Puncture (bleed) · Blood Rage |
-| Dagger | Viper Strike | Pestilent Strike · Cobra Lash |
-| | Blade Vortex | Withering Step · Smoke Mine |
-| | Blink | Traps · Mines |
-| Bow | Split Arrow | Tornado Shot · Barrage |
-| | Lightning Arrow | Galvanic Arrow · Ice Shot |
-| | Caustic Arrow | Toxic Rain · Explosive Arrow |
-| Grimoire (magic) | Fireball | Firestorm · Flameblast |
-| | Frostbolt | Ice Nova · Glacial Cascade |
-| | Arc | Spark · Ball Lightning |
-| Grimoire (faith) | Heal | Holy Relic · Auras |
-| | Raise Zombie | Raise Spectre · Summon Skeletons |
-| | Essence Drain | Contagion · Blight |
+| Fireball | Firestorm | Hit 3 or more enemies with one Fireball, 50 times |
+| Fireball | Flameblast | Kill 100 enemies with it |
+| Circular Slash | Reave | Hit 3 or more enemies with one spin, 60 times |
+| Piercing Line | Puncture | Kill 10 elites or bosses with it |
+| Viper Strike | Pestilent Strike | Kill 40 spirits with it |
+| Raise Zombie | Raise Spectre | Kill 10 elites or bosses with it |
 
-Everything else on the catalogue is **wave 3**, added a few at a time, each as a further branch of the skill it
-grows out of (Incinerate from Flameblast, Winter Orb from Ice Nova, Rain of Arrows from Tornado Shot, and so on).
-Today's eight skills map onto the table: Circular slash becomes Cyclone's first form, Shadowstep is Blink, Sunder,
-Bulwark (Steelskin), Piercing line (Spear Lunge), Volley (Split Arrow), Fireball and Heal.
+The counts are kept in the save (`S.prog`) and, online, by the server. Today's skills count already; the rest will
+count once they exist.
 
 ## Tags
 
@@ -151,8 +136,8 @@ Tree nodes and gear are measured the same way: the runner adds a node to a build
 ## Order of work
 
 1. **Now, before combat is settled** (**in the game**): tags on today's skills and attacks (`TAGS`, data.js);
-   damage types (`DTYPES`), with family resistances to the new ones and resistances from the tree; the tree as data
-   (`js/sim/tree.js`, 196 nodes) with today's stats; the tree screen (P); the balance runner (`tools/balance.js`,
+   damage types (`DTYPES`), with family resistances to the new ones and resistances from the boards; classes and their
+   boards (`js/sim/tree.js`) with today's stats, the challenges, and the board screen (P); the balance runner (`tools/balance.js`,
    [docs/balance.md](../balance.md)) against today's eight weapons and skills. Its first run already says things:
    the greatsword deals 75 to 95% more than the median, the faith grimoire 30 to 40% less, and for most builds each
    floor's boss falls in 11 to 25 seconds at the right level, far short of the mechanic-heavy fights the bosses are
@@ -163,12 +148,11 @@ Tree nodes and gear are measured the same way: the runner adds a node to a build
 
 ## Open questions
 
-- Does taking one advanced branch close the other? (Proposal: no, but it costs the points to get there.)
 - Do skills also come from gear, as Path of Exile's gems do? Forging could tie in: a weapon forged from a family's
-  drops carrying a skill of that family (a Gravecaller-bone staff that raises the dead). Proposal: the tree teaches
-  skills, and forged gear can carry one extra skill of its family, so both routes exist.
-- Four skill slots, or fewer for a slower, more deliberate game?
-- How dear are refunds?
+  drops carrying a skill of that family. Proposal: the board teaches skills, and forged gear can carry one extra
+  skill of its family.
+- How many skills equipped at once: four slots, or fewer for a slower, more deliberate game?
+- The class and weapon proficiency that will reward carrying your own class's weapons.
 
 ## The catalogue
 

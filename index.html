@@ -101,6 +101,7 @@
           <h3>Hair colour</h3><div class="sw" id="cHair"></div>
           <h3>Eyes</h3><div class="sw" id="cEyes"></div>
           <h3>Outfit</h3><div class="sw" id="cOutfit"></div>
+          <h3>Class</h3><div class="wpick cls" id="cClass"></div>
           <h3>First weapon</h3><div class="wpick" id="cWeapon"></div>
         </section>
       </div>
@@ -172,12 +173,13 @@
       <div class="titleBtns"><button class="btn" id="travelClose">Stay here<kbd>Esc</kbd></button></div></div>
   </div>
 
+  <div id="pendAsk" hidden><div class="sheet"><p id="pendTxt"></p>
+    <div class="titleBtns"><button class="btn primary" id="pendYes">Confirm them</button><button class="btn" id="pendNo">Discard them</button><button class="btn" id="pendStay">Keep editing</button></div></div></div>
   <div id="treeView" hidden>
-    <canvas id="treeCv"></canvas>
     <div class="treeHead"><div><b id="treePts"></b><span id="treeSub"></span></div>
-      <div class="treeBtns"><button class="btn small" id="treeReset">Reset all</button><button class="btn small" id="treeClose">Close<kbd>P</kbd></button></div></div>
-    <div class="treeHelp">Drag to look around · wheel or pinch to zoom · click a glowing node to take it</div>
-    <div id="treeTip" hidden></div>
+      <div class="treeBtns"><button class="btn small primary" id="treeConfirm" hidden>Confirm</button><button class="btn small" id="treeDiscard" hidden>Discard</button>
+        <button class="btn small" id="treeReset">Reset all</button><button class="btn small" id="treeClose">Close<kbd>P</kbd></button></div></div>
+    <div id="board"></div>
   </div>
 
   <div id="dead" class="overlay" hidden>

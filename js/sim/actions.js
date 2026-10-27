@@ -11,15 +11,31 @@ function marketTrade(fn,k,n,bound){
   const r=fn(k,n,bound);if(r.ok)sfx('pick');return r;
 }
 const ACTIONS={
-  // the skill tree (tree.js): take a node next to what you own; or give them all back, for shards, somewhere safe
-  treeTake(id){
-    if(!treeCanTake(S,id))return false;
-    if(!treeOf(S).length)S.treeStart=startKey(S.equip.weapon);   // the first point fixes where you build from
-    S.tree.push(id);calcStats();return true;
+  // The skill board (tree.js). Points are placed on the board and only sent when the player confirms: add is a JSON
+  // object {node id: ranks}, applied all together or not at all, and only out of combat.
+  boardCommit(add){
+    let o;try{o=JSON.parse(add);}catch(e){return false;}
+    if(!o||typeof o!=='object'||!outOfCombat())return false;const t=treeBatch(S,o);if(!t)return false;
+    S.tree=t;calcStats();return true;
   },
+  // every point back, for 20 shards a point, out of combat
   treeReset(){
-    const cost=treeResetCost(S);if(!treeOf(S).length||!P.safe||S.shards<cost)return false;
-    S.shards-=cost;S.tree=[];S.treeStart=null;calcStats();return true;
+    const cost=treeResetCost(S);if(!treeSpent(S)||!outOfCombat()||S.shards<cost)return false;
+    S.shards-=cost;S.tree={};calcStats();return true;
+  },
+  // which variation of a base skill to use (i), or none (-1); only ones whose challenge is met
+  setVar(id,i){
+    const q=TREE[id];if(!q||q.k!=='skill'||q.cls!==S.char.cls||!Number.isInteger(i))return false;
+    if(i<0){S.vars[id]=null;return true;}const v=q.vars[i];if(!v||!varOpen(S,q,v))return false;
+    S.vars[id]=i;return true;
+  },
+  // attribute points, also confirmed together: add is a JSON object {attribute: points}
+  attrCommit(add){
+    let o;try{o=JSON.parse(add);}catch(e){return false;}const c=S.char;if(!o||typeof o!=='object')return false;
+    let n=0;for(const k in o){if(!ATTRS.includes(k)||!Number.isInteger(o[k])||o[k]<1)return false;n+=o[k];}
+    if(!n||n>c.pts)return false;
+    const full=P.hp>=ST.maxHp;for(const k in o)c[k]+=o[k];c.pts-=n;calcStats();
+    if(full)P.hp=ST.maxHp;else P.hp=Math.min(ST.maxHp,P.hp+14*(o.vit||0));P.mp=Math.min(ST.maxMp,P.mp+10*(o.mnd||0));return true;
   },
   // make the stock the first time a trader's pack is opened
   openShop(si){

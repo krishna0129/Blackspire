@@ -45,11 +45,12 @@ function onDeath(lost,cp){if(P)__ev(P.id,'onDeath',[lost,cp]);}
 function mapChanged(){__ev(null,'gates',[]);}
 function __take(){const o=__out;__out=[];return o;}
 // const and let values in the rules are not visible from outside the sandbox; these hand them over.
-function __lists(){return{SKINS,HAIRS,EYES,OUTFITS,STYLES:STYLES.length,START:[...Object.keys(WTYPES).filter(k=>!WTYPES[k].magic),'grimoire:magic','grimoire:faith']};}
+function __lists(){return{CLASSES,CLASS_OF_WEAPON,SKINS,HAIRS,EYES,OUTFITS,STYLES:STYLES.length,START:[...Object.keys(WTYPES).filter(k=>!WTYPES[k].magic),'grimoire:magic','grimoire:faith']};}
 function __actions(){return ACTIONS;}
 function __boxSolid(x,y,r){return boxSolid(x,y,r);}
 function __nearHome(){return nearHome();}
 function __classOf(it){return classOf(it);}
+function __className(s){return CLASSES[s.char.cls]?CLASSES[s.char.cls].name:classOf(s.equip.weapon);}
 `;
 function loadRules(){
   const ctx=vm.createContext({console});
@@ -93,8 +94,10 @@ class Game{
     const look=o.look||{};
     if(!ok(L.SKINS,look.skin)||!ok(L.HAIRS,look.hair)||!ok(L.EYES,look.eyes)||!Number.isInteger(look.style)||look.style<0||look.style>=L.STYLES)return'That look is not available.';
     if(!ok(L.START,o.weapon)||!ok(L.OUTFITS,o.outfit))return'That outfit or weapon is not available.';
+    const cls=o.cls==null?L.CLASS_OF_WEAPON[o.weapon]:o.cls;   // older clients send no class: the weapon's
+    if(!L.CLASSES[cls]||!L.CLASSES[cls].weapons.includes(o.weapon))return'That class cannot start with that weapon.';
     if(o.custom!=null&&!validSheet(o.custom))return'A character sheet must be a PNG of 88 x 78 pixels, or a whole multiple of that up to x4, under 88 KB.';
-    const s=R.newState(name,{skin:look.skin,hair:look.hair,style:look.style,eyes:look.eyes},o.weapon,o.outfit);
+    const s=R.newState(name,{skin:look.skin,hair:look.hair,style:look.style,eyes:look.eyes},o.weapon,o.outfit,cls);
     s.char.custom=o.custom||null;
     m.S=JSON.parse(JSON.stringify(s));this.db.saveChar(m.account,m.S);return null;
   }
@@ -194,7 +197,7 @@ class Game{
     const now=Date.now();
     this.notices=this.notices.filter(n=>{const p=this.parties.get(n.party);return p&&p.members.length<PARTY_MAX&&now-n.t<NOTICE_TTL;});
     return this.notices.map(n=>{const p=this.parties.get(n.party),L=p.leader.S;
-      return{id:n.id,code:p.code,name:L.char.name,level:L.char.level,cls:this.R.__classOf(L.equip.weapon),size:p.members.length,best:this.partyBest(p),
+      return{id:n.id,code:p.code,name:L.char.name,level:L.char.level,cls:this.R.__className(L),size:p.members.length,best:this.partyBest(p),
         text:n.text,mins:Math.floor((now-n.t)/60000),own:!!m&&m.party===p};});
   }
   postNotice(m,text){
@@ -234,7 +237,7 @@ class Game{
     const G=w.G,me=m.pl,near=e=>Math.abs(e.x-me.x)<VIEW&&Math.abs(e.y-me.y)<VIEW*.7;
     return{t:'s',time:r1(G.time),
       me:{hp:r1(me.hp),mp:r1(me.mp),food:r1(me.food),drink:r1(me.drink),buff:me.buff?[me.buff.id,Math.round(me.buff.t)]:0,x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
-        swing:me.swing?[r1(me.swing.t),r1(me.swing.d),me.swing.hit?1:0]:0,skillCd:r1(me.skillCd),skillMax:r1(me.skillMax),potCd:r1(me.potCd),dodgeCd:r1(me.dodgeCd),mom:me.mom,blocking:!!me.blocking},
+        swing:me.swing?[r1(me.swing.t),r1(me.swing.d),me.swing.hit?1:0]:0,skillCd:r1(me.skillCd),skillMax:r1(me.skillMax),potCd:r1(me.potCd),dodgeCd:r1(me.dodgeCd),mom:me.mom,blocking:!!me.blocking,fight:G.time-(me.fightT??-99)<5?1:0},
       // in a busy village, only the people near you
       pl:G.players.filter(q=>q!==me&&!q.gone&&(w.kind!=='village'||near(q))).map(q=>({id:q.id,x:r1(q.x),y:r1(q.y),dir:q.dir,moving:q.moving,dead:q.dead,inv:r1(q.inv),guard:r1(q.guard),hp:Math.ceil(q.hp),maxHp:q.ST.maxHp,
         swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,blocking:!!q.blocking,dash:!!q.dash})),

@@ -24,12 +24,12 @@ function setWorld(g){G=g;}
 function forPlayers(fn){const cur=P;for(const pl of G.players)if(!pl.gone){setPlayer(pl);fn(pl);}if(cur)setPlayer(cur);}
 const playerById=id=>G.players.find(q=>q.id===id&&!q.gone);
 
-function newState(name,look,wkey,tint){
-  const[wt,school]=wkey.split(':');
+function newState(name,look,wkey,tint,cls){
+  const[wt,school]=wkey.split(':');cls=CLASSES[cls]?cls:CLASS_OF_WEAPON[wt==='grimoire'?'grimoire:'+(school||'magic'):wt];
   return{v:1,seed:(Math.random()*2147483647)|0,
-    char:{name,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0},
+    char:{name,cls,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0},
     equip:{weapon:makeWeapon(wt,1,0,school),armor:makeArmor('tunic',1,0,tint),boots:makeBoots('boots',1,0),trinket:null},
-    inv:[],shards:0,mats:{scrap:0,ember:0,crystal:0},potions:3,rations:2,flasks:2,empties:0,plots:[],crops:{},food:100,drink:100,stash:[],floor:0,best:1,kills:0,deaths:0,hp:null,
+    tree:{},prog:{},vars:{},inv:[],shards:0,mats:{scrap:0,ember:0,crystal:0},potions:3,rations:2,flasks:2,empties:0,plots:[],crops:{},food:100,drink:100,stash:[],floor:0,best:1,kills:0,deaths:0,hp:null,
     floors:{}};
 }
 // What the save remembers about each floor, by floor number: which chests are opened, what each blacksmith sells,
@@ -81,7 +81,7 @@ function computeStats(c,e,tree){
   st.healPow=(1+st.fai*.05)*(1+(st.p.heal||0)/100);
   st.aspd=WT.aspd*(1+c.agi*.012);
   st.shield=WT.shield||null;
-  st.tags=WT.tags;st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;st.skill=skillOf(w);st.thrust=!st.magic&&!st.ranged&&WT.arc<50;
+  st.tags=WT.tags;st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;st.skill=classOK(c.cls,w)?skillOf(w):null;st.offClass=!st.skill;   // an off-class weapon brings no skillst.thrust=!st.magic&&!st.ranged&&WT.arc<50;
   for(const k of['armor','boots','trinket']){const it=e[k];if(!it)continue;const m=itemMult(it);
     st.def+=(it.base.def||0)*m;st.maxHp+=(it.base.hp||0)*m;st.movePct+=it.base.move||0;
     for(const a of it.aff)st.g[a.id]=(st.g[a.id]||0)+a.v;
@@ -112,7 +112,10 @@ function migrateSave(s){
   fix(s.equip.weapon);if(Array.isArray(s.inv))s.inv.forEach(fix);
   migrateFloors(s);
   s.mats=Object.assign({scrap:0,ember:0,crystal:0},s.mats);
-  if(!Array.isArray(s.tree))s.tree=[];s.tree=s.tree.filter(id=>TREE[id]&&!TREE[id].soon);   // saves from before the skill tree, and nodes since removed
+  if(!CLASSES[s.char.cls])s.char.cls=CLASS_OF_WEAPON[wkeyOf(s.equip.weapon)];   // saves from before classes: the class of the weapon carried
+  if(!s.tree||typeof s.tree!=='object'||Array.isArray(s.tree))s.tree={};   // the web became class boards: its points come back
+  for(const id in s.tree)if(!TREE[id]||TREE[id].cls!==s.char.cls||!(s.tree[id]>0))delete s.tree[id];
+  if(!s.prog||typeof s.prog!=='object')s.prog={};if(!s.vars||typeof s.vars!=='object')s.vars={};delete s.treeStart;
   for(const k of['rations','flasks'])if(typeof s[k]!=='number')s[k]=2;   // saves from before hunger and thirst
   for(const k of['food','drink'])if(typeof s[k]!=='number')s[k]=100;
   if(typeof s.empties!=='number')s.empties=0;if(!Array.isArray(s.stash))s.stash=[];

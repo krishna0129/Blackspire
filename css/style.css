@@ -148,6 +148,7 @@ input[type=text]{font:inherit;color:var(--bone);background:#000;border:1px solid
 .wpick button.on{border-color:var(--bone);background:#22222c}
 .wpick canvas{width:36px;height:36px;image-rendering:pixelated;grid-row:span 2}
 .wpick small{color:var(--dim);font-size:11px;line-height:1.2}
+.wpick.cls button{grid-template-columns:1fr}
 .foot{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--panel)}
 
 .eq{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
@@ -296,22 +297,50 @@ dl.stats dt{color:var(--dim)} dl.stats dd{margin:0;text-align:right}
 #hud .toast.big{font-size:20px}
 @media (pointer:coarse){#hud .slot{width:70px;height:64px}}
 
-/* ---------- the skill tree screen ---------- */
-#treeView{position:absolute;inset:0;background:#07060a;z-index:5;font-family:'Cormorant Garamond',Georgia,serif;color:#e9dfc8}
-#treeCv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
-#treeCv:active{cursor:grabbing}
-.treeHead{position:absolute;left:16px;right:16px;top:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
+/* ---------- points waiting to be confirmed ---------- */
+.attr em.pend{font-style:normal;color:var(--amber)}
+.pendRow{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+#pendAsk{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(4,4,7,.6)}
+#pendAsk .sheet{max-width:420px}
+/* ---------- the skill board ---------- */
+#treeView{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,#17120d,#07060a 70%);z-index:5;font-family:'Cormorant Garamond',Georgia,serif;color:#e9dfc8;display:flex;flex-direction:column}
+.treeHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px 10px;flex-wrap:wrap}
 .treeHead b{display:block;font-family:Cinzel,Georgia,serif;font-size:22px;letter-spacing:.04em;color:#efe2c2;text-shadow:0 2px 0 #000}
 .treeHead span{font-size:16px;font-weight:600;color:#a89a7c}
-.treeBtns{display:flex;gap:8px;pointer-events:auto}
+.treeBtns{display:flex;gap:8px;flex-wrap:wrap}
 #treeView .btn{font-family:Cinzel,Georgia,serif;font-size:12px;font-weight:600;background:linear-gradient(rgba(20,16,12,.94),rgba(10,8,6,.94));border:0;color:#e9dfc8;
   box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #7a6436;padding:6px 10px}
+#treeView .btn:disabled{opacity:.4}
+#treeView .btn.primary{color:#0a0907;background:linear-gradient(#efe2c2,#c9b48a)}
 #treeView .btn kbd{color:#bba982;background:none;border:0}
-.treeHelp{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:15px;color:#7c705a;pointer-events:none}
-#treeTip{position:absolute;width:240px;padding:9px 11px;background:linear-gradient(rgba(20,16,12,.97),rgba(10,8,6,.97));box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #7a6436;pointer-events:none}
-#treeTip b{font-family:Cinzel,Georgia,serif;font-size:15px;color:#efe2c2}
-#treeTip i{display:block;font-style:normal;font-size:13px;color:#a89a7c}
-#treeTip p{margin:5px 0;font-size:16px;line-height:1.25}
-#treeTip small{font-size:14px;font-weight:600;color:#c9a45c}
+#board{flex:1;overflow:auto;padding:4px 16px 24px;display:flex;flex-direction:column;gap:14px}
+.tier{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:start}
+.tierHead b{display:block;font-family:Cinzel,Georgia,serif;font-size:15px;color:#c9a45c}
+.tierHead small{font-size:14px;color:#7c705a}
+.tier.shut .node{opacity:.45}
+.cells{display:flex;flex-wrap:wrap;gap:10px}
+.node{position:relative;width:200px;padding:9px 10px 8px;background:linear-gradient(rgba(24,19,14,.95),rgba(12,10,8,.95));box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #4a3d24}
+.node b{display:block;font-family:Cinzel,Georgia,serif;font-size:14px;color:#efe2c2}
+.node .rk{font-family:Cinzel,Georgia,serif;font-size:12px;color:#a89a7c}
+.node .rk em{font-style:normal;color:#e9c87a}
+.node p{margin:5px 0 6px;font-size:15px;line-height:1.2;color:#cfc3a6}
+.node .nb{display:flex;gap:6px;justify-content:flex-end}
+.node.some{box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #c9a45c}
+.node.can .nb .btn:last-child{box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #e9c87a}
+.node.key{width:240px;background:linear-gradient(rgba(40,30,16,.95),rgba(14,11,8,.95))}
+.node.skill{width:300px;box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #6a7fa8}
+.node.skill.known{box-shadow:0 0 0 1px #000,0 0 0 2px #2a2219,0 0 0 3px #8fb0e8}
+.node.skill.soon{opacity:.7}
+.vars{display:grid;gap:6px}
+.var{padding:6px 8px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px #2a2219}
+.var b{font-size:13px}
+.var small{display:block;font-size:14px;color:#a89a7c;line-height:1.15}
+.var .pg{position:relative;height:14px;margin:4px 0 2px;background:#0d0a08}
+.var .pg i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#3a5a8e,#6f96f0)}
+.var .pg span{position:absolute;inset:0;text-align:center;font-family:Cinzel,Georgia,serif;font-size:10px;line-height:14px;color:#e9dfc8}
+.var.open .pg i{background:linear-gradient(90deg,#8e6f30,#c9a45c)}
+.var.on{box-shadow:inset 0 0 0 1px #c9a45c}
+.var .btn{margin-top:4px}
+@media (max-width:640px){.tier{grid-template-columns:1fr}.node,.node.key,.node.skill{width:100%}}
 #btnTree b{color:#e9c87a;margin-left:6px;font-weight:600}
 #btnTree b:empty{display:none}

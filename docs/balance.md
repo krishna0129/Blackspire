@@ -25,7 +25,7 @@ health), and falls count how often it died and was stood up again.
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
 | Longsword | 50 | +9% | 7.1 s | 0.1 | 13.4 s | 0.7 | 0, 0 |
-| Spear | 51 | +11% | 8.2 s | 0.4 | 12.6 s | 0.9 | 0, 0 |
+| Spear | 51 | +11% | 7.5 s | 0.3 | 12.6 s | 0.9 | 0, 0 |
 | Greatsword | 83 | ⚠ +80% | 8.6 s | 0.4 | 11 s | 0.8 | 0, 0 |
 | Mace | 43 | -7% | 11.8 s | 0.4 | 16 s | 0.9 | 0, 0 |
 | Dagger | 44 | -4% | 10.3 s | 0.4 | 17.9 s | 1.1 | 0, 0 |
@@ -38,7 +38,7 @@ health), and falls count how often it died and was stood up again.
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
 | Longsword | 78 | +18% | 11.5 s | 0.6 | 15.5 s | 0.4 | 0, 0 |
-| Spear | 76 | +15% | 15.5 s | 0.7 | 17 s | 0.3 | 0, 0 |
+| Spear | 76 | +15% | 15.5 s | 0.7 | 15.7 s | 0.3 | 0, 0 |
 | Greatsword | 128 | ⚠ +94% | 9.8 s | 0.4 | 12.5 s | 0.2 | 0, 0 |
 | Mace | 63 | -5% | 14.3 s | 0.5 | 21.8 s | 0.4 | 0, 0 |
 | Dagger | 48 | ⚠ -27% | 17.7 s | 0.8 | 22.2 s | 0.3 | 0, 0 |

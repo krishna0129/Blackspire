@@ -87,6 +87,7 @@ Object.assign(NET,{
     o.at=performance.now();this.snaps.push(o);while(this.snaps.length>4)this.snaps.shift();
     const me=o.me;
     if(me.tp>P.tp){P.x=me.x;P.y=me.y;P.tp=me.tp;P.dash=null;}   // the server moved us (a teleport, a respawn, or a refused report)
+    P.fightT=me.fight?G.time:-99;   // in a fight, as the server sees it: the skill board waits
     P.buff=me.buff?{id:me.buff[0],t:me.buff[1]}:null;
     Object.assign(P,{hp:me.hp,mp:me.mp,food:me.food,drink:me.drink,dead:me.dead,safe:me.safe,locked:me.locked,inv:me.inv,guard:me.guard,skillCd:me.skillCd,skillMax:me.skillMax,potCd:me.potCd,mom:me.mom});
     if(!P.dash)P.dodgeCd=Math.max(P.dodgeCd,me.dodgeCd);

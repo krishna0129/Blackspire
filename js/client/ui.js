@@ -20,7 +20,7 @@ function updateHud(){
     const low=v*100<NEED_LOW;if(hc[k+'low']!==low){hc[k+'low']=low;$('#'+k+'Fill').parentNode.classList.toggle('low',low);}}
   setStyle('cds',cdSk,'height',(P.skillMax?P.skillCd/P.skillMax*100:0).toFixed(0)+'%');
   setStyle('mpw',elMp,'width',(clamp(P.mp/ST.maxMp,0,1)*100).toFixed(1)+'%');setTxt('mpTxt',Math.floor(P.mp)+' / '+ST.maxMp);
-  const lack=P.mp<SKILLS[ST.skill].mp||P.safe;if(hc.lack!==lack){hc.lack=lack;elSk.classList.toggle('lack',lack);}
+  const lack=!ST.skill||P.mp<SKILLS[ST.skill].mp||P.safe;if(hc.lack!==lack){hc.lack=lack;elSk.classList.toggle('lack',lack);}
   if(hc.safe!==P.safe){hc.safe=P.safe;$('#slAtk').classList.toggle('lack',!!P.safe);}
   setTxt('hFloor',G.village?'The root village'+(NET.on?', channel '+NET.ch:''):'Floor '+G.n+(P.safe?', safe room':''));
   setStyle('cdd',cdDo,'height',(P.dodgeCd/.9*100).toFixed(0)+'%');
@@ -48,7 +48,7 @@ function updateHud(){
 }
 function refreshHudStatic(){
   $('#hName').textContent=S.char.name;setTxt('hFloor',G.village?'The root village':'Floor '+G.n);
-  $('#skName').textContent=SKILLS[ST.skill].name;$('#skCost').textContent=SKILLS[ST.skill].mp;
+  $('#skName').textContent=ST.skill?SKILLS[ST.skill].name:'No skill';$('#skCost').textContent=ST.skill?SKILLS[ST.skill].mp:'';$('#slSkill').title=ST.skill?'':'Not a '+CLASSES[S.char.cls].name.toLowerCase()+'’s weapon: it brings no skill.';
   drawItemIcon($('#slAtk canvas'),S.equip.weapon);$('#slBlock').hidden=!ST.shield;
 }
 
@@ -146,7 +146,7 @@ $('#onBack').onclick=$('#onBack2').onclick=()=>showTitle();
 
 /* ---------- character creator ---------- */
 let armed=false;
-const draft={skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0],outfit:OUTFITS[0],weapon:'sword'};
+const draft={skin:SKINS[1],hair:HAIRS[0],style:0,eyes:EYES[0],outfit:OUTFITS[0],cls:'duelist',weapon:'sword'};
 function drawPreview(cv,look,eq,custom){
   const x=uiCtx(cv,34,34);
   const w=buildWeapon(eq.weapon.type,eq.weapon.tint,eq.weapon.school),av=buildAvatar(look,eq,custom);
@@ -163,13 +163,18 @@ function buildCreator(){
     b.onclick=()=>{draft[key]=c;buildCreator();};el.appendChild(b);});};
   sw('#cSkin',SKINS,'skin');sw('#cHair',HAIRS,'hair');sw('#cEyes',EYES,'eyes');sw('#cOutfit',OUTFITS,'outfit');
   const st=$('#cStyle');st.innerHTML='';STYLES.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.className=draft.style===i?'on':'';b.onclick=()=>{draft.style=i;buildCreator();};st.appendChild(b);});
+  // the class first; its weapons below it
+  const cp=$('#cClass');cp.innerHTML='';const AN={str:'strength',agi:'agility',dex:'dexterity',vit:'vitality',int:'intelligence',fai:'faith',mnd:'mind'};
+  for(const k in CLASSES){const C=CLASSES[k],b=document.createElement('button');b.className=draft.cls===k?'on':'';
+    b.innerHTML=`<span>${C.name}</span><small>${esc(C.blurb)} Best with ${C.attrs.map(a=>AN[a]).join(' and ')}.</small>`;
+    b.onclick=()=>{draft.cls=k;if(!C.weapons.includes(draft.weapon))draft.weapon=C.weapons[0];buildCreator();};cp.appendChild(b);}
   const wp=$('#cWeapon');wp.innerHTML='';
-  for(const k of START){const[t,sc]=k.split(':'),T=WTYPES[t],b=document.createElement('button');b.className=draft.weapon===k?'on':'';
+  for(const k of START.filter(k=>CLASSES[draft.cls].weapons.includes(k))){const[t,sc]=k.split(':'),T=WTYPES[t],b=document.createElement('button');b.className=draft.weapon===k?'on':'';
     const c=document.createElement('canvas');c.width=c.height=24;drawItemIcon(c,{slot:'weapon',type:t,tint:sc?GRIM[sc].tint:BLADES[0],rarity:0});
     b.appendChild(c);
-    const cls=sc==='faith'?'Healer':T.cls,sk=SKILLS[sc==='faith'?'heal':T.skill].name;
-    b.insertAdjacentHTML('beforeend',sc?`<span>Grimoire of ${GRIM[sc].label}</span><small>${cls}. Ranged bolts, scales with ${sc==='faith'?'faith':'intelligence'}. Skill: ${sk}</small>`
-      :`<span>${T.name}</span><small>${cls}. ${T.blurb}. Skill: ${sk}</small>`);
+    const sk=SKILLS[sc==='faith'?'heal':T.skill].name;
+    b.insertAdjacentHTML('beforeend',sc?`<span>Grimoire of ${GRIM[sc].label}</span><small>Ranged bolts, scales with ${sc==='faith'?'faith':'intelligence'}. Skill: ${sk}</small>`
+      :`<span>${T.name}</span><small>${T.blurb}. Skill: ${sk}</small>`);
     b.onclick=()=>{draft.weapon=k;buildCreator();};wp.appendChild(b);}
   drawPreview($('#cPrev'),draft,draftEquip(),draftImg);
   $('#cCustomDel').hidden=!draft.custom;
@@ -185,14 +190,14 @@ $('#cGo').onclick=()=>{
   if(creatorFor==='online'){
     $('#cMsg').textContent='';
     NET.send({t:'create',name:($('#cName').value.trim()||'Wanderer').slice(0,14),look:{skin:draft.skin,hair:draft.hair,style:draft.style,eyes:draft.eyes},
-      weapon:draft.weapon,outfit:draft.outfit,custom:draft.custom||null});
+      weapon:draft.weapon,outfit:draft.outfit,cls:draft.cls,custom:draft.custom||null});
     return;
   }
   const old=Store.load();
   if(old&&!armed){armed=true;$('#cGo').textContent='Replace '+old.char.name+' and start over';return;}
   armed=false;
   const name=($('#cName').value.trim()||'Wanderer').slice(0,14);
-  S=newState(name,{skin:draft.skin,hair:draft.hair,style:draft.style,eyes:draft.eyes},draft.weapon,draft.outfit);
+  S=newState(name,{skin:draft.skin,hair:draft.hair,style:draft.style,eyes:draft.eyes},draft.weapon,draft.outfit,draft.cls);
   S.char.custom=draft.custom||null;CUSTOM=draft.custom?draftImg:null;
   $('#creator').hidden=true;startFloor(0);   // everyone starts in the root village
 };
@@ -437,7 +442,16 @@ function openPanel(npc,who){
   $('#panel').hidden=false;renderPanel();if(atWho==='trader')act('openShop',[atSmith],()=>{if(mode==='panel')renderPanel();});
   if(atExchange())openExchange();
 }
-function closePanel(){if(mode!=='panel')return;atSmith=atWho=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
+// Attribute points placed but not yet spent (the Gear panel's + and −), sent together on Confirm.
+let attrPend={};
+function commitAttrs(done){const o=attrPend;attrPend={};if(!Object.keys(o).length){if(done)done(true);return;}act('attrCommit',[JSON.stringify(o)],r=>{if(r)sfx('lvl');if(done)done(r);});}
+// Leaving a screen with points still waiting: confirm them, throw them away, or stay. go: what happens after.
+function askPending(n,commit,discard,go){
+  const a=$('#pendAsk');$('#pendTxt').textContent=`You have ${n} point${n===1?'':'s'} placed but not confirmed.`;a.hidden=false;
+  $('#pendYes').onclick=()=>{a.hidden=true;commit(()=>go());};$('#pendNo').onclick=()=>{a.hidden=true;discard();go();};$('#pendStay').onclick=()=>{a.hidden=true;};
+}
+function closePanel(){if(mode!=='panel')return;
+  const n=Object.values(attrPend).reduce((a,b)=>a+b,0);if(n)return askPending(n,commitAttrs,()=>{attrPend={};},()=>closePanel());atSmith=atWho=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
 function cell(it,on,label,bag){
   const b=document.createElement('button');b.className='cell'+(on?' on':'')+(it?'':' empty');
   if(it){const c=document.createElement('canvas');c.width=c.height=24;drawItemIcon(c,it);b.appendChild(c);b.style.borderColor=RARITY[it.rarity].color;b.title=it.name;
@@ -452,19 +466,25 @@ const atStash=()=>atSmith!=null&&atWho==='stash';
 function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal'||sel.from==='pack'||sel.from==='forge'||sel.from==='market')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
 function renderPanel(){
   calcStats();const c=S.char;
-  $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${classOf(S.equip.weapon).toLowerCase()}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
+  $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${CLASSES[c.cls].name.toLowerCase()}${ST.offClass?' (off-class weapon: no skill)':''}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
   drawPreview($('#pPrev'),c.look,S.equip,c.custom?CUSTOM:null);
   $('#pCustomDel').hidden=!c.custom;
   const eq=$('#pEquip');eq.innerHTML='';
   for(const s of['weapon','armor','boots','trinket']){const it=S.equip[s],b=cell(it,sel&&sel.from==='eq'&&sel.slot===s,SLOTL[s]);if(it)b.onclick=()=>{sel={from:'eq',slot:s};renderPanel();};eq.appendChild(b);}
-  $('#pPts').textContent=c.pts?`Attributes, ${c.pts} points to spend`:'Attributes';
+  const pend=Object.values(attrPend).reduce((a,b)=>a+b,0),free=c.pts-pend;
+  $('#pPts').textContent=c.pts?`Attributes, ${free} point${free===1?'':'s'} to spend`+(pend?`, ${pend} waiting to be confirmed`:''):'Attributes';
   const at=$('#pAttrs');at.innerHTML='';
   [['str','Strength','+4% melee damage'],['agi','Agility','move and attack speed'],['dex','Dexterity','crit, evade, +3% bow damage'],['vit','Vitality','+14 health, regen'],['int','Intelligence','+4% mage damage'],['fai','Faith','+5% healing, +4% healer damage'],['mnd','Mind','+10 max mana'],['spr','Spirit','+0.25 mana per second']].forEach(([k,n,d])=>{
     const row=document.createElement('div');row.className='attr';const bonus=k==='int'?ST.int-c.int:k==='fai'?ST.fai-c.fai:0;
-    row.innerHTML=`<b>${n} ${c[k]}${bonus?` <i>+${bonus}</i>`:''}</b><span>${d}</span>`;
-    const b=document.createElement('button');b.className='btn small';b.textContent='+';b.disabled=!c.pts;b.setAttribute('aria-label','Add a point to '+n);
-    b.onclick=()=>act('spend',[k],()=>renderPanel());
+    const pk=attrPend[k]||0;
+    row.innerHTML=`<b>${n} ${c[k]}${pk?` <em class="pend">+${pk}</em>`:''}${bonus?` <i>+${bonus}</i>`:''}</b><span>${d}</span>`;
+    if(pk){const m=document.createElement('button');m.className='btn small';m.textContent='\u2212';m.setAttribute('aria-label','Take a point back from '+n);
+      m.onclick=()=>{attrPend[k]--;if(!attrPend[k])delete attrPend[k];renderPanel();};row.appendChild(m);}
+    const b=document.createElement('button');b.className='btn small';b.textContent='+';b.disabled=free<=0;b.setAttribute('aria-label','Add a point to '+n);
+    b.onclick=()=>{attrPend[k]=(attrPend[k]||0)+1;renderPanel();};   // placed, not spent: Confirm spends them
     row.appendChild(b);at.appendChild(row);});
+  if(pend){const r=document.createElement('div');r.className='pendRow';r.innerHTML='<button class="btn small primary">Confirm</button><button class="btn small">Discard</button>';
+    r.children[0].onclick=()=>commitAttrs(()=>renderPanel());r.children[1].onclick=()=>{attrPend={};renderPanel();};at.appendChild(r);}
   const dps=ST.dmg*ST.aspd*(1+ST.crit/100*(ST.critDmg/100-1));
   $('#pStats').innerHTML=[['Health',ST.maxHp],['Damage per hit',ST.dmg.toFixed(1)],['Attacks per second',ST.aspd.toFixed(2)],['Damage per second',dps.toFixed(1)],
     ['Critical chance',ST.crit.toFixed(0)+'%'],['Critical damage',ST.critDmg+'%'],['Defense',ST.def+' ('+Math.round(100-10000/(100+ST.def))+'% less damage)'],

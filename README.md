@@ -46,7 +46,7 @@ js/sim/               the game rules. No page, canvas or sound: the browser runs
   util.js             small helpers
   data.js             tables: floors, weapons, skills, passives, gear, enemies and their families, materials,
                       loot, forging
-  tree.js             the skill tree: its nodes and links, points, what nodes add up to (docs/design/skills.md)
+  tree.js             classes and their skill boards: tiers, ranks, points, challenges (docs/design/skills.md)
   items.js            item generation, prices, enhancement, forged gear, the traders' stock
   rules.js            players, saves, derived stats, and the list of host functions the rules call
   world.js            floor generation
@@ -67,7 +67,7 @@ js/client/            everything on screen, loaded after js/sim in the order ind
   render.js           drawing the world in 2D: the village, and the floors when 3D is off
   render3d.js         drawing the tower floors in 3D: rooms, props, lights, characters and their animations,
                       effects, and the numbers and health bars over them
-  treeui.js           the skill tree screen
+  treeui.js           the skill board screen
   ui.js               HUD, title flow, character creator, gear panel, blacksmith and forging, floor gate, debug menu
   net.js              online play: the connection, snapshots, smoothing other players and enemies
   main.js             start-up and the main loop
@@ -100,7 +100,7 @@ Move with WASD or the arrow keys. You attack in the direction you face.
 | Eat a ration / drink water | R / T |
 | Interact (gates, the Teleport Gate, traders, the stash, the forge, the well, villagers) | E |
 | Gear | I or Tab |
-| Skill tree | P, or the Tree button |
+| Skill board (out of combat) | P, or the Tree button |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Zoom the 3D view | mouse wheel |
 | Respawn after a death | R or Enter |
@@ -175,14 +175,15 @@ The guild's daily board also asks for monster drops and pays 30% over the usual 
   [skill trees and mutations](docs/design/skill-trees.md) and [class trees](docs/design/class-trees.md) it replaces,
   [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md).
 
-## The skill tree
+## Classes and the skill board
 
-P (or the Tree button) opens it: one web of about 200 nodes that every weapon shares, after the manner of Path of
-Exile. You build from your weapon's start, fixed by your first point, and take nodes one next to another: a point
-for each level, and one for each floor whose boss you were first to beat. Small nodes add damage to a tag (melee,
-fire, projectile and so on: every hit carries tags), health, defence or a resistance; notables add more. The skill
-nodes and their advanced forms are drawn but come with the new combat. A reset gives every point back for shards,
-in a safe room or the village. Design: [docs/design/skills.md](docs/design/skills.md).
+A character has a class, picked when it is made: Marauder, Duelist, Ranger, Shadow, Witch or Templar, each with its
+own weapons. Any weapon can be carried, but only your class's weapons bring their skill. P (or the Tree button) opens
+your class's skill board, out of combat only: five tiers, each opening as you spend more points on the board, with
+ranked bonuses and the class's skills. Points come one a level, and one for each floor whose boss you were first to
+beat. A point is placed with +, taken back with −, and spent only on Confirm (attribute points work the same way).
+Each skill has two variations, opened free by meeting a challenge with it (hit a crowd with it, kill so many with it).
+A full reset costs 20 shards a point spent. Design: [docs/design/skills.md](docs/design/skills.md).
 
 **Balance.** `npm run balance` plays every weapon's build through a training dummy, a room of six of the floor's
 enemies and the floor's boss, on floors 1 to 3, and writes [docs/balance.md](docs/balance.md). `npm test` fails if

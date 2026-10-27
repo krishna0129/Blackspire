@@ -65,7 +65,8 @@ const SKILLS={
   heal:{tags:['aura','grimoire'],name:'Heal',cd:9,mp:24,desc:'Restores health to you and every ally near you. It never affects enemies. Faith raises the amount.'},
 };
 const skillOf=it=>it.school==='faith'?'heal':WTYPES[it.type].skill;
-const classOf=it=>it.school==='faith'?'Healer':WTYPES[it.type].cls;
+// the classes whose weapon this is (CLASSES, tree.js)
+const classOf=it=>classesFor(it).map(c=>CLASSES[c].name).join(' or ');
 // A grimoire belongs to exactly one school and only ever rolls bonuses from that school's pool.
 const GRIM={
   magic:{label:'embers',attr:'intelligence and Fireball',tint:'#8a2f2f',pool:{

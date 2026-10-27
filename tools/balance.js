@@ -6,7 +6,7 @@
 //   npm run balance            write docs/balance.md
 //   npm run balance -- --check exit 1 if docs/balance.md is out of date, or a budgeted build is 35% off (npm test)
 //
-// A build is a start in the skill tree (a weapon) at a level fit for the floor: its attribute points in its main
+// A build is a class with one of its weapons, at a level fit for the floor: its attribute points in its main
 // attribute and vitality, a common weapon of the floor, nothing from the tree yet. The scenes, on floors 1 to 3:
 //   dummy  one target that never fights back, 10 seconds: damage per second, skill included when it does damage
 //   room   six of the floor's own enemies around you: seconds to clear (60 at most), health lost, falls
@@ -20,15 +20,16 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {loadRules}=require('../server/game');
 const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'docs','balance.md');
-const BUILDS=[['sword','sword','str'],['spear','spear','str'],['great','great','str'],['mace','mace','str'],['dagger','dagger','agi'],
-  ['bow','bow','dex'],['grimoire','grimoire:magic','int'],['faith','grimoire:faith','fai']];
+// [name, weapon, main attribute, class]
+const BUILDS=[['sword','sword','str','duelist'],['spear','spear','str','duelist'],['great','great','str','marauder'],['mace','mace','str','marauder'],['dagger','dagger','agi','shadow'],
+  ['bow','bow','dex','ranger'],['grimoire','grimoire:magic','int','witch'],['faith','grimoire:faith','fai','templar']];
 const FLOORS=[1,2,3],LEVEL=n=>2+4*n,BUDGET={},STEP=1/30;
 
-function scene(floor,start,wkey,attr,kind){
+function scene(floor,start,wkey,attr,kind,cls){
   const R=loadRules(),run=code=>vm.runInContext(code,R);
   run(`Math.random=mulberry32(${floor*7919+kind.length*31+start.length});EID=0;`);   // the same dice every run
   return run(`(()=>{
-    const s=newState('B',{},'${wkey}','#222');s.char.level=${LEVEL(floor)};s.char.${attr}=${Math.round((LEVEL(floor)-1)*3*.7)};s.char.vit=${Math.round((LEVEL(floor)-1)*3*.3)};
+    const s=newState('B',{},'${wkey}','#222','${cls}');s.char.level=${LEVEL(floor)};s.char.${attr}=${Math.round((LEVEL(floor)-1)*3*.7)};s.char.vit=${Math.round((LEVEL(floor)-1)*3*.3)};
     s.equip.weapon=makeWeapon('${wkey.split(':')[0]}',${floor},0,${wkey.includes(':')?`'${wkey.split(':')[1]}'`:'undefined'});
     setWorld(genFloor(${floor},4242));const pl=makePlayer(1,s);G.players=[pl];setPlayer(pl);calcStats();P.hp=ST.maxHp;P.mp=ST.maxMp;
     god=false;let lost=0,falls=0,dealt=0,t=0,casts=0;
@@ -61,7 +62,7 @@ function scene(floor,start,wkey,attr,kind){
 
 function rows(){
   const out={};
-  for(const n of FLOORS){out[n]={};for(const[start,wkey,attr]of BUILDS)out[n][start]={dummy:scene(n,start,wkey,attr,'dummy'),room:scene(n,start,wkey,attr,'room'),boss:scene(n,start,wkey,attr,'boss')};}
+  for(const n of FLOORS){out[n]={};for(const[start,wkey,attr,cls]of BUILDS)out[n][start]={dummy:scene(n,start,wkey,attr,'dummy',cls),room:scene(n,start,wkey,attr,'room',cls),boss:scene(n,start,wkey,attr,'boss',cls)};}
   return out;
 }
 const median=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
