@@ -34,11 +34,11 @@ for(const n of['floor_tile_small','floor_tile_small_broken_A','floor_tile_small_
   'banner_patternA_red','banner_patternB_red','banner_red','banner_thin_red','banner_shield_red','banner_triple_red',
   'banner_patternA_blue','banner_shield_blue','banner_triple_blue','banner_patternA_green','banner_thin_green',
   'shelf_large','barrel_large','barrel_small_stack','keg','crates_stacked','box_stacked','box_large','table_medium_decorated_A',
-  'candle_lit','candle_triple','rubble_half','rubble_large','coin_stack_small','sword_shield','trunk_medium_A'])
+  'candle_lit','candle_triple','candle_thin','candle_thin_lit','rubble_half','rubble_large','coin_stack_small','sword_shield','trunk_medium_A'])
   PROPS[n]=[DUN,n+'.gltf.glb'];
 PROPS.chest=[DUN,'chest.glb'];PROPS.chest_gold=[DUN,'chest_gold.glb'];
 for(const n of['ribcage','bone_A','bone_B','bone_C','skull','coffin','coffin_decorated','tree_dead_small','tree_dead_medium','tree_dead_large',
-  'gravestone','grave_A_destroyed','lantern_standing','skull_candle','shrine_candles'])PROPS[n]=[HAL,n+'.gltf'];
+  'gravestone','grave_A_destroyed','lantern_standing','skull_candle','shrine_candles','lantern_hanging','post_skull','post_lantern','candle_melted'])PROPS[n]=[HAL,n+'.gltf'];
 for(const n of['Skeleton_Blade','Skeleton_Axe','Skeleton_Crossbow','Skeleton_Staff','Skeleton_Shield_Large_A','Skeleton_Shield_Small_A','Skeleton_Arrow'])PROPS[n]=[SKL,n+'.gltf'];
 for(const n of['arrow','spellbook_open'])PROPS[n]=[ADV,n+'.gltf'];
 const CHARS={Knight:ADV,Barbarian:ADV,Mage:ADV,Rogue:ADV,Rogue_Hooded:ADV,Skeleton_Warrior:SKL,Skeleton_Mage:SKL,Skeleton_Minion:SKL,Skeleton_Rogue:SKL};
