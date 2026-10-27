@@ -146,8 +146,8 @@ The guild's daily board also asks for monster drops and pays 30% over the usual 
   by `npm run wiki`. `npm test` fails if it is out of date. Its pictures (monsters, items, boss attacks) are
   rendered by the game itself with `npm run wiki:images`, which needs Playwright and a Chromium
   (`npx playwright install chromium`); rerun it after changing sprites.
-- [docs/design](docs/design): design proposals: [skill trees and mutations](docs/design/skill-trees.md),
-  [class trees and skill ranks](docs/design/class-trees.md),
+- [docs/design](docs/design): design proposals: [skills and the skill tree](docs/design/skills.md), the earlier
+  [skill trees and mutations](docs/design/skill-trees.md) and [class trees](docs/design/class-trees.md) it replaces,
   [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md).
 
 ## Saves
