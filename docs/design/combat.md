@@ -25,7 +25,11 @@ Valorant's layout, so the left hand never leaves WASD:
 | The four skills | **Q, E, C, X** |
 | Quick slots: health, mana, food, water | 1, 2, 3, 4 |
 | Interact (talk, open, pick up) | F |
-| Gear, skill board, sleep, menu | I, P, B, Esc (as today) |
+| Gear, skill board, menu | I, P, Esc (as today) |
+
+**Sleeping has no key of its own** (today B): interact (F) with a bed to sleep. A sleeping bag is used from the bag
+(or its quick use) to **lay it on the ground**, in a safe area; then interact with it to sleep. It is used up when
+you wake.
 
 Every binding can be changed once there is a settings screen ([roadmap](../roadmap.md)).
 
