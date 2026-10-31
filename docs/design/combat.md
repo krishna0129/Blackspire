@@ -12,6 +12,23 @@ friends' playtest ([roadmap](../roadmap.md)).
   the way you face, which means moving to aim.)
 - **Attacking slows you**: you keep moving while you swing, slower.
 
+### Keys
+
+Valorant's layout, so the left hand never leaves WASD:
+
+| Action | Key |
+|---|---|
+| Move | W A S D |
+| Attack | left mouse button |
+| Block (just before a hit: parry) | right mouse button |
+| Dash | Space or Shift |
+| The four skills | **Q, E, C, X** |
+| Quick slots: health, mana, food, water | 1, 2, 3, 4 |
+| Interact (talk, open, pick up) | F |
+| Gear, skill board, sleep, menu | I, P, B, Esc (as today) |
+
+Every binding can be changed once there is a settings screen ([roadmap](../roadmap.md)).
+
 ### The dash
 
 - The dodge is the **dash** (Shift). There is no roll; the gear design's "roll" penalty is a shorter dash.
@@ -90,8 +107,6 @@ friends' playtest ([roadmap](../roadmap.md)).
 
 ## Open
 
-- **Four skill slots** (decided). Their keys: Q W E R was asked for, but W also moves forward; the layout is to settle.
-  Players will be able to change any binding once there is a settings screen ([roadmap](../roadmap.md)).
 - **Class balancing**: each class's max mana and regen, stamina, dash length, and who blocks and parries, set
   together, after bosses ([roadmap](../roadmap.md)).
 - The numbers: the parry window, stamina costs and regen, poise per weight point, focus per point of Mind, the

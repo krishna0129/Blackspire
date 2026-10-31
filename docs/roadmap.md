@@ -18,13 +18,11 @@ Each item below is marked **Before** (needed for the playtest) or **After**.
 Decided: mouse aiming, slower while attacking; the dash without invulnerability (no roll); stamina for dashing and
 blocking; parries with shields and swords; hit reactions; poise (from armour weight) and focus (from Mind), and a
 poise bar on enemies; mana for every skill, a free basic attack, skills that empower it, mana potions; potions in
-sizes; quick slots 1 to 4 by category; ground markers for area attacks only; death loses everything carried but
+sizes; quick slots 1 to 4 by category; four skill slots on Q E C X (Valorant's keys), interact on F; ground markers for area attacks only; death loses everything carried but
 equipped gear, with no grave.
 
 Still open:
 
-- **Before:** the skill keys: four skill slots (decided); Q W E R clashes with W for moving forward, so the layout is
-  to settle (see the combat doc).
 - **Before:** **class balancing**: each class's mana and regen, stamina, dash length, block and parry, set together
   once bosses are designed.
 - **Before:** the numbers (parry window, stamina, poise, focus, stagger), through the balance runner.
