@@ -64,6 +64,14 @@ friends' playtest ([roadmap](../roadmap.md)).
 - Potions are sold in sizes by how much they refill: 10%, 25%, 50% (and perhaps 100%), each priced in proportion to
   what it refills. Health and mana alike.
 
+### Quick slots: 1 to 4
+
+- Four keys, one per **category**: **1** health potion, **2** mana potion, **3** food, **4** water.
+- A slot holds whichever item of its category you choose from your bag (a 25% potion, a 50% one, bread, a meal to
+  carry): any item whose tag matches the category can be bound to it. The slot belongs to the category, not to one
+  item.
+- They replace today's keys (Q potion, R eat, T drink).
+
 ### Warnings
 
 - **Area attacks** show where they will land (ground markers).
@@ -71,7 +79,7 @@ friends' playtest ([roadmap](../roadmap.md)).
 
 ### Death
 
-- **Falling loses everything you carry** except what you have on: your equipped weapon and armour. Lost: shards, ores
+- **Falling loses everything you carry** except what you have on: **all equipped gear** (weapon, armour, trinket). Lost: shards, ores
   and materials, monster drops, potions, rations and water flasks, and any gear in the bag.
 - **Nothing is left behind**: no grave or corpse to come back to (online, it would only invite players to kill each
   other for the loot).
@@ -82,8 +90,8 @@ friends' playtest ([roadmap](../roadmap.md)).
 
 ## Open
 
-- Whether an **equipped trinket** is kept on death, like weapon and armour.
-- The key for mana potions, and whether the potion sizes share a key.
+- The skill keys, now that 1 to 4 are the quick slots and the left button attacks (the right button, Q, E, R?), with
+  the number of skill slots ([roadmap](../roadmap.md)).
 - **Class balancing**: each class's max mana and regen, stamina, dash length, and who blocks and parries, set
   together, after bosses ([roadmap](../roadmap.md)).
 - The numbers: the parry window, stamina costs and regen, poise per weight point, focus per point of Mind, the
