@@ -464,6 +464,15 @@ const ACTORS=new Map(),DYING=[],FREE=new Map();
 const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
 const BUILD=typeof THREE==='undefined'?[]:[['hips',V3(.8,1,.84)],['spine',V3(.92,1.2,.92)],['chest',V3(1,1/1.2,1)],
   ['head',V3(.58/(.8*.92),.58,.58/(.84*.92))],['upperleg.l',V3(1,1.2,1)],['upperleg.r',V3(1,1.2,1)],['foot.l',V3(1,1/1.2,1)],['foot.r',V3(1,1/1.2,1)]];
+// People (heroes, townsfolk, traders) go further: legs about two and a half times longer, arms longer to match, a
+// small head, narrow hips and shoulders, so a figure stands about six heads tall and gear has room to show (a coat's
+// tails, a belt at the waist). Skeletons keep the build above. Each lengthened bone's child takes the stretch back.
+const TALL=typeof THREE==='undefined'?[]:(()=>{const hx=.74,hz=.76,sx=.8,sy=1.3,cy=.88,head=.42,leg=2.55,arm=1.58,ax=hx*sx,ay=sy*cy,az=hz*sx;
+  return[['hips',V3(hx,1,hz)],['spine',V3(sx,sy,sx)],['chest',V3(1,cy,1)],['head',V3(head/ax,head/ay,head/az)],
+    ['upperleg.l',V3(1.05,leg,1.05)],['upperleg.r',V3(1.05,leg,1.05)],['foot.l',V3(1/1.05,1/leg,1/1.05)],['foot.r',V3(1/1.05,1/leg,1/1.05)],
+    ['upperarm.l',V3(.95,arm,.95)],['upperarm.r',V3(.95,arm,.95)],['wrist.l',V3(1/.95,1/arm,1/.95)],['wrist.r',V3(1/.95,1/arm,1/.95)]];})();
+// The height of a person's head, and of what floats over it (names, bars, speech), in world units.
+const PERSON_TOP=2.6;   // a person stands about 2.5 tall, a helmet a little more
 // (The change is taken back before each update: a clip without a scale track for a bone leaves the scale alone, and
 // it would otherwise compound frame after frame.)
 function upd(a,dt){if(!a.mixer)return;if(a.build&&a.built)for(const[b,v]of a.build)b.scale.divide(v);
@@ -501,7 +510,7 @@ function makeActor(key,o){
   let model=null,build=null;
   if(o.m){   // a person or a skeleton: wrapped, so it can be lifted onto its longer legs
     model=root;root=new THREE.Group();root.add(model);
-    build=(me.chibi?[]:BUILD).map(([n,v])=>[bone(model,n),v]).filter(q=>q[0]);
+    build=(me.chibi?[]:/^Skeleton/.test(o.m)?BUILD:TALL).map(([n,v])=>[bone(model,n),v]).filter(q=>q[0]);
     model.updateMatrixWorld(true);const toe=bone(model,'toes.l'),y0=toe?toe.getWorldPosition(new THREE.Vector3()).y:0;
     for(const[b,v]of build)b.scale.multiply(v);model.updateMatrixWorld(true);
     const y1=toe?toe.getWorldPosition(new THREE.Vector3()).y:0;for(const[b,v]of build)b.scale.divide(v);
@@ -802,12 +811,12 @@ function overlay(){
     if(e.hurtT>0&&!e.boss&&e.type!=='dummy')bar(a.x,top,a.z,e.elite?74:58,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
     if(e.elite&&!e.boss&&hyp(e.x-P.x,e.y-P.y)<200)label((ETYPES[e.type].name||'')+', elite',a.x,top+.55,a.z,'#e9c87a','600 13px Cinzel,Georgia,serif');}
   // your party: name and health
-  if(NET.on)for(const q of NET.others){if(q.x<-900||q.dead)continue;label(q.name||'',wx(q.x),2.9,wz(q.y),'#e9dfc8','600 13px Cinzel,Georgia,serif');bar(wx(q.x),2.55,wz(q.y),46,q.hp/q.maxHp,'#7fc24a');}
+  if(NET.on)for(const q of NET.others){if(q.x<-900||q.dead)continue;label(q.name||'',wx(q.x),PERSON_TOP+.8,wz(q.y),'#e9dfc8','600 13px Cinzel,Georgia,serif');bar(wx(q.x),PERSON_TOP+.45,wz(q.y),46,q.hp/q.maxHp,'#7fc24a');}
   // the people and things you can use, when you are near
   const near=(q,r=110)=>q&&hyp(q.x-P.x,q.y-P.y)<r;
-  for(const q of[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[])])if(near(q,G.village?70:110)&&!(q.sayUntil>G.time))label(q.name||'Trader',wx(q.x),2.95,wz(q.y),'#e9c87a','600 13px Cinzel,Georgia,serif');
+  for(const q of[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[])])if(near(q,G.village?70:110)&&!(q.sayUntil>G.time))label(q.name||'Trader',wx(q.x),PERSON_TOP+.8,wz(q.y),'#e9c87a','600 13px Cinzel,Georgia,serif');
   // what a villager says when you talk to them: a box over their head
-  for(const q of G.talkers||[])if(q.sayUntil>G.time){const p=scr(wx(q.x),3.1,wz(q.y));if(!p)continue;
+  for(const q of G.talkers||[])if(q.sayUntil>G.time){const p=scr(wx(q.x),PERSON_TOP+.7,wz(q.y));if(!p)continue;
     c.font="600 16px 'Cormorant Garamond',Georgia,serif";const words=String(q.line).split(' '),lines=[];let cur='';
     for(const w of words){if(c.measureText(cur+' '+w).width>260&&cur){lines.push(cur);cur=w;}else cur=cur?cur+' '+w:w;}lines.push(cur);
     const bw=Math.ceil(Math.max(...lines.map(l=>c.measureText(l).width)))+20,bh=lines.length*19+14,X=Math.round(p[0]-bw/2),Y=Math.round(p[1]-bh-6);
@@ -851,7 +860,7 @@ let PV=null;
 me.preview=function(cv){
   if(!me.ready||Q.off)return false;
   if(!PV){const r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.1;r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
-    const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(28,1,.1,50);cam.position.set(0,2.2,7.2);cam.lookAt(0,1.25,0);
+    const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(28,1,.1,50);cam.position.set(0,1.7,6.9);cam.lookAt(0,1.3,0);
     sc.add(new THREE.HemisphereLight('#c8d0e8','#2a2016',1.4));const k=new THREE.DirectionalLight('#ffe2c0',2.2);k.position.set(2,4,5);sc.add(k);
     const rim=new THREE.DirectionalLight('#8aa0ff',1.6);rim.position.set(-3,3,-4);sc.add(rim);
     const disc=new THREE.Mesh(new THREE.CircleGeometry(1.1,40),new THREE.MeshBasicMaterial({color:'#000',transparent:true,opacity:.45}));disc.rotation.x=-Math.PI/2;sc.add(disc);

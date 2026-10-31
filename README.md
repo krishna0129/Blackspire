@@ -26,12 +26,15 @@ The only outside requests are the fonts, from Google Fonts. Offline, the game fa
 ## Graphics
 
 The tower's floors are 3D: the rules underneath are the same flat map as ever, and only the drawing changed, so
-single player and online look the same. The village is still drawn in 2D for now. The **Graphics** button in the
+single player and online look the same, and so is the root village. People (you, your party, the townsfolk and
+traders) are KayKit's adventurers stretched taller: long legs, longer arms, a small head, about six heads tall, so
+gear has room to show; skeletons keep a gentler stretch. The **Graphics** button in the
 Gear panel switches between **3D**, **3D (fast)** (no shadows or glow, for slower machines and phones) and **2D**;
 the choice is kept in the browser. A browser without WebGL gets 2D. The mouse wheel zooms the 3D view.
 
 The models (characters, skeletons, the dungeon and its props) are by Kay Lousberg ([kaylousberg.com](https://kaylousberg.com)),
-from the KayKit packs Dungeon Remastered, Character Pack: Adventurers, Character Pack: Skeletons and Halloween Bits,
+from the KayKit packs Dungeon Remastered, Character Pack: Adventurers, Character Pack: Skeletons, Halloween Bits,
+Medieval Hexagon, Restaurant Bits and Furniture Bits,
 all released under CC0. They are packed into `js/vendor/models.js` by `tools/pack-models.mjs` (its header says how to
 fetch the packs and rerun it), and three.js (MIT) is bundled into `js/vendor/three.js` by `npm run vendor`. Both files
 are generated: rebuild them rather than editing them.
