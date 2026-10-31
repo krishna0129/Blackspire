@@ -13,19 +13,19 @@ ideas go into the backlog (end of this file) the moment they come up, and are lo
 
 Each item below is marked **Before** (needed for the playtest) or **After**.
 
-## 1. Combat and movement (Before: everything else waits on this)
+## 1. Combat and movement (decided: [combat.md](design/combat.md))
 
-The skill numbers, boss fights and gear stats are all set against it, so it comes first.
+Decided: mouse aiming, slower while attacking; the dash without invulnerability (no roll); stamina for dashing and
+blocking; parries with shields and swords; hit reactions; poise (from armour weight) and focus (from Mind), and a
+poise bar on enemies; mana for every skill, a free basic attack, skills that empower it, mana potions; potions in
+sizes; ground markers for area attacks only; death loses everything carried but your weapon and armour, with no grave.
 
-- **Aiming:** attacks go where you face (today) or toward the mouse? Click to move, or WASD only?
-- **Pace:** how long fights should last. Targets for a trash pack, an elite and a boss, alone and in a party of 4.
-  These set the reference damage R per floor ([skills.md](design/skills.md#the-power-budget)).
-- **The roll:** invulnerable frames or not, a cost (cooldown, stamina, mana), how far.
-- **Blocking:** keep it as it is, or add a timed parry?
-- **Hit feel:** hit-stop, knockback, stagger, screen shake. How much of each.
-- **Resources:** mana for every class, or something of their own (rage for a Marauder, energy for a Shadow)?
-- **Enemy telegraphs:** must every elite and boss attack be readable before it lands?
-- **Death:** what it costs in single player and online (today: wake at the inn).
+Still open:
+
+- **Before:** whether an equipped trinket is kept on death; the mana potion's key.
+- **Before:** **class balancing**: each class's mana and regen, stamina, dash length, block and parry, set together
+  once bosses are designed.
+- **Before:** the numbers (parry window, stamina, poise, focus, stagger), through the balance runner.
 
 ## 2. Skills and the boards
 
@@ -101,11 +101,12 @@ The skill numbers, boss fights and gear stats are all set against it, so it come
 
 ## Suggested order of the talks
 
-1. Combat and movement (1), with the bosses (5, Before).
-2. Skills for the playtest and the healer's kit (2, Before).
-3. Multiplayer for 3 or 4 (4).
-4. Gear for the playtest (3, Before).
-5. The character creator, the look and the sound (6, 7).
+1. ~~Combat and movement (1)~~ (decided). Next: the bosses (5, Before).
+2. Class balancing (1).
+3. Skills for the playtest and the healer's kit (2, Before).
+4. Multiplayer for 3 or 4 (4).
+5. Gear for the playtest (3, Before).
+6. The character creator, the look and the sound (6, 7).
 
 Then the playtest plan, and building.
 
@@ -113,4 +114,4 @@ Then the playtest plan, and building.
 
 Ideas that come up before the playtest go here, untouched until after it.
 
-- (empty)
+- An invulnerable dash, as a set bonus.

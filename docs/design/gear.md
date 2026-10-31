@@ -9,10 +9,10 @@ designed now (chest pieces first); the rules wait for them.
 - **Armour slots:** head, chest, hands, legs, feet. Weapons and trinkets are not armour.
 - **Weight classes:** light, medium, heavy. Anyone can wear anything; a class proficiency, later, rewards a class's
   own weight.
-- **Burden:** medium and heavy armour slow you, shorten your roll and cut your evade. **Strength** takes away the
-  move and roll penalties and **dexterity** the evade penalty, so attribute points have a visible job.
+- **Burden:** medium and heavy armour slow you, shorten your dash and cut your evade. **Strength** takes away the
+  move and dash penalties and **dexterity** the evade penalty, so attribute points have a visible job.
 - **Weight and fatigue:** the heavier the whole loadout, the faster fatigue builds. Nothing takes this away: it is
-  the price of a tank's defence.
+  the price of a tank's defence. Weight also gives **poise**, resistance to being interrupted ([combat.md](combat.md)).
 - **Sets:** a set is a **full armour set** (five pieces), and its bonus comes with the full set. Every set has a
   rarity of its own, like Genshin's artifact sets: low rarities give plain stats, Legendary sets change how you
   play. **Every rarity has at least one set made for each class.** No new rarity colour.
@@ -44,7 +44,7 @@ The other slots will get types the same way when they are designed.
 
 Every piece carries, before its random affixes:
 
-- **Its weight class's passive.** Light, *Unburdened*: +5% move speed, rolls cost less. Medium, *Steady*: less
+- **Its weight class's passive.** Light, *Unburdened*: +5% move speed, dashes cost less stamina. Medium, *Steady*: less
   knockback, a little health. Heavy, *Unshaken*: no knockback, critical hits on you do less.
 - **Its type's bonus** (the table above), growing with item level.
 
@@ -52,7 +52,7 @@ Random affixes stay as they are: none on Common, one on Uncommon and Rare, two o
 
 ## Burden
 
-| Chest | Move | Roll | Evade |
+| Chest | Move | Dash | Evade |
 |---|---|---|---|
 | Brigandine | −3% | | −10% |
 | Mail hauberk | −6% | −10% | −20% |
@@ -176,7 +176,7 @@ And two Common sets for anyone: **Wayfarer's** and **Militia**.
 
 | Set | Weight / chest | Full set |
 |---|---|---|
-| Last Bastion | heavy / plate | No knockback or slows. Blocking sends out a shockwave. Allies near you take 10% less damage. You cannot roll. |
+| Last Bastion | heavy / plate | No knockback or slows. Blocking sends out a shockwave. Allies near you take 10% less damage. You cannot dash. |
 | Ashen Tails | medium / longcoat | Each dodge leaves an afterimage that draws enemies' attacks for 1.5 s, then bursts into fire. |
 | Hawkmoor | medium / jerkin | Arrows pierce every enemy, and deal 2% more for each one already pierced. |
 | Hollowstep | light / shroud | Movement skills have a second charge. The first hit after one deals triple damage. |
@@ -194,7 +194,7 @@ Single pieces, no set; each bends one rule, usually at a cost.
 | Piece | Type | Effect |
 |---|---|---|
 | Pilgrim's Tunic | tunic | Weighs nothing; fatigue builds 10% slower. Very little defence. |
-| Bellwarden | plate | Blocking sends out a knockback shockwave. You cannot roll. |
+| Bellwarden | plate | Blocking sends out a knockback shockwave. You cannot dash. |
 | Penitent's Mail | hauberk | 30% of the healing you give heals you too. −10% max health. |
 | Cinder Vigil | robe | Out of mana, skills cost health instead. |
 | Veil of Quiet | shroud | Enemies lose track of you briefly after a dodge. You take 15% more damage. |
