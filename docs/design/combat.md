@@ -90,8 +90,8 @@ friends' playtest ([roadmap](../roadmap.md)).
 
 ## Open
 
-- The skill keys, now that 1 to 4 are the quick slots and the left button attacks (the right button, Q, E, R?), with
-  the number of skill slots ([roadmap](../roadmap.md)).
+- **Four skill slots** (decided). Their keys: Q W E R was asked for, but W also moves forward; the layout is to settle.
+  Players will be able to change any binding once there is a settings screen ([roadmap](../roadmap.md)).
 - **Class balancing**: each class's max mana and regen, stamina, dash length, and who blocks and parries, set
   together, after bosses ([roadmap](../roadmap.md)).
 - The numbers: the parry window, stamina costs and regen, poise per weight point, focus per point of Mind, the

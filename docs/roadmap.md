@@ -23,7 +23,8 @@ equipped gear, with no grave.
 
 Still open:
 
-- **Before:** the skill keys, now that 1 to 4 are the quick slots (health, mana, food, water).
+- **Before:** the skill keys: four skill slots (decided); Q W E R clashes with W for moving forward, so the layout is
+  to settle (see the combat doc).
 - **Before:** **class balancing**: each class's mana and regen, stamina, dash length, block and parry, set together
   once bosses are designed.
 - **Before:** the numbers (parry window, stamina, poise, focus, stagger), through the balance runner.
@@ -87,6 +88,11 @@ Still open:
 - **Before:** icon size in the baked sheet (96 or 128 pixels), and whether coat tails and capes swing.
 - **Before:** sound and music: what the playtest needs (hits, skills, footsteps, a floor's theme).
 - **After:** the slowest computer the game must run well on, measured on real hardware.
+
+## 7b. Settings (After)
+
+- A settings screen: key bindings players can change, plus the graphics and sound choices that today sit in the Gear
+  panel.
 
 ## 8. Economy and the village (After)
 
