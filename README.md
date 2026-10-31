@@ -177,7 +177,8 @@ The guild's daily board also asks for monster drops and pays 30% over the usual 
   (`npx playwright install chromium`); rerun it after changing sprites.
 - [docs/design](docs/design): design proposals: [skills and the skill tree](docs/design/skills.md), the earlier
   [skill trees and mutations](docs/design/skill-trees.md) and [class trees](docs/design/class-trees.md) it replaces,
-  [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md).
+  [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md),
+  [gear: armour, weight and sets](docs/design/gear.md).
 
 ## Fatigue and the inn
 
