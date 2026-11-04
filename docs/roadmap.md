@@ -51,17 +51,14 @@ counts, shown in the playtest through debug mode.
 - **After:** the super-rare boss drops' rates, and a pity rule or none ([floor-3.md](design/floor-3.md)).
 - **After:** lighter gear from rarity and materials; the free weight allowance as slots are added.
 
-## 4. Multiplayer for 3 or 4 (Before: all of it)
+## 4. Multiplayer for 3 or 4 (decided: [multiplayer.md](design/multiplayer.md))
 
-- **Hosting:** where the server runs (a small rented server, or a home PC reached over Tailscale), and who keeps it
-  up and backs up its save file.
-- **Loot:** gear drops for each player separately, or one drop to whoever takes it? (Chests are already decided:
-  opened once for the whole world.)
-- **Experience:** shared in a party, and how far apart players can be to share it.
-- **Difficulty:** how enemy health and damage grow with party size.
-- **A fallen player:** revived by allies, or back at a safe point; what happens if the whole party falls.
-- **The party on screen:** party health frames, where each player is, pings on the map?
-- **Lag:** what is acceptable, tested across a real network before the playtest (it has only run on one machine).
+Decided: the server on the home PC over Tailscale (online down when it's off), a real-internet test with one friend
+first; ordinary drops personal, Epic, Legendary and boss drops first to grab; experience shared within a screen;
+ordinary enemies +50% health per extra player; falling is death, undone only by a Templar's Revive within about 15 s;
+no friendly fire outside agreed duels; party bars, allies on the minimap, pings, chat on Discord.
+
+- **Before:** the ping's key, how duels are offered, the Revive's reach.
 
 ## 5. Bosses and floors
 
@@ -113,8 +110,8 @@ room with a stash and a trader before every boss; the three bosses' phases.
 
 1. ~~Combat and movement (1)~~ and ~~the bosses (5)~~ (decided).
 2. ~~Class balancing (1)~~ and ~~skills (2)~~ (decided).
-3. Multiplayer for 3 or 4 (4). Next.
-4. Gear for the playtest (3, Before).
+3. ~~Multiplayer for 3 or 4 (4)~~ (decided).
+4. Gear for the playtest (3, Before). Next.
 5. The character creator, the look and the sound (6, 7).
 
 Then the playtest plan, and building.

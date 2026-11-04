@@ -102,6 +102,8 @@ Every binding can be changed once there is a settings screen ([roadmap](../roadm
 
 - **Falling loses everything you carry** except what you have on: **all equipped gear** (weapon, armour, trinket). Lost: shards, ores
   and materials, monster drops, potions, rations and water flasks, and any gear in the bag.
+- **In a party, a Templar can undo it**: within about 15 seconds of a fall, its Revive brings the player back with
+  everything ([multiplayer.md](multiplayer.md#falling)). Otherwise the death counts.
 - **Nothing is left behind**: no grave or corpse to come back to (online, it would only invite players to kill each
   other for the loot).
 - So the stash matters: the village, your room at the inn, and **every safe room in the tower** (each safe point

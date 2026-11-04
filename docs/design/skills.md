@@ -44,7 +44,7 @@ classes and the Templar: Heavy Strike, Double Strike, Viper Strike and Smite.
 | Ranger | **Volley**, Lightning Arrow (chains), Caustic Arrow (a poison pool), Split Arrow (pierces a line) | Rain of Arrows (a wide storm), Ballista (a turret for 15 s), Tornado Shot (one arrow bursting in every direction) |
 | Shadow | **Shadowstep**, Viper Strike (empowered: poisons), Blade Vortex (blades spin around you), Smoke Cloud (enemies lose track of you) | Death Mark (after 4 s the target takes a share of your damage to it again), Shadow Dance (blink from enemy to enemy), Vanish (invisible; the next hit is devastating) |
 | Witch | **Fireball**, Frostbolt (slows), Arc (lightning that jumps), Ice Nova (a ring of frost around you) | Raise the Dead (a pack of zombies), Meteor (a marked, delayed fire impact), Blizzard (a wide slowing storm) |
-| Templar | **Heal**, Party Heal, Renewal (healing over time), Aegis (a shield on an ally), Revive (stands a fallen ally up, from range), Smite (empowered), **Bulwark** | Judgement (a storm of holy smites), Mass Heal (a massive heal for the whole party), Resurrection (stands every fallen ally up) |
+| Templar | **Heal**, Party Heal, Renewal (healing over time), Aegis (a shield on an ally), Revive (brings a fallen ally back within about 15 s of their fall, with what they carried: [multiplayer.md](multiplayer.md#falling)), Smite (empowered), **Bulwark** | Judgement (a storm of holy smites), Mass Heal (a massive heal for the whole party), Resurrection (brings every fallen ally back, in the same window) |
 
 Skills in bold are in the game today. The rest are built for the playtest (names are working names). The Templar has
 the most to choose from, as the one healer ([classes.md](classes.md)).

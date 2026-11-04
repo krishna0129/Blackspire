@@ -181,7 +181,7 @@ The guild's daily board also asks for monster drops and pays 30% over the usual 
   [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md),
   [gear: armour, weight and sets](docs/design/gear.md),
   [combat and movement](docs/design/combat.md), [bosses](docs/design/bosses.md),
-  [class balancing](docs/design/classes.md).
+  [class balancing](docs/design/classes.md), [multiplayer](docs/design/multiplayer.md).
 
 ## Fatigue and the inn
 
