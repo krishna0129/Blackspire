@@ -26,6 +26,29 @@ budget rules and the balance runner do not wait, and can be built first.
   ones is left out rather than patched.
 - **Every skill on the long list is in scope** (the catalogue below). The work is balancing them, not choosing.
 
+## The playtest's skills (decided)
+
+**Four slots, on Q, E, C and X** ([combat.md](combat.md#keys)). **X holds the class's ultimate**: a big skill, a long
+cooldown and a lot of mana. Each class has more skills than slots and chooses: three of its everyday skills for Q,
+E and C, and one of its **ultimates** for X. The basic attack (left button) is free.
+
+**Empowered attacks** (they strengthen the basic attack for a while: paid up front, or paid per hit) go to the melee
+classes and the Templar: Heavy Strike, Double Strike, Viper Strike and Smite.
+
+**Variations** keep their full challenge counts; the playtest shows them through debug mode and cheats.
+
+| Class | Everyday skills (Q, E, C) | Ultimates (X, one of) |
+|---|---|---|
+| Marauder | **Sunder**, **Bulwark**, Heavy Strike (empowered), Leap Slam | Enduring Cry (the party takes less damage), Earthquake (a huge slam that breaks poise), Berserk (10 s of more damage, life on hit, no knockback) |
+| Duelist | **Circular Slash**, **Piercing Line**, Riposte (a parry that strikes back), Double Strike (empowered: each hit lands twice) | Thousand Cuts (a flurry on one target), Challenge (mark an enemy: it must fight you and takes more from you), Piercing Storm (thrusts across the room) |
+| Ranger | **Volley**, Lightning Arrow (chains), Caustic Arrow (a poison pool), Split Arrow (pierces a line) | Rain of Arrows (a wide storm), Ballista (a turret for 15 s), Tornado Shot (one arrow bursting in every direction) |
+| Shadow | **Shadowstep**, Viper Strike (empowered: poisons), Blade Vortex (blades spin around you), Smoke Cloud (enemies lose track of you) | Death Mark (after 4 s the target takes a share of your damage to it again), Shadow Dance (blink from enemy to enemy), Vanish (invisible; the next hit is devastating) |
+| Witch | **Fireball**, Frostbolt (slows), Arc (lightning that jumps), Ice Nova (a ring of frost around you) | Raise the Dead (a pack of zombies), Meteor (a marked, delayed fire impact), Blizzard (a wide slowing storm) |
+| Templar | **Heal**, Party Heal, Renewal (healing over time), Aegis (a shield on an ally), Revive (stands a fallen ally up, from range), Smite (empowered), **Bulwark** | Judgement (a storm of holy smites), Mass Heal (a massive heal for the whole party), Resurrection (stands every fallen ally up) |
+
+Skills in bold are in the game today. The rest are built for the playtest (names are working names). The Templar has
+the most to choose from, as the one healer ([classes.md](classes.md)).
+
 ## Classes and boards
 
 | Class | Main attributes | Weapons | Base skills (today's in bold) |

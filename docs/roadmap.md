@@ -29,9 +29,11 @@ Still open:
 
 ## 2. Skills and the boards
 
-- **Before:** how many skills are equipped at once (four slots, or fewer for a slower game).
-- **Before:** which two or three skills each class has for the playtest, out of the catalogue.
-- **Before:** the healer's kit for a party: a group heal, healing over time, a shield, **reviving a fallen ally**?
+Decided ([skills.md](design/skills.md#the-playtests-skills-decided)): four slots on Q E C X, X the ultimate; each class
+picks three of 4 to 7 everyday skills and one of three ultimates; empowered attacks for the melee classes and the
+Templar; the Templar's full healing kit (heal, party heal, healing over time, a shield, revive); variations at full
+counts, shown in the playtest through debug mode.
+
 - **After:** whether forged gear can carry a skill of its family.
 - **After:** the class and weapon proficiency.
 - **After:** holy damage as a new type, and the faith skills that deal it.
@@ -110,7 +112,7 @@ room with a stash and a trader before every boss; the three bosses' phases.
 ## Suggested order of the talks
 
 1. ~~Combat and movement (1)~~ and ~~the bosses (5)~~ (decided).
-2. ~~Class balancing (1)~~ (decided). Next: skills.
+2. ~~Class balancing (1)~~ and ~~skills (2)~~ (decided). Next: multiplayer.
 3. Skills for the playtest and the healer's kit (2, Before).
 4. Multiplayer for 3 or 4 (4).
 5. Gear for the playtest (3, Before).
