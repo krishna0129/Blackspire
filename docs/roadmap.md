@@ -63,8 +63,11 @@ Still open:
 
 ## 5. Bosses and floors
 
-- **Before:** what a boss fight is: its length, its phases, the mechanics a party has to handle (today a boss falls
-  in 11 to 25 seconds).
+Decided ([bosses.md](design/bosses.md)): 5 to 8 minute fights alone, 8 to 10 in a party; phases per boss (three for
+each of the playtest's three); every boss reads, marks, must be parried (or dashed) and has a poise bar; an enrage per
+boss; a wipe resets the boss; +80% health per extra player, and a party-splitting mechanic from three players; a safe
+room with a stash and a trader before every boss; the three bosses' phases.
+
 - **Before:** the models of their own for floor 1's spirits and floor 3's roots and hermits, or keep borrowing
   skeletons for the playtest.
 - **After** ([world.md](design/world.md), open questions): a floor boss's first-kill reward; how often a rematch can
@@ -106,8 +109,8 @@ Still open:
 
 ## Suggested order of the talks
 
-1. ~~Combat and movement (1)~~ (decided). Next: the bosses (5, Before).
-2. Class balancing (1).
+1. ~~Combat and movement (1)~~ and ~~the bosses (5)~~ (decided).
+2. Class balancing (1). Next.
 3. Skills for the playtest and the healer's kit (2, Before).
 4. Multiplayer for 3 or 4 (4).
 5. Gear for the playtest (3, Before).
