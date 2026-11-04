@@ -24,6 +24,17 @@ designed now (chest pieces first); the rules wait for them.
   can be read at a glance. The pieces are made as 3D models, and baked once into icons and models (never drawn
   live), so a piece looks the same every time.
 
+## For the playtest (decided)
+
+- **All five armour slots**, with **one type per weight** for head, hands, legs and feet (the table under Weight), and
+  **all nine chest types**.
+- **All 37 sets.** A set piece looks like its type at its rarity, **with the set's colours and emblem** (37 colour
+  schemes, not 185 models).
+- **Drop rates:** Common 60%, Uncommon 25%, Rare 11%, Epic 3.5%, Legendary 0.5% of gear drops; better from elites,
+  much better from bosses.
+- **Gear growth:** as today (gear ten floors on is about three times as strong), revisited with floors 4 to 10.
+- **Characters are wiped** for the playtest: everyone starts fresh on the new rules.
+
 ## Chest types
 
 | Weight | Type | Its own bonus (every one, before random affixes) | Natural fit |
@@ -64,30 +75,32 @@ tooltip says it outright: *"−10% move speed, needs 24 strength (you have 12): 
 
 ## Weight
 
-Every item weighs something. Fatigue builds **2% faster for each point of weight above 3**: the first 3 are free, so
-light builds never pay.
+Every item weighs something. Fatigue builds **1.5% faster for each point of weight above 4**: the first 4 are free, so
+a light build never pays. (First set at 2% above 3 for chest and feet only; with all five slots in the playtest, the
+rate came down and the allowance up, so the heaviest tank still pays only about an hour.)
 
-| | Weight |
+| | Light | Medium | Heavy |
+|---|---|---|---|
+| Chest | 1 (tunic, robe, shroud, vestments) | 2 (jerkin, longcoat); 3 (brigandine) | 4 (hauberk); 5 (plate) |
+| Head: hood / leather cap / helm | 0.5 | 1 | 2 |
+| Hands: wraps / gloves / gauntlets | 0.5 | 1 | 2 |
+| Legs: trousers / breeches / cuisses | 0.5 | 1 | 2 |
+| Feet: striders / boots / greaves | 0.5 | 1 | 2 |
+
+| Weapons and shields | Weight |
 |---|---|
-| Tunic, robe, shroud, vestments | 1 |
-| Jerkin, longcoat | 2 |
-| Brigandine | 3 |
-| Mail hauberk | 4 |
-| Plate cuirass | 5 |
-| Striders / boots / greaves | 0.5 / 1 / 2 |
 | Dagger, grimoire / longsword, bow / spear, mace / greatsword | 0.5 / 1 / 1.5 / 2.5 |
 | Buckler / heavy shield | 0.5 / 2 |
 
-| Loadout | Weight | Fatigue | Fresh to the 7-hour cap |
+| Loadout (all five armour slots) | Weight | Fatigue | Fresh to the 7-hour cap |
 |---|---|---|---|
-| Shroud, striders, dagger | 2 | normal | 7 h |
-| Longcoat, boots, longsword and buckler | 4.5 | +3% | about 6 h 48 m |
-| Hauberk, boots, mace | 6.5 | +7% | about 6 h 33 m |
-| Plate, greaves, mace and heavy shield | 10.5 | +15% | about 6 h 05 m |
+| Shadow: light armour, a dagger | 3.5 | normal | 7 h |
+| Duelist: a longcoat and medium armour, a longsword and buckler | 7.5 | +5% | about 6 h 40 m |
+| Templar: a hauberk and heavy armour, a mace | 13.5 | +14% | about 6 h 08 m |
+| Marauder: plate and heavy armour, a mace and heavy shield | 16.5 | +19% | about 5 h 54 m |
 
-(Head, hands and legs add to it when they exist; the free allowance may grow with them.) The Gear panel shows the
-load and its rate beside the fatigue bar. Later, perhaps: Legendary pieces a point lighter, chitin-forged armour
-lighter, a rare *Featherweight* affix.
+The Gear panel shows the load and its rate beside the fatigue bar. Later, perhaps: Legendary pieces a point lighter,
+chitin-forged armour lighter, a rare *Featherweight* affix.
 
 ## Sets
 
@@ -210,7 +223,7 @@ Single pieces, no set; each bends one rule, usually at a cost.
 
 - A small bonus at three pieces, so that a half-built set is worth wearing on the long way to five?
 - Mining, and real ores, instead of the enhancing materials.
-- The other slots' types (head, hands, legs, feet), and whether the free weight allowance grows with them.
+- More types for head, hands, legs and feet after the playtest (one per weight for now).
 - Holy damage, and the faith skills that would deal it.
 
 ## Order of work

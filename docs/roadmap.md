@@ -40,16 +40,15 @@ counts, shown in the playtest through debug mode.
 
 ## 3. Gear ([gear.md](design/gear.md))
 
-- **Before:** the slots. Today there are four (weapon, armour, boots, trinket); the design has five armour slots
-  (head, chest, hands, legs, feet). For the playtest: chest and feet only, with head, hands and legs after? And how
-  old saves move over.
-- **Before:** the rarity look ladder: approve the five steps on one type (the longcoat) before all nine are made.
-- **Before:** how fast gear grows with item level (gear ten floors on is about 3 times the strength today).
-- **Before:** drop rates by rarity, and the elite gear-drop chance ([world.md](design/world.md)).
+Decided for the playtest: all five armour slots (one type per weight for head, hands, legs and feet, all nine chest
+types), all 37 sets (type looks with each set's colours and emblem), drop rates, today's gear growth, and a wipe of
+characters. Weight is now 1.5% faster fatigue per point above 4.
+
+- **Before:** approve the rarity look ladder on one type (the longcoat) before the rest are made.
 - **After:** a bonus at three pieces of a set, or full set only.
-- **After:** the types for head, hands and legs; weapon types beyond one per weapon kind; what trinkets do.
+- **After:** more types per slot; weapon types beyond one per weapon kind; what trinkets do.
 - **After:** the super-rare boss drops' rates, and a pity rule or none ([floor-3.md](design/floor-3.md)).
-- **After:** lighter gear from rarity and materials; the free weight allowance as slots are added.
+- **After:** lighter gear from rarity and materials.
 
 ## 4. Multiplayer for 3 or 4 (decided: [multiplayer.md](design/multiplayer.md))
 
@@ -111,8 +110,8 @@ room with a stash and a trader before every boss; the three bosses' phases.
 1. ~~Combat and movement (1)~~ and ~~the bosses (5)~~ (decided).
 2. ~~Class balancing (1)~~ and ~~skills (2)~~ (decided).
 3. ~~Multiplayer for 3 or 4 (4)~~ (decided).
-4. Gear for the playtest (3, Before). Next.
-5. The character creator, the look and the sound (6, 7).
+4. ~~Gear for the playtest (3)~~ (decided).
+5. The character creator, the look and the sound (6, 7). Next.
 
 Then the playtest plan, and building.
 
