@@ -23,8 +23,8 @@ equipped gear, with no grave.
 
 Still open:
 
-- **Before:** **class balancing**: each class's mana and regen, stamina, dash length, block and parry, set together
-  once bosses are designed.
+- Class balancing: decided ([classes.md](design/classes.md)): roles, base health, mana, stamina, dash, who parries
+  (shields, swords and daggers), gear healing at most 10% of a Templar's; starting attributes in detail later.
 - **Before:** the numbers (parry window, stamina, poise, focus, stagger), through the balance runner.
 
 ## 2. Skills and the boards
@@ -110,7 +110,7 @@ room with a stash and a trader before every boss; the three bosses' phases.
 ## Suggested order of the talks
 
 1. ~~Combat and movement (1)~~ and ~~the bosses (5)~~ (decided).
-2. Class balancing (1). Next.
+2. ~~Class balancing (1)~~ (decided). Next: skills.
 3. Skills for the playtest and the healer's kit (2, Before).
 4. Multiplayer for 3 or 4 (4).
 5. Gear for the playtest (3, Before).

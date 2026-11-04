@@ -38,7 +38,7 @@ Every binding can be changed once there is a settings screen ([roadmap](../roadm
 - The dodge is the **dash** (Shift). There is no roll; the gear design's "roll" penalty is a shorter dash.
 - **No invulnerability** while dashing: it moves you out of the way, nothing more. Invulnerable dashes may come later
   as a set bonus.
-- **Mages and healers dash shorter.** How far each class dashes is part of the class balancing (below).
+- **Mages and healers dash shorter.** How far each class dashes: [classes.md](classes.md).
 
 ### Stamina, blocking and parrying
 
@@ -48,7 +48,7 @@ Every binding can be changed once there is a settings screen ([roadmap](../roadm
   mana, and needs a shield).
 - **Parrying**: block just before a blow lands (about 0.2 s, to tune) and it does nothing, and the attacker is
   staggered: about a second for ordinary enemies, much less for bosses.
-- **Who can parry**: shields (bucklers and heavy shields) and swords (longswords and greatswords). Daggers, spears,
+- **Who can parry**: shields (bucklers and heavy shields), swords (longswords and greatswords) and daggers. Spears,
   maces without a shield, bows and grimoires cannot.
 
 ### Hits, poise and focus
@@ -111,8 +111,6 @@ Every binding can be changed once there is a settings screen ([roadmap](../roadm
 
 ## Open
 
-- **Class balancing**: each class's max mana and regen, stamina, dash length, and who blocks and parries, set
-  together, after bosses ([roadmap](../roadmap.md)).
 - The numbers: the parry window, stamina costs and regen, poise per weight point, focus per point of Mind, the
   stagger's damage bonus.
 - **Bosses**: length, phases and mechanics (next).

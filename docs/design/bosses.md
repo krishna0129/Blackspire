@@ -14,7 +14,7 @@ Ordinary enemies and elites stay as hard as they are. Only bosses get harder: to
   - **heavy hits to read and dodge**, with no markers (as for ordinary enemies);
   - **area attacks** with ground markers;
   - **an attack to parry or block** (a shield or a sword), which staggers the boss when parried. Classes that can't
-    parry (Ranger, Shadow, Witch) **dash clear of it** instead: no hit, but no stagger either;
+    parry (the Ranger and the Witch) **dash clear of it** instead: no hit, but no stagger either;
   - **a poise bar** that, broken, opens a big damage window. A party breaks it together.
 - **Enrage:** every boss has one, with its own timer, well past the fight's normal length, so only a fight that is
   being lost enrages. A first guess for the three: 12 minutes alone, 15 for a party.
