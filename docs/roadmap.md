@@ -66,27 +66,24 @@ each of the playtest's three); every boss reads, marks, must be parried (or dash
 boss; a wipe resets the boss; +80% health per extra player, and a party-splitting mechanic from three players; a safe
 room with a stash and a trader before every boss; the three bosses' phases.
 
-- **Before:** the models of their own for floor 1's spirits and floor 3's roots and hermits, or keep borrowing
-  skeletons for the playtest.
+- Decided: floor 1's spirits and floor 3's roots and hermits get models of their own ([look.md](design/look.md)).
 - **After** ([world.md](design/world.md), open questions): a floor boss's first-kill reward; how often a rematch can
   be fought; whether a newcomer must beat a boss to go up; what limited-time events are for.
 - **After:** floors 4 to 10 and the first branch village.
 - **After:** the hidden bosses' open points.
 
-## 6. The character
+## 6. The character (decided: [look.md](design/look.md))
 
-- **Before:** the character creator in 3D: hair, face, skin, perhaps body types. The 2D choices do nothing on the 3D
-  models today, and every hero is the same Knight.
-- **Before:** keep or drop uploaded sprite sheets now that the game is 3D.
-- **After:** whether enemies get the taller build too.
+Decided: a 3D creator (skin, hair style and colour, face and eyes, two body types); uploaded sprite sheets dropped;
+Common starting gear of the class's weight; skeletons get the tall build too.
 
-## 7. The look and the sound
+## 7. The look and the sound (decided: [look.md](design/look.md))
 
-- **Before:** confirm the graphics style. Style C (the gritty grade and ink outlines) is the default, but the choice
-  between A, B, C and D was never made.
-- **Before:** icon size in the baked sheet (96 or 128 pixels), and whether coat tails and capes swing.
-- **Before:** sound and music: what the playtest needs (hits, skills, footsteps, a floor's theme).
-- **After:** the slowest computer the game must run well on, measured on real hardware.
+Decided: style C (gritty grade and ink outlines); coat tails and capes swing; 128-pixel icons; combat, world,
+interface sounds and music from free CC0 packs.
+
+- **Before:** which sound packs (the owner fetches them).
+- **After:** the slowest computer the game must run well on, measured on friends' machines.
 
 ## 7b. Settings (After)
 
@@ -101,9 +98,10 @@ room with a stash and a trader before every boss; the three bosses' phases.
 - The arcanist's gear passives and brewing (decided, not built).
 - Held: the bard, inn room upgrades and the trophy shelf, a mailbox.
 
-## 9. Story and quests (After)
+## 9. Story and quests
 
-- How much of the story draft the playtest shows: perhaps an opening line at the gate and the guild's bounties only.
+- Decided: a light touch in the playtest: an opening line at the gate, the guild's bounties, a few villagers' lines.
+- **After:** how much more of the story draft the game tells, and how.
 
 ## Suggested order of the talks
 
@@ -111,9 +109,10 @@ room with a stash and a trader before every boss; the three bosses' phases.
 2. ~~Class balancing (1)~~ and ~~skills (2)~~ (decided).
 3. ~~Multiplayer for 3 or 4 (4)~~ (decided).
 4. ~~Gear for the playtest (3)~~ (decided).
-5. The character creator, the look and the sound (6, 7). Next.
+5. ~~The character creator, the look and the sound (6, 7)~~ (decided).
 
-Then the playtest plan, and building.
+**Everything needed before the playtest is decided**, apart from small details listed above. Next: the build plan,
+and building.
 
 ## Backlog
 
