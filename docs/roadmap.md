@@ -112,11 +112,10 @@ room with a stash and a trader before every boss; the three bosses' phases.
 ## Suggested order of the talks
 
 1. ~~Combat and movement (1)~~ and ~~the bosses (5)~~ (decided).
-2. ~~Class balancing (1)~~ and ~~skills (2)~~ (decided). Next: multiplayer.
-3. Skills for the playtest and the healer's kit (2, Before).
-4. Multiplayer for 3 or 4 (4).
-5. Gear for the playtest (3, Before).
-6. The character creator, the look and the sound (6, 7).
+2. ~~Class balancing (1)~~ and ~~skills (2)~~ (decided).
+3. Multiplayer for 3 or 4 (4). Next.
+4. Gear for the playtest (3, Before).
+5. The character creator, the look and the sound (6, 7).
 
 Then the playtest plan, and building.
 
