@@ -9,7 +9,7 @@ starts. Small open details are settled at the step that needs them (marked *Deci
 - Merge PR #11 (classes and boards, fatigue and the inn, the 3D village, taller people, every design document).
   Each step after starts a fresh branch from `main`.
 
-## 1. Controls and the core of combat
+## 1. Controls and the core of combat (built)
 
 [combat.md](design/combat.md)
 
@@ -21,7 +21,9 @@ starts. Small open details are settled at the step that needs them (marked *Deci
   **poise bar on enemies** that staggers them when broken.
 - Ground markers for area attacks only.
 
-*Playable:* floor 1 with today's skills, under the new controls. *Decide:* the first numbers (parry window, stamina).
+*Playable:* floor 1 with today's skills, under the new controls. First numbers are in `COMBAT` (data.js): parry window
+0.2 s, a dash 30 stamina, 80 to 120 stamina by class. The classes' base numbers (health, mana, stamina, dash) came in
+with it.
 
 ## 2. Classes and skills
 

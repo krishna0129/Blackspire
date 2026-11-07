@@ -397,3 +397,11 @@ input[type=text],input[type=password]{font-family:'Cormorant Garamond',Georgia,s
 .titleBlock p{color:#bfb090;font-size:19px}
 .pv{background:radial-gradient(circle at 50% 62%,#2a2219 0,#0d0a08 62%)}
 .pv3{display:block;width:180px;height:220px;margin:0 auto 10px;background:radial-gradient(ellipse at 50% 70%,#2e2418 0,#0d0a08 68%);box-shadow:var(--edge)}
+
+/* stamina, under mana; the boss's poise, under its health */
+#hud .bar.sta{height:6px;width:100%;margin-top:4px}
+#hud .bar.sta i{background:linear-gradient(#e8d9a8,#b89a5a)}
+#hud #boss .bar.poise{height:5px;margin-top:4px}
+#hud #boss .bar.poise i{background:#e8d9a8}
+#hud #boss .bar.poise i.broken{background:#fff;animation:poiseFlash .2s steps(2) infinite}
+@keyframes poiseFlash{50%{background:#ffe9a8}}

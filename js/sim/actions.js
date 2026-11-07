@@ -40,7 +40,9 @@ const ACTIONS={
   leaveRoom(){if(!P.room)return false;P.room=false;S.inRoom=false;return true;},
   sleep(){if(!P.room)return false;wake(P);P.hp=ST.maxHp;P.mp=ST.maxMp;calcStats();storeNeeds(P);return true;},
   // a sleeping bag (SUPPLIES.bag): a night's sleep in any safe area, without the inn's well-rested bonus
-  sleepBag(){if(!P.safe||!(S.bags>0)||P.room||P.fat<1)return false;S.bags--;P.fat=0;P.fireCd=0;calcStats();storeNeeds(P);return true;},
+  // a sleeping bag: laid out on the ground in a safe place (using it up), then slept in by interacting with it
+  layBag(){if(!P.safe||!(S.bags>0)||P.room||P.bag||P.dead)return false;S.bags--;P.bag={x:P.x,y:P.y+8};return true;},
+  sleepBag(){if(!P.bag||hyp(P.bag.x-P.x,P.bag.y-P.y)>22||P.fat<1)return false;P.bag=null;P.fat=0;P.fireCd=0;calcStats();storeNeeds(P);return true;},
   // resting by a safe room's campfire: half your fatigue, once every FIRE_EVERY seconds of play
   restFire(){const f=nearFire();if(!f||P.fireCd>0||P.fat<60)return false;P.fat=Math.floor(P.fat/2);P.fireCd=FIRE_EVERY;calcStats();storeNeeds(P);return true;},
   // the barkeep's next rumour (its index)

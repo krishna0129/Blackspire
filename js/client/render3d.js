@@ -553,7 +553,7 @@ function heroActor(id,wt){
 function animHero(a,pl,wt,dt){
   const h=HERO[wt]||HERO.sword;a.root.position.set(wx(pl.x),0,wz(pl.y));a.root.visible=pl.x>-900;
   if(pl.dead){if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
-  const sw=pl.swing;let ang=DIR_ANGLE[pl.dir||0];
+  const sw=pl.swing;let ang=typeof pl.aim==='number'?pl.aim:DIR_ANGLE[pl.dir||0];   // the mouse's aim, or the four-way facing
   if(sw){ang=sw.a??ang;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing
       const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;
       play(a,clip,{once:true,restart:true,fade:.06,speed:CLIP[clip].duration/dur});}
@@ -561,7 +561,7 @@ function animHero(a,pl,wt,dt){
   a.lock-=dt;
   if(a.lock<=0){
     if(pl.dash)play(a,'Dodge_Forward',{once:true,speed:1.6,fade:.08});
-    else if(pl.blocking)play(a,'Blocking',{fade:.1});
+    else if(pl.blocking||pl.parrying)play(a,'Blocking',{fade:.06});
     else if(pl.moving)play(a,'Running_A',{speed:1.05});
     else play(a,h.idle||'Idle',{fade:.2});
   }
@@ -708,7 +708,9 @@ function frame3d(){
   const wt=S.equip&&S.equip.weapon?S.equip.weapon.type:'sword';
   seenIds.clear();npcs(dt);
   const mine=heroActor('me',wt);seenIds.add('me');animHero(mine,P,wt,dt);
-  if(!P.dead){ring(px,pz,.75,'#e9c87a',.35,.06);disc(px,pz,.75,'#e9c87a',.06);}   // a faint ring under you, so you never lose yourself in a crowd
+  if(!P.dead){ring(px,pz,.75,'#e9c87a',.35,.06);disc(px,pz,.75,'#e9c87a',.06);   // a faint ring under you, so you never lose yourself in a crowd
+    disc(px+Math.cos(P.aim)*.98,pz+Math.sin(P.aim)*.98,.13,'#ffe9a8',.55);}   // and a mark on it where you aim
+  bagMesh();
   if(NET.on)for(const q of NET.others){if(q.x<-900)continue;const a=heroActor('p'+q.id,q.wtype||'sword');seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);
     DLIGHTS.push({x:wx(q.x),y:3.2,z:wz(q.y),col:'#ffe2b8',int:14,dist:11,pri:2});}
   // enemies near enough to matter
@@ -798,6 +800,24 @@ function parts(){
   PARTS.geometry.setDrawRange(0,n);p.needsUpdate=c.needsUpdate=true;
 }
 
+// Your sleeping bag, once laid out: a rolled-out bedroll on the floor.
+let BAG=null;
+function bagMesh(){
+  if(!BAG){BAG=new THREE.Group();const cloth=new THREE.MeshStandardMaterial({color:'#5b6b4a',roughness:.95}),roll=new THREE.MeshStandardMaterial({color:'#7d8a62',roughness:.95});
+    const pad=new THREE.Mesh(new THREE.BoxGeometry(.9,.08,2),cloth);pad.position.y=.05;pad.receiveShadow=true;BAG.add(pad);
+    const pil=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.9,10),roll);pil.rotation.z=Math.PI/2;pil.position.set(0,.18,-.85);pil.castShadow=true;BAG.add(pil);scene.add(BAG);}
+  BAG.visible=!!(P&&P.bag);if(BAG.visible)BAG.position.set(wx(P.bag.x),0,wz(P.bag.y));
+}
+// Where a point on the screen (in page pixels) falls on the floor, at about chest height so aiming at an enemy's body
+// lands on it: game coordinates, or null.
+const pickRay=typeof THREE==='undefined'?null:new THREE.Raycaster(),pickPlane=typeof THREE==='undefined'?null:new THREE.Plane(new THREE.Vector3(0,1,0),-.9),pickHit=typeof THREE==='undefined'?null:new THREE.Vector3();
+me.pick=function(cx,cy){
+  if(!canvas||canvas.hidden||!camera)return null;const r=canvas.getBoundingClientRect();if(r.width<2)return null;
+  pickRay.setFromCamera({x:(cx-r.left)/r.width*2-1,y:-(cy-r.top)/r.height*2+1},camera);
+  return pickRay.ray.intersectPlane(pickPlane,pickHit)?{x:pickHit.x/U,y:pickHit.z/U}:null;
+};
+// The other way: where a game position (at a height in world units) shows on the page, in page pixels, or null.
+me.screenOf=function(x,y,h=1){if(!canvas||canvas.hidden||!camera)return null;const p=scr(wx(x),h,wz(y)),r=canvas.getBoundingClientRect();return p?{x:r.left+p[0]*r.width/VW,y:r.top+p[1]*r.height/VH}:null;};
 /* ---------- the overlay: numbers, health bars and names, drawn flat over the 3D view ---------- */
 const NUMCOL={crit:'#ffd45c',hurt:'#ff5a52',bleed:'#d0607a',heal:'#9be08a',evade:'#6fd6e6',mana:'#7fa8ff',resist:'#8e97b5',bane:'#f2a03c'};
 function scr(x,h,z){tmpV.set(x,h,z).project(camera);return tmpV.z>1?null:[(tmpV.x+1)/2*VW,(1-tmpV.y)/2*VH];}
@@ -806,9 +826,13 @@ function overlay(){
   const label=(s,x,h,z,col,font)=>{const p=scr(x,h,z);if(!p)return;c.font=font;c.lineWidth=3;c.strokeStyle='rgba(0,0,0,.85)';c.strokeText(s,p[0],p[1]);c.fillStyle=col;c.fillText(s,p[0],p[1]);};
   const bar=(x,h,z,w,f,col,edge)=>{const p=scr(x,h,z);if(!p)return;const X=Math.round(p[0]-w/2),Y=Math.round(p[1]);
     c.fillStyle='#000';c.fillRect(X-2,Y-2,w+4,9);if(edge){c.fillStyle=edge;c.fillRect(X-1,Y-1,w+2,7);}c.fillStyle='#160b0b';c.fillRect(X,Y,w,5);c.fillStyle=col;c.fillRect(X,Y,Math.ceil(w*clamp(f,0,1)),5);};
+  // under an enemy's health, its poise: worn down by blows; it flashes white while the enemy reels
+  const poiseBar=(x,h,z,w,f,broken)=>{const p=scr(x,h,z);if(!p)return;const X=Math.round(p[0]-w/2),Y=Math.round(p[1])+8;
+    c.fillStyle='#000';c.fillRect(X-1,Y-1,w+2,4);c.fillStyle=broken?(Math.floor(G.time*10)%2?'#ffffff':'#ffe9a8'):'#e8d9a8';c.fillRect(X,Y,Math.ceil(w*clamp(f,0,1)),2);};
   // enemy health, once hurt; elites and bosses by name
   for(const e of G.enemies){const a=ACTORS.get('e'+e.id);if(!a||e.burrowed)continue;const top=2.6*(a.o.s||1)*(e.elite?1.12:1);
-    if(e.hurtT>0&&!e.boss&&e.type!=='dummy')bar(a.x,top,a.z,e.elite?74:58,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
+    if(e.hurtT>0&&!e.boss&&e.type!=='dummy'){const w=e.elite?74:58;bar(a.x,top,a.z,w,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
+      if(e.maxPoise)poiseBar(a.x,top,a.z,w,e.staggerT>0?1:e.poise/e.maxPoise,e.staggerT>0);}
     if(e.elite&&!e.boss&&hyp(e.x-P.x,e.y-P.y)<200)label((ETYPES[e.type].name||'')+', elite',a.x,top+.55,a.z,'#e9c87a','600 13px Cinzel,Georgia,serif');}
   // your party: name and health
   if(NET.on)for(const q of NET.others){if(q.x<-900||q.dead)continue;label(q.name||'',wx(q.x),PERSON_TOP+.8,wz(q.y),'#e9dfc8','600 13px Cinzel,Georgia,serif');bar(wx(q.x),PERSON_TOP+.45,wz(q.y),46,q.hp/q.maxHp,'#7fc24a');}

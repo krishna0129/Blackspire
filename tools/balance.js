@@ -46,7 +46,7 @@ function scene(floor,start,wkey,attr,kind,cls){
       let tg=live[0],bd=1e9;for(const e of live){const d=hyp(e.x-P.x,e.y-P.y);if(d<bd){bd=d;tg=e;}}
       const a=Math.atan2(tg.y-P.y,tg.x-P.x),reach=ST.ranged||ST.magic?ST.range*.6:ST.range*.8;
       const mx=bd>reach?Math.cos(a):0,my=bd>reach?Math.sin(a):0;
-      P.dir=dirOf(a);P.in={mx,my,atk:true,block:false};
+      P.dir=dirOf(a);P.in={mx,my,atk:true,block:false,aim:a};
       const hp=P.hp,before=foes.reduce((n,e)=>n+Math.max(0,e.hp),0);   // before the skill, so its damage counts
       if(P.skillCd<=0&&P.mp>=SKILLS[ST.skill].mp&&SKILLS[ST.skill].tags.some(x=>DTYPES[x])&&!P.swing){P.aim=DIR_ANGLE[P.dir];useSkill();casts++;}
       if(P.hp<ST.maxHp*.35&&P.potCd<=0&&S.potions>0)usePotion();

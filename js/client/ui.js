@@ -5,7 +5,7 @@
 const hc={};
 function setTxt(id,v){if(hc[id]!==v){hc[id]=v;$('#'+id).textContent=v;}}
 function setStyle(key,el,prop,v){if(hc[key]!==v){hc[key]=v;el.style[prop]=v;}}
-const elHp=$('#hpFill'),elXp=$('#xpFill'),elBoss=$('#bossFill'),cdSk=$('#slSkill .cd'),elMp=$('#mpFill'),elSk=$('#slSkill'),cdDo=$('#slDodge .cd'),cdPo=$('#slPot .cd'),elPrompt=$('#prompt');
+const elSta=$('#staFill'),elBossP=$('#bossPoise'),elHp=$('#hpFill'),elXp=$('#xpFill'),elBoss=$('#bossFill'),cdSk=$('#slSkill .cd'),elMp=$('#mpFill'),elSk=$('#slSkill'),cdDo=$('#slDodge .cd'),cdPo=$('#slPot .cd'),elPrompt=$('#prompt');
 function updateHud(){
   const hp=clamp(P.hp/ST.maxHp,0,1);
   setStyle('hpw',elHp,'width',(hp*100).toFixed(1)+'%');
@@ -24,34 +24,38 @@ function updateHud(){
   const lack=!ST.skill||P.mp<SKILLS[ST.skill].mp||P.safe;if(hc.lack!==lack){hc.lack=lack;elSk.classList.toggle('lack',lack);}
   if(hc.safe!==P.safe){hc.safe=P.safe;$('#slAtk').classList.toggle('lack',!!P.safe);}
   setTxt('hFloor',G.village?'The root village'+(NET.on?', channel '+NET.ch:''):'Floor '+G.n+(P.safe?', safe room':''));
-  setStyle('cdd',cdDo,'height',(P.dodgeCd/.9*100).toFixed(0)+'%');
+  setStyle('cdd',cdDo,'height',(P.dodgeCd/COMBAT.dashCd*100).toFixed(0)+'%');
+  setStyle('staw',elSta,'width',(clamp(P.sta/ST.maxSta,0,1)*100).toFixed(1)+'%');
   setStyle('cdp',cdPo,'height',(P.potCd/1.2*100).toFixed(0)+'%');
-  if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead)setStyle('bw',elBoss,'width',(clamp(G.bossEnt.hp/G.bossEnt.maxHp,0,1)*100).toFixed(1)+'%');
+  if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead){const b=G.bossEnt;setStyle('bw',elBoss,'width',(clamp(b.hp/b.maxHp,0,1)*100).toFixed(1)+'%');
+    setStyle('bpw',elBossP,'width',(b.maxPoise?clamp(b.staggerT>0?1:b.poise/b.maxPoise,0,1)*100:100).toFixed(1)+'%');if(hc.bst!==(b.staggerT>0)){hc.bst=b.staggerT>0;elBossP.classList.toggle('broken',hc.bst);}}
   const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
   const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
     nearGuild()?'guild':nearBoard()?'board':plotAt()>=0?'plot'+plotAt()+plotPrompt(plotAt()):nearFields(24)?'fields':
-    wl?'well'+(S.empties>0?S.empties:''):nearFire()?'fire':tk?'talk:'+tk.name:'';
+    wl?'well'+(S.empties>0?S.empties:''):nearFire()?'fire':tk?'talk:'+tk.name:nearBag()?'bag':P.safe&&S.bags>0&&!P.bag&&!P.room?'laybag':'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
-    if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>E</kbd>';
-    else if(near.startsWith('talk:')&&tk.arcanist)elPrompt.innerHTML='Arcanist<kbd>E</kbd>';
-    else if(near.startsWith('talk:'))elPrompt.innerHTML='Talk to the '+esc(tk.name.toLowerCase().startsWith('captain')?tk.name.replace('Captain','captain'):tk.name.toLowerCase())+'<kbd>E</kbd>';
-    if(near==='up')elPrompt.innerHTML='Climb to floor '+(G.n+1)+'<kbd>E</kbd>';
-    else if(near==='boss')elPrompt.innerHTML='Boss chamber gate<kbd>E</kbd>';
-    else if(near==='home')elPrompt.innerHTML=(G.village?'Teleport Gate':'Floor gate')+'<kbd>E</kbd>';
-    else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>E</kbd>';
-    else if(near==='stash')elPrompt.innerHTML='Stash<kbd>E</kbd>';
-    else if(near==='guild')elPrompt.innerHTML='Adventurers\u2019 Guild<kbd>E</kbd>';
-    else if(near==='board')elPrompt.innerHTML='Notice board<kbd>E</kbd>';
-    else if(near.startsWith('plot'))elPrompt.innerHTML=plotPrompt(plotAt())+': fields<kbd>E</kbd>';
-    else if(near==='fields')elPrompt.innerHTML='Your fields<kbd>E</kbd>';
-    else if(near==='fire')elPrompt.innerHTML='Rest by the fire<kbd>E</kbd>';
-    else if(near.startsWith('well'))elPrompt.innerHTML=(S.empties>0?`Fill ${S.empties} empty flask${S.empties>1?'s':''} at the well`:'The well')+'<kbd>E</kbd>';
+    if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>F</kbd>';
+    else if(near.startsWith('talk:')&&tk.arcanist)elPrompt.innerHTML='Arcanist<kbd>F</kbd>';
+    else if(near.startsWith('talk:'))elPrompt.innerHTML='Talk to the '+esc(tk.name.toLowerCase().startsWith('captain')?tk.name.replace('Captain','captain'):tk.name.toLowerCase())+'<kbd>F</kbd>';
+    if(near==='up')elPrompt.innerHTML='Climb to floor '+(G.n+1)+'<kbd>F</kbd>';
+    else if(near==='boss')elPrompt.innerHTML='Boss chamber gate<kbd>F</kbd>';
+    else if(near==='home')elPrompt.innerHTML=(G.village?'Teleport Gate':'Floor gate')+'<kbd>F</kbd>';
+    else if(near==='smith')elPrompt.innerHTML='Blacksmith<kbd>F</kbd>';
+    else if(near==='stash')elPrompt.innerHTML='Stash<kbd>F</kbd>';
+    else if(near==='guild')elPrompt.innerHTML='Adventurers\u2019 Guild<kbd>F</kbd>';
+    else if(near==='board')elPrompt.innerHTML='Notice board<kbd>F</kbd>';
+    else if(near.startsWith('plot'))elPrompt.innerHTML=plotPrompt(plotAt())+': fields<kbd>F</kbd>';
+    else if(near==='fields')elPrompt.innerHTML='Your fields<kbd>F</kbd>';
+    else if(near==='fire')elPrompt.innerHTML='Rest by the fire<kbd>F</kbd>';
+    else if(near==='bag')elPrompt.innerHTML='Sleep in your bag<kbd>F</kbd>';
+    else if(near==='laybag')elPrompt.innerHTML='Lay out a sleeping bag<kbd>F</kbd>';
+    else if(near.startsWith('well'))elPrompt.innerHTML=(S.empties>0?`Fill ${S.empties} empty flask${S.empties>1?'s':''} at the well`:'The well')+'<kbd>F</kbd>';
 }
 }
 function refreshHudStatic(){
   $('#hName').textContent=S.char.name;setTxt('hFloor',G.village?'The root village':'Floor '+G.n);
   $('#skName').textContent=ST.skill?SKILLS[ST.skill].name:'No skill';$('#skCost').textContent=ST.skill?SKILLS[ST.skill].mp:'';$('#slSkill').title=ST.skill?'':'Not a '+CLASSES[S.char.cls].name.toLowerCase()+'’s weapon: it brings no skill.';
-  drawItemIcon($('#slAtk canvas'),S.equip.weapon);$('#slBlock').hidden=!ST.shield;
+  drawItemIcon($('#slAtk canvas'),S.equip.weapon);$('#slBlock').hidden=!ST.parry;$('#blockName').textContent=ST.shield?'Block':'Parry';
 }
 
 // pickup notice: shows above the character, bigger for rare and better
@@ -286,12 +290,13 @@ function sleepNow(){const f=$('#sleepFade');f.hidden=false;f.classList.remove('g
   setTimeout(()=>act('sleep',[],r=>{if(r){sfx('heal');bannerMe('Well rested',`Fatigue gone, and ${REST_XP}% more experience for an hour of play. Breakfast is on downstairs.`,3600);}renderRoom();}),1600);
   setTimeout(()=>{f.hidden=true;},4200);}
 // B: a sleeping bag, in a safe area
+// A sleeping bag (docs/design/combat.md#keys): interact in a safe place to lay it out, then interact with it to sleep.
 function sleepBag(){if(mode!=='play'||P.dead)return;
-  if(!(S.bags>0)){log('You have no sleeping bag. The food and drink stall in the village sells them.');return;}
-  if(!P.safe){log('Not here: a sleeping bag is for safe rooms and safe places.');return;}
   if(P.fat<1){log('You are not tired.');return;}
   act('sleepBag',[],r=>{if(r){const f=$('#sleepFade');f.hidden=false;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');setTimeout(()=>{f.hidden=true;},4200);
     sfx('heal');log('You sleep in your bag. You wake with your fatigue gone.');}});}
+function layBag(){act('layBag',[],r=>{if(r){sfx('pick');log('You lay out your sleeping bag. Interact with it (F) to sleep.');}});}
+const nearBag=()=>P.bag&&hyp(P.bag.x-P.x,P.bag.y-P.y)<22;
 $('#roomSleep').onclick=sleepNow;$('#roomLeave').onclick=leaveRoom;
 $('#roomStash').onclick=()=>{$('#room').hidden=true;mode='play';const st=nearStash();if(st)openPanel(st,'stash');};
 
@@ -313,7 +318,9 @@ function interact(){
       else log(P.fireCd>0?`The fire has done what it can for now. Try again in ${Math.ceil(P.fireCd/60)} minutes of play.`:'You are not tired enough to need it.');hc.near=null;});return;}
   const tk=nearTalker();if(tk&&tk.arcanist){openPanel(tk,'arcanist');return;}
   if(tk&&tk.rumours){act('rumour',[],i=>{if(i!==false){tk.line=RUMOURS[i];tk.sayUntil=G.time+9;sfx('pick');}});return;}
-  if(tk){tk.sayUntil=G.time+6;sfx('pick');}
+  if(tk){tk.sayUntil=G.time+6;sfx('pick');return;}
+  if(nearBag()){sleepBag();return;}
+  if(P.safe&&S.bags>0&&!P.bag&&!P.room)layBag();
 }
 // The boss chamber asks first: once inside, the gate seals until the boss dies.
 let askGate=null;

@@ -60,6 +60,7 @@ function damageEnemy(e,mult,o={}){
   if(ST.p.execute&&e.hp/e.maxHp<.3)more+=ST.p.execute;
   if(ST.p.giant&&(e.boss||e.elite))more+=ST.p.giant;
   if(e.sunder>0)more+=25;
+  if(e.staggerT>0)more+=COMBAT.epoise.more;   // its poise is broken: it reels, and takes more
   d*=1+more/100;
   const T=ETYPES[e.type];
   if(T.weak&&T.weak[type])d*=T.weak[type];        // a weakness to a type: Thornroot to fire (its burn is scaled the same way below)
@@ -69,6 +70,7 @@ function damageEnemy(e,mult,o={}){
   const res=resOf(e,type),resisted=res>0;d*=1-res;
   d=Math.max(1,Math.round(d));
   e.hp-=d;e.flash=.09;e.hurtT=4;if(e.state==='idle'){if(e.boss)wakeBoss();else e.state='chase';}
+  wearPoise(e,ST.dmg*mult*ST.pz*(o.pz??1));
   addNum(e.x,e.y-e.r-5,d,resisted?'resist':crit?'crit':bane?'bane':'hit');
   if(resisted){if(G.time-e.resT>1.8){e.resT=G.time;addNum(e.x,e.y-e.r-13,'RESIST','resist');}}
   burst(e.x,e.y,crit?6:3,crit?'#ffe9a8':'#b9b4c8',crit?70:45);
@@ -89,6 +91,18 @@ function damageEnemy(e,mult,o={}){
   // a skill's challenges (tree.js): this use hit one more enemy, and perhaps killed it
   if(o.use){o.use.hits++;skillCount(o.use.skill,'hit',{hits:o.use.hits});if(e.dead)skillCount(o.use.skill,'kill',{e});}
   return true;
+}
+// An enemy's poise (COMBAT.epoise): a share of its health, worn down by blows (heavier weapons wear it faster). Broken,
+// the enemy is staggered for a moment and takes more damage; then its poise is whole again.
+function wearPoise(e,v){
+  if(e.dead||ETYPES[e.type].dummy)return;
+  const E=COMBAT.epoise;
+  if(e.maxPoise==null){e.maxPoise=e.maxHp*(e.boss?E.boss:e.elite?E.elite:E.share);e.poise=e.maxPoise;}
+  if(e.staggerT>0)return;
+  e.poise-=v;e.poiseT=G.time;
+  if(e.poise<=0){const t=e.boss?E.bossStun:E.stun;e.staggerT=t;e.stun=Math.max(e.stun||0,t);e.poise=e.maxPoise;
+    if(e.state==='windup'||e.state==='draw'||e.state==='cast'||e.state==='channel')e.state='chase';
+    addNum(e.x,e.y-e.r-13,'STAGGERED','crit');burst(e.x,e.y-6,10,'#ffe9a8',60);sfx('crit');}
 }
 function wakeBoss(){
   const b=G.bossEnt;if(!b||b.dead||G.bossAwake)return;
@@ -150,29 +164,50 @@ function heal(v){P.hp=Math.min(ST.maxHp,P.hp+v);}
 // ground = it comes up from under your feet, so no shield can stop it: the answer is to move.
 function hurtPlayer(dmg,src,sure,from,ground){
   if(P.inv>0||P.dead||god)return;
-  // Blocking: a raised shield stops blows that come from the side you face. Each one costs mana.
-  const o=from||src;
+  const o=from||src,C=COMBAT;
+  const type=(from&&from.dtype)||(src&&ETYPES[src.type]&&ETYPES[src.type].dtype)||'physical',magic=type!=='physical';
+  const heavy=!magic&&!!(sure||(src&&(src.boss||(ETYPES[src.type]&&ETYPES[src.type].heavy))));
+  const facing=arc=>o&&Math.abs(angDiff(Math.atan2(o.y-P.y,o.x-P.x),P.aim))<=arc*Math.PI/360;
+  // Parry: block pressed just before the blow, facing it, with a shield, a sword or a dagger. Nothing gets through,
+  // and the attacker is staggered (a boss only briefly). Telegraphed area attacks and the ground can't be parried.
+  if(ST.parry&&!sure&&!ground&&G.time-P.parryAt<C.parry.win&&facing(ST.shield?SHIELDS[ST.shield].arc:C.parry.arc)&&P.sta>=C.parry.cost){
+    P.sta-=C.parry.cost;P.staT=G.time;P.parryAt=-9;P.inv=.15;
+    addNum(P.x,P.y-16,'PARRY','evade');sfx('block');burst(P.x+Math.cos(P.aim)*8,P.y+Math.sin(P.aim)*8,8,'#ffe9a8',70);
+    if(src&&!src.dead&&src.maxHp){src.stun=Math.max(src.stun||0,src.boss?C.parry.bossStun:C.parry.stun);if(src.state==='windup'||src.state==='strike')src.state='recover',src.t=Math.max(src.t||0,.4);}
+    return;
+  }
+  // Blocking: a raised shield stops blows from the side you face. Each one costs stamina; without it, the block breaks.
   if(P.blocking&&o&&ST.shield&&!ground){
     const SH=SHIELDS[ST.shield];
-    if(Math.abs(angDiff(Math.atan2(o.y-P.y,o.x-P.x),DIR_ANGLE[P.dir]))<=SH.arc*Math.PI/360){
-      if(P.mp>=SH.cost){
-        P.mp-=SH.cost;const cut=sure?SH.sure:SH.cut,parry=!sure&&P.blockT<.25;   // raising it just in time is a parry
-        addNum(P.x,P.y-16,'BLOCK','evade');sfx('block');burst(P.x+Math.cos(DIR_ANGLE[P.dir])*8,P.y+Math.sin(DIR_ANGLE[P.dir])*8,4,'#c3cad6',45);
-        if(parry&&src&&!src.boss&&!src.dead)src.stun=Math.max(src.stun||0,.9);
-        if(cut>=1||parry){P.inv=.15;return;}
+    if(facing(SH.arc)){
+      if(P.sta>=SH.cost){
+        P.sta-=SH.cost;P.staT=G.time;const cut=sure?SH.sure:SH.cut;
+        addNum(P.x,P.y-16,'BLOCK','evade');sfx('block');burst(P.x+Math.cos(P.aim)*8,P.y+Math.sin(P.aim)*8,4,'#c3cad6',45);
+        push(o,heavy?C.kb.light:C.kb.light*.4);
+        if(cut>=1){P.inv=.15;return;}
         dmg*=1-cut;
-      }else if(G.time-P.lastBreak>2.5){P.lastBreak=G.time;log('No mana left to hold the block.');}
+      }else{P.blocking=false;P.stagger=Math.max(P.stagger,C.kb.stagger);if(G.time-P.lastBreak>2.5){P.lastBreak=G.time;log('No stamina left: your guard breaks.');}}
     }
   }
   if(!sure&&ST.evade>0&&Math.random()*100<ST.evade){P.inv=.2;addNum(P.x,P.y-16,'DODGE','evade');return;}
   let d=dmg*100/(100+ST.def);if(P.ward>0&&ST.p.ward)d*=1-ST.p.ward/100;if(P.guard>0)d*=.4;
   d*=1-(ST.res[famOf(from)||famOf(src)]||0)/100;
-  const type=(from&&from.dtype)||(src&&ETYPES[src.type]&&ETYPES[src.type].dtype)||'physical';d*=1-(ST.eres[type]||0)/100;   // resistances from the skill tree
+  d*=1-(ST.eres[type]||0)/100;   // resistances from the skill tree
   d=Math.max(1,Math.round(d));
   P.hp-=d;P.inv=.45;P.fightT=G.time;shake(4,true);addNum(P.x,P.y-16,d,'hurt');sfx('hurt');hurtFlash();
+  // What the blow does to you: a push (magic and heavy blows push further), a stagger from a heavy one, and perhaps
+  // an interruption: a spell you are casting holds by focus (Mind), anything else by poise (armour weight).
+  push(o,magic?C.kb.magic:heavy?C.kb.heavy:C.kb.light);
+  if(heavy)P.stagger=Math.max(P.stagger,C.kb.stagger);
+  const casting=P.swing&&!P.swing.hit&&ST.magic;let broken=false;
+  if(casting)broken=Math.random()*100>=ST.focus;
+  else{P.poise-=heavy?C.poise.heavy:C.poise.light;P.poiseT=G.time;if(P.poise<=0){broken=true;P.poise=ST.maxPoise;P.stagger=Math.max(P.stagger,C.kb.stagger);}}
+  if(broken&&P.swing&&!P.swing.hit){P.swing=null;P.atkCd=Math.max(P.atkCd,.25);addNum(P.x,P.y-24,'INTERRUPTED','resist');}
   if(ST.g.thorns&&src&&!src.dead){const t=Math.max(1,Math.round(dmg*ST.g.thorns/100));src.hp-=t;src.flash=.09;addNum(src.x,src.y-src.r-5,t,'bleed');if(src.hp<=0)killEnemy(src);}
   if(P.hp<=0)die();
 }
+// A push away from whatever struck (o), of strength k. Online the server sets it and the browser plays it out (kbN).
+function push(o,k){const a=o?Math.atan2(P.y-o.y,P.x-o.x):P.aim+Math.PI;P.kx+=Math.cos(a)*k;P.ky+=Math.sin(a)*k;P.kbN++;}
 function die(){
   P.dead=true;P.hp=0;P.swing=P.dash=null;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;
   S.food=Math.max(50,Math.round(P.food));S.drink=Math.max(50,Math.round(P.drink));S.buff=null;P.buff=null;persist();   // you wake up at least half fed
@@ -251,10 +286,15 @@ function enterChamber(q){
   if(G.players.every(q=>q.locked||q.dead||q.gone)){G.proj=[];for(const e of G.enemies)if(!e.boss&&e.state!=='idle')e.state='idle';}
   sfx('lock');wakeBoss();
 }
+// The dash (docs/design/combat.md): stamina, no invulnerability; how far depends on the class (casters dash short).
+// It cancels a swing that has not landed.
 function dodge(){
-  if(P.dead||P.dodgeCd>0||P.dash)return;
-  let mx=P.in.mx,my=P.in.my;if(!mx&&!my){mx=Math.cos(P.aim);my=Math.sin(P.aim);}const m=hyp(mx,my);
-  P.dash={t:.16,vx:mx/m*ST.move*3.3,vy:my/m*ST.move*3.3};P.inv=Math.max(P.inv,.3);P.dodgeCd=.9;
+  if(P.dead||P.dodgeCd>0||P.dash||P.stagger>0)return;
+  if(P.sta<COMBAT.sta.dash){if(G.time-(P.lastNoSta??-9)>.8){P.lastNoSta=G.time;addNum(P.x,P.y-18,'NO STAMINA','mana');}return;}
+  P.sta-=COMBAT.sta.dash;P.staT=G.time;
+  let mx=P.in.mx,my=P.in.my;if(!mx&&!my){mx=Math.cos(P.aim);my=Math.sin(P.aim);}const m=hyp(mx,my),v=ST.move*COMBAT.dashSpeed*ST.dashMul;
+  if(P.swing&&!P.swing.hit)P.swing=null;
+  P.dash={t:COMBAT.dashT,vx:mx/m*v,vy:my/m*v};P.dodgeCd=COMBAT.dashCd;
 }
 function usePotion(){
   if(P.dead||P.potCd>0||S.potions<=0||P.hp>=ST.maxHp)return;

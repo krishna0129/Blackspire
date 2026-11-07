@@ -18,19 +18,53 @@ const RARITY=[
 // ranged:true fires arrows, magic:true fires bolts; for both, range is how far the shot flies. tags: the basic attack's
 // (TAGS): the grimoire's bolts are lightning.
 const WTYPES={
-  sword:{tags:['melee','physical','sword'],name:'Longsword',cls:'Swordsman',dmg:12,aspd:1.6,range:26,arc:110,kb:40,skill:'circle',shield:'buckler',blurb:'Longsword and buckler'},
-  dagger:{tags:['melee','physical','dagger'],name:'Dagger',cls:'Rogue',dmg:6.5,aspd:3.2,range:19,arc:80,kb:10,crit:12,skill:'blink',blurb:'Fastest, shortest reach'},
-  great:{tags:['melee','area','physical','greatsword'],name:'Greatsword',cls:'Slayer',dmg:26,aspd:0.85,range:34,arc:150,kb:90,skill:'sunder',blurb:'Slow, wide, heavy'},
-  mace:{tags:['melee','physical','mace'],name:'Mace',cls:'Tank',dmg:16,aspd:1.25,range:24,arc:100,kb:70,def:8,skill:'guard',shield:'shield',blurb:'Mace and heavy shield'},
-  spear:{tags:['melee','physical','spear'],name:'Spear',cls:'Lancer',dmg:13,aspd:1.4,range:44,arc:24,kb:30,skill:'pierce',blurb:'Longest melee reach, narrow'},
-  bow:{tags:['projectile','physical','bow'],name:'Bow',cls:'Archer',dmg:10,aspd:1.5,range:150,arc:0,kb:25,crit:5,ranged:true,skill:'volley',blurb:'Arrows from range, scales with dexterity'},
-  grimoire:{tags:['projectile','lightning','grimoire'],name:'Grimoire',cls:'Mage',dmg:9,aspd:1.5,range:135,arc:0,kb:20,magic:true,skill:'fireball',blurb:'Ranged bolts'},
+  sword:{tags:['melee','physical','sword'],name:'Longsword',cls:'Swordsman',dmg:12,aspd:1.6,range:26,arc:110,kb:40,skill:'circle',shield:'buckler',blurb:'Longsword and buckler',pz:1,parry:true},
+  dagger:{tags:['melee','physical','dagger'],name:'Dagger',cls:'Rogue',dmg:6.5,aspd:3.2,range:19,arc:80,kb:10,crit:12,skill:'blink',blurb:'Fastest, shortest reach',pz:0.6,parry:true},
+  great:{tags:['melee','area','physical','greatsword'],name:'Greatsword',cls:'Slayer',dmg:26,aspd:0.85,range:34,arc:150,kb:90,skill:'sunder',blurb:'Slow, wide, heavy',pz:2.2,parry:true},
+  mace:{tags:['melee','physical','mace'],name:'Mace',cls:'Tank',dmg:16,aspd:1.25,range:24,arc:100,kb:70,def:8,skill:'guard',shield:'shield',blurb:'Mace and heavy shield',pz:1.6},
+  spear:{tags:['melee','physical','spear'],name:'Spear',cls:'Lancer',dmg:13,aspd:1.4,range:44,arc:24,kb:30,skill:'pierce',blurb:'Longest melee reach, narrow',pz:1.1},
+  bow:{tags:['projectile','physical','bow'],name:'Bow',cls:'Archer',dmg:10,aspd:1.5,range:150,arc:0,kb:25,crit:5,ranged:true,skill:'volley',blurb:'Arrows from range, scales with dexterity',pz:0.5},
+  grimoire:{tags:['projectile','lightning','grimoire'],name:'Grimoire',cls:'Mage',dmg:9,aspd:1.5,range:135,arc:0,kb:20,magic:true,skill:'fireball',blurb:'Ranged bolts',pz:0.5},
 };
 // Off-hand shields. cut: share of a blow from the front that blocking removes. sure: the same for a boss's
-// telegraphed attacks. arc: how wide "the front" is, in degrees. cost: mana per blocked blow. slow: move speed while blocking.
+// telegraphed attacks. arc: how wide "the front" is, in degrees. cost: stamina per blocked blow. slow: move speed while blocking.
+// pz (weapons above): how hard a weapon's blows wear down an enemy's poise. parry: a weapon that can parry without a
+// shield (docs/design/combat.md): swords and daggers. Shields parry too, and are the only way to hold a block.
 const SHIELDS={
-  buckler:{name:'Buckler',cut:.6,sure:.3,arc:130,cost:4,slow:.55,w:9,h:9},
-  shield:{name:'Heavy shield',cut:1,sure:.6,arc:170,cost:7,slow:.3,w:11,h:13},
+  buckler:{name:'Buckler',cut:.6,sure:.3,arc:130,cost:14,slow:.55,w:9,h:9},
+  shield:{name:'Heavy shield',cut:1,sure:.6,arc:170,cost:20,slow:.3,w:11,h:13},
+};
+// Stamina, the dash, parrying, poise and focus (docs/design/combat.md).
+//   sta     stamina: the bar's size by class (STA_CLASS), what a dash costs, how fast it comes back, and how much slower
+//           while you are doing anything but walking (attacking, blocking, dashing)
+//   parry   how long after pressing block a blow counts as parried, what it costs, how arc-wide the front is without a
+//           shield, and how long it staggers the attacker (bosses much less)
+//   poise   yours: a base, more for each point of armour weight (ARMOR_WEIGHT); a physical blow wears it down, and at
+//           zero it interrupts you. It comes back after a moment without being hit.
+//   focus   per point of Mind, the chance a blow does not break a spell you are casting (at most focusMax)
+//   epoise  an enemy's poise, as a share of its health; broken, it is staggered (stun) and takes more damage (more%)
+//   kb      how far a blow pushes you: light physical, heavy physical (also a short stagger), magic
+const COMBAT={
+  sta:{dash:30,regen:30,busy:.35,delay:.5},
+  dashSpeed:3.3,dashT:.16,dashCd:.35,
+  parry:{win:.2,cost:8,arc:120,stun:1,bossStun:.3},
+  poise:{base:10,perWeight:6,light:8,heavy:26,regen:18,delay:2},
+  focus:{perMind:3,max:75},
+  epoise:{share:.35,elite:.45,boss:.14,stun:1.2,bossStun:3,more:30,regen:.25,delay:3},
+  kb:{light:45,heavy:120,magic:85,stagger:.35},
+  swingSlow:.45,
+};
+// What each piece of armour weighs, until the new gear arrives (docs/design/gear.md#weight): poise grows with it.
+const ARMOR_WEIGHT={tunic:1,leather:2,coat:2,plate:5,striders:.5,boots:1,greaves:2};
+// Each class's base numbers (docs/design/classes.md): health and mana as multipliers, stamina as the bar's size,
+// dash as a multiplier of its length.
+const CLASS_BASE={
+  marauder:{hp:1.2,mp:1,sta:120,dash:1},
+  duelist:{hp:1,mp:.7,sta:120,dash:1},
+  ranger:{hp:1,mp:1,sta:100,dash:1.15},
+  shadow:{hp:.85,mp:.7,sta:120,dash:1.3},
+  witch:{hp:.85,mp:1.3,sta:80,dash:.75},
+  templar:{hp:1,mp:1.3,sta:80,dash:.75},
 };
 // Damage types. Every hit is one of these. physical is weapons and arrows; the rest are elements, which an enemy's
 // mres (its resistance to magic) also cuts, and rot, which only a family's own resistance does (FAMILIES[].res).

@@ -91,24 +91,27 @@ server/               the online server (Node): index.js (HTTP and WebSocket), g
 
 ## Controls
 
-Move with WASD or the arrow keys. You attack in the direction you face.
+Valorant's layout ([the combat design](docs/design/combat.md#keys)): move with WASD (or the arrow keys) and aim with
+the mouse. Attacks and skills go toward the mouse; you keep moving while you attack, slower.
 
 | Action | Keys |
 |---|---|
-| Attack | J, or a mouse click |
-| Skill | K, Space, or a right click |
-| Block (longsword and mace classes) | hold H or F |
-| Roll | Shift or L |
-| Potion | Q |
-| Eat a ration / drink water | R / T |
-| Interact (gates, the Teleport Gate, traders, the stash, the forge, the well, villagers) | E |
+| Attack | left mouse button |
+| Block (with a shield); a tap just before a blow parries (shields, swords and daggers) | right mouse button |
+| Dash (costs stamina) | Space or Shift |
+| Skill (each class gets four, on Q, E, C and X, in a coming step) | Q |
+| Health potion, mana potion (coming), eat, drink | 1, 2, 3, 4 |
+| Interact (gates, traders, the stash, the forge, the well, villagers; lay out a sleeping bag in a safe place, then sleep in it) | F or Enter |
 | Gear | I or Tab |
 | Skill board (out of combat) | P, or the Tree button |
-| Sleep in a sleeping bag (safe areas) | B |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Zoom the 3D view | mouse wheel |
 | Respawn after a death | R or Enter |
 | Debug menu (only with `?debug`, see below) | ` (backquote) |
+
+**Stamina** (the pale bar under mana) pays for dashing and blocking, and comes back slower while you fight. **Poise**
+(from your armour's weight) keeps a blow from interrupting your swing; **focus** (from Mind) keeps it from breaking a
+spell. Enemies have poise too, the thin bar under their health: break it and they reel, taking more damage.
 
 ## Online play
 

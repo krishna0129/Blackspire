@@ -20,6 +20,7 @@
       <div class="who"><span id="hName"></span><span id="hLv"></span></div>
       <div class="bar"><i id="hpFill"></i><b id="hpTxt"></b></div>
       <div class="bar mp"><i id="mpFill"></i><b id="mpTxt"></b></div>
+      <div class="bar sta" title="Stamina: dashing and blocking"><i id="staFill"></i></div>
       <div class="bar xp"><i id="xpFill"></i></div>
       <div class="needs"><div class="bar food" title="Hunger"><i id="foodFill"></i></div><div class="bar drink" title="Thirst"><i id="drinkFill"></i></div><div class="bar fat" title="Fatigue: play time since you last slept"><i id="fatFill"></i></div></div>
       <div id="hBuff"></div>
@@ -34,17 +35,18 @@
         <button class="btn small" id="btnMenu" tabindex="-1">Menu<kbd>Esc</kbd></button>
       </div>
     </div>
-    <div id="boss" hidden><div id="bossName"></div><div class="bar"><i id="bossFill"></i></div></div>
+    <div id="boss" hidden><div id="bossName"></div><div class="bar"><i id="bossFill"></i></div><div class="bar poise" title="Poise: break it to stagger the boss"><i id="bossPoise"></i></div></div>
     <div id="banner" hidden><div id="banMain"></div><div id="banSub"></div></div>
     <div id="log"></div>
     <div class="slots">
-      <button class="slot" id="slAtk" tabindex="-1" aria-label="Attack"><canvas width="24" height="24"></canvas><kbd>J</kbd></button>
-      <button class="slot" id="slSkill" tabindex="-1"><em id="skCost"></em><span class="nm" id="skName"></span><i class="cd"></i><kbd>K</kbd></button>
-      <button class="slot" id="slBlock" tabindex="-1" hidden><span class="nm">Block</span><kbd>H</kbd></button>
-      <button class="slot" id="slDodge" tabindex="-1"><span class="nm">Dodge</span><i class="cd"></i><kbd>Shift</kbd></button>
-      <button class="slot" id="slPot" tabindex="-1"><span class="nm">Potion</span><b id="potN">0</b><i class="cd"></i><kbd>Q</kbd></button>
-      <button class="slot" id="slFood" tabindex="-1"><span class="nm">Eat</span><b id="foodN">0</b><kbd>R</kbd></button>
-      <button class="slot" id="slDrink" tabindex="-1"><span class="nm">Drink</span><b id="drinkN">0</b><i class="empties" id="emptyN" title="Empty flasks: fill them at the village well"></i><kbd>T</kbd></button>
+      <button class="slot" id="slAtk" tabindex="-1" aria-label="Attack"><canvas width="24" height="24"></canvas><kbd>LMB</kbd></button>
+      <button class="slot" id="slSkill" tabindex="-1"><em id="skCost"></em><span class="nm" id="skName"></span><i class="cd"></i><kbd>Q</kbd></button>
+      <button class="slot" id="slBlock" tabindex="-1" hidden><span class="nm" id="blockName">Block</span><kbd>RMB</kbd></button>
+      <button class="slot" id="slDodge" tabindex="-1"><span class="nm">Dash</span><i class="cd"></i><kbd>Space</kbd></button>
+      <button class="slot" id="slPot" tabindex="-1"><span class="nm">Potion</span><b id="potN">0</b><i class="cd"></i><kbd>1</kbd></button>
+      <button class="slot lack" id="slMana" tabindex="-1" title="Mana potions arrive with the potion sizes"><span class="nm">Mana</span><b>0</b><kbd>2</kbd></button>
+      <button class="slot" id="slFood" tabindex="-1"><span class="nm">Eat</span><b id="foodN">0</b><kbd>3</kbd></button>
+      <button class="slot" id="slDrink" tabindex="-1"><span class="nm">Drink</span><b id="drinkN">0</b><i class="empties" id="emptyN" title="Empty flasks: fill them at the village well"></i><kbd>4</kbd></button>
     </div>
     <button class="btn primary" id="prompt" tabindex="-1" hidden></button>
     <div id="toasts"></div>
@@ -65,7 +67,7 @@
         <button class="btn" id="btnNew">Create a character</button>
         <button class="btn" id="btnSoloBack">Back</button>
       </div>
-      <div class="hint">Move with WASD or the arrow keys. You attack the way you face: J or a click to strike, K or Space for your skill, Shift to roll, and hold H to block if you carry a shield. Esc pauses. On a phone, drag the left side of the screen.</div>
+      <div class="hint">Move with WASD and aim with the mouse. Left button attacks; right button blocks with a shield, and tapped just before a blow, it parries (shields, swords and daggers). Space dashes. Your skill is on Q; 1 to 4 drink a potion, eat or drink; F talks, opens and uses. Esc pauses. On a phone, drag the left side of the screen.</div>
     </div>
   </div>
 
@@ -142,7 +144,7 @@
 
   <div id="ask" class="overlay" hidden>
     <div class="sheet"><h2>Boss chamber</h2><p id="askTxt"></p>
-      <div class="titleBtns"><button class="btn primary" id="askGo">Enter the chamber<kbd>E</kbd></button><button class="btn" id="askNo">Stay outside<kbd>Esc</kbd></button></div></div>
+      <div class="titleBtns"><button class="btn primary" id="askGo">Enter the chamber<kbd>F</kbd></button><button class="btn" id="askNo">Stay outside<kbd>Esc</kbd></button></div></div>
   </div>
 
   <div id="debug" class="overlay" hidden>

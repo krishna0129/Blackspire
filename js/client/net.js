@@ -35,7 +35,7 @@ Object.assign(NET,{
   send(o){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(o));},
   act(name,args,done){const id=++this.aid;if(done)this.acts.set(id,done);this.send({t:'act',id,name,args:args||[]});},
   // one-off presses; a dodge-roll also starts here at once so it feels instant (the server runs its own)
-  press(a){this.send({t:'p',a});if(a==='dodge'&&mode==='play')dodge();},
+  press(a){this.send({t:'p',a,aim:P&&P.in.aim!=null?Math.round(P.in.aim*1000)/1000:undefined});if(a==='dodge'&&mode==='play')dodge();},
 
   receive(o){
     switch(o.t){
@@ -90,6 +90,9 @@ Object.assign(NET,{
     P.fightT=me.fight?G.time:-99;
     {const was=fatigueTier(P.fat||0);Object.assign(P,{fat:me.fat,rested:me.rested,awake:me.awake,fireCd:me.fireCd,room:me.room});if(fatigueTier(P.fat)!==was)calcStats();}   // fatigue, as the server keeps it   // in a fight, as the server sees it: the skill board waits
     P.buff=me.buff?{id:me.buff[0],t:me.buff[1]}:null;
+    // stamina, poise and a stagger, as the server keeps them; a new push (kb[2] counts them) is played out here
+    Object.assign(P,{sta:me.sta,poise:me.poise,stagger:me.stagger,bag:me.bag?{x:me.bag[0],y:me.bag[1]}:null});
+    if(me.kb&&me.kb[2]>(P.kbN||0)){P.kx=me.kb[0];P.ky=me.kb[1];}if(me.kb)P.kbN=me.kb[2];
     Object.assign(P,{hp:me.hp,mp:me.mp,food:me.food,drink:me.drink,dead:me.dead,safe:me.safe,locked:me.locked,inv:me.inv,guard:me.guard,skillCd:me.skillCd,skillMax:me.skillMax,potCd:me.potCd,mom:me.mom});
     if(!P.dash)P.dodgeCd=Math.max(P.dodgeCd,me.dodgeCd);
     P.swing=me.swing?{t:me.swing[0],d:me.swing[1],a:P.aim,hit:!!me.swing[2]}:null;
@@ -103,21 +106,21 @@ Object.assign(NET,{
   frame(dt){
     if(!G||!P)return;
     G.time+=dt;updateCosmetics(dt);
-    P.in=mode==='play'&&!P.dead?readInput():{mx:0,my:0,atk:false,block:false};
+    P.in=mode==='play'&&!P.dead?readInput():{mx:0,my:0,atk:false,block:false,aim:null};
     if(!P.dead){setPlayer(P);steerPlayer(dt);if(P.swing)P.swing.t+=dt;}
-    this.sendT+=dt;if(this.sendT>=1/30){this.sendT=0;this.send({t:'in',mx:P.in.mx,my:P.in.my,atk:P.in.atk,block:P.in.block,x:Math.round(P.x*10)/10,y:Math.round(P.y*10)/10,tp:P.tp});}
+    this.sendT+=dt;if(this.sendT>=1/30){this.sendT=0;this.send({t:'in',mx:P.in.mx,my:P.in.my,atk:P.in.atk,block:P.in.block,aim:P.in.aim==null?undefined:Math.round(P.in.aim*1000)/1000,x:Math.round(P.x*10)/10,y:Math.round(P.y*10)/10,tp:P.tp});}
     for(const p of G.proj){p.x+=p.vx*dt;p.y+=p.vy*dt;}for(const p of G.pproj){p.x+=p.vx*dt;p.y+=p.vy*dt;}
     for(const t of G.tele)t.t+=dt;for(const d of G.drops)d.t+=dt;if(G.beams)for(const B of G.beams)B.a+=B.va*dt;
     const n=this.snaps.length;if(!n)return;
     const at=performance.now()-DELAY;let a=this.snaps[0],b=this.snaps[n-1];
     for(let i=0;i<n-1;i++)if(this.snaps[i].at<=at&&this.snaps[i+1].at>=at){a=this.snaps[i];b=this.snaps[i+1];break;}
     const u=b.at>a.at?clamp((at-a.at)/(b.at-a.at),0,1):1,prev=new Map(a.en.map(e=>[e.id,e]));
-    G.enemies=b.en.map(e=>{const q=prev.get(e.id),c=Object.assign({},e,{r:ETYPES[e.type].r,kx:0,ky:0,bobY:0});
+    G.enemies=b.en.map(e=>{const q=prev.get(e.id),c=Object.assign({},e,{r:ETYPES[e.type].r,kx:0,ky:0,bobY:0,maxPoise:e.po==null?0:1,poise:e.po,staggerT:e.sg});
       if(q){c.x=q.x+(e.x-q.x)*u;c.y=q.y+(e.y-q.y)*u;}if(e.boss)c.r=ETYPES.boss.r;return c;});
     const pprev=new Map(a.pl.map(q=>[q.id,q]));
     for(const q of this.others){const s=b.pl.find(x=>x.id===q.id);if(!s){q.x=-999;continue;}const r=pprev.get(q.id)||s;
       const nx=r.x+(s.x-r.x)*u,ny=r.y+(s.y-r.y)*u;q.moving=Math.hypot(nx-q.x,ny-q.y)>.05;if(q.moving)q.walk+=dt*7;q.x=nx;q.y=ny;
-      Object.assign(q,{dir:s.dir,dead:s.dead,inv:s.inv,guard:s.guard,hp:s.hp,maxHp:s.maxHp,blocking:s.blocking,dash:s.dash});
-      q.swing=s.swing?{t:s.swing[0],d:s.swing[1],a:DIR_ANGLE[s.dir],hit:s.swing[0]>=s.swing[1]*.4}:null;}
+      Object.assign(q,{dir:s.dir,dead:s.dead,inv:s.inv,guard:s.guard,hp:s.hp,maxHp:s.maxHp,blocking:s.blocking,dash:s.dash,aim:s.a});
+      q.swing=s.swing?{t:s.swing[0],d:s.swing[1],a:s.a??DIR_ANGLE[s.dir],hit:s.swing[0]>=s.swing[1]*.4}:null;}
   },
 });

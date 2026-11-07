@@ -11,40 +11,40 @@ health), and falls count how often it died and was stood up again.
 
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
-| Longsword | 34 | +3% | 0.8 s | 0.0 | 14.7 s | 1.0 | 0, 0 |
-| Spear | 34 | +3% | 4.5 s | 0.2 | 14.1 s | 0.7 | 0, 0 |
-| Greatsword | 58 | ⚠ +76% | 0.4 s | 0.0 | 11 s | 0.8 | 0, 0 |
-| Mace | 28 | -15% | 6 s | 0.2 | 19.3 s | 1.1 | 0, 0 |
-| Dagger | 33 | +0% | 4 s | 0.1 | 15.7 s | 0.8 | 0, 0 |
-| Bow | 33 | +0% | 6.6 s | 0.2 | 12.9 s | 0.7 | 0, 0 |
-| Grimoire (magic) | 28 | -15% | 5.4 s | 0.2 | 19 s | 1.0 | 0, 0 |
-| Grimoire (faith) | 19 | ⚠ -42% | not cleared | 2.0 | 24.6 s | 1.1 | 0, 0 |
+| Longsword | 34 | +3% | 1.4 s | 0.0 | 13.8 s | 0.4 | 0, 0 |
+| Spear | 34 | +3% | 5.3 s | 0.2 | 13.1 s | 0.3 | 0, 0 |
+| Greatsword | 58 | ⚠ +76% | 1.4 s | 0.0 | 7.4 s | 0.2 | 0, 0 |
+| Mace | 28 | -15% | 4.3 s | 0.1 | 17.8 s | 0.3 | 0, 0 |
+| Dagger | 33 | +0% | 4 s | 0.1 | 16.4 s | 0.7 | 0, 0 |
+| Bow | 33 | +0% | 6.6 s | 0.2 | 12.8 s | 0.6 | 0, 0 |
+| Grimoire (magic) | 28 | -15% | 5.4 s | 0.2 | 18.3 s | 0.7 | 0, 0 |
+| Grimoire (faith) | 19 | ⚠ -42% | 10.2 s | 0.4 | 25.4 s | 1.1 | 0, 0 |
 
 ## Floor 2 (level 10)
 
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
-| Longsword | 50 | +9% | 7.1 s | 0.1 | 13.4 s | 0.7 | 0, 0 |
-| Spear | 51 | +11% | 7.5 s | 0.3 | 12.6 s | 0.9 | 0, 0 |
-| Greatsword | 83 | ⚠ +80% | 8.6 s | 0.4 | 11 s | 0.8 | 0, 0 |
-| Mace | 43 | -7% | 11.8 s | 0.4 | 16 s | 0.9 | 0, 0 |
-| Dagger | 44 | -4% | 10.3 s | 0.4 | 17.9 s | 1.1 | 0, 0 |
-| Bow | 48 | +4% | 11.5 s | 0.6 | 14.8 s | 0.7 | 0, 0 |
-| Grimoire (magic) | 42 | -9% | 57.8 s | 3.0 | not killed in 5 min | 15.3 | 1, 13 |
-| Grimoire (faith) | 30 | ⚠ -35% | not cleared | 3.6 | not killed in 5 min | 14.5 | 2, 12 |
+| Longsword | 50 | +9% | 7.4 s | 0.2 | 11.1 s | 0.5 | 0, 0 |
+| Spear | 51 | +11% | 8.2 s | 0.2 | 10.7 s | 0.3 | 0, 0 |
+| Greatsword | 83 | ⚠ +80% | 6.6 s | 0.1 | 9.8 s | 0.1 | 0, 0 |
+| Mace | 43 | -7% | 11.8 s | 0.3 | 16.8 s | 0.4 | 0, 0 |
+| Dagger | 44 | -4% | 10.2 s | 0.4 | 17.7 s | 0.9 | 0, 0 |
+| Bow | 48 | +4% | 15.6 s | 0.7 | 15.9 s | 0.6 | 0, 0 |
+| Grimoire (magic) | 42 | -9% | not cleared | 2.3 | not killed in 5 min | 14.4 | 0, 12 |
+| Grimoire (faith) | 30 | ⚠ -35% | not cleared | 3.5 | not killed in 5 min | 13.0 | 1, 10 |
 
 ## Floor 3 (level 14)
 
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
-| Longsword | 78 | +18% | 11.5 s | 0.6 | 15.5 s | 0.4 | 0, 0 |
-| Spear | 76 | +15% | 15.5 s | 0.7 | 15.7 s | 0.3 | 0, 0 |
-| Greatsword | 128 | ⚠ +94% | 9.8 s | 0.4 | 12.5 s | 0.2 | 0, 0 |
-| Mace | 63 | -5% | 14.3 s | 0.5 | 21.8 s | 0.4 | 0, 0 |
-| Dagger | 48 | ⚠ -27% | 17.7 s | 0.8 | 22.2 s | 0.3 | 0, 0 |
-| Bow | 69 | +5% | not cleared | 1.5 | not killed in 5 min | 7.2 | 0, 4 |
-| Grimoire (magic) | 62 | -6% | not cleared | 2.4 | 18.5 s | 0.8 | 0, 0 |
-| Grimoire (faith) | 44 | ⚠ -33% | not cleared | 2.9 | 164.7 s | 4.5 | 1, 2 |
+| Longsword | 78 | +18% | 14.6 s | 0.6 | 16.2 s | 0.2 | 0, 0 |
+| Spear | 76 | +15% | 13 s | 0.5 | 11.1 s | 0.2 | 0, 0 |
+| Greatsword | 128 | ⚠ +94% | 8.6 s | 0.1 | 7.4 s | 0.1 | 0, 0 |
+| Mace | 63 | -5% | 14.9 s | 0.5 | 15.2 s | 0.1 | 0, 0 |
+| Dagger | 48 | ⚠ -27% | 15.5 s | 0.7 | 21.6 s | 0.3 | 0, 0 |
+| Bow | 69 | +5% | 26.2 s | 1.4 | 18.1 s | 0.3 | 0, 0 |
+| Grimoire (magic) | 62 | -6% | 17.8 s | 1.1 | 22.1 s | 0.6 | 0, 0 |
+| Grimoire (faith) | 44 | ⚠ -33% | not cleared | 1.7 | 29.1 s | 0.6 | 0, 0 |
 
 ## Marked
 

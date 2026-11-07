@@ -97,6 +97,11 @@ function updatePlayer(dt){
   if(!P.room){const was=fatigueTier(P.fat);P.fat=Math.min(FATIGUE_MAX,P.fat+dt);const now=fatigueTier(P.fat);
     if(now!==was){calcStats();log({1:'You are growing weary: your skills come back slower and you dodge less. Sleep at the inn soon.',2:'You are tired: slower on your feet, slower to cast. Find a bed.',3:'You are exhausted. Everything is harder now. Rest.'}[now]);}}
   P.rested=Math.max(0,P.rested-dt);P.awake=Math.min(1e9,P.awake+dt);P.fireCd=Math.max(0,P.fireCd-dt);
+  // stamina comes back after a moment, slower while you do anything but walk; poise after a moment without a blow
+  const busy=P.swing||P.blocking||P.dash;
+  if(G.time-P.staT>COMBAT.sta.delay&&!P.dash)P.sta=Math.min(ST.maxSta,P.sta+COMBAT.sta.regen*(busy?COMBAT.sta.busy:1)*dt);
+  if(G.time-P.poiseT>COMBAT.poise.delay)P.poise=Math.min(ST.maxPoise,P.poise+COMBAT.poise.regen*dt);
+  if(P.stagger>0)P.stagger-=dt;
   P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
   if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:buff==='morning'?1.25:1)*dt);
@@ -114,7 +119,7 @@ function updatePlayer(dt){
   steerPlayer(dt);
   if(!P.dash){
     if(P.atkBuf>0)P.atkBuf-=dt;
-    if((P.in.atk||P.atkBuf>0)&&P.atkCd<=0&&!P.blocking){P.atkBuf=0;if(P.safe)sheathed();else startSwing();}
+    if((P.in.atk||P.atkBuf>0)&&P.atkCd<=0&&!P.blocking&&!(P.stagger>0)){P.atkBuf=0;if(P.safe)sheathed();else startSwing();}
   }
   if(P.swing){const s=P.swing;s.t+=dt;
     if(!s.hit&&s.t>=s.d*.4){s.hit=true;
@@ -124,31 +129,39 @@ function updatePlayer(dt){
       if(ST.thrust)vfx({k:'line',x:P.x,y:P.y,a:s.a,len:ST.range+5,t:0,d:.1});else slashFx(s.a,ST.arc,ST.range,s.dir,.14);}}
     if(s.t>=s.d)P.swing=null;}
 }
-// Facing, blocking and moving. Online, each browser runs this for its own player so movement answers at once, and
+// Aiming, blocking and moving. Online, each browser runs this for its own player so movement answers at once, and
 // sends where it ended up; the server (where P.remote is set) runs it too for facing and timers, but takes the
 // position from the browser after checking it (see the server's checkMove).
 function steerPlayer(dt){
   P.dodgeCd=Math.max(0,P.dodgeCd-dt);
   let mx=P.in.mx,my=P.in.my;const m=hyp(mx,my);if(m>1){mx/=m;my/=m;}
-  // Facing is one of four directions and follows movement; attacks, shots and skills all go the way you face.
-  // Moving diagonally keeps the current facing when it is one of the two directions held.
-  // Blocking: hold the key to raise the shield. You keep facing the same way (so you can back off or sidestep
-  // behind it), you move slowly, and you cannot swing.
+  // Aiming: attacks, shots and skills go toward the mouse (P.in.aim, an angle). The model faces it; the four-way
+  // facing (P.dir) follows, for the 2D drawing. Without a mouse (touch), they go the way you walk, as before.
+  const aim=P.in.aim;
+  if(typeof aim==='number'&&isFinite(aim)){P.aim=aim;P.dir=dirOf(aim);}
+  else{if(!P.swing&&!P.dash&&!P.blocking&&m>.2){const ax=Math.abs(mx),ay=Math.abs(my),h=mx>0?3:2,v=my>0?0:1;
+      if(ax>.25&&ay>.25){if(P.dir!==h&&P.dir!==v)P.dir=ax>=ay?h:v;}else P.dir=ax>ay?h:v;}
+    P.aim=DIR_ANGLE[P.dir];}
+  // Block (right button): pressing it opens a moment in which a blow is parried, with a shield, a sword or a dagger
+  // (ST.parry). Holding it holds a block, with a shield only: each blow it takes costs stamina, and you move slowly.
+  if(P.in.block&&!P.wasBlock&&ST.parry&&!P.dash&&!P.safe)P.parryAt=G.time;
+  P.wasBlock=!!P.in.block;
   const wasBlocking=P.blocking;
-  P.blocking=!!ST.shield&&P.in.block&&!P.swing&&!P.dash&&!P.safe;
+  P.blocking=!!ST.shield&&P.in.block&&!P.swing&&!P.dash&&!P.safe&&P.sta>0;
   P.blockT=P.blocking?(wasBlocking?P.blockT+dt:0):0;
-  if(!P.swing&&!P.dash&&!P.blocking&&m>.2){const ax=Math.abs(mx),ay=Math.abs(my),h=mx>0?3:2,v=my>0?0:1;
-    if(ax>.25&&ay>.25){if(P.dir!==h&&P.dir!==v)P.dir=ax>=ay?h:v;}else P.dir=ax>ay?h:v;}
-  P.aim=DIR_ANGLE[P.dir];
+  P.parrying=G.time-P.parryAt<COMBAT.parry.win;   // for the drawing: the guard goes up
+  // A blow's push (P.kx, P.ky), set by hurtPlayer; it dies away quickly.
+  if(Math.abs(P.kx)+Math.abs(P.ky)>1){if(!P.remote)moveEnt(P,P.kx*dt,P.ky*dt);const k=Math.max(0,1-10*dt);P.kx*=k;P.ky*=k;}else P.kx=P.ky=0;
   if(P.dash){
     const D=P.dash;if(!P.remote)moveEnt(P,D.vx*dt,D.vy*dt);D.t-=dt;
     if(Math.random()<.7)part({x:P.x,y:P.y+rand(-6,4),vx:0,vy:0,t:0,d:.22,c:'#4a4a5e'});
     if(D.t<=0)P.dash=null;
   }else{
-    const sp=ST.move*(P.swing?(ST.magic||ST.ranged?.3:0):P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1)*(P.buff&&P.buff.id==='morning'?1.08:1);   // you plant your feet to swing
+    // you keep moving while you attack, slower (COMBAT.swingSlow); staggered, you don't move at all
+    const sp=P.stagger>0?0:ST.move*(P.swing?COMBAT.swingSlow:P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1)*(P.buff&&P.buff.id==='morning'?1.08:1);
     if(P.lunge>0){P.lunge-=dt;if(!P.remote)moveEnt(P,Math.cos(P.aim)*110*dt,Math.sin(P.aim)*110*dt);}
     if(!P.remote)moveEnt(P,mx*sp*dt,my*sp*dt);
-    P.moving=m>.1;if(P.moving)P.walk+=dt*(sp/64)*7;
+    P.moving=m>.1&&sp>0;if(P.moving)P.walk+=dt*(sp/64)*7;
   }
 }
 function updateEnemy(e,dt){   // enemies never step into a safe room, whether walking or knocked back
@@ -159,7 +172,9 @@ function updateEnemy(e,dt){   // enemies never step into a safe room, whether wa
   if(!e.dead&&!e.boss&&inSafe(e.x,e.y)&&!inSafe(ox,oy)){e.x=ox;e.y=oy;e.kx=e.ky=0;}
 }
 function updateEnemyCore(e,dt){
-  if(e.flash>0)e.flash-=dt;if(e.hurtT>0)e.hurtT-=dt;if(e.sunder>0)e.sunder-=dt;
+  if(e.flash>0)e.flash-=dt;if(e.hurtT>0)e.hurtT-=dt;if(e.sunder>0)e.sunder-=dt;if(e.staggerT>0)e.staggerT-=dt;
+  // poise comes back after a few seconds without a blow (COMBAT.epoise)
+  if(e.maxPoise&&e.poise<e.maxPoise&&G.time-(e.poiseT??-9)>COMBAT.epoise.delay)e.poise=Math.min(e.maxPoise,e.poise+e.maxPoise*COMBAT.epoise.regen*dt);
   if(ETYPES[e.type].dummy){   // a scarecrow: shrugs off knockback and stuns, and is whole again once left alone
     e.kx=e.ky=0;e.stun=0;if(e.hurtT<=0){e.hp=e.maxHp;e.bleedT=0;}else if(e.bleedT>0){e.bleedT-=dt;e.bleedAcc+=e.bleedDps*dt;
       if(e.bleedAcc>=1){const d=Math.floor(e.bleedAcc);e.bleedAcc-=d;e.hp-=d;addNum(e.x,e.y-e.r-5,d,'bleed');}}
