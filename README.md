@@ -176,6 +176,7 @@ The guild's daily board also asks for monster drops and pays 30% over the usual 
   rendered by the game itself with `npm run wiki:images`, which needs Playwright and a Chromium
   (`npx playwright install chromium`); rerun it after changing sprites.
 - [docs/roadmap.md](docs/roadmap.md): the decisions still to make, in order, toward the first friends' playtest.
+- [docs/build-plan.md](docs/build-plan.md): the order to build it in, each step playable.
 - [docs/design](docs/design): design proposals: [skills and the skill tree](docs/design/skills.md), the earlier
   [skill trees and mutations](docs/design/skill-trees.md) and [class trees](docs/design/class-trees.md) it replaces,
   [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md),

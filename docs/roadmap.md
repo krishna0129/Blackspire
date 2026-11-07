@@ -111,8 +111,8 @@ interface sounds and music from free CC0 packs.
 4. ~~Gear for the playtest (3)~~ (decided).
 5. ~~The character creator, the look and the sound (6, 7)~~ (decided).
 
-**Everything needed before the playtest is decided**, apart from small details listed above. Next: the build plan,
-and building.
+**Everything needed before the playtest is decided**, apart from small details listed above, which are settled as
+the [build plan](build-plan.md) reaches them.
 
 ## Backlog
 
