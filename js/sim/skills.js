@@ -72,7 +72,7 @@ const REVIVE_WINDOW=15;
 const revivable=t=>t.dead&&!t.gone&&G.time-(t.deadAt??-99)<=REVIVE_WINDOW;
 function revive(t,share){
   const me=P;setPlayer(t);
-  P.dead=false;P.hp=Math.max(1,Math.round(ST.maxHp*share));P.inv=1.5;P.stagger=0;if(P.deathLost){S.shards+=P.deathLost;P.deathLost=0;}
+  P.dead=false;P.hp=Math.max(1,Math.round(ST.maxHp*share));P.inv=1.5;P.stagger=0;giveBack(S,P.lost);P.lost=null;
   revived();burst(P.x,P.y,20,'#ffe9a8',90);
   setPlayer(me);addNum(t.x,t.y-22,'REVIVED','heal');
 }

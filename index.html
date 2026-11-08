@@ -46,10 +46,10 @@
       <button class="slot sk ult" id="slX" data-s="x" tabindex="-1"><em></em><span class="nm"></span><i class="cd"></i><kbd>X</kbd></button>
       <button class="slot" id="slBlock" tabindex="-1" hidden><span class="nm" id="blockName">Block</span><kbd>RMB</kbd></button>
       <button class="slot" id="slDodge" tabindex="-1"><span class="nm">Dash</span><i class="cd"></i><kbd>Space</kbd></button>
-      <button class="slot" id="slPot" tabindex="-1"><span class="nm">Potion</span><b id="potN">0</b><i class="cd"></i><kbd>1</kbd></button>
-      <button class="slot lack" id="slMana" tabindex="-1" title="Mana potions arrive with the potion sizes"><span class="nm">Mana</span><b>0</b><kbd>2</kbd></button>
-      <button class="slot" id="slFood" tabindex="-1"><span class="nm">Eat</span><b id="foodN">0</b><kbd>3</kbd></button>
-      <button class="slot" id="slDrink" tabindex="-1"><span class="nm">Drink</span><b id="drinkN">0</b><i class="empties" id="emptyN" title="Empty flasks: fill them at the village well"></i><kbd>4</kbd></button>
+      <button class="slot q" id="slPot" data-cat="hp" tabindex="-1"><canvas width="24" height="24"></canvas><span class="nm">Health</span><b id="hpN">0</b><i class="cd"></i><kbd>1</kbd></button>
+      <button class="slot q" id="slMana" data-cat="mp" tabindex="-1"><canvas width="24" height="24"></canvas><span class="nm">Mana</span><b id="mpN">0</b><i class="cd"></i><kbd>2</kbd></button>
+      <button class="slot q" id="slFood" data-cat="food" tabindex="-1"><canvas width="24" height="24"></canvas><span class="nm">Eat</span><b id="foodN">0</b><kbd>3</kbd></button>
+      <button class="slot q" id="slDrink" data-cat="drink" tabindex="-1"><canvas width="24" height="24"></canvas><span class="nm">Drink</span><b id="drinkN">0</b><i class="empties" id="emptyN" title="Empty flasks: fill them at the village well"></i><kbd>4</kbd></button>
     </div>
     <button class="btn primary" id="prompt" tabindex="-1" hidden></button>
     <div id="toasts"></div>
@@ -131,6 +131,7 @@
         <section>
           <div id="shopBox" hidden><h3>Trader's pack</h3><div class="opts" id="fFams" hidden></div><div class="grid" id="sGrid"></div></div>
           <div class="bagHead"><span id="bagN"></span><span id="pMats"></span><span><span class="gem"></span> <span id="pShards"></span> shards</span></div>
+          <div class="sups" id="pSup"></div>
           <div class="grid" id="pGrid"></div>
           <div class="detail" id="pDetail"></div>
         </section>

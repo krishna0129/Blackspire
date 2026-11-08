@@ -5,7 +5,7 @@
 const hc={};
 function setTxt(id,v){if(hc[id]!==v){hc[id]=v;$('#'+id).textContent=v;}}
 function setStyle(key,el,prop,v){if(hc[key]!==v){hc[key]=v;el.style[prop]=v;}}
-const elSta=$('#staFill'),elBossP=$('#bossPoise'),elHp=$('#hpFill'),elXp=$('#xpFill'),elBoss=$('#bossFill'),SKB=[...document.querySelectorAll('.slot.sk')].map(b=>({b,s:b.dataset.s,cd:b.querySelector('.cd'),nm:b.querySelector('.nm'),em:b.querySelector('em')})),elMp=$('#mpFill'),cdDo=$('#slDodge .cd'),cdPo=$('#slPot .cd'),elPrompt=$('#prompt');
+const elSta=$('#staFill'),elBossP=$('#bossPoise'),elHp=$('#hpFill'),elXp=$('#xpFill'),elBoss=$('#bossFill'),SKB=[...document.querySelectorAll('.slot.sk')].map(b=>({b,s:b.dataset.s,cd:b.querySelector('.cd'),nm:b.querySelector('.nm'),em:b.querySelector('em')})),elMp=$('#mpFill'),cdDo=$('#slDodge .cd'),cdPo=$('#slPot .cd'),cdMa=$('#slMana .cd'),QKB=[...document.querySelectorAll('.slot.q')].map(b=>({b,cat:b.dataset.cat,nm:b.querySelector('.nm'),n:b.querySelector('b'),cv:b.querySelector('canvas'),k:null})),elPrompt=$('#prompt');
 function updateHud(){
   const hp=clamp(P.hp/ST.maxHp,0,1);
   setStyle('hpw',elHp,'width',(hp*100).toFixed(1)+'%');
@@ -14,7 +14,9 @@ function updateHud(){
   setStyle('xpw',elXp,'width',(S.char.xp/xpNeed(S.char.level)*100).toFixed(1)+'%');
   setTxt('hLv','Level '+S.char.level+(S.char.pts?' (+'+S.char.pts+')':''));
   {const n=treeLeft(S);setTxt('treeNew',n>0?String(n):'');}   // unspent tree points
-  setTxt('hShards',String(S.shards));setTxt('potN',String(S.potions));setTxt('foodN',String(S.rations||0));setTxt('drinkN',String(S.flasks||0));setTxt('emptyN',S.empties?S.empties+' empty':'');
+  setTxt('hShards',String(S.shards));for(const q of QKB){const k=quickItem(q.cat),n=S[SUPPLIES[k].key]||0;   // the quick slots: the item each will use, and how many
+    if(q.k!==k){q.k=k;supplyIcon(q.cv,k);q.nm.textContent=quickLabel(k);q.b.title=SUPPLIES[k].name+' (right-click to switch)';}
+    setTxt(q.cat+'N',String(n));if(q.lack!==!n){q.lack=!n;q.b.classList.toggle('lack',!n);}}setTxt('emptyN',S.empties?S.empties+' empty':'');
   {const ft=fatigueTier(P.fat);setTxt('hBuff',[P.buff&&`${BUFFS[P.buff.id].name}, ${Math.max(1,Math.ceil(P.buff.t/60))} min`,P.rested>0&&`Well rested, ${Math.ceil(P.rested/60)} min`,ft&&FATIGUE[ft].name].filter(Boolean).join(' · '));
     setStyle('fatw',$('#fatFill'),'width',(clamp(P.fat/FATIGUE_MAX,0,1)*100).toFixed(1)+'%');setStyle('tired',$('#tired'),'opacity',String(ft>=3?.8:ft===2?.35:0));}
   for(const k of['food','drink']){const v=clamp((P[k]==null?100:P[k])/100,0,1);setStyle(k+'w',$('#'+k+'Fill'),'width',(v*100).toFixed(1)+'%');
@@ -29,7 +31,7 @@ function updateHud(){
   setTxt('hFloor',G.village?'The root village'+(NET.on?', channel '+NET.ch:''):'Floor '+G.n+(P.safe?', safe room':''));
   setStyle('cdd',cdDo,'height',(P.dodgeCd/COMBAT.dashCd*100).toFixed(0)+'%');
   setStyle('staw',elSta,'width',(clamp(P.sta/ST.maxSta,0,1)*100).toFixed(1)+'%');
-  setStyle('cdp',cdPo,'height',(P.potCd/1.2*100).toFixed(0)+'%');
+  setStyle('cdp',cdPo,'height',(P.potCd/POTION_CD*100).toFixed(0)+'%');setStyle('cdm',cdMa,'height',(P.potCd/POTION_CD*100).toFixed(0)+'%');
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead){const b=G.bossEnt;setStyle('bw',elBoss,'width',(clamp(b.hp/b.maxHp,0,1)*100).toFixed(1)+'%');
     setStyle('bpw',elBossP,'width',(b.maxPoise?clamp(b.staggerT>0?1:b.poise/b.maxPoise,0,1)*100:100).toFixed(1)+'%');if(hc.bst!==(b.staggerT>0)){hc.bst=b.staggerT>0;elBossP.classList.toggle('broken',hc.bst);}}
   const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
@@ -330,7 +332,7 @@ function interact(){
 let askGate=null;
 function askChamber(q){
   askGate=q;mode='ask';inp.atk=false;for(const k in keys)keys[k]=false;
-  $('#askTxt').textContent=`The gate seals behind you. The only ways out are killing ${G.bossEnt.name} or dying. You have ${Math.ceil(P.hp)} of ${ST.maxHp} health and ${S.potions} potion${S.potions===1?'':'s'}.`;
+  $('#askTxt').textContent=`The gate seals behind you. The only ways out are killing ${G.bossEnt.name} or dying. You have ${Math.ceil(P.hp)} of ${ST.maxHp} health, ${hpPotions()} health potion${hpPotions()===1?'':'s'} and ${mpPotions()} mana potion${mpPotions()===1?'':'s'}.`;
   $('#ask').hidden=false;
 }
 function closeAsk(){if(mode!=='ask')return;$('#ask').hidden=true;mode='play';askGate=null;}
@@ -539,7 +541,7 @@ function renderPanel(){
     ['Mana',ST.maxMp],['Mana per second',ST.mpRegen.toFixed(2)],
     ...(slotted('fireball')?[['Fireball damage',(ST.dmg*2.6).toFixed(0)]]:[]),...(slotted('heal')||slotted('partyheal')?[['Party Heal restores',healAmount()]]:[]),...Object.keys(ST.vs).map(f=>['Damage to '+FAMILIES[f].them,'+'+ST.vs[f]+'%']),...Object.keys(ST.res).map(f=>['Damage from '+FAMILIES[f].them,ST.res[f]+'% less']),
     ['Kills',S.kills],['Deaths',S.deaths]].map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
-  $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;$('#pShards').textContent=S.shards;
+  $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;renderSups();$('#pShards').textContent=S.shards;
   // monster drops (the diamonds) only show once you carry some
   $('#pMats').innerHTML=Object.keys(MATS).filter(k=>!MATS[k].fam||S.mats[k]>0).map(k=>`<span title="${MATS[k].name}"><i class="mat${MATS[k].fam?' fam':''}" style="background:${MATS[k].color}"></i> ${S.mats[k]||0}</span>`).join('')+
     Object.keys(CROPS).filter(k=>S.crops&&S.crops[k]).map(k=>`<span title="${CROPS[k].plural}"><i class="mat" style="background:${CROPS[k].color};border-radius:50%"></i> ${S.crops[k]}</span>`).join('');
@@ -610,7 +612,7 @@ function renderDetail(){
   if(sel&&sel.from==='forge'&&atMaker()){forgeDetail(el);return;}
   if(!it&&atForge()){el.innerHTML='<p class="muted">Pick one of your own pieces to enhance it, or a piece above to have it forged from monster drops. Forged weapons hit one family of monsters harder; forged armor and boots take less from it.</p>';return;}
   if(!it&&atMaker()){el.innerHTML='<p class="muted">Pick a grimoire above to have it written from monster drops. It deals more damage to the family whose drops go into it. Everything else is forged at the blacksmith.</p>';return;}
-  if(!it&&atStash()){el.innerHTML='<p class="muted">The same stash waits behind every stash chest: in the inn and in every safe room. Pick something to move it between your bag and the stash, or double-click it.</p>';return;}
+  if(!it&&atStash()){stashGoods(el);return;}
   if(!it){el.innerHTML=`<p class="muted">${S.inv.length?'Select an item to compare it with what you are wearing. Double-click an item in the bag to equip it.':'Your bag is empty. Enemies and chests drop weapons, armor, boots and trinkets.'}</p>`;return;}
   const R=RARITY[it.rarity],cur=S.equip[it.slot],other=(sel.from==='bag'||sel.from==='shop')&&cur?cur:null,m=itemMult(it);
   let h=`<h4 style="color:${R.color}">${esc(it.name)}${it.plus?' +'+it.plus:''}</h4>`;
@@ -808,9 +810,46 @@ $('#pQuit').onclick=quitToTitle;
 $('#btnBag').addEventListener('click',e=>{e.currentTarget.blur();openPanel();});
 holdBtn($('#slAtk'),()=>{inp.atk=true;press('atk');},()=>{inp.atk=false;});
 for(const k of SKB)holdBtn(k.b,()=>press('skill',k.s));holdBtn($('#slBlock'),()=>{inp.block=true;},()=>{inp.block=false;});
-$('#askGo').onclick=confirmChamber;$('#askNo').onclick=closeAsk;holdBtn($('#slDodge'),()=>press('dodge'));holdBtn($('#slPot'),()=>press('potion'));holdBtn($('#slFood'),()=>press('eat'));holdBtn($('#slDrink'),()=>press('drink'));
+$('#askGo').onclick=confirmChamber;$('#askNo').onclick=closeAsk;holdBtn($('#slDodge'),()=>press('dodge'));holdBtn($('#slPot'),()=>press('potion'));holdBtn($('#slMana'),()=>press('mana'));holdBtn($('#slFood'),()=>press('eat'));holdBtn($('#slDrink'),()=>press('drink'));
+// Right-click a quick slot to switch it to the next item of its category you carry.
+for(const q of QKB)q.b.addEventListener('contextmenu',e=>{e.preventDefault();cycleQuick(q.cat);});
 elPrompt.addEventListener('click',e=>{e.currentTarget.blur();interact();});
 // Save whenever the page goes away mid-run, whatever menu is open. Hiding the tab during play also pauses the game.
 const inRun=()=>!!G&&mode!=='title'&&mode!=='creator';
 addEventListener('pagehide',()=>{if(inRun())save();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)return;if(mode==='play')openPause();else if(inRun())save();});
+
+/* ---------- quick slots and supplies ---------- */
+const countCat=cat=>Object.keys(SUPPLIES).filter(k=>SUPPLIES[k].cat===cat).reduce((a,k)=>a+(S[SUPPLIES[k].key]||0),0);
+const hpPotions=()=>countCat('hp'),mpPotions=()=>countCat('mp');
+// a quick slot's short name: Health 25%, Mana 10%, Eat, Drink
+const quickLabel=k=>{const s=SUPPLIES[k];return s.fill?(s.cat==='hp'?'Health ':'Mana ')+Math.round(s.fill*100)+'%':s.cat==='food'?'Eat':'Drink';};
+function cycleQuick(cat){
+  const ks=Object.keys(SUPPLIES).filter(k=>SUPPLIES[k].cat===cat),have=ks.filter(k=>(S[SUPPLIES[k].key]||0)>0),list=have.length?have:ks;
+  if(list.length<2&&quickItem(cat)===list[0])return;
+  const k=list[(list.indexOf(quickItem(cat))+1)%list.length];act('bindQuick',[cat,k],()=>{refreshHudStatic();if(mode==='panel')renderPanel();});
+}
+// The bag's supplies, under its header: what you carry by count. A potion, ration or flask clicked goes to its quick
+// slot; in front of a stash, the stash's goods and the moves between them are in the detail pane.
+function renderSups(){
+  const el=$('#pSup');el.innerHTML='';
+  for(const k in SUPPLIES){const s=SUPPLIES[k],n=S[s.key]||0,bound=s.cat&&S.quick[s.cat]===k;if(!n&&!bound)continue;
+    const b=document.createElement('button');b.className='sup'+(bound?' on':'');b.title=s.name+(s.cat?bound?' (on key '+(QUICK.findIndex(q=>q.cat===s.cat)+1)+')':' (click to put it on key '+(QUICK.findIndex(q=>q.cat===s.cat)+1)+')':'');
+    const c=document.createElement('canvas');supplyIcon(c,k);b.appendChild(c);b.insertAdjacentHTML('beforeend',`<b>${n}</b>`+(bound?`<kbd>${QUICK.findIndex(q=>q.cat===s.cat)+1}</kbd>`:''));
+    if(s.cat)b.onclick=()=>act('bindQuick',[s.cat,k],()=>{refreshHudStatic();renderPanel();});el.appendChild(b);}
+  if(S.empties)el.insertAdjacentHTML('beforeend',`<span class="muted" title="Fill them at the village well">${S.empties} empty flask${S.empties>1?'s':''}</span>`);
+}
+// The stash's goods: shards, materials and monster drops, potions and supplies, kept by count.
+function stashGoods(el){
+  const V=S.vault,rows=[];
+  rows.push({kind:'shards',name:'Shards',bag:S.shards,st:V.shards,col:'#6fd6e6'});
+  for(const k in MATS)if((S.mats[k]||0)+(V.mats[k]||0)>0)rows.push({kind:'mat',id:k,name:MATS[k].name,bag:S.mats[k]||0,st:V.mats[k]||0,col:MATS[k].color});
+  for(const k in SUPPLIES){const key=SUPPLIES[k].key;if((S[key]||0)+(V.sup[key]||0)>0)rows.push({kind:'sup',id:k,name:SUPPLIES[k].name,bag:S[key]||0,st:V.sup[key]||0,col:SUPPLIES[k].color});}
+  el.innerHTML=`<h4>Goods</h4><div class="sub">A fall takes everything you carry but the gear you have on. What is in the stash stays, behind every stash chest.</div>
+    <table class="goods"><tr><th></th><th>Bag</th><th></th><th>Stash</th></tr>${rows.map((r,i)=>`<tr><td><i class="mat" style="background:${r.col}"></i> ${r.name}</td><td>${r.bag}</td>
+    <td><button class="btn small" data-i="${i}" data-d="store" ${r.bag?'':'disabled'}>Store →</button><button class="btn small" data-i="${i}" data-d="take" ${r.st?'':'disabled'}>← Take</button></td><td>${r.st}</td></tr>`).join('')}</table>
+    <div class="row"><button class="btn primary" id="storeAll">Store shards and materials</button></div>
+    <p class="muted">Gear: pick it in the bag or the stash to move it, or double-click it.</p>`;
+  for(const b of el.querySelectorAll('[data-d]')){const r=rows[+b.dataset.i];b.onclick=()=>act(b.dataset.d,r.kind==='shards'?['shards',null]:[r.kind,r.id],m=>{if(m)sfx('pick');renderPanel();});}
+  el.querySelector('#storeAll').onclick=()=>act('storeAll',[],m=>{if(m)sfx('pick');renderPanel();});
+}

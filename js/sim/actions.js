@@ -107,6 +107,16 @@ const ACTIONS={
   // the universal stash: the same one behind every stash chest. i: a bag slot (stash) or a stash slot (unstash)
   stash(i){if(!nearStash(40)||!S.inv[i]||S.stash.length>=STASH_SIZE)return false;S.stash.push(S.inv.splice(i,1)[0]);return S.stash.length-1;},
   unstash(i){if(!nearStash(40)||!S.stash[i]||S.inv.length>=BAG_SIZE)return false;S.inv.push(S.stash.splice(i,1)[0]);return S.inv.length-1;},
+  // The stash keeps goods by count too (S.vault): shards, materials and monster drops, potions and supplies, which a fall
+  // would otherwise take. kind: 'shards', 'mat' (id: a MATS key) or 'sup' (id: a SUPPLIES key). n: how many (all if left out).
+  store(kind,id,n){return moveGoods(kind,id,n,true);},
+  take(kind,id,n){return moveGoods(kind,id,n,false);},
+  // the loot in one go: shards, materials and monster drops (supplies stay in the bag, to be used)
+  storeAll(){if(!nearStash(40))return false;let m=0;
+    for(const k in S.mats)if(S.mats[k]>0)m+=moveGoods('mat',k,null,true);
+    if(S.shards>0)m+=moveGoods('shards',null,null,true);return m;},
+  // the quick slots (QUICK): which item of a category key 1 to 4 uses
+  bindQuick(cat,k){if(!QUICK.some(q=>q.cat===cat)||!SUPPLIES[k]||SUPPLIES[k].cat!==cat)return false;S.quick[cat]=k;return true;},
   // the village well fills every empty flask you carry, for nothing
   fillFlasks(){if(!nearWell(40)||!(S.empties>0))return false;const n=S.empties;S.flasks+=n;S.empties=0;return n;},
   // a meal at the inn, eaten at once: the meters fill and its buff starts (MEALS)
@@ -192,3 +202,13 @@ const ACTIONS={
   custom(url){S.char.custom=url||null;return true;},
 };
 function runAction(name,args){const f=ACTIONS[name];return f&&!P.dead?f(...(Array.isArray(args)?args:[])):false;}
+// Moves goods between the bag and the stash (ACTIONS.store, take). Returns how many moved (0: nothing, false: not here).
+function moveGoods(kind,id,n,toStash){
+  if(!nearStash(40))return false;const V=S.vault;let from,to,key;
+  if(kind==='shards'){from=toStash?S:V;to=toStash?V:S;key='shards';}
+  else if(kind==='mat'&&MATS[id]){from=toStash?S.mats:V.mats;to=toStash?V.mats:S.mats;key=id;}
+  else if(kind==='sup'&&SUPPLIES[id]){key=SUPPLIES[id].key;from=toStash?S:V.sup;to=toStash?V.sup:S;}
+  else return false;
+  const have=from[key]||0,m=n==null?have:Math.max(0,Math.min(have,Math.floor(+n)||0));
+  from[key]=have-m;to[key]=(to[key]||0)+m;if(!toStash&&!from[key]&&kind!=='shards')delete from[key];return m;
+}

@@ -118,9 +118,8 @@ function holdBtn(el,down,up){
 const moveX=()=>(held('right')?1:0)-(held('left')?1:0)+inp.jx;
 const moveY=()=>(held('down')?1:0)-(held('up')?1:0)+inp.jy;
 // One-off presses go to the rules directly in single player, and to the server online.
-const PRESS={atk:()=>{P.atkBuf=.18;},skill:s=>useSkill(s),dodge:()=>dodge(),potion:()=>usePotion(),eat:()=>eat(),drink:()=>drink()};
+const PRESS={atk:()=>{P.atkBuf=.18;},skill:s=>useSkill(s),dodge:()=>dodge(),potion:()=>usePotion(),mana:()=>useMana(),eat:()=>eat(),drink:()=>drink()};
 function press(a,s){
-  if(a==='mana'){if(G.time-(inp.manaMsg||-9)>3){inp.manaMsg=G.time;log('Mana potions arrive with the potion sizes (soon). Slot 2 is theirs.');}return;}
   // aim first, so a press acts toward the mouse even between two input reports
   if(P&&!P.dead){const a=aimAngle();if(a!=null){P.in.aim=a;P.aim=a;P.dir=dirOf(a);}}
   if(NET.on)NET.press(a,s);else PRESS[a](s);

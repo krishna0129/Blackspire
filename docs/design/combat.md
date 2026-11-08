@@ -1,8 +1,8 @@
 # Combat and movement
 
 Status: **mostly in the game** (build plan step 1): aiming, keys, the dash and stamina, parrying and blocking, hit
-reactions, poise and focus, enemies' poise. Skill keys Q, E, C and X and the classes' mana came with step 2. Still to come: mana
-potions, potion sizes and the death rule (step 3). The numbers (`COMBAT` in data.js) are first guesses, to be tuned
+reactions, poise and focus, enemies' poise. Skill keys Q, E, C and X and the classes' mana came with step 2; mana
+potions, potion sizes, the quick slots and the death rule with step 3. The numbers (`COMBAT` in data.js) are first guesses, to be tuned
 by playing and the balance runner ([skills.md](skills.md#the-balance-runner)). Part of the road to the first
 friends' playtest ([roadmap](../roadmap.md)).
 
@@ -84,8 +84,12 @@ Every binding can be changed once there is a settings screen ([roadmap](../roadm
 
 ### Potions in sizes
 
-- Potions are sold in sizes by how much they refill: 10%, 25%, 50% (and perhaps 100%), each priced in proportion to
-  what it refills. Health and mana alike.
+- Potions are sold in sizes by how much they refill: **10%, 25% and 50%**, priced 10, 25 and 50 shards on floor 1
+  (more on higher floors). Health and mana alike. No 100% potion for now: a full refill in one gulp would make boss
+  fights easy to brute-force.
+- Health and mana potions **share one cooldown** (1.2 s): one drink at a time.
+- Ordinary enemies drop small ones, elites and chests the middle size (chests now and then a large one), bosses large
+  ones. Old saves' potions became the 25% health potion.
 
 ### Quick slots: 1 to 4
 
@@ -93,7 +97,10 @@ Every binding can be changed once there is a settings screen ([roadmap](../roadm
 - A slot holds whichever item of its category you choose from your bag (a 25% potion, a 50% one, bread, a meal to
   carry): any item whose tag matches the category can be bound to it. The slot belongs to the category, not to one
   item.
-- They replace today's keys (Q potion, R eat, T drink).
+- **Choosing:** in the Gear panel, the bag's supplies sit under its header: click one to put it on its key. Or
+  right-click a quick slot on the bar to switch to the next of its kind you carry.
+- When the chosen item runs out, the key reaches for another of its category, the smallest first (so a large potion
+  is never spent by accident).
 
 ### Warnings
 
@@ -112,6 +119,10 @@ Every binding can be changed once there is a settings screen ([roadmap](../roadm
   already has a stash chest, in the game) keep what you put in them. Carrying less is safer: space and trips to the
   stash become part of the game.
 - You wake at the inn bed (single player; in the game).
+- **The stash keeps goods by count** as well as gear: shards, materials and monster drops, potions and supplies. At a
+  stash chest, the Goods table moves each between bag and stash, and one button stores all the shards and materials
+  (supplies stay in the bag, to be used). Crops from the field are not lost: they never go into the tower.
+- **Before every boss** the antechamber in front of the west gate is a safe room with a trader and a stash chest.
 
 ## Open
 

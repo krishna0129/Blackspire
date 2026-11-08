@@ -221,13 +221,27 @@ function hurtPlayer(dmg,src,sure,from,ground){
 }
 // A push away from whatever struck (o), of strength k. Online the server sets it and the browser plays it out (kbN).
 function push(o,k){const a=o?Math.atan2(P.y-o.y,P.x-o.x):P.aim+Math.PI;P.kx+=Math.cos(a)*k;P.ky+=Math.sin(a)*k;P.kbN++;}
-function die(){
-  P.dead=true;P.hp=0;P.swing=P.dash=null;P.emp=null;P.shield=0;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;
-  P.deadAt=G.time;P.deathLost=lost;   // a Templar can still undo it for a while (js/sim/skills.js, revive)
-  S.food=Math.max(50,Math.round(P.food));S.drink=Math.max(50,Math.round(P.drink));S.buff=null;P.buff=null;persist();   // you wake up at least half fed
-  onDeath(lost,S.cpFloor===G.n&&S.cp>0);   // cp: whether they wake in a safe room (true) or at the entrance
+// What a fall takes: everything carried but the gear you have on (docs/design/combat.md#death). It is taken at once
+// and kept on the player (P.lost) while a Templar can still undo the fall (js/sim/skills.js, revive).
+function takeCarried(s){
+  const L={shards:s.shards||0,mats:{},inv:s.inv.slice(),sup:{},empties:s.empties||0};
+  for(const k in s.mats)if(s.mats[k]>0){L.mats[k]=s.mats[k];s.mats[k]=0;}
+  for(const k in SUPPLIES){const key=SUPPLIES[k].key;if(s[key]>0){L.sup[key]=s[key];s[key]=0;}}
+  s.shards=0;s.inv=[];s.empties=0;return L;
 }
-
+function giveBack(s,L){
+  if(!L)return;s.shards+=L.shards;s.empties=(s.empties||0)+L.empties;
+  for(const k in L.mats)s.mats[k]=(s.mats[k]||0)+L.mats[k];for(const k in L.sup)s[k]=(s[k]||0)+L.sup[k];
+  for(const it of L.inv)(s.inv.length<BAG_SIZE?s.inv:s.stash).push(it);   // anything picked up meanwhile came first
+}
+// A short account of a fall's loss, for the "You fell" dialog: [shards, materials, supplies, gear].
+function lossCounts(L){const sum=o=>Object.values(o||{}).reduce((a,b)=>a+b,0);return L?[L.shards,sum(L.mats),sum(L.sup)+L.empties,L.inv.length]:[0,0,0,0];}
+function die(){
+  P.dead=true;P.hp=0;P.swing=P.dash=null;P.emp=null;P.shield=0;S.deaths++;S.hp=null;
+  P.lost=takeCarried(S);P.deadAt=G.time;
+  S.food=Math.max(50,Math.round(P.food));S.drink=Math.max(50,Math.round(P.drink));S.buff=null;P.buff=null;persist();   // you wake up at least half fed
+  onDeath(lossCounts(P.lost),S.cpFloor===G.n&&S.cp>0);   // cp: whether they wake in a safe room (true) or at the entrance
+}
 function startSwing(){
   const aspd=ST.aspd*(1+P.mom*(ST.p.momentum||0)/100);
   P.atkCd=1/aspd;
@@ -277,9 +291,21 @@ function dodge(){
   if(P.swing&&!P.swing.hit)P.swing=null;
   P.dash={t:COMBAT.dashT,vx:mx/m*v,vy:my/m*v};P.dodgeCd=COMBAT.dashCd;
 }
-function usePotion(){
-  if(P.dead||P.potCd>0||S.potions<=0||P.hp>=ST.maxHp)return;
-  S.potions--;P.potCd=1.2;heal(ST.maxHp*.45);burst(P.x,P.y,12,'#d9534f',50);sfx('pick');
+// The quick slots (QUICK, keys 1 to 4): the item bound to a category, or, once it runs out, another of the category
+// (the smallest first, so a large potion is not spent by accident).
+function quickItem(cat,s=S){
+  const b=(s.quick||{})[cat];if(SUPPLIES[b]&&(s[SUPPLIES[b].key]||0)>0)return b;
+  for(const k in SUPPLIES)if(SUPPLIES[k].cat===cat&&(s[SUPPLIES[k].key]||0)>0)return k;
+  return SUPPLIES[b]?b:QUICK_DEFAULT[cat];
+}
+function useQuick(cat){const k=quickItem(cat);if(SUPPLIES[k].fill)drinkPotion(k);else useSupply(k);}
+// Health and mana potions share one cooldown. Nothing is spent when the bar is already full.
+function drinkPotion(k){
+  const s=SUPPLIES[k],hp=s.cat==='hp';
+  if(P.dead||P.potCd>0||(S[s.key]||0)<=0||(hp?P.hp>=ST.maxHp:P.mp>=ST.maxMp))return;
+  S[s.key]--;P.potCd=POTION_CD;
+  if(hp)heal(ST.maxHp*s.fill);else{const v=Math.min(ST.maxMp-P.mp,ST.maxMp*s.fill);P.mp+=v;addNum(P.x,P.y-18,'+'+Math.round(v),'mana');}
+  burst(P.x,P.y,12,s.color,50);sfx('pick');
 }
 // Eating a ration or drinking from a flask: refills its meter. Nothing happens when the meter is already full.
 function useSupply(k){
@@ -287,6 +313,8 @@ function useSupply(k){
   S[s.key]--;if(k==='flask')S.empties=(S.empties||0)+1;   // the flask is kept, empty
   P.eatCd=.6;P[s.need]=Math.min(100,P[s.need]+s.gives);burst(P.x,P.y,8,s.color,40);sfx('pick');
 }
-// declared as functions so the server can call them on its sandbox (R.eat, R.drink)
-function eat(){useSupply('ration');}
-function drink(){useSupply('flask');}
+// declared as functions so the server can call them on its sandbox (R.usePotion, R.eat...)
+function usePotion(){useQuick('hp');}
+function useMana(){useQuick('mp');}
+function eat(){useQuick('food');}
+function drink(){useQuick('drink');}

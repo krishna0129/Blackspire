@@ -80,12 +80,12 @@ test('the Templar heals the ally it aims at, the party, over time, and shields',
 
 test('Revive brings a fallen ally back within 15 seconds, with what the fall cost; after that, it does nothing',()=>{
   const run=world();
-  run(`setPlayer(ally);S.shards=100;die();setPlayer(G.players[0]);`);
+  run(`setPlayer(ally);S.shards=100;S.manas=3;S.mats.scrap=5;die();setPlayer(G.players[0]);`);
   assert.strictEqual(run(`ally.dead`),true);
-  assert.strictEqual(run(`ally.S.shards`),80,'the fall cost 20%');
+  assert.strictEqual(run(`ally.S.shards+ally.S.manas+ally.S.mats.scrap`),0,'the fall took everything carried');
   run(`slot('q','revive');P.aim=Math.atan2(ally.y-P.y,ally.x-P.x);G.time+=10;useSkill('q');`);
   assert.strictEqual(run(`ally.dead`),false,'brought back');
-  assert.strictEqual(run(`ally.S.shards`),100,'nothing lost');
+  assert.strictEqual(run(`JSON.stringify([ally.S.shards,ally.S.manas,ally.S.mats.scrap])`),'[100,3,5]','nothing lost');
   run(`setPlayer(ally);die();setPlayer(G.players[0]);G.time+=16;P.cds={};`);
   const mp=run(`P.mp`);run(`useSkill('q');`);
   assert.strictEqual(run(`ally.dead`),true,'too late');

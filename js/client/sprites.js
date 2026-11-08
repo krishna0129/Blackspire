@@ -194,7 +194,10 @@ function drawTrader(q,t){
 function supplyIcon(cv,k){
   const x=uiCtx(cv,24,24),f=(c,a,b,w,h)=>{x.fillStyle=c;x.fillRect(a,b,w,h);};
   f('#262630',0,0,24,24);
-  if(k==='potion'){f('#050508',8,3,8,3);f('#050508',6,6,12,13);f('#e6e1d3',10,4,4,2);f('#d9534f',7,9,10,9);f('#f1b0a8',8,10,2,3);}
+  const P_=SUPPLIES[k];
+  if(P_&&P_.fill){   // potions: a bottle as big as what it refills, in its colour (red health, blue mana)
+    const w=P_.fill<.2?8:P_.fill<.4?12:16,h=P_.fill<.2?9:P_.fill<.4?13:16,x0=12-w/2,y0=22-h;
+    f('#050508',10,y0-4,4,4);f('#c9b48a',11,y0-3,2,2);f('#050508',x0-1,y0-1,w+2,h+2);f('#e6e1d3',x0,y0,w,h);f(P_.color,x0+1,y0+Math.round(h*.3),w-2,h-Math.round(h*.3)-1);f('rgba(255,255,255,.55)',x0+1,y0+Math.round(h*.3)+1,2,3);}
   else if(k==='bag'){f('#050508',3,7,18,12);f('#6a4a2c',4,8,16,10);f('#8a6a44',4,8,16,4);f('#3a2a1a',4,13,16,1);f('#c9a46a',9,7,6,12);f('#050508',11,7,2,12);}   // a rolled sleeping bag
   else if(k==='ration'){f('#050508',3,8,18,11);f('#8a5a2a',4,9,16,9);f('#b07a3a',5,9,14,6);f('#e0b36a',6,10,5,2);f('#e0b36a',13,10,4,2);f('#6a2f2a',4,15,16,2);f('#c05a4a',6,15,4,1);}
   else{f('#050508',8,2,8,4);f('#c9b48a',10,3,4,2);f('#050508',5,6,14,15);f('#7a5a3a',6,7,12,13);f('#5aa7e6',7,12,10,7);f('#9fd0f5',8,13,3,2);f('#4a3420',6,9,12,1);}

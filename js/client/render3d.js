@@ -786,7 +786,7 @@ function frame3d(){
     else orb(x,1.5,z,'#b9a8ff',.11,6);}
   // what you can pick up: a gem of its colour, bobbing; good gear casts a beam
   for(const d of G.drops){if(d.owner!==P.id)continue;const m=take(P_GEM),x=wx(d.x),z=wz(d.y);
-    const col=d.k==='shard'?'#6fd6e6':d.k==='mat'?(MATS[d.id]?MATS[d.id].color:'#cccccc'):d.k==='potion'?'#d9534f':d.k==='ration'?'#d9a441':d.k==='flask'?'#5aa7e6':RARITY[d.item.rarity].color;
+    const col=d.k==='shard'?'#6fd6e6':d.k==='mat'?(MATS[d.id]?MATS[d.id].color:'#cccccc'):SUPPLIES[d.k]?SUPPLIES[d.k].color:RARITY[d.item.rarity].color;
     m.position.set(x,.45+Math.sin(d.t*4)*.1,z);m.rotation.y=d.t*2;m.material.color.set(col);m.material.emissive.set(col);m.scale.setScalar(d.k==='shard'?.8:d.k==='item'?1.3:1);
     if(d.k==='item'&&d.item.rarity>=2){const b=take(P_BEAM);b.position.set(x,0,z);b.scale.set(1,1,1);b.material.color.set(col);b.material.opacity=.45;}}
   // effects

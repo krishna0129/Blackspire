@@ -38,7 +38,7 @@ function render(){
       ctx.fillStyle='#050508';for(let i=-3;i<=3;i++)ctx.fillRect(x-(3-Math.abs(i)),y+i,7-2*Math.abs(i),1);
       ctx.fillStyle=MATS[d.id].color;for(let i=-2;i<=2;i++)ctx.fillRect(x-(2-Math.abs(i)),y+i,5-2*Math.abs(i),1);ctx.fillStyle='#fff';ctx.fillRect(x-1,y-1,1,1);}
     else if(d.k==='mat'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-2,4,4);ctx.fillStyle=MATS[d.id].color;ctx.fillRect(x-1,y-1,2,2);}
-    else if(d.k==='potion'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,6);ctx.fillStyle='#d9534f';ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#e6e1d3';ctx.fillRect(x,y-2,1,1);}
+    else if(SUPPLIES[d.k]&&SUPPLIES[d.k].fill){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,6);ctx.fillStyle=SUPPLIES[d.k].color;ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#e6e1d3';ctx.fillRect(x,y-2,1,1);}
     else if(d.k==='ration'){ctx.fillStyle='#050508';ctx.fillRect(x-3,y-2,7,5);ctx.fillStyle='#b07a3a';ctx.fillRect(x-2,y-1,5,3);ctx.fillStyle='#e0b36a';ctx.fillRect(x-1,y-1,3,1);}
     else if(d.k==='flask'){ctx.fillStyle='#050508';ctx.fillRect(x-2,y-3,5,7);ctx.fillStyle='#7a5a3a';ctx.fillRect(x-1,y-1,3,4);ctx.fillStyle='#5aa7e6';ctx.fillRect(x-1,y,3,2);ctx.fillStyle='#c9b48a';ctx.fillRect(x,y-2,1,1);}
     else{const c=RARITY[d.item.rarity].color;ctx.fillStyle='#050508';ctx.fillRect(x-3,y-1,7,3);ctx.fillRect(x-1,y-3,3,7);ctx.fillStyle=c;ctx.fillRect(x-2,y,5,1);ctx.fillRect(x,y-2,1,5);ctx.fillRect(x-1,y-1,3,3);ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);}}

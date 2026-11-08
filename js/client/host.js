@@ -20,14 +20,17 @@ function mapChanged(){G.mapCv=paintMap(G);}
 function onDeath(lost,cp){
   mode='dead';
   const inn=!cp&&!NET.on&&G.n>0&&S.room===questDay();   // single player: no safe room yet, but a room at the inn
-  $('#deadTxt').textContent=`You lose ${lost} shard${lost===1?'':'s'}. You wake ${cp?'in the last safe room you reached':inn?'in your bed at the inn':'at the entrance of floor '+G.n}. `+
-    (NET.on?'The fight goes on without you until then. ':'Enemies on this floor return, so you can fight them again for experience. ')+'Chests you opened stay empty. Gear and levels stay.';
+  const[sh,ma,su,ge]=Array.isArray(lost)?lost:[lost||0,0,0,0],pl=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+  const gone=[sh&&pl(sh,'shard'),ma&&pl(ma,'material'),su&&pl(su,'supply').replace('supplys','supplies'),ge&&pl(ge,'piece')+' of gear from the bag'].filter(Boolean);
+  $('#deadTxt').textContent=(gone.length?`Everything you carried is lost: ${gone.join(', ')}. `:'You carried nothing to lose. ')+
+    `You keep the gear you have on, your levels, and whatever is in the stash. You wake ${cp?'in the last safe room you reached':inn?'in your bed at the inn':'at the entrance of floor '+G.n}. `+
+    (NET.on?'The fight goes on without you until then. ':'Enemies on this floor return. ')+'Chests you opened stay empty.';
   $('#respawnTxt').textContent=cp?'Respawn at the safe room':inn?'Wake at the inn':'Respawn at the entrance';
   setTimeout(()=>{if(mode==='dead')$('#dead').hidden=false;},700);
 }
 
 // A Templar brought you back before your fall counted (docs/design/multiplayer.md#falling).
-function revived(){if(mode!=='dead')return;mode='play';$('#dead').hidden=true;log('A Templar brings you back. Nothing is lost.');}
+function revived(){if(mode!=='dead')return;mode='play';$('#dead').hidden=true;log('A Templar brings you back, with everything you carried.');}
 
 // Particles, slashes and floating numbers only exist on screen: they age here, every frame, in either mode.
 const NUM_LIFE=.5;   // seconds a floating number stays up; it fades over the last 0.15 (render.js)
