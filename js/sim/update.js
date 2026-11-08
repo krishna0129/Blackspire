@@ -40,6 +40,7 @@ function simUpdate(dt){
     if(fire&&p.life>0)part({x:p.x+rand(-1,1),y:p.y+rand(-1,1),vx:rand(-6,6),vy:-10,t:0,d:.3,c:pick(['#f08a3c','#d9534f','#ffe9a8'])});
   }
   G.pproj=G.pproj.filter(p=>p.life>0);
+  updateSkillFx(dt);   // skills that land later (js/sim/skills.js)
   // bodies crumble after a while (the ones lying in a boss chamber do not)
   for(const c of G.corpses){c.t-=dt;if(c.t<=0)burst(c.x,c.y,6,'#55513f',30);}
   G.corpses=G.corpses.filter(c=>c.t>0);
@@ -102,7 +103,8 @@ function updatePlayer(dt){
   if(G.time-P.staT>COMBAT.sta.delay&&!P.dash)P.sta=Math.min(ST.maxSta,P.sta+COMBAT.sta.regen*(busy?COMBAT.sta.busy:1)*dt);
   if(G.time-P.poiseT>COMBAT.poise.delay)P.poise=Math.min(ST.maxPoise,P.poise+COMBAT.poise.regen*dt);
   if(P.stagger>0)P.stagger-=dt;
-  P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
+  P.atkCd-=dt;for(const k in P.cds)if(P.cds[k]>0)P.cds[k]=Math.max(0,P.cds[k]-dt);
+  if(P.emp){P.emp.t-=dt;if(P.emp.t<=0)P.emp=null;}if(P.shieldT>0){P.shieldT-=dt;if(P.shieldT<=0)P.shield=0;}P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
   if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:buff==='morning'?1.25:1)*dt);
   updateNeeds(dt);if(P.dead)return;
@@ -123,9 +125,10 @@ function updatePlayer(dt){
   }
   if(P.swing){const s=P.swing;s.t+=dt;
     if(!s.hit&&s.t>=s.d*.4){s.hit=true;
-      if(ST.magic)castBolt();
-      else if(ST.ranged)fireArrow(P.aim,1);
-      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,1,{melee:true});
+      const em=takeEmpower();   // an empowered attack (Smite and the like) hits harder
+      if(ST.magic)castBolt(em);
+      else if(ST.ranged)fireArrow(P.aim,em);
+      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,em,{melee:true});
       if(ST.thrust)vfx({k:'line',x:P.x,y:P.y,a:s.a,len:ST.range+5,t:0,d:.1});else slashFx(s.a,ST.arc,ST.range,s.dir,.14);}}
     if(s.t>=s.d)P.swing=null;}
 }

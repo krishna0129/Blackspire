@@ -40,7 +40,10 @@
     <div id="log"></div>
     <div class="slots">
       <button class="slot" id="slAtk" tabindex="-1" aria-label="Attack"><canvas width="24" height="24"></canvas><kbd>LMB</kbd></button>
-      <button class="slot" id="slSkill" tabindex="-1"><em id="skCost"></em><span class="nm" id="skName"></span><i class="cd"></i><kbd>Q</kbd></button>
+      <button class="slot sk" id="slQ" data-s="q" tabindex="-1"><em></em><span class="nm"></span><i class="cd"></i><kbd>Q</kbd></button>
+      <button class="slot sk" id="slE" data-s="e" tabindex="-1"><em></em><span class="nm"></span><i class="cd"></i><kbd>E</kbd></button>
+      <button class="slot sk" id="slC" data-s="c" tabindex="-1"><em></em><span class="nm"></span><i class="cd"></i><kbd>C</kbd></button>
+      <button class="slot sk ult" id="slX" data-s="x" tabindex="-1"><em></em><span class="nm"></span><i class="cd"></i><kbd>X</kbd></button>
       <button class="slot" id="slBlock" tabindex="-1" hidden><span class="nm" id="blockName">Block</span><kbd>RMB</kbd></button>
       <button class="slot" id="slDodge" tabindex="-1"><span class="nm">Dash</span><i class="cd"></i><kbd>Space</kbd></button>
       <button class="slot" id="slPot" tabindex="-1"><span class="nm">Potion</span><b id="potN">0</b><i class="cd"></i><kbd>1</kbd></button>
@@ -209,6 +212,7 @@
 <script src="js/sim/fields.js"></script>
 <script src="js/sim/market.js"></script>
 <script src="js/sim/combat.js"></script>
+<script src="js/sim/skills.js"></script>
 <script src="js/sim/update.js"></script>
 <script src="js/sim/floor3.js"></script>
 <script src="js/sim/actions.js"></script>

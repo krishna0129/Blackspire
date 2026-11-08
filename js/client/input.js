@@ -39,8 +39,7 @@ const BIND={
   interact:['KeyF','Enter','NumpadEnter'],gear:['KeyI','Tab'],tree:['KeyP'],menu:['Escape'],mute:['KeyM'],debug:['Backquote'],
   respawn:['KeyR','Enter','NumpadEnter'],
 };
-// What each skill key and quick slot does today. Until each class has its four skills (the build plan's step 2),
-// the weapon's one skill sits on Q.
+// The skill keys are the four slots (js/sim/skills.js); the quick slots, a potion, mana, food and water.
 const SKILL_KEYS=['skill1','skill2','skill3','skill4'],SLOT_KEYS={slot1:'potion',slot2:'mana',slot3:'eat',slot4:'drink'};
 const is=(action,code)=>BIND[action].includes(code);
 const held=action=>BIND[action].some(c=>keys[c]);
@@ -49,8 +48,7 @@ addEventListener('keydown',e=>{
   const c=e.code;if(!c)return;if(e.repeat&&!is('gear',c))return;keys[c]=true;
   if(mode==='play'){
     const sk=SKILL_KEYS.findIndex(a=>is(a,c)),slot=Object.keys(SLOT_KEYS).find(a=>is(a,c));
-    if(sk===0)press('skill');
-    else if(sk>0){if(G.time-(inp.skillMsg||-9)>3){inp.skillMsg=G.time;log('Each class gets four skills soon. For now your weapon’s skill is on Q.');}}
+    if(sk>=0)press('skill',SLOTS[sk]);
     else if(slot)press(SLOT_KEYS[slot]);
     else if(is('dodge',c)){press('dodge');e.preventDefault();}
     else if(is('interact',c))interact();
@@ -120,12 +118,12 @@ function holdBtn(el,down,up){
 const moveX=()=>(held('right')?1:0)-(held('left')?1:0)+inp.jx;
 const moveY=()=>(held('down')?1:0)-(held('up')?1:0)+inp.jy;
 // One-off presses go to the rules directly in single player, and to the server online.
-const PRESS={atk:()=>{P.atkBuf=.18;},skill:()=>useSkill(),dodge:()=>dodge(),potion:()=>usePotion(),eat:()=>eat(),drink:()=>drink()};
-function press(a){
+const PRESS={atk:()=>{P.atkBuf=.18;},skill:s=>useSkill(s),dodge:()=>dodge(),potion:()=>usePotion(),eat:()=>eat(),drink:()=>drink()};
+function press(a,s){
   if(a==='mana'){if(G.time-(inp.manaMsg||-9)>3){inp.manaMsg=G.time;log('Mana potions arrive with the potion sizes (soon). Slot 2 is theirs.');}return;}
   // aim first, so a press acts toward the mouse even between two input reports
   if(P&&!P.dead){const a=aimAngle();if(a!=null){P.in.aim=a;P.aim=a;P.dir=dirOf(a);}}
-  if(NET.on)NET.press(a);else PRESS[a]();
+  if(NET.on)NET.press(a,s);else PRESS[a](s);
 }
 const readInput=()=>({mx:moveX(),my:moveY(),atk:!!inp.atk,block:!!inp.block,aim:aimAngle()});
 

@@ -99,7 +99,7 @@ the mouse. Attacks and skills go toward the mouse; you keep moving while you att
 | Attack | left mouse button |
 | Block (with a shield); a tap just before a blow parries (shields, swords and daggers) | right mouse button |
 | Dash (costs stamina) | Space or Shift |
-| Skill (each class gets four, on Q, E, C and X, in a coming step) | Q |
+| Your four skills: three everyday ones, and your ultimate on X (choose them on the skill board, P) | Q, E, C, X |
 | Health potion, mana potion (coming), eat, drink | 1, 2, 3, 4 |
 | Interact (gates, traders, the stash, the forge, the well, villagers; lay out a sleeping bag in a safe place, then sleep in it) | F or Enter |
 | Gear | I or Tab |

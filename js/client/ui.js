@@ -5,7 +5,7 @@
 const hc={};
 function setTxt(id,v){if(hc[id]!==v){hc[id]=v;$('#'+id).textContent=v;}}
 function setStyle(key,el,prop,v){if(hc[key]!==v){hc[key]=v;el.style[prop]=v;}}
-const elSta=$('#staFill'),elBossP=$('#bossPoise'),elHp=$('#hpFill'),elXp=$('#xpFill'),elBoss=$('#bossFill'),cdSk=$('#slSkill .cd'),elMp=$('#mpFill'),elSk=$('#slSkill'),cdDo=$('#slDodge .cd'),cdPo=$('#slPot .cd'),elPrompt=$('#prompt');
+const elSta=$('#staFill'),elBossP=$('#bossPoise'),elHp=$('#hpFill'),elXp=$('#xpFill'),elBoss=$('#bossFill'),SKB=[...document.querySelectorAll('.slot.sk')].map(b=>({b,s:b.dataset.s,cd:b.querySelector('.cd'),nm:b.querySelector('.nm'),em:b.querySelector('em')})),elMp=$('#mpFill'),cdDo=$('#slDodge .cd'),cdPo=$('#slPot .cd'),elPrompt=$('#prompt');
 function updateHud(){
   const hp=clamp(P.hp/ST.maxHp,0,1);
   setStyle('hpw',elHp,'width',(hp*100).toFixed(1)+'%');
@@ -19,9 +19,12 @@ function updateHud(){
     setStyle('fatw',$('#fatFill'),'width',(clamp(P.fat/FATIGUE_MAX,0,1)*100).toFixed(1)+'%');setStyle('tired',$('#tired'),'opacity',String(ft>=3?.8:ft===2?.35:0));}
   for(const k of['food','drink']){const v=clamp((P[k]==null?100:P[k])/100,0,1);setStyle(k+'w',$('#'+k+'Fill'),'width',(v*100).toFixed(1)+'%');
     const low=v*100<NEED_LOW;if(hc[k+'low']!==low){hc[k+'low']=low;$('#'+k+'Fill').parentNode.classList.toggle('low',low);}}
-  setStyle('cds',cdSk,'height',(P.skillMax?P.skillCd/P.skillMax*100:0).toFixed(0)+'%');
+  // the four skill slots: each skill's own cooldown, and whether it can be used now
+  for(const k of SKB){const id=S.char.slots&&S.char.slots[k.s],sk=SKILLS[id];
+    setStyle('cd'+k.s,k.cd,'height',(sk&&P.cdMax&&P.cdMax[id]?(P.cds[id]||0)/P.cdMax[id]*100:0).toFixed(0)+'%');
+    const lack=!sk||!ST.kit||P.mp<sk.mp||P.safe;if(hc['lk'+k.s]!==lack){hc['lk'+k.s]=lack;k.b.classList.toggle('lack',lack);}}
   setStyle('mpw',elMp,'width',(clamp(P.mp/ST.maxMp,0,1)*100).toFixed(1)+'%');setTxt('mpTxt',Math.floor(P.mp)+' / '+ST.maxMp);
-  const lack=!ST.skill||P.mp<SKILLS[ST.skill].mp||P.safe;if(hc.lack!==lack){hc.lack=lack;elSk.classList.toggle('lack',lack);}
+
   if(hc.safe!==P.safe){hc.safe=P.safe;$('#slAtk').classList.toggle('lack',!!P.safe);}
   setTxt('hFloor',G.village?'The root village'+(NET.on?', channel '+NET.ch:''):'Floor '+G.n+(P.safe?', safe room':''));
   setStyle('cdd',cdDo,'height',(P.dodgeCd/COMBAT.dashCd*100).toFixed(0)+'%');
@@ -54,7 +57,8 @@ function updateHud(){
 }
 function refreshHudStatic(){
   $('#hName').textContent=S.char.name;setTxt('hFloor',G.village?'The root village':'Floor '+G.n);
-  $('#skName').textContent=ST.skill?SKILLS[ST.skill].name:'No skill';$('#skCost').textContent=ST.skill?SKILLS[ST.skill].mp:'';$('#slSkill').title=ST.skill?'':'Not a '+CLASSES[S.char.cls].name.toLowerCase()+'’s weapon: it brings no skill.';
+  for(const k of SKB){const id=S.char.slots&&S.char.slots[k.s],sk=SKILLS[id];k.nm.textContent=sk?sk.name:'—';k.em.textContent=sk&&ST.kit?sk.mp:'';
+    k.b.title=!ST.kit?'Not a '+CLASSES[S.char.cls].name.toLowerCase()+'’s weapon: it brings no skills.':sk?sk.name+': '+sk.desc+' ('+sk.mp+' mana, '+sk.cd+' s)':'Choose a skill on the skill board (P).';}
   drawItemIcon($('#slAtk canvas'),S.equip.weapon);$('#slBlock').hidden=!ST.parry;$('#blockName').textContent=ST.shield?'Block':'Parry';
 }
 
@@ -503,6 +507,8 @@ function cell(it,on,label,bag){
 const SLOTL={weapon:'Weapon',armor:'Armor',boots:'Boots',trinket:'Trinket'};
 const atStash=()=>atSmith!=null&&atWho==='stash';
 function selItem(){if(!sel||sel.from==='supply'||sel.from==='meal'||sel.from==='pack'||sel.from==='forge'||sel.from==='market')return null;if(sel.from==='stash')return S.stash[sel.i]||null;if(sel.from==='shop'){const sh=shopNow();return sh&&sh.stock&&sh.stock[sel.i]?sh.stock[sel.i].it:null;}return sel.from==='bag'?S.inv[sel.i]:S.equip[sel.slot];}
+// whether a skill is in one of the four slots
+const slotted=id=>Object.values(S.char.slots||{}).includes(id);
 function renderPanel(){
   calcStats();const c=S.char;
   $('#pTitle').textContent=c.name;$('#pSub').textContent=`Level ${c.level} ${CLASSES[c.cls].name.toLowerCase()}${ST.offClass?' (off-class weapon: no skill)':''}, ${placeName(G.n)}. ${c.xp} / ${xpNeed(c.level)} experience`;
@@ -531,7 +537,7 @@ function renderPanel(){
     ['Critical chance',ST.crit.toFixed(0)+'%'],['Critical damage',ST.critDmg+'%'],['Defense',ST.def+' ('+Math.round(100-10000/(100+ST.def))+'% less damage)'],
     ['Evade chance',ST.evade.toFixed(0)+'% (30% at most)'],['Move speed',Math.round(ST.move)],
     ['Mana',ST.maxMp],['Mana per second',ST.mpRegen.toFixed(2)],
-    ...(ST.skill==='fireball'?[['Fireball damage',(ST.dmg*2.6).toFixed(0)]]:ST.skill==='heal'?[['Heal restores',healAmount()]]:[]),...Object.keys(ST.vs).map(f=>['Damage to '+FAMILIES[f].them,'+'+ST.vs[f]+'%']),...Object.keys(ST.res).map(f=>['Damage from '+FAMILIES[f].them,ST.res[f]+'% less']),
+    ...(slotted('fireball')?[['Fireball damage',(ST.dmg*2.6).toFixed(0)]]:[]),...(slotted('heal')||slotted('partyheal')?[['Party Heal restores',healAmount()]]:[]),...Object.keys(ST.vs).map(f=>['Damage to '+FAMILIES[f].them,'+'+ST.vs[f]+'%']),...Object.keys(ST.res).map(f=>['Damage from '+FAMILIES[f].them,ST.res[f]+'% less']),
     ['Kills',S.kills],['Deaths',S.deaths]].map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
   $('#bagN').textContent=`Bag ${S.inv.length} / ${BAG_SIZE}`;$('#pShards').textContent=S.shards;
   // monster drops (the diamonds) only show once you carry some
@@ -801,7 +807,7 @@ $('#pGfx').onclick=()=>{$('#pGfx').textContent='Graphics: '+R3.cycle();};
 $('#pQuit').onclick=quitToTitle;
 $('#btnBag').addEventListener('click',e=>{e.currentTarget.blur();openPanel();});
 holdBtn($('#slAtk'),()=>{inp.atk=true;press('atk');},()=>{inp.atk=false;});
-holdBtn($('#slSkill'),()=>press('skill'));holdBtn($('#slBlock'),()=>{inp.block=true;},()=>{inp.block=false;});
+for(const k of SKB)holdBtn(k.b,()=>press('skill',k.s));holdBtn($('#slBlock'),()=>{inp.block=true;},()=>{inp.block=false;});
 $('#askGo').onclick=confirmChamber;$('#askNo').onclick=closeAsk;holdBtn($('#slDodge'),()=>press('dodge'));holdBtn($('#slPot'),()=>press('potion'));holdBtn($('#slFood'),()=>press('eat'));holdBtn($('#slDrink'),()=>press('drink'));
 elPrompt.addEventListener('click',e=>{e.currentTarget.blur();interact();});
 // Save whenever the page goes away mid-run, whatever menu is open. Hiding the tab during play also pauses the game.

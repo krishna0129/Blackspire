@@ -40,6 +40,13 @@ const ACTIONS={
   leaveRoom(){if(!P.room)return false;P.room=false;S.inRoom=false;return true;},
   sleep(){if(!P.room)return false;wake(P);P.hp=ST.maxHp;P.mp=ST.maxMp;calcStats();storeNeeds(P);return true;},
   // a sleeping bag (SUPPLIES.bag): a night's sleep in any safe area, without the inn's well-rested bonus
+  // the four skill slots (js/sim/skills.js): a skill of your class's pool into Q, E or C (everyday) or X (ultimate),
+  // out of combat like the skill board; a skill already in another slot swaps places with what was there
+  setSlot(slot,id){
+    if(!SLOTS.includes(slot)||!kitOf(S.char.cls,slot).includes(id)||!outOfCombat())return false;
+    const s=tidySlots(S.char),other=SLOTS.find(k=>k!==slot&&s[k]===id);
+    if(other)s[other]=s[slot];s[slot]=id;calcStats();return true;
+  },
   // a sleeping bag: laid out on the ground in a safe place (using it up), then slept in by interacting with it
   layBag(){if(!P.safe||!(S.bags>0)||P.room||P.bag||P.dead)return false;S.bags--;P.bag={x:P.x,y:P.y+8};return true;},
   sleepBag(){if(!P.bag||hyp(P.bag.x-P.x,P.bag.y-P.y)>22||P.fat<1)return false;P.bag=null;P.fat=0;P.fireCd=0;calcStats();storeNeeds(P);return true;},

@@ -96,9 +96,18 @@ const SKILLS={
   pierce:{tags:['melee','physical','spear'],name:'Piercing line',cd:5,mp:14,desc:'A long thrust that passes through every enemy in a line.'},
   volley:{tags:['projectile','physical','bow'],name:'Volley',cd:6,mp:16,desc:'Five arrows in a fan.'},
   fireball:{tags:['projectile','area','fire','grimoire'],name:'Fireball',cd:5,mp:18,desc:'A slow orb that bursts on impact and hits everything in the blast. Intelligence raises its damage.'},
-  heal:{tags:['aura','grimoire'],name:'Heal',cd:9,mp:24,desc:'Restores health to you and every ally near you. It never affects enemies. Faith raises the amount.'},
+  heal:{tags:['aura','grimoire'],name:'Heal',cd:6,mp:22,desc:'Restores a lot of health to the ally you aim at, or to you. Faith raises the amount.'},
+  // the Templar (docs/design/skills.md): heals, a shield, a revive, an empowered attack; and three ultimates
+  partyheal:{tags:['aura'],name:'Party Heal',cd:14,mp:34,desc:'Restores health to you and every ally near you. It never affects enemies.'},
+  renewal:{tags:['aura'],name:'Renewal',cd:10,mp:24,desc:'The ally you aim at (or you) heals steadily for 8 seconds.'},
+  aegis:{tags:['guard'],name:'Aegis',cd:14,mp:26,desc:'A shield on the ally you aim at (or you) takes the next blows, for 8 seconds.'},
+  revive:{tags:['aura'],name:'Revive',cd:40,mp:40,desc:'Brings back a fallen ally you aim at, within 15 seconds of the fall, with nothing lost.'},
+  smite:{tags:['melee','empower'],name:'Smite',cd:12,mp:22,sound:'crit',desc:'Your next four attacks strike with holy light: 70% more damage, for 8 seconds.'},
+  judgement:{tags:['area','lightning'],name:'Judgement',cd:75,mp:60,ult:true,desc:'Eight strikes of light fall where you aim, one after another.'},
+  massheal:{tags:['aura'],name:'Mass Heal',cd:90,mp:70,ult:true,desc:'A great heal for the whole party, wherever they are on the floor, and more over the next seconds.'},
+  resurrect:{tags:['aura'],name:'Resurrection',cd:150,mp:80,ult:true,desc:'Brings back every fallen ally, within 15 seconds of their fall, with nothing lost.'},
 };
-const skillOf=it=>it.school==='faith'?'heal':WTYPES[it.type].skill;
+const skillOf=it=>it.school==='faith'?'heal':WTYPES[it.type].skill;   // a weapon's own skill (the board's "now" skills, and old saves)
 // the classes whose weapon this is (CLASSES, tree.js)
 const classOf=it=>classesFor(it).map(c=>CLASSES[c].name).join(' or ');
 // A grimoire belongs to exactly one school and only ever rolls bonuses from that school's pool.

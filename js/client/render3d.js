@@ -550,6 +550,14 @@ function heroActor(id,wt){
   if(!a){a=makeActor(key,h);ACTORS.set(id,a);}
   return a;
 }
+// What skills leave on a player: an Aegis (a pale shield around them), an empowered weapon (a gold glow in hand),
+// healing over time (green motes rising)
+function auras(pl){
+  if(pl.dead)return;const x=wx(pl.x),z=wz(pl.y),t=performance.now()/1000;
+  if(pl.shield>0){ring(x,z,.95,'#cfe4ff',.55+.2*Math.sin(t*4),.08);glow(x,1.4,z,'#cfe4ff',1.6,.18);}
+  if(pl.emp){const a=typeof pl.aim==='number'?pl.aim:0;glow(x+Math.cos(a)*.7,1.3,z+Math.sin(a)*.7,'#ffe9a8',.9,.6+.2*Math.sin(t*9));}
+  if(pl.hot){for(let i=0;i<3;i++){const k=(t*.8+i/3)%1;glow(x+Math.cos(i*2.1)*.5,.3+k*2.4,z+Math.sin(i*2.1)*.5,'#9be08a',.35,(1-k)*.7);}}
+}
 function animHero(a,pl,wt,dt){
   const h=HERO[wt]||HERO.sword;a.root.position.set(wx(pl.x),0,wz(pl.y));a.root.visible=pl.x>-900;
   if(pl.dead){if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
@@ -707,11 +715,11 @@ function frame3d(){
   // you and your party
   const wt=S.equip&&S.equip.weapon?S.equip.weapon.type:'sword';
   seenIds.clear();npcs(dt);
-  const mine=heroActor('me',wt);seenIds.add('me');animHero(mine,P,wt,dt);
+  const mine=heroActor('me',wt);seenIds.add('me');animHero(mine,P,wt,dt);auras(P);
   if(!P.dead){ring(px,pz,.75,'#e9c87a',.35,.06);disc(px,pz,.75,'#e9c87a',.06);   // a faint ring under you, so you never lose yourself in a crowd
     disc(px+Math.cos(P.aim)*.98,pz+Math.sin(P.aim)*.98,.13,'#ffe9a8',.55);}   // and a mark on it where you aim
   bagMesh();
-  if(NET.on)for(const q of NET.others){if(q.x<-900)continue;const a=heroActor('p'+q.id,q.wtype||'sword');seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);
+  if(NET.on)for(const q of NET.others){if(q.x<-900)continue;const a=heroActor('p'+q.id,q.wtype||'sword');seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);auras(q);
     DLIGHTS.push({x:wx(q.x),y:3.2,z:wz(q.y),col:'#ffe2b8',int:14,dist:11,pri:2});}
   // enemies near enough to matter
   const reachX=dist*.27*camera.aspect+5,reachZ=dist*.62+4;   // about what the camera sees, and a little more
@@ -749,6 +757,8 @@ function frame3d(){
     if(q.cone){for(const[r,op]of[[q.len,.18],[q.len*p,.32]]){const g=take(P_CONE);g.userData.m.geometry=sector(q.half);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.setScalar(wx(Math.max(r,.1)));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
     else if(q.line){for(const[l,op]of[[q.len,.22],[q.len*p,.3]]){const g=take(P_LANE);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.set(wx(Math.max(l,.1)),1,wx(26));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
     else{disc(x,z,wx(q.r),'#ff2a1a',.16);disc(x,z,wx(q.r)*p,'#ff2a1a',.3);ring(x,z,wx(q.r),'#ff4a2a',.9);}}
+  // your side's skills that land later (Judgement): a gold mark that fills as the strike comes
+  for(const q of G.pfx||[])if(q.mark){const p=clamp(q.t/q.d,0,1),x=wx(q.x),z=wz(q.y);disc(x,z,wx(q.r)*p,'#d9b24a',.22);ring(x,z,wx(q.r),'#e8c060',.45,.05);}
   // the Pale Collector's lantern sweep
   if(G.beams)for(const B of G.beams){const L=beamReach(B.x,B.y,B.a,B.len),g=take(P_LANE);g.position.set(wx(B.x),.1,wz(B.y));g.rotation.y=-B.a;g.scale.set(wx(L),1,wx(12));g.userData.m.material.color.set('#e2b93b');g.userData.m.material.opacity=.55;
     const c=take(P_LANE);c.position.set(wx(B.x),.11,wz(B.y));c.rotation.y=-B.a;c.scale.set(wx(L),1,wx(4));c.userData.m.material.color.set('#ffe9a8');c.userData.m.material.opacity=.8;
@@ -773,12 +783,12 @@ function frame3d(){
       else if(f.k==='slash'){const s=Math.min(1,p*1.6),a0=f.a+(f.dir>0?-half:half),a1=f.a+(f.dir>0?-half+2*half*s:half-2*half*s);arc(x,z,1.15,r,.45,a0,a1,'#cfe8ff',al);}
       else arc(x,z,1.2,r,.35,f.a-1,f.a-1+2*Math.min(1,p*1.8),'#d9d4c4',al*.8);}
     else if(f.k==='line'){const g=take(P_LANE);g.position.set(x,1.1,z);g.rotation.y=-f.a;g.scale.set(wx(f.len),1,f.w?.5:.18);g.userData.m.material.color.set('#cfe8ff');g.userData.m.material.opacity=al*.8;}
-    else if(f.k==='ring'){ring(x,z,wx(f.r)*p,'#cfe8ff',al*.9,.15);}
+    else if(f.k==='ring'){ring(x,z,wx(f.r)*p,f.c||'#cfe8ff',al*.9,.15);}
     else if(f.k==='pulse'){ring(x,z,wx(f.r)*Math.min(1,.3+p*1.2),f.c||'#9be08a',al*.9,.15);}
-    else if(f.k==='boom'){const r=wx(f.r)*Math.min(1,p*1.8);disc(x,z,r,'#f08a3c',(1-p)*.45);ring(x,z,r,'#ffe9a8',al);glow(x,1,z,'#ff8a2a',r*3,(1-p)*.8);DLIGHTS.push({x,y:1.5,z,col:'#ff8a2a',int:40*(1-p),dist:14,pri:8});}
-    else if(f.k==='heal'){const r=wx(6+(f.r-6)*Math.min(1,p*1.7));ring(wx(P.x),wz(P.y),r,'#9be08a',al);disc(wx(P.x),wz(P.y),r,'#9be08a',(1-p)*.2);
-      for(let i=0;i<6;i++){const a=i*1.05+.4;glow(wx(P.x)+Math.cos(a)*.8,.4+p*2.6+(i%3)*.3,wz(P.y)+Math.sin(a)*.8,i%2?'#ffe9a8':'#9be08a',.5,al);}
-      DLIGHTS.push({x:wx(P.x),y:1.5,z:wz(P.y),col:'#9be08a',int:20*(1-p),dist:9,pri:7});}
+    else if(f.k==='boom'){const r=wx(f.r)*Math.min(1,p*1.8),c=f.c||'#ff8a2a';disc(x,z,r,f.c||'#f08a3c',(1-p)*.45);ring(x,z,r,'#ffe9a8',al);glow(x,1,z,c,r*3,(1-p)*.8);DLIGHTS.push({x,y:1.5,z,col:c,int:40*(1-p),dist:14,pri:8});}
+    else if(f.k==='heal'){const r=wx(6+(f.r-6)*Math.min(1,p*1.7));ring(x,z,r,'#9be08a',al);disc(x,z,r,'#9be08a',(1-p)*.2);   // where the heal lands
+      for(let i=0;i<6;i++){const a=i*1.05+.4;glow(x+Math.cos(a)*.8,.4+p*2.6+(i%3)*.3,z+Math.sin(a)*.8,i%2?'#ffe9a8':'#9be08a',.5,al);}
+      DLIGHTS.push({x,y:1.5,z,col:'#9be08a',int:20*(1-p),dist:9,pri:7});}
     else if(f.k==='spikes'){for(let i=0;i<8;i++){const a=i*.85,r=wx(3+(i%3)*6),s=take(P_SPIKE);s.position.set(x+Math.cos(a)*r,0,z+Math.sin(a)*r*.8);s.scale.set(1,(1-p)*(.9+(i%3)*.5),1);}}
     else if(f.k==='raise'){const x2=wx(f.x2),z2=wz(f.y2);line(u=>[x+(x2-x)*u,2.2*(1-u)+.5*u+Math.sin(u*Math.PI)*.8,z+(z2-z)*u],'#9be08a',al);}
     else if(f.k==='bolt'){const x2=wx(f.x2),z2=wz(f.y2);line(u=>[x+(x2-x)*u+(u>0&&u<1?rand(-.15,.15):0),1.4+(u>0&&u<1?rand(-.15,.15):0),z+(z2-z)*u],'#6fd6e6',al);}

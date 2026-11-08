@@ -25,7 +25,7 @@ starts. Small open details are settled at the step that needs them (marked *Deci
 0.2 s, a dash 30 stamina, 80 to 120 stamina by class. The classes' base numbers (health, mana, stamina, dash) came in
 with it.
 
-## 2. Classes and skills
+## 2. Classes and skills (building: the four slots and the Templar are in)
 
 [classes.md](design/classes.md), [skills.md](design/skills.md)
 

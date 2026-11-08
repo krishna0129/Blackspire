@@ -33,13 +33,36 @@ function renderBoard(){
   $('#treeSub').textContent=pend?`${pend} placed, waiting to be confirmed`:`${treeSpent(S)} spent`+(ST.offClass?' · your weapon is not a '+C.name.toLowerCase()+'’s, so it brings no skill':'');
   $('#treeConfirm').hidden=$('#treeDiscard').hidden=!pend;
   const cost=treeResetCost(S),rb=$('#treeReset');rb.disabled=!treeSpent(S)||pend>0||S.shards<cost;rb.textContent=treeSpent(S)?`Reset all (${cost} shards)`:'Reset all';
-  const B=$('#board');B.innerHTML='';
+  const B=$('#board');B.innerHTML='';B.appendChild(loadout());
   BOARD_PLAN[cls].forEach((row,tier)=>{
     const open=tierOpen(spent,tier),r=document.createElement('div');r.className='tier'+(open?'':' shut');
     r.innerHTML=`<div class="tierHead"><b>${tier?'Tier '+(tier+1):'Tier 1'}</b><small>${open?(tier?'open':'open from the start'):`opens at ${TIERS[tier]} points spent (${TIERS[tier]-spent} more)`}</small></div>`;
     const cells=document.createElement('div');cells.className='cells';
     for(const q of boardOf(cls).filter(q=>q.tier===tier).sort((a,b)=>a.col-b.col))cells.appendChild(q.k==='skill'?skillCard(q):nodeCard(q,t));
     r.appendChild(cells);B.appendChild(r);});
+}
+// The four skill slots, above the board: click a slot, then choose from the class's pool (everyday skills for Q, E
+// and C, ultimates for X). Like the board, only out of combat.
+let pickSlot=null;
+function loadout(){
+  const L=document.createElement('div');L.className='loadout';
+  L.innerHTML=`<div class="tierHead"><b>Skills</b><small>Q, E and C: everyday skills · X: your ultimate. Click a slot to change it.</small></div>`;
+  const row=document.createElement('div'),slots=tidySlots(S.char);row.className='lslots';
+  for(const k of SLOTS){const sk=SKILLS[slots[k]],d=document.createElement('button');d.className='lslot'+(k==='x'?' ult':'')+(pickSlot===k?' on':'');
+    d.innerHTML=`<kbd>${k.toUpperCase()}</kbd><b>${sk?esc(sk.name):'Empty'}</b><small>${sk?`${sk.mp} mana · ${sk.cd} s`:''}</small>`;
+    d.onclick=()=>{pickSlot=pickSlot===k?null:k;renderBoard();};row.appendChild(d);}
+  L.appendChild(row);
+  if(pickSlot){const list=document.createElement('div');list.className='lpick';
+    for(const id of kitOf(S.char.cls,pickSlot)){const sk=SKILLS[id],where=SLOTS.find(k=>slots[k]===id),e=document.createElement('div');
+      e.className='lsk'+(where===pickSlot?' on':'');
+      e.innerHTML=`<b>${esc(sk.name)}</b><small>${sk.mp} mana · ${sk.cd} s cooldown${where&&where!==pickSlot?' · now on '+where.toUpperCase():''}</small><p>${esc(sk.desc)}</p>`;
+      if(where!==pickSlot){const b=document.createElement('button');b.className='btn small';b.textContent='Put on '+pickSlot.toUpperCase();
+        b.onclick=()=>act('setSlot',[pickSlot,id],r=>{if(!r)log('Skills can only be changed out of combat.');else{pickSlot=null;calcStats();refreshHudStatic();}renderBoard();});e.appendChild(b);}
+      list.appendChild(e);}
+    const soon=(pickSlot==='x'?CLASS_KIT[S.char.cls].ult:CLASS_KIT[S.char.cls].day).filter(id=>!SKILLS[id]).length;
+    if(soon){const n=document.createElement('p');n.className='soonNote';n.textContent=`${soon} more ${pickSlot==='x'?'ultimate'+(soon>1?'s':''):'skill'+(soon>1?'s':'')} of the ${CLASSES[S.char.cls].name.toLowerCase()} come in the next builds.`;list.appendChild(n);}
+    L.appendChild(list);}
+  return L;
 }
 function nodeCard(q,t){
   const have=treeOf(S)[q.id]||0,pk=boardPend[q.id]||0,can=treeCanRank(S,q.id,t),d=document.createElement('div');
@@ -55,7 +78,7 @@ function nodeCard(q,t){
 function skillCard(q){
   const d=document.createElement('div');d.className='node skill'+(q.now?' known':'')+(q.soon?' soon':'');
   const active=S.vars[q.id];
-  d.innerHTML=`<b>${esc(q.name)}</b><span class="rk">${q.now?'Known':'Coming with the new combat'}</span><p>${esc(treeDesc(q))}</p>`;
+  d.innerHTML=`<b>${esc(q.name)}</b><span class="rk">${q.now?'Known':'Coming in a later build'}</span><p>${esc(treeDesc(q))}</p>`;
   const vl=document.createElement('div');vl.className='vars';
   q.vars.forEach((v,i)=>{const have=progOf(S,q.id,v.ch),open=have>=v.ch.n,e=document.createElement('div');e.className='var'+(open?' open':'')+(active===i?' on':'');
     e.innerHTML=`<b>${esc(v.name)}</b><small>${esc(chDesc(v.ch))}</small><div class="pg"><i style="width:${Math.min(100,have/v.ch.n*100).toFixed(0)}%"></i><span>${Math.min(have,v.ch.n)} / ${v.ch.n}</span></div>`;

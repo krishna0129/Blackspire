@@ -194,6 +194,8 @@ function hurtPlayer(dmg,src,sure,from,ground){
   d*=1-(ST.res[famOf(from)||famOf(src)]||0)/100;
   d*=1-(ST.eres[type]||0)/100;   // resistances from the skill tree
   d=Math.max(1,Math.round(d));
+  // an Aegis takes the blow first
+  if(P.shield>0){const ab=Math.min(P.shield,d);P.shield-=ab;d-=ab;addNum(P.x,P.y-24,'-'+ab,'evade');if(d<=0){P.inv=.3;sfx('block');return;}}
   P.hp-=d;P.inv=.45;P.fightT=G.time;shake(4,true);addNum(P.x,P.y-16,d,'hurt');sfx('hurt');hurtFlash();
   // What the blow does to you: a push (magic and heavy blows push further), a stagger from a heavy one, and perhaps
   // an interruption: a spell you are casting holds by focus (Mind), anything else by poise (armour weight).
@@ -209,7 +211,8 @@ function hurtPlayer(dmg,src,sure,from,ground){
 // A push away from whatever struck (o), of strength k. Online the server sets it and the browser plays it out (kbN).
 function push(o,k){const a=o?Math.atan2(P.y-o.y,P.x-o.x):P.aim+Math.PI;P.kx+=Math.cos(a)*k;P.ky+=Math.sin(a)*k;P.kbN++;}
 function die(){
-  P.dead=true;P.hp=0;P.swing=P.dash=null;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;
+  P.dead=true;P.hp=0;P.swing=P.dash=null;P.emp=null;P.shield=0;S.deaths++;const lost=Math.floor(S.shards*.2);S.shards-=lost;S.hp=null;
+  P.deadAt=G.time;P.deathLost=lost;   // a Templar can still undo it for a while (js/sim/skills.js, revive)
   S.food=Math.max(50,Math.round(P.food));S.drink=Math.max(50,Math.round(P.drink));S.buff=null;P.buff=null;persist();   // you wake up at least half fed
   onDeath(lost,S.cpFloor===G.n&&S.cp>0);   // cp: whether they wake in a safe room (true) or at the entrance
 }
@@ -228,33 +231,8 @@ function startSwing(){
 }
 function slashFx(a,arc,r,dir=1,d=.16){vfx({k:'slash',x:P.x,y:P.y,a,arc,r,dir,t:0,d});}
 function sheathed(){if(G.time-P.lastSheath>3.5){P.lastSheath=G.time;log('Weapons stay sheathed in a safe room.');}}
-function useSkill(){
-  if(P.dead||P.skillCd>0)return;
-  if(P.safe){sheathed();return;}
-  if(!ST.skill)return;   // an off-class weapon: no skill
-  const id=ST.skill,sk=SKILLS[id],a=P.aim,tags=sk.tags,use={skill:id,hits:0};
-  if(P.mp<sk.mp){if(G.time-P.lastNoMana>.8){P.lastNoMana=G.time;addNum(P.x,P.y-18,'NO MANA','mana');}return;}
-  P.mp-=sk.mp;skillCount(id,'use');
-  P.skillMax=P.skillCd=sk.cd*(1-ST.cdr/100)*ST.cdMult*(id==='heal'?1-(ST.p.quick||0)/100:1);sfx(id==='heal'?'heal':'skill');
-  if(id==='circle'){hitArc(0,360,ST.range*1.35,2.2,{kb:120,tags,use});slashFx(a,360,ST.range*1.35,1,.24);shake(4);}
-  else if(id==='blink'){
-    let best=null,bd=150;for(const e of G.enemies){if(e.dead)continue;const d=hyp(e.x-P.x,e.y-P.y);if(d<bd&&los(P.x,P.y,e.x,e.y)){bd=d;best=e;}}
-    burst(P.x,P.y,10,'#55556a',50);
-    if(best){const dir=Math.atan2(best.y-P.y,best.x-P.x);let tx=best.x+Math.cos(dir)*(best.r+9),ty=best.y+Math.sin(dir)*(best.r+9);
-      if(boxSolid(tx,ty,P.cr)){tx=best.x-Math.cos(dir)*(best.r+9);ty=best.y-Math.sin(dir)*(best.r+9);}
-      if(!boxSolid(tx,ty,P.cr)){P.x=tx;P.y=ty;P.tp++;}
-      P.dir=dirOf(Math.atan2(best.y-P.y,best.x-P.x));P.aim=DIR_ANGLE[P.dir];P.inv=Math.max(P.inv,.35);if(damageEnemy(best,3,{crit:true,melee:true,tags,use}))gainMomentum();slashFx(P.aim,120,ST.range+6);}
-    else{P.dash={t:.12,vx:Math.cos(a)*300,vy:Math.sin(a)*300};P.inv=Math.max(P.inv,.2);}
-  }
-  else if(id==='sunder'){hitArc(a,170,ST.range*1.35,2.8,{sunder:4,kb:90,tags,use});slashFx(a,170,ST.range*1.35,1,.22);shake(6);}
-  else if(id==='guard'){P.guard=5;vfx({k:'ring',x:P.x,y:P.y,r:24,t:0,d:.3});burst(P.x,P.y,12,'#e6e1d3',50);}
-  else if(id==='pierce'){hitLine(a,120,9,2.5,{kb:50,tags,use});vfx({k:'line',x:P.x,y:P.y,a,len:122,t:0,d:.2,w:1});shake(3);}
-  else if(id==='volley'){for(let i=-2;i<=2;i++)fireArrow(a+i*.15,.8,tags,use);}
-  else if(id==='fireball'){G.pproj.push({k:'fire',owner:P.id,use,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*135,vy:Math.sin(a)*135,life:1.25});}
-  else if(id==='heal')castHeal();
-}
 /* ---------- shots and spells ---------- */
-function castBolt(){const a=P.aim,v=190;G.pproj.push({k:'bolt',owner:P.id,mult:1,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
+function castBolt(mult=1){const a=P.aim,v=190;G.pproj.push({k:'bolt',owner:P.id,mult,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
 function fireArrow(a,mult,tags,use){const v=260;G.pproj.push({k:'arrow',owner:P.id,a,mult,tags,use,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
 // Fire burns bodies to ash: they can no longer be raised.
 function burnCorpses(x,y,R){G.corpses=G.corpses.filter(c=>{if(hyp(c.x-x,c.y-y)>R+4)return true;burst(c.x,c.y,10,'#f08a3c',50);burst(c.x,c.y,6,'#3a3a3a',30);return false;});}
@@ -269,14 +247,6 @@ function explode(x,y,use){
 // standing in the circle get nothing. Every player on the floor is an ally.
 const HEAL_R=70;
 const allies=()=>G.players.filter(q=>!q.gone);
-function castHeal(){
-  const amt=healAmount();
-  for(const t of allies()){if(t.dead||hyp(t.x-P.x,t.y-P.y)>HEAL_R)continue;
-    t.hp=Math.min(t.ST.maxHp,t.hp+amt);addNum(t.x,t.y-18,'+'+amt,'heal');}
-  if(ST.p.mend)P.hot={t:5,rate:amt*ST.p.mend/100/5};
-  if(ST.p.ward)P.ward=4;
-  vfx({k:'heal',x:P.x,y:P.y,r:HEAL_R,t:0,d:.95});
-}
 /* ---------- boss chamber ---------- */
 // Steps the current player through gate q into the chamber, which seals behind them until the boss dies.
 function enterChamber(q){

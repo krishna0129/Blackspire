@@ -28,6 +28,9 @@ budget rules and the balance runner do not wait, and can be built first.
 
 ## The playtest's skills (decided)
 
+**In the game:** the four slots and choosing skills on the board, a cooldown for each skill, empowered attacks, and the
+Templar's whole kit. The other classes' new skills come next, one class at a time.
+
 **Four slots, on Q, E, C and X** ([combat.md](combat.md#keys)). **X holds the class's ultimate**: a big skill, a long
 cooldown and a lot of mana. Each class has more skills than slots and chooses: three of its everyday skills for Q,
 E and C, and one of its **ultimates** for X. The basic attack (left button) is free.
