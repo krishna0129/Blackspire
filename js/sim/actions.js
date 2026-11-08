@@ -3,6 +3,7 @@
 // Single player calls them directly; online, the client asks the server to run them, so the server's copy of the
 // save is the only one that counts. Each acts on the current player (setPlayer) and returns a result, or false.
 
+const nearInn=si=>nearTraderIdx(si)&&!!TRADER_SELLS[G.traders[si].sells||'all'].meals;
 const nearSmithIdx=si=>{const q=G.smiths[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const nearTraderIdx=si=>{const q=G.traders[si];return!!q&&hyp(q.x-P.x,q.y-P.y)<40;};
 const owns=(o,k)=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k);   // a real key of a table, not something inherited
@@ -11,6 +12,56 @@ function marketTrade(fn,k,n,bound){
   const r=fn(k,n,bound);if(r.ok)sfx('pick');return r;
 }
 const ACTIONS={
+  // The skill board (tree.js). Points are placed on the board and only sent when the player confirms: add is a JSON
+  // object {node id: ranks}, applied all together or not at all, and only out of combat.
+  boardCommit(add){
+    let o;try{o=JSON.parse(add);}catch(e){return false;}
+    if(!o||typeof o!=='object'||!outOfCombat())return false;const t=treeBatch(S,o);if(!t)return false;
+    S.tree=t;calcStats();return true;
+  },
+  // every point back, for 20 shards a point, out of combat
+  treeReset(){
+    const cost=treeResetCost(S);if(!treeSpent(S)||!outOfCombat()||S.shards<cost)return false;
+    S.shards-=cost;S.tree={};calcStats();return true;
+  },
+  // which variation of a base skill to use (i), or none (-1); only ones whose challenge is met
+  setVar(id,i){
+    const q=TREE[id];if(!q||q.k!=='skill'||q.cls!==S.char.cls||!Number.isInteger(i))return false;
+    if(i<0){S.vars[id]=null;return true;}const v=q.vars[i];if(!v||!varOpen(S,q,v))return false;
+    S.vars[id]=i;return true;
+  },
+  // The inn (data.js: FATIGUE). A room is rented for the day from the innkeeper (si); in it you can sleep, and reach
+  // your stash. Logging off in it counts as a night's sleep (makePlayer).
+  rentRoom(si){
+    if(!nearInn(si)||S.room===questDay())return false;const pr=roomPrice(S.char.level);if(S.shards<pr)return false;
+    S.shards-=pr;S.room=questDay();return true;
+  },
+  enterRoom(si){if(!nearInn(si)||S.room!==questDay())return false;P.room=true;S.inRoom=true;storeNeeds(P);return true;},
+  leaveRoom(){if(!P.room)return false;P.room=false;S.inRoom=false;return true;},
+  sleep(){if(!P.room)return false;wake(P);P.hp=ST.maxHp;P.mp=ST.maxMp;calcStats();storeNeeds(P);return true;},
+  // a sleeping bag (SUPPLIES.bag): a night's sleep in any safe area, without the inn's well-rested bonus
+  // the four skill slots (js/sim/skills.js): a skill of your class's pool into Q, E or C (everyday) or X (ultimate),
+  // out of combat like the skill board; a skill already in another slot swaps places with what was there
+  setSlot(slot,id){
+    if(!SLOTS.includes(slot)||!kitOf(S.char.cls,slot).includes(id)||!outOfCombat())return false;
+    const s=tidySlots(S.char),other=SLOTS.find(k=>k!==slot&&s[k]===id);
+    if(other)s[other]=s[slot];s[slot]=id;calcStats();return true;
+  },
+  // a sleeping bag: laid out on the ground in a safe place (using it up), then slept in by interacting with it
+  layBag(){if(!P.safe||!(S.bags>0)||P.room||P.bag||P.dead)return false;S.bags--;P.bag={x:P.x,y:P.y+8};return true;},
+  sleepBag(){if(!P.bag||hyp(P.bag.x-P.x,P.bag.y-P.y)>22||P.fat<1)return false;P.bag=null;P.fat=0;P.fireCd=0;calcStats();storeNeeds(P);return true;},
+  // resting by a safe room's campfire: half your fatigue, once every FIRE_EVERY seconds of play
+  restFire(){const f=nearFire();if(!f||P.fireCd>0||P.fat<60)return false;P.fat=Math.floor(P.fat/2);P.fireCd=FIRE_EVERY;calcStats();storeNeeds(P);return true;},
+  // the barkeep's next rumour (its index)
+  rumour(){if(!nearTalkerKind('rumours'))return false;const i=(S.rumour||0)%RUMOURS.length;S.rumour=i+1;return i;},
+  // attribute points, also confirmed together: add is a JSON object {attribute: points}
+  attrCommit(add){
+    let o;try{o=JSON.parse(add);}catch(e){return false;}const c=S.char;if(!o||typeof o!=='object')return false;
+    let n=0;for(const k in o){if(!ATTRS.includes(k)||!Number.isInteger(o[k])||o[k]<1)return false;n+=o[k];}
+    if(!n||n>c.pts)return false;
+    const full=P.hp>=ST.maxHp;for(const k in o)c[k]+=o[k];c.pts-=n;calcStats();
+    if(full)P.hp=ST.maxHp;else P.hp=Math.min(ST.maxHp,P.hp+14*(o.vit||0));P.mp=Math.min(ST.maxMp,P.mp+10*(o.mnd||0));return true;
+  },
   // make the stock the first time a trader's pack is opened
   openShop(si){
     if(!nearTraderIdx(si))return false;
@@ -62,6 +113,7 @@ const ACTIONS={
   // own: cooked from your own crops (m.cook) instead of paid for
   eatMeal(si,k,own){
     const m=MEALS[k];if(!m||!nearTraderIdx(si)||!TRADER_SELLS[G.traders[si].sells||'all'].meals)return false;const pr=mealPrice(k);
+    if(m.morning&&!(P.awake<BREAKFAST_WINDOW))return false;   // breakfast: only for those who just woke here
     if(own){if(!m.cook||Object.keys(m.cook).some(c=>(S.crops[c]||0)<m.cook[c]))return false;for(const c in m.cook)S.crops[c]-=m.cook[c];}
     else{if(S.shards<pr)return false;S.shards-=pr;}
     P.food=Math.min(100,P.food+m.food);P.drink=Math.min(100,P.drink+m.drink);P.buff={id:m.buff,t:BUFF_TIME};

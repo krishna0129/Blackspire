@@ -15,35 +15,134 @@ const RARITY=[
   {name:'Legendary',color:'#e8b24a',mult:1.85,aff:2},
 ];
 // One weapon type = one class = one skill. aspd = attacks per second, range px, arc degrees (under 50 = thrust).
-// ranged:true fires arrows, magic:true fires bolts; for both, range is how far the shot flies.
+// ranged:true fires arrows, magic:true fires bolts; for both, range is how far the shot flies. tags: the basic attack's
+// (TAGS): the grimoire's bolts are lightning.
 const WTYPES={
-  sword:{name:'Longsword',cls:'Swordsman',dmg:12,aspd:1.6,range:26,arc:110,kb:40,skill:'circle',shield:'buckler',blurb:'Longsword and buckler'},
-  dagger:{name:'Dagger',cls:'Rogue',dmg:6.5,aspd:3.2,range:19,arc:80,kb:10,crit:12,skill:'blink',blurb:'Fastest, shortest reach'},
-  great:{name:'Greatsword',cls:'Slayer',dmg:26,aspd:0.85,range:34,arc:150,kb:90,skill:'sunder',blurb:'Slow, wide, heavy'},
-  mace:{name:'Mace',cls:'Tank',dmg:16,aspd:1.25,range:24,arc:100,kb:70,def:8,skill:'guard',shield:'shield',blurb:'Mace and heavy shield'},
-  spear:{name:'Spear',cls:'Lancer',dmg:13,aspd:1.4,range:44,arc:24,kb:30,skill:'pierce',blurb:'Longest melee reach, narrow'},
-  bow:{name:'Bow',cls:'Archer',dmg:10,aspd:1.5,range:150,arc:0,kb:25,crit:5,ranged:true,skill:'volley',blurb:'Arrows from range, scales with dexterity'},
-  grimoire:{name:'Grimoire',cls:'Mage',dmg:9,aspd:1.5,range:135,arc:0,kb:20,magic:true,skill:'fireball',blurb:'Ranged bolts'},
+  sword:{tags:['melee','physical','sword'],name:'Longsword',cls:'Swordsman',dmg:12,aspd:1.6,range:26,arc:110,kb:40,skill:'circle',shield:'buckler',blurb:'Longsword and buckler',pz:1,parry:true},
+  dagger:{tags:['melee','physical','dagger'],name:'Dagger',cls:'Rogue',dmg:6.5,aspd:3.2,range:19,arc:80,kb:10,crit:12,skill:'blink',blurb:'Fastest, shortest reach',pz:0.6,parry:true},
+  great:{tags:['melee','area','physical','greatsword'],name:'Greatsword',cls:'Slayer',dmg:26,aspd:0.85,range:34,arc:150,kb:90,skill:'sunder',blurb:'Slow, wide, heavy',pz:2.2,parry:true},
+  mace:{tags:['melee','physical','mace'],name:'Mace',cls:'Tank',dmg:16,aspd:1.25,range:24,arc:100,kb:70,def:8,skill:'guard',shield:'shield',blurb:'Mace and heavy shield',pz:1.6},
+  spear:{tags:['melee','physical','spear'],name:'Spear',cls:'Lancer',dmg:13,aspd:1.4,range:44,arc:24,kb:30,skill:'pierce',blurb:'Longest melee reach, narrow',pz:1.1},
+  bow:{tags:['projectile','physical','bow'],name:'Bow',cls:'Archer',dmg:10,aspd:1.5,range:150,arc:0,kb:25,crit:5,ranged:true,skill:'volley',blurb:'Arrows from range, scales with dexterity',pz:0.5},
+  grimoire:{tags:['projectile','lightning','grimoire'],name:'Grimoire',cls:'Mage',dmg:9,aspd:1.5,range:135,arc:0,kb:20,magic:true,skill:'fireball',blurb:'Ranged bolts',pz:0.5},
 };
 // Off-hand shields. cut: share of a blow from the front that blocking removes. sure: the same for a boss's
-// telegraphed attacks. arc: how wide "the front" is, in degrees. cost: mana per blocked blow. slow: move speed while blocking.
+// telegraphed attacks. arc: how wide "the front" is, in degrees. cost: stamina per blocked blow. slow: move speed while blocking.
+// pz (weapons above): how hard a weapon's blows wear down an enemy's poise. parry: a weapon that can parry without a
+// shield (docs/design/combat.md): swords and daggers. Shields parry too, and are the only way to hold a block.
 const SHIELDS={
-  buckler:{name:'Buckler',cut:.6,sure:.3,arc:130,cost:4,slow:.55,w:9,h:9},
-  shield:{name:'Heavy shield',cut:1,sure:.6,arc:170,cost:7,slow:.3,w:11,h:13},
+  buckler:{name:'Buckler',cut:.6,sure:.3,arc:130,cost:14,slow:.55,w:9,h:9},
+  shield:{name:'Heavy shield',cut:1,sure:.6,arc:170,cost:20,slow:.3,w:11,h:13},
 };
-// Every skill has a cooldown (seconds) and a mana cost.
+// Stamina, the dash, parrying, poise and focus (docs/design/combat.md).
+//   sta     stamina: the bar's size by class (STA_CLASS), what a dash costs, how fast it comes back, and how much slower
+//           while you are doing anything but walking (attacking, blocking, dashing)
+//   parry   how long after pressing block a blow counts as parried, what it costs, how arc-wide the front is without a
+//           shield, and how long it staggers the attacker (bosses much less)
+//   poise   yours: a base, more for each point of armour weight (ARMOR_WEIGHT); a physical blow wears it down, and at
+//           zero it interrupts you. It comes back after a moment without being hit.
+//   focus   per point of Mind, the chance a blow does not break a spell you are casting (at most focusMax)
+//   epoise  an enemy's poise, as a share of its health; broken, it is staggered (stun) and takes more damage (more%)
+//   kb      how far a blow pushes you: light physical, heavy physical (also a short stagger), magic
+const COMBAT={
+  sta:{dash:30,regen:30,busy:.35,delay:.5},
+  dashSpeed:3.3,dashT:.16,dashCd:.35,
+  parry:{win:.2,cost:8,arc:120,stun:1,bossStun:.3},
+  poise:{base:10,perWeight:6,light:8,heavy:26,regen:18,delay:2},
+  focus:{perMind:3,max:75},
+  epoise:{share:.35,elite:.45,boss:.14,stun:1.2,bossStun:3,more:30,regen:.25,delay:3},
+  kb:{light:45,heavy:120,magic:85,stagger:.35},
+  swingSlow:.45,
+};
+// What each piece of armour weighs, until the new gear arrives (docs/design/gear.md#weight): poise grows with it.
+const ARMOR_WEIGHT={tunic:1,leather:2,coat:2,plate:5,striders:.5,boots:1,greaves:2};
+// Each class's base numbers (docs/design/classes.md): health and mana as multipliers, stamina as the bar's size,
+// dash as a multiplier of its length.
+const CLASS_BASE={
+  marauder:{hp:1.2,mp:1,sta:120,dash:1},
+  duelist:{hp:1,mp:.7,sta:120,dash:1},
+  ranger:{hp:1,mp:1,sta:100,dash:1.15},
+  shadow:{hp:.85,mp:.7,sta:120,dash:1.3},
+  witch:{hp:.85,mp:1.3,sta:80,dash:.75},
+  templar:{hp:1,mp:1.3,sta:80,dash:.75},
+};
+// Damage types. Every hit is one of these. physical is weapons and arrows; the rest are elements, which an enemy's
+// mres (its resistance to magic) also cuts, and rot, which only a family's own resistance does (FAMILIES[].res).
+// status: what each will do when the new combat gives elements their effects (docs/design/skills.md).
+const DTYPES={
+  physical:{name:'Physical',color:'#d9d4c4',status:'bleed'},
+  fire:{name:'Fire',color:'#f08a3c',status:'burn',elem:true},
+  cold:{name:'Cold',color:'#8fd8f0',status:'chill',elem:true},
+  lightning:{name:'Lightning',color:'#e8e070',status:'shock',elem:true},
+  rot:{name:'Rot',color:'#9be08a',status:'wither'},
+};
+// Tags: a closed list. Every hit carries some (the skill's, or the basic attack's: WTYPES[].tags), and the skill tree
+// and, later, gear only ever add damage to a tag, never to one skill, so a new skill works with them from the start.
+const TAGS={
+  melee:{name:'Melee'},projectile:{name:'Projectile'},area:{name:'Area'},chain:{name:'Chain'},channel:{name:'Channelled'},
+  totem:{name:'Totem'},trap:{name:'Trap'},mine:{name:'Mine'},minion:{name:'Minion'},aura:{name:'Aura'},warcry:{name:'Warcry'},
+  movement:{name:'Movement'},guard:{name:'Guard'},overtime:{name:'Over time'},
+  physical:{name:'Physical'},fire:{name:'Fire'},cold:{name:'Cold'},lightning:{name:'Lightning'},rot:{name:'Rot'},
+  sword:{name:'Longsword'},greatsword:{name:'Greatsword'},mace:{name:'Mace'},spear:{name:'Spear'},dagger:{name:'Dagger'},bow:{name:'Bow'},grimoire:{name:'Grimoire'},
+};
+// The damage type of a hit with these tags: the first type among them, else physical.
+const dtypeOf=tags=>(tags||[]).find(t=>DTYPES[t])||'physical';
+// Every skill has a cooldown (seconds) and a mana cost, and tags (TAGS) for what it is.
 const SKILLS={
-  circle:{name:'Circular slash',cd:5,mp:14,desc:'One full spin that cuts everything around you and throws it back.'},
-  blink:{name:'Shadowstep',cd:5,mp:14,desc:'Appear behind the nearest enemy for a guaranteed critical.'},
-  sunder:{name:'Sunder',cd:6,mp:16,desc:'A huge cleave. Enemies hit take 25% more damage for 4s.'},
-  guard:{name:'Bulwark',cd:12,mp:18,desc:'Take 60% less damage for 5 seconds.'},
-  pierce:{name:'Piercing line',cd:5,mp:14,desc:'A long thrust that passes through every enemy in a line.'},
-  volley:{name:'Volley',cd:6,mp:16,desc:'Five arrows in a fan.'},
-  fireball:{name:'Fireball',cd:5,mp:18,desc:'A slow orb that bursts on impact and hits everything in the blast. Intelligence raises its damage.'},
-  heal:{name:'Heal',cd:9,mp:24,desc:'Restores health to you and every ally near you. It never affects enemies. Faith raises the amount.'},
+  circle:{tags:['melee','area','physical','sword'],name:'Circular slash',cd:5,mp:14,desc:'One full spin that cuts everything around you and throws it back.'},
+  blink:{tags:['melee','movement','physical','dagger'],name:'Shadowstep',cd:5,mp:14,desc:'Appear behind the nearest enemy for a guaranteed critical.'},
+  sunder:{tags:['melee','area','physical','greatsword'],name:'Sunder',cd:6,mp:16,desc:'A huge cleave. Enemies hit take 25% more damage for 4s.'},
+  guard:{tags:['guard','mace'],name:'Bulwark',cd:12,mp:18,desc:'Take 60% less damage for 5 seconds.'},
+  pierce:{tags:['melee','physical','spear'],name:'Piercing line',cd:5,mp:14,desc:'A long thrust that passes through every enemy in a line.'},
+  volley:{tags:['projectile','physical','bow'],name:'Volley',cd:6,mp:16,desc:'Five arrows in a fan.'},
+  fireball:{tags:['projectile','area','fire','grimoire'],name:'Fireball',cd:5,mp:18,desc:'A slow orb that bursts on impact and hits everything in the blast. Intelligence raises its damage.'},
+  heal:{tags:['aura','grimoire'],name:'Heal',cd:6,mp:22,desc:'Restores a lot of health to the ally you aim at, or to you. Faith raises the amount.'},
+  // the Templar (docs/design/skills.md): heals, a shield, a revive, an empowered attack; and three ultimates
+  partyheal:{tags:['aura'],name:'Party Heal',cd:14,mp:34,desc:'Restores health to you and every ally near you. It never affects enemies.'},
+  renewal:{tags:['aura'],name:'Renewal',cd:10,mp:24,desc:'The ally you aim at (or you) heals steadily for 8 seconds.'},
+  aegis:{tags:['guard'],name:'Aegis',cd:14,mp:26,desc:'A shield on the ally you aim at (or you) takes the next blows, for 8 seconds.'},
+  revive:{tags:['aura'],name:'Revive',cd:40,mp:40,desc:'Brings back a fallen ally you aim at, within 15 seconds of the fall, with nothing lost.'},
+  smite:{tags:['melee','empower'],name:'Smite',cd:12,mp:22,sound:'crit',desc:'Your next four attacks strike with holy light: 70% more damage, for 8 seconds.'},
+  judgement:{tags:['area','lightning'],name:'Judgement',cd:75,mp:60,ult:true,desc:'Eight strikes of light fall where you aim, one after another.'},
+  massheal:{tags:['aura'],name:'Mass Heal',cd:90,mp:70,ult:true,desc:'A great heal for the whole party, wherever they are on the floor, and more over the next seconds.'},
+  resurrect:{tags:['aura'],name:'Resurrection',cd:150,mp:80,ult:true,desc:'Brings back every fallen ally, within 15 seconds of their fall, with nothing lost.'},
+  // the Marauder
+  heavy:{tags:['melee','physical','empower'],name:'Heavy Strike',cd:9,mp:16,sound:'crit',desc:'Your next three attacks land 60% harder and break poise three times as fast, for 8 seconds.'},
+  leap:{tags:['melee','area','movement','physical'],name:'Leap Slam',cd:8,mp:18,desc:'Leap to where you aim and slam down, striking everything around you.'},
+  cry:{tags:['warcry'],name:'Enduring Cry',cd:60,mp:40,ult:true,desc:'A warcry: you and every ally near you take 30% less damage for 10 seconds.'},
+  quake:{tags:['melee','area','physical'],name:'Earthquake',cd:60,mp:50,ult:true,desc:'A huge slam around you, and an aftershock a moment later. It breaks poise like nothing else.'},
+  berserk:{tags:['physical'],name:'Berserk',cd:70,mp:40,ult:true,desc:'For 10 seconds: 40% more damage, heal 10% of what you deal, and nothing knocks you back.'},
+  // the Duelist
+  riposte:{tags:['melee','guard','physical'],name:'Riposte',cd:7,mp:14,desc:'For a moment, any blow from the front is parried and answered with a hard counter.'},
+  double:{tags:['melee','physical','empower'],name:'Double Strike',cd:12,mp:10,desc:'For 10 seconds every attack lands twice, at 3 mana a hit.'},
+  cuts:{tags:['melee','physical'],name:'Thousand Cuts',cd:60,mp:45,ult:true,desc:'A blinding flurry of eight cuts on the enemy you aim at.'},
+  challenge:{tags:['physical'],name:'Challenge',cd:50,mp:30,ult:true,desc:'Mark the enemy you aim at for 12 seconds: it must fight you, and takes 40% more from you.'},
+  storm:{tags:['melee','physical'],name:'Piercing Storm',cd:60,mp:50,ult:true,desc:'Five long thrusts, one after another, that cross the room.'},
+  // the Ranger
+  lightarrow:{tags:['projectile','lightning','bow'],name:'Lightning Arrow',cd:5,mp:16,desc:'An arrow that leaps on to three more enemies.'},
+  caustic:{tags:['projectile','rot','bow'],name:'Caustic Arrow',cd:7,mp:18,desc:'An arrow that leaves a pool of poison where it lands, for 5 seconds.'},
+  split:{tags:['projectile','physical','bow'],name:'Split Arrow',cd:5,mp:14,desc:'A heavy arrow that passes through every enemy in a line.'},
+  rain:{tags:['projectile','area','physical'],name:'Rain of Arrows',cd:60,mp:50,ult:true,desc:'Arrows fall over a wide area where you aim, for 2 seconds.'},
+  ballista:{tags:['projectile','physical'],name:'Ballista',cd:60,mp:45,ult:true,desc:'Set down a ballista that shoots the nearest enemy for 15 seconds.'},
+  tornado:{tags:['projectile','physical'],name:'Tornado Shot',cd:50,mp:40,ult:true,desc:'One arrow that bursts into twelve, in every direction, where it stops.'},
+  // the Shadow
+  viper:{tags:['melee','rot','empower'],name:'Viper Strike',cd:10,mp:8,desc:'For 10 seconds your attacks poison, at 2 mana a hit.'},
+  vortex:{tags:['melee','area','physical'],name:'Blade Vortex',cd:8,mp:18,desc:'Blades spin around you for 4 seconds, cutting whatever comes close.'},
+  smoke:{tags:['movement'],name:'Smoke Cloud',cd:14,mp:20,desc:'A cloud of smoke where you stand: inside it, enemies lose track of you for 5 seconds.'},
+  deathmark:{tags:['physical'],name:'Death Mark',cd:50,mp:35,ult:true,desc:'Mark the enemy you aim at: after 4 seconds it takes half of everything you dealt it again.'},
+  dance:{tags:['melee','movement','physical'],name:'Shadow Dance',cd:60,mp:45,ult:true,desc:'Blink from enemy to enemy, striking up to six of them.'},
+  vanish:{tags:['movement'],name:'Vanish',cd:60,mp:35,ult:true,desc:'Vanish for 4 seconds: enemies lose you, nothing touches you, and your next attack deals four times the damage.'},
+  // the Witch
+  frostbolt:{tags:['projectile','cold','grimoire'],name:'Frostbolt',cd:4,mp:14,desc:'A bolt of ice that slows what it hits by 40% for 3 seconds.'},
+  arc:{tags:['lightning','chain','grimoire'],name:'Arc',cd:5,mp:16,desc:'Lightning that jumps from the enemy you aim at to four more.'},
+  icenova:{tags:['area','cold','grimoire'],name:'Ice Nova',cd:9,mp:22,desc:'A ring of frost bursts from you: it hurts, slows and pushes back everything near.'},
+  raise:{tags:['minion'],name:'Raise the Dead',cd:70,mp:55,ult:true,desc:'Three of the dead rise to fight beside you for 20 seconds.'},
+  meteor:{tags:['area','fire'],name:'Meteor',cd:60,mp:50,ult:true,desc:'After a moment, marked on the ground, a meteor strikes where you aimed.'},
+  blizzard:{tags:['area','cold'],name:'Blizzard',cd:60,mp:50,ult:true,desc:'A storm of ice where you aim, for 5 seconds: it slows and hurts everything inside.'},
 };
-const skillOf=it=>it.school==='faith'?'heal':WTYPES[it.type].skill;
-const classOf=it=>it.school==='faith'?'Healer':WTYPES[it.type].cls;
+const skillOf=it=>it.school==='faith'?'heal':WTYPES[it.type].skill;   // a weapon's own skill (the board's "now" skills, and old saves)
+// the classes whose weapon this is (CLASSES, tree.js)
+const classOf=it=>classesFor(it).map(c=>CLASSES[c].name).join(' or ');
 // A grimoire belongs to exactly one school and only ever rolls bonuses from that school's pool.
 const GRIM={
   magic:{label:'embers',attr:'intelligence and Fireball',tint:'#8a2f2f',pool:{
@@ -109,15 +208,17 @@ const STYLES=['Short','Spiked','Long','Tail','Bob','Buzz'];
 // Enemy families. Every monster belongs to one: ETYPES[].fam, and a boss takes FLOORS[].boss.fam. A family has its own
 // drop (mat, a MATS key), and the forge turns those drops into gear against that family: weapons that hit it harder,
 // armour and boots that take less from it (FORGING, below). them: how the family reads in a sentence. bane, ward: the
-// names forged weapons and armour carry. tint, cloth: their colours (blades and bows; armour and boots).
+// names forged weapons and armour carry. tint, cloth: their colours (blades and bows; armour and boots). res: percent
+// less damage taken of a type (DTYPES), negative for a weakness; only for types no weapon deals yet, so nothing today changes.
 const FAMILIES={
-  spirit:{name:'Spirits',them:'spirits',mat:'essence',bane:'Shadebane',ward:'Shadeward',tint:'#d86fb6',cloth:'#5a2e52'},
-  undead:{name:'Undead',them:'the undead',mat:'bone',bane:'Gravebane',ward:'Graveward',tint:'#e6dfc4',cloth:'#8a8474'},
-  plant:{name:'Plants',them:'plants',mat:'thornwood',bane:'Thornbane',ward:'Thornward',tint:'#7fb04a',cloth:'#3c5a2a'},
-  beast:{name:'Beasts',them:'beasts',mat:'chitin',bane:'Beastbane',ward:'Beastward',tint:'#b5533c',cloth:'#6a3226'},
+  spirit:{res:{rot:-25,cold:25},name:'Spirits',them:'spirits',mat:'essence',bane:'Shadebane',ward:'Shadeward',tint:'#d86fb6',cloth:'#5a2e52'},
+  undead:{res:{rot:50,cold:25},name:'Undead',them:'the undead',mat:'bone',bane:'Gravebane',ward:'Graveward',tint:'#e6dfc4',cloth:'#8a8474'},
+  plant:{res:{cold:-25,rot:25},name:'Plants',them:'plants',mat:'thornwood',bane:'Thornbane',ward:'Thornward',tint:'#7fb04a',cloth:'#3c5a2a'},
+  beast:{res:{rot:-25},name:'Beasts',them:'beasts',mat:'chitin',bane:'Beastbane',ward:'Beastward',tint:'#b5533c',cloth:'#6a3226'},
 };
 // e: an enemy, or anything that carries a family (a shot remembers who fired it)
 const famOf=e=>e?e.fam||(ETYPES[e.type]&&ETYPES[e.type].fam)||null:null;
+// dtype: the damage type of its attacks (DTYPES), physical if not given.
 // famDrop on a type: its own roll for its family's drop, instead of the LOOT table's ([chance, min, max])
 const ETYPES={
   // the training yard's scarecrows: they take hits and show the numbers, never move, strike back or die
@@ -134,11 +235,11 @@ const ETYPES={
   // Floor 3: roots and the restless dead (docs/design/floor-3.md). rooted: never moves or gets knocked back.
   // weak: damage taken from a kind of attack is multiplied (fire = Fireball and its burn). corpse: leaves a body behind.
   thrall:{fam:'undead',name:'Rotting thrall',hp:70,dmg:15,speed:30,r:6,reach:7,windup:.6,recover:.9,xp:16,eye:'#d6f07a',line:'#4d5a36',heavy:true,corpse:true},
-  gravecaller:{fam:'undead',name:'Gravecaller',hp:38,dmg:12,speed:38,r:6,ranged:true,pspeed:105,pcol:'#9be08a',xp:24,eye:'#9be08a',line:'#3f3452',ai:'gravecaller'},
+  gravecaller:{fam:'undead',dtype:'rot',name:'Gravecaller',hp:38,dmg:12,speed:38,r:6,ranged:true,pspeed:105,pcol:'#9be08a',xp:24,eye:'#9be08a',line:'#3f3452',ai:'gravecaller'},
   thornroot:{fam:'plant',name:'Thornroot',hp:80,dmg:16,speed:0,r:8,xp:18,eye:'#f2a03c',line:'#33421f',ai:'thornroot',rooted:true,heavy:true,plant:true,weak:{fire:2},famDrop:[.6,1,1]},
   bloodbloom:{fam:'plant',name:'Bloodbloom',hp:30,dmg:0,speed:0,r:6,xp:14,eye:'#9be08a',line:'#4e1520',ai:'bloodbloom',rooted:true,plant:true},
   hermit:{fam:'beast',name:'Ossuary hermit',hp:120,dmg:20,speed:52,r:9,xp:30,eye:'#f2a03c',line:'#2b261c',ai:'hermit',heavy:true,famDrop:[1,1,2]},
-  wisp:{fam:'spirit',name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
+  wisp:{fam:'spirit',dtype:'cold',name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
   boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d'},
 };
 // Materials. The first three are for enhancing, from common to rare: enemies, chests and bosses drop them, and
@@ -205,6 +306,7 @@ const THORN_SLOW=.6,THORN_DMG=3;   // thorn patches: speed multiplier, and damag
 const SUPPLIES={
   potion:{key:'potions',name:'Health potion',price:25,color:'#d9534f',desc:'Restores 45% of your health.'},
   ration:{key:'rations',name:'Ration',price:12,color:'#d9a441',need:'food',gives:40,desc:'Bread and dried meat. Fills 40% of your hunger meter.'},
+  bag:{key:'bags',name:'Sleeping bag',price:40,color:'#8a6a44',desc:'A night\u2019s sleep in any safe room or safe point, away from the inn: all your fatigue is gone (without the inn\u2019s well-rested bonus). Used once. B to sleep.'},
   flask:{key:'flasks',name:'Water flask',price:8,color:'#5aa7e6',need:'drink',gives:50,desc:'Clean water. Fills 50% of your thirst meter. You keep the flask once it is drunk: the village well fills it again for free.'},
 };
 // What each kind of trader sells: gear slots, and supplies (SUPPLIES keys). Tower traders carry a bit of everything;
@@ -214,7 +316,7 @@ const TRADER_SELLS={
   weapons:{gear:['weapon'],supplies:[]},
   gear:{gear:['armor','boots','trinket'],supplies:[]},
   potions:{gear:[],supplies:['potion']},
-  food:{gear:[],supplies:['ration','flask']},
+  food:{gear:[],supplies:['ration','flask','bag']},
   inn:{gear:[],supplies:[],meals:true},   // the innkeeper: meals, eaten at the table
   market:{gear:[],supplies:[],market:true},   // the exchange: materials and monster drops, at moving prices (MARKET)
 };
@@ -223,14 +325,41 @@ const TRADER_SELLS={
 const MEALS={
   stew:{name:'Root stew',price:15,cook:{potato:3},food:100,drink:20,buff:'fed',desc:'Potatoes and roots, slow-cooked under the tree.'},
   roast:{name:'Roast boar and bread',price:30,food:100,drink:0,buff:'hearty',desc:'The innkeeper\u2019s best. A whole evening\u2019s worth.'},
+  breakfast:{name:'Innkeeper\u2019s breakfast',price:12,food:100,drink:100,buff:'morning',morning:true,desc:'Eggs, bread and strong tea, served to the ones who slept here. Only in the first ten minutes after you wake.'},
   tea:{name:'Glowcap tea',price:10,cook:{glowcap:2},food:0,drink:100,buff:'clear',desc:'Brewed from the mushrooms on the roots. Faintly glowing.'},
 };
 const BUFFS={
   fed:{name:'Well fed',desc:'Hunger and thirst drain half as fast.'},
   hearty:{name:'Hearty',desc:'Natural healing is 50% faster.'},
   clear:{name:'Clear-headed',desc:'Mana comes back 25% faster.'},
+  morning:{name:'Fresh start',desc:'You move 8% faster and heal 25% faster.'},
 };
 const BUFF_TIME=20*60;
+// Fatigue: play time since you last slept, in seconds (time logged off does not count). Each tier from the time it
+// starts: cd (skill cooldowns, % longer), move (% slower), dodge (% less chance to dodge), mregen (% slower mana).
+// It never stops you playing; it makes fighting harder. Sleeping in a rented room at the inn (or logging off in it)
+// clears it and leaves you well rested (WELL_RESTED seconds of +REST_XP% experience); a sleeping bag clears it in any
+// safe area; a safe room's campfire takes half of it, once every FIRE_EVERY seconds of play.
+const FATIGUE=[
+  {at:0,name:'Rested'},
+  {at:2*3600,name:'Weary',cd:10,dodge:15},
+  {at:4*3600,name:'Tired',cd:20,move:8,dodge:35,mregen:20},
+  {at:6*3600,name:'Exhausted',cd:35,move:15,dodge:60,mregen:40},
+];
+const FATIGUE_MAX=7*3600,WELL_RESTED=3600,REST_XP=10,FIRE_EVERY=3600,BREAKFAST_WINDOW=600;
+const fatigueTier=sec=>{let i=0;for(let k=0;k<FATIGUE.length;k++)if(sec>=FATIGUE[k].at)i=k;return i;};
+const roomPrice=level=>20+4*level;   // a room at the inn, for the day
+// The barkeep's rumours: one each time you talk to him, in turn.
+const RUMOURS=[
+  'They say the Gate Warden calls skitters to it when it is hurt. Kill the little ones first, or do not, and be quick.',
+  'The bone soldiers of the second floor shrug off magic. Bring steel, or bring friends who do.',
+  'Fire burns the roots on the third floor twice over, and a body that is burned cannot be raised again.',
+  'Some say a trapdoor waits in a boss room or two, sealed until the boss is dead. Some say a lot of things.',
+  'Sleep in a bed before you climb. A tired adventurer is a slow one, and the tower does not wait.',
+  'A safe room\u2019s fire will not give you a night\u2019s sleep, but it will take the edge off. Once in a while.',
+  'Gravecallers raise the dead they find. Kill them first, then burn what they were reaching for.',
+  'The exchange pays less for whatever everyone else is selling. Sell what is rare.',
+];
 // Hunger and thirst. Each meter runs from 100 (full) to 0 and drains while you are on a floor: food in about 25 minutes,
 // drink in about 15. Below NEED_LOW you are weakened (hungry: no natural healing and 10% slower; thirsty: half mana
 // regeneration). At 0, each empty meter costs NEED_HURT of your max health every second.

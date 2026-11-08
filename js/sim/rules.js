@@ -24,13 +24,13 @@ function setWorld(g){G=g;}
 function forPlayers(fn){const cur=P;for(const pl of G.players)if(!pl.gone){setPlayer(pl);fn(pl);}if(cur)setPlayer(cur);}
 const playerById=id=>G.players.find(q=>q.id===id&&!q.gone);
 
-function newState(name,look,wkey,tint){
-  const[wt,school]=wkey.split(':');
+function newState(name,look,wkey,tint,cls){
+  const[wt,school]=wkey.split(':');cls=CLASSES[cls]?cls:CLASS_OF_WEAPON[wt==='grimoire'?'grimoire:'+(school||'magic'):wt];
   return{v:1,seed:(Math.random()*2147483647)|0,
-    char:{name,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0},
+    char:{name,cls,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0,slots:defaultSlots(cls)},
     equip:{weapon:makeWeapon(wt,1,0,school),armor:makeArmor('tunic',1,0,tint),boots:makeBoots('boots',1,0),trinket:null},
-    inv:[],shards:0,mats:{scrap:0,ember:0,crystal:0},potions:3,rations:2,flasks:2,empties:0,plots:[],crops:{},food:100,drink:100,stash:[],floor:0,best:1,kills:0,deaths:0,hp:null,
-    floors:{}};
+    tree:{},prog:{},vars:{},inv:[],shards:0,mats:{scrap:0,ember:0,crystal:0},potions:3,rations:2,flasks:2,empties:0,plots:[],crops:{},food:100,drink:100,stash:[],floor:0,best:1,kills:0,deaths:0,hp:null,
+    floors:{},fat:0,rested:0,awake:1e9,fireCd:0,bags:0,room:null,inRoom:false,rumour:0};
 }
 // What the save remembers about each floor, by floor number: which chests are opened, what each blacksmith sells,
 // and how many times its boss has fallen. S.best is the highest floor unlocked (beating a boss unlocks the next).
@@ -65,7 +65,7 @@ function claimChests(save,g){
 const xpNeed=l=>Math.round(36+22*Math.pow(l,1.55));
 
 // Derived stats for a character wearing `e`. Pure: it changes nothing, so it can also answer "what if I wore this?".
-function computeStats(c,e){
+function computeStats(c,e,tree,fat=0){
   const w=e.weapon,WT=WTYPES[w.type];
   // strength: melee. dexterity: bows, crit, evade. agility: move + attack speed. vitality: health.
   // intelligence: mage damage. faith: healing and healer damage. mind: max mana. spirit: mana regen.
@@ -81,7 +81,10 @@ function computeStats(c,e){
   st.healPow=(1+st.fai*.05)*(1+(st.p.heal||0)/100);
   st.aspd=WT.aspd*(1+c.agi*.012);
   st.shield=WT.shield||null;
-  st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;st.skill=skillOf(w);st.thrust=!st.magic&&!st.ranged&&WT.arc<50;
+  st.tags=WT.tags;st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;
+  // skills: a class weapon brings the class's whole pool (js/sim/skills.js); an off-class weapon brings none
+  st.kit=classOK(c.cls,w)?c.cls:null;st.offClass=!st.kit;st.skill=st.kit&&c.slots?c.slots.q:null;
+  st.thrust=!st.magic&&!st.ranged&&WT.arc<50;
   for(const k of['armor','boots','trinket']){const it=e[k];if(!it)continue;const m=itemMult(it);
     st.def+=(it.base.def||0)*m;st.maxHp+=(it.base.hp||0)*m;st.movePct+=it.base.move||0;
     for(const a of it.aff)st.g[a.id]=(st.g[a.id]||0)+a.v;
@@ -92,12 +95,25 @@ function computeStats(c,e){
   st.maxMp=Math.round(50+c.mnd*10+(st.g.mana||0));st.mpRegen=(1.5+c.spr*.25)*(1+(st.g.mregen||0)/100);
   if(st.p.reach){st.range*=1+st.p.reach/100;st.arc=Math.min(360,st.arc*(1+st.p.reach/100));}
   st.cdr=Math.min(60,(st.p.focus||0)+(st.g.cdr||0));
+  treeApply(st,tree);   // the skill tree (tree.js)
+  // fatigue (FATIGUE, data.js)
+  const F=FATIGUE[fatigueTier(fat)];st.fatigue=fatigueTier(fat);st.cdMult=1+(F.cd||0)/100;st.movePct-=F.move||0;st.evade*=1-(F.dodge||0)/100;st.mpRegen*=1-(F.mregen||0)/100;
   st.move=64*(1+st.movePct/100);
+  // the class's base numbers (CLASS_BASE), stamina, the dash, parrying, poise and focus (COMBAT, docs/design/combat.md)
+  const CB=CLASS_BASE[c.cls]||{hp:1,mp:1,sta:100,dash:1};
+  st.maxHp*=CB.hp;st.maxMp=Math.round(st.maxMp*CB.mp);st.mpRegen*=CB.mp;
+  st.maxSta=CB.sta;st.dashMul=CB.dash;st.pz=WT.pz||1;st.parry=!!(WT.parry||WT.shield);
+  let weight=0;for(const k of['armor','boots'])if(e[k])weight+=ARMOR_WEIGHT[e[k].type]||0;
+  st.weight=weight;st.maxPoise=COMBAT.poise.base+weight*COMBAT.poise.perWeight;
+  st.focus=Math.min(COMBAT.focus.max,c.mnd*COMBAT.focus.perMind);
   st.maxHp=Math.round(st.maxHp);st.def=Math.round(st.def);
   return st;
 }
+// A night's sleep: no fatigue, well rested, just woken (for the inn's breakfast). On the save, or on a player (which
+// carries those while they play: see storeNeeds).
+function wake(o){o.fat=0;o.rested=WELL_RESTED;o.awake=0;o.fireCd=0;}
 // Recomputes the current player's stats. Call after anything that changes their attributes or gear.
-function calcStats(){ST=computeStats(S.char,S.equip);if(P&&P.S===S){P.ST=ST;P.hp=Math.min(P.hp,ST.maxHp);P.mp=Math.min(P.mp,ST.maxMp);}}
+function calcStats(){ST=computeStats(S.char,S.equip,S.tree,P&&P.S===S?P.fat:S.fat||0);if(P&&P.S===S){P.ST=ST;P.hp=Math.min(P.hp,ST.maxHp);P.mp=Math.min(P.mp,ST.maxMp);P.sta=Math.min(P.sta??ST.maxSta,ST.maxSta);P.poise=Math.min(P.poise??ST.maxPoise,ST.maxPoise);}}
 const healAmount=()=>Math.round((24+ST.maxHp*.1)*ST.healPow);
 
 // Brings a save from any earlier version up to date. Returns null if it is not a Blackspire save at all.
@@ -111,6 +127,12 @@ function migrateSave(s){
   fix(s.equip.weapon);if(Array.isArray(s.inv))s.inv.forEach(fix);
   migrateFloors(s);
   s.mats=Object.assign({scrap:0,ember:0,crystal:0},s.mats);
+  if(!CLASSES[s.char.cls])s.char.cls=CLASS_OF_WEAPON[wkeyOf(s.equip.weapon)];   // saves from before classes: the class of the weapon carried
+  tidySlots(s.char);   // the four skill slots (saves from before them get the class's first skills)
+  if(!s.tree||typeof s.tree!=='object'||Array.isArray(s.tree))s.tree={};   // the web became class boards: its points come back
+  for(const id in s.tree)if(!TREE[id]||TREE[id].cls!==s.char.cls||!(s.tree[id]>0))delete s.tree[id];
+  for(const k of['fat','rested','fireCd','bags','rumour'])if(!(s[k]>=0))s[k]=0;if(!(s.awake>=0))s.awake=1e9;
+  if(!s.prog||typeof s.prog!=='object')s.prog={};if(!s.vars||typeof s.vars!=='object')s.vars={};delete s.treeStart;
   for(const k of['rations','flasks'])if(typeof s[k]!=='number')s[k]=2;   // saves from before hunger and thirst
   for(const k of['food','drink'])if(typeof s[k]!=='number')s[k]=100;
   if(typeof s.empties!=='number')s.empties=0;if(!Array.isArray(s.stash))s.stash=[];
@@ -120,14 +142,17 @@ function migrateSave(s){
 // A player's runtime on floor G. tp counts moves the rules make for them (a teleport, a respawn): online, the
 // browser normally decides where its player stands, but a newer tp from the server means "jump to where I say". They start at the entrance, or at their last safe room on this floor.
 function makePlayer(id,save){
-  claimChests(save,G);   // every arrival on a floor comes through here, in single player and on the server
-  const st=computeStats(save.char,save.equip),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
-  return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,food:save.food==null?100:save.food,drink:save.drink==null?100:save.drink,buff:save.buff?Object.assign({},save.buff):null,
-    aim:0,face:1,atkCd:0,atkBuf:0,skillCd:0,skillMax:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
-    guard:0,hot:null,ward:0,tp:0,in:{mx:0,my:0,atk:false,block:false},lastBreak:-9,lastSheath:-9,lastNoMana:-9};
+  claimChests(save,G);
+  if(save.inRoom){wake(save);save.inRoom=false;}   // logged off in a room at the inn: that was a night's sleep   // every arrival on a floor comes through here, in single player and on the server
+  const st=computeStats(save.char,save.equip,save.tree,save.fat||0),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
+  return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,sta:st.maxSta,poise:st.maxPoise,food:save.food==null?100:save.food,drink:save.drink==null?100:save.drink,buff:save.buff?Object.assign({},save.buff):null,fat:save.fat||0,rested:save.rested||0,awake:save.awake??1e9,fireCd:save.fireCd||0,room:false,
+    aim:0,face:1,atkCd:0,atkBuf:0,cds:{},cdMax:{},emp:null,shield:0,shieldT:0,deadAt:-99,deathLost:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
+    guard:0,hot:null,ward:0,tp:0,in:{mx:0,my:0,atk:false,block:false,aim:null},lastBreak:-9,lastSheath:-9,lastNoMana:-9,
+    kx:0,ky:0,kbN:0,stagger:0,staT:-9,poiseT:-9,parryAt:-9,wasBlock:false,bag:null};
 }
 // Back on your feet at the last safe room on this floor (or the entrance), at full health. Used online, where the
 // floor goes on without you; single player rebuilds the whole floor instead.
-function respawnPlayer(pl){const fresh=makePlayer(pl.id,pl.S);for(const k of['x','y','hp','mp','food','drink','buff','dead','locked','inv','dash','swing','safe'])pl[k]=fresh[k];pl.inv=1;pl.tp++;}
+function respawnPlayer(pl){const fresh=makePlayer(pl.id,pl.S);for(const k of['x','y','hp','mp','sta','poise','food','drink','buff','dead','locked','inv','dash','swing','safe','stagger','kx','ky'])pl[k]=fresh[k];pl.inv=1;pl.tp++;}
 // Hunger and thirst live on the player while they play (like health), and go into the save when it is written.
-function storeNeeds(pl){if(pl&&!pl.dead){pl.S.food=Math.round(pl.food);pl.S.drink=Math.round(pl.drink);pl.S.buff=pl.buff?{id:pl.buff.id,t:Math.round(pl.buff.t)}:null;}}
+function storeNeeds(pl){if(pl){pl.S.fat=Math.round(pl.fat||0);pl.S.rested=Math.round(pl.rested||0);pl.S.awake=Math.round(Math.min(pl.awake??1e9,1e9));pl.S.fireCd=Math.round(pl.fireCd||0);}
+  if(pl&&!pl.dead){pl.S.food=Math.round(pl.food);pl.S.drink=Math.round(pl.drink);pl.S.buff=pl.buff?{id:pl.buff.id,t:Math.round(pl.buff.t)}:null;}}

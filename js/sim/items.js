@@ -43,7 +43,7 @@ function isUpgrade(it){
   const cur=S.equip[it.slot];if(!cur)return true;
   if(it.slot==='trinket')return false;
   if(it.slot==='weapon'&&(it.type!==cur.type||it.school!==cur.school))return false;
-  const now=computeStats(S.char,S.equip),alt=computeStats(S.char,{...S.equip,[it.slot]:it}),score=it.slot==='weapon'?weaponScore:defScore;
+  const now=computeStats(S.char,S.equip,S.tree),alt=computeStats(S.char,{...S.equip,[it.slot]:it},S.tree),score=it.slot==='weapon'?weaponScore:defScore;
   return score(alt)>score(now)*1.02;
 }
 function gearName(it,base){return (it.aff[0]?GEAR_AFFIX[it.aff[0].id].name:(it.rarity===0?'Plain':'Fine'))+' '+base.toLowerCase();}

@@ -27,33 +27,39 @@ function buildLight(){
 }
 addEventListener('resize',resize);
 
-const keys={},inp={mx:0,my:0,atk:false,touch:!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches),jx:0,jy:0,jid:null,jox:0,joy:0};
-// Keys are physical positions (KeyboardEvent.code), so WASD and J/K/H sit in the same place on AZERTY, QWERTZ
+const keys={},inp={mx:0,my:0,cx:0,cy:0,mouse:false,atk:false,block:false,touch:!!(window.matchMedia&&matchMedia('(pointer:coarse)').matches),jx:0,jy:0,jid:null,jox:0,joy:0};
+// Keys are physical positions (KeyboardEvent.code), so WASD and Q/E/C/X sit in the same place on AZERTY, QWERTZ
 // and every other layout. Every binding lives here, which is all a key-rebinding screen would need to change.
+// The layout is Valorant's (docs/design/combat.md#keys): the mouse aims, the left button attacks and the right blocks
+// (a tap just before a blow parries); the four skills on Q, E, C, X; quick slots 1 to 4; interact on F.
 const BIND={
   up:['KeyW','ArrowUp'],down:['KeyS','ArrowDown'],left:['KeyA','ArrowLeft'],right:['KeyD','ArrowRight'],
-  attack:['KeyJ'],skill:['KeyK','Space'],block:['KeyH','KeyF'],dodge:['ShiftLeft','ShiftRight','KeyL'],potion:['KeyQ'],eat:['KeyR'],drink:['KeyT'],
-  interact:['KeyE','Enter','NumpadEnter'],gear:['KeyI','Tab'],menu:['Escape'],mute:['KeyM'],debug:['Backquote'],
+  skill1:['KeyQ'],skill2:['KeyE'],skill3:['KeyC'],skill4:['KeyX'],dodge:['Space','ShiftLeft','ShiftRight'],
+  slot1:['Digit1','Numpad1'],slot2:['Digit2','Numpad2'],slot3:['Digit3','Numpad3'],slot4:['Digit4','Numpad4'],
+  interact:['KeyF','Enter','NumpadEnter'],gear:['KeyI','Tab'],tree:['KeyP'],menu:['Escape'],mute:['KeyM'],debug:['Backquote'],
   respawn:['KeyR','Enter','NumpadEnter'],
 };
+// The skill keys are the four slots (js/sim/skills.js); the quick slots, a potion, mana, food and water.
+const SKILL_KEYS=['skill1','skill2','skill3','skill4'],SLOT_KEYS={slot1:'potion',slot2:'mana',slot3:'eat',slot4:'drink'};
 const is=(action,code)=>BIND[action].includes(code);
 const held=action=>BIND[action].some(c=>keys[c]);
 addEventListener('keydown',e=>{
   if(e.target&&e.target.tagName==='INPUT')return;
   const c=e.code;if(!c)return;if(e.repeat&&!is('gear',c))return;keys[c]=true;
   if(mode==='play'){
-    if(is('attack',c))press('atk');
-    if(is('skill',c)){press('skill');e.preventDefault();}
-    else if(is('dodge',c))press('dodge');
-    else if(is('potion',c))press('potion');
-    else if(is('eat',c))press('eat');
-    else if(is('drink',c))press('drink');
+    const sk=SKILL_KEYS.findIndex(a=>is(a,c)),slot=Object.keys(SLOT_KEYS).find(a=>is(a,c));
+    if(sk>=0)press('skill',SLOTS[sk]);
+    else if(slot)press(SLOT_KEYS[slot]);
+    else if(is('dodge',c)){press('dodge');e.preventDefault();}
     else if(is('interact',c))interact();
     else if(is('gear',c)){openPanel();e.preventDefault();}
+    else if(is('tree',c))openTree();
     else if(is('menu',c))openPause();
     else if(is('mute',c))toggleMute();
     else if(is('debug',c))openDebug();
   }else if(mode==='panel'){if(is('menu',c)||is('gear',c)){closePanel();e.preventDefault();}}
+  else if(mode==='tree'){if(is('menu',c)||is('tree',c))closeTree();}
+  else if(mode==='room'){if(is('menu',c))leaveRoom();}
   else if(mode==='debug'){if(is('menu',c)||is('debug',c))closeDebug();}
   else if(mode==='ask'){if(is('interact',c))confirmChamber();else if(is('menu',c))closeAsk();}
   else if(mode==='pause'){if(is('menu',c))closePause();}
@@ -64,9 +70,16 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;inp.atk=false;inp.block=false;});
-cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('pointerdown',e=>{
-  if(mode!=='play')return;
+// The mouse: the game is drawn on the 2D canvas or, in 3D, on its own canvas laid over it, so both count as the game.
+const onGame=e=>e.target===cv||(e.target&&e.target.id==='game3d');
+stage.addEventListener('contextmenu',e=>{if(onGame(e))e.preventDefault();});
+addEventListener('mousedown',e=>{
+  if(mode!=='play'||!onGame(e)||inp.touch)return;setMouse(e);
+  if(e.button===0){inp.atk=true;press('atk');}else if(e.button===2){inp.block=true;e.preventDefault();}
+});
+addEventListener('mouseup',e=>{if(e.button===0)inp.atk=false;else if(e.button===2)inp.block=false;});
+stage.addEventListener('pointerdown',e=>{
+  if(mode!=='play'||!onGame(e))return;
   if(e.pointerType==='touch'){
     inp.touch=true;
     if(inp.jid===null&&e.clientX<innerWidth*.6){inp.jid=e.pointerId;inp.jox=e.clientX;inp.joy=e.clientY;inp.jx=inp.jy=0;
@@ -74,7 +87,6 @@ cv.addEventListener('pointerdown',e=>{
     return;
   }
   inp.touch=false;setMouse(e);
-  if(e.button===0){inp.atk=true;press('atk');}else if(e.button===2)press('skill');
 });
 addEventListener('pointermove',e=>{
   if(e.pointerType==='touch'){
@@ -84,9 +96,17 @@ addEventListener('pointermove',e=>{
   }
   setMouse(e);
 });
-const endPtr=e=>{if(e.pointerId===inp.jid){inp.jid=null;inp.jx=inp.jy=0;$('#stick').hidden=true;}if(e.pointerType!=='touch'&&e.button===0)inp.atk=false;};
+const endPtr=e=>{if(e.pointerId===inp.jid){inp.jid=null;inp.jx=inp.jy=0;$('#stick').hidden=true;}};
 addEventListener('pointerup',endPtr);addEventListener('pointercancel',endPtr);
-function setMouse(e){const r=cv.getBoundingClientRect();inp.mx=(e.clientX-r.left)/SCALE;inp.my=(e.clientY-r.top)/SCALE;}
+function setMouse(e){const r=cv.getBoundingClientRect();inp.mx=(e.clientX-r.left)/SCALE;inp.my=(e.clientY-r.top)/SCALE;inp.cx=e.clientX;inp.cy=e.clientY;inp.mouse=true;}
+// Where the mouse points, as an angle from the player: through the 3D camera onto the floor, or on the 2D view.
+// Without a mouse (touch), null: attacks then go the way you walk.
+function aimAngle(){
+  if(!inp.mouse||inp.touch||!P)return null;
+  let q=null;if(R3.use())q=R3.pick(inp.cx,inp.cy);
+  if(!q)q={x:camX+inp.mx,y:camY+inp.my};
+  return Math.atan2(q.y-P.y,q.x-P.x);
+}
 function holdBtn(el,down,up){
   el.addEventListener('pointerdown',e=>{e.preventDefault();if(e.pointerType==='touch')inp.touch=true;if(mode==='play')down();});
   if(up){el.addEventListener('pointerup',up);el.addEventListener('pointerleave',up);el.addEventListener('pointercancel',up);}
@@ -98,9 +118,14 @@ function holdBtn(el,down,up){
 const moveX=()=>(held('right')?1:0)-(held('left')?1:0)+inp.jx;
 const moveY=()=>(held('down')?1:0)-(held('up')?1:0)+inp.jy;
 // One-off presses go to the rules directly in single player, and to the server online.
-const PRESS={atk:()=>{P.atkBuf=.18;},skill:()=>useSkill(),dodge:()=>dodge(),potion:()=>usePotion(),eat:()=>eat(),drink:()=>drink()};
-function press(a){if(NET.on)NET.press(a);else PRESS[a]();}
-const readInput=()=>({mx:moveX(),my:moveY(),atk:inp.atk||held('attack'),block:held('block')||!!inp.block});
+const PRESS={atk:()=>{P.atkBuf=.18;},skill:s=>useSkill(s),dodge:()=>dodge(),potion:()=>usePotion(),eat:()=>eat(),drink:()=>drink()};
+function press(a,s){
+  if(a==='mana'){if(G.time-(inp.manaMsg||-9)>3){inp.manaMsg=G.time;log('Mana potions arrive with the potion sizes (soon). Slot 2 is theirs.');}return;}
+  // aim first, so a press acts toward the mouse even between two input reports
+  if(P&&!P.dead){const a=aimAngle();if(a!=null){P.in.aim=a;P.aim=a;P.dir=dirOf(a);}}
+  if(NET.on)NET.press(a,s);else PRESS[a](s);
+}
+const readInput=()=>({mx:moveX(),my:moveY(),atk:!!inp.atk,block:!!inp.block,aim:aimAngle()});
 
 /* ---------- sound ---------- */
 let AC=null;

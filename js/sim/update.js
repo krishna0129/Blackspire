@@ -9,8 +9,11 @@
 // sealed in the boss chamber; the boss only cares about whoever is sealed in with it, if anyone is.
 function targetFor(e){
   const inside=e.boss&&G.players.some(q=>q.locked&&!q.dead&&!q.gone);let best=null,bd=1e9;
-  for(const pl of G.players){if(pl.dead||pl.gone)continue;if(e.boss?inside&&!pl.locked:pl.safe||pl.locked)continue;
+  // challenged: it fights the one who marked it, while that one stands
+  if(e.tauntBy!=null&&G.time<e.tauntT){const t=playerById(e.tauntBy);if(t&&!t.dead&&!t.gone)return t;}
+  for(const pl of G.players){if(pl.dead||pl.gone||hidden(pl))continue;if(e.boss?inside&&!pl.locked:pl.safe||pl.locked)continue;
     const d=hyp(pl.x-e.x,pl.y-e.y);if(d<bd){bd=d;best=pl;}}
+  if(!best&&G.players.some(q=>!q.dead&&!q.gone&&hidden(q)))return null;   // everyone it could chase is hidden: it stands, lost
   return best||G.players.find(q=>!q.gone)||null;
 }
 const pull=(d,pl,dt)=>{const dist=hyp(d.x-pl.x,d.y-pl.y);if(dist<46){const s=140*dt/Math.max(dist,1);d.x+=(pl.x-d.x)*s;d.y+=(pl.y-d.y)*s;}};
@@ -24,7 +27,7 @@ function simUpdate(dt){
   G.enemies=G.enemies.filter(e=>!e.dead);
   // enemy shots hit whichever player they reach first
   for(const p of G.proj){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(solid(p.x,p.y)||inSafe(p.x,p.y))p.life=0;
-    if(p.life>0)for(const pl of G.players)if(!pl.dead&&!pl.gone&&hyp(p.x-pl.x,p.y-pl.y)<pl.r+2){setPlayer(pl);hurtPlayer(p.dmg,null,false,{x:p.x-p.vx,y:p.y-p.vy,fam:p.fam});p.life=0;break;}}
+    if(p.life>0)for(const pl of G.players)if(!pl.dead&&!pl.gone&&hyp(p.x-pl.x,p.y-pl.y)<pl.r+2){setPlayer(pl);hurtPlayer(p.dmg,null,false,{x:p.x-p.vx,y:p.y-p.vy,fam:p.fam,dtype:p.dtype});p.life=0;break;}}
   G.proj=G.proj.filter(p=>p.life>0);
   // the players' bolts, arrows and fireballs: hits count for whoever shot them
   for(const p of G.pproj){
@@ -32,14 +35,19 @@ function simUpdate(dt){
     const fire=p.k==='fire';
     for(let i=0;i<2&&p.life>0;i++){
       const ox=p.x,oy=p.y;p.x+=p.vx*dt/2;p.y+=p.vy*dt/2;
-      if(solid(p.x,p.y)){p.life=0;if(fire)explode(ox,oy);else burst(ox,oy,3,p.k==='arrow'?'#8d8b98':'#cfc8ff',30);break;}
+      if(solid(p.x,p.y)){p.life=0;if(fire)explode(ox,oy,p.use);else{shotEnds(p,ox,oy);burst(ox,oy,3,p.k==='arrow'?'#8d8b98':'#cfc8ff',30);}break;}
       for(const e of G.enemies){if(e.dead||hyp(e.x-p.x,e.y-p.y)>e.r+(fire?4:3))continue;
-        p.life=0;if(fire)explode(p.x,p.y);else if(damageEnemy(e,p.mult||1,{fx:ox-p.vx,fy:oy-p.vy}))gainMomentum();break;}
+        if(p.f==='split'){if((p.hit||(p.hit=new Set())).has(e))continue;p.hit.add(e);damageEnemy(e,p.mult,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use});continue;}   // it goes on through
+        p.life=0;if(fire)explode(p.x,p.y,p.use);
+        else{if(damageEnemy(e,p.mult||1,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use,slow:p.k==='frost'?3:0}))gainMomentum();
+          if(p.f==='light')chain(e,3,.8,p.tags,p.use);shotEnds(p,p.x,p.y);}
+        break;}
     }
-    if(p.life>0){p.life-=dt;if(p.life<=0&&fire)explode(p.x,p.y);}
+    if(p.life>0){p.life-=dt;if(p.life<=0){if(fire)explode(p.x,p.y,p.use);else shotEnds(p,p.x,p.y);}}
     if(fire&&p.life>0)part({x:p.x+rand(-1,1),y:p.y+rand(-1,1),vx:rand(-6,6),vy:-10,t:0,d:.3,c:pick(['#f08a3c','#d9534f','#ffe9a8'])});
   }
   G.pproj=G.pproj.filter(p=>p.life>0);
+  updateSkillFx(dt);   // skills that land later (js/sim/skills.js)
   // bodies crumble after a while (the ones lying in a boss chamber do not)
   for(const c of G.corpses){c.t-=dt;if(c.t<=0)burst(c.x,c.y,6,'#55513f',30);}
   G.corpses=G.corpses.filter(c=>c.t>0);
@@ -93,9 +101,20 @@ function updatePlayer(dt){
   const buff=P.buff&&P.buff.id;
   P.mp=Math.min(ST.maxMp,P.mp+ST.mpRegen*(P.drink<NEED_LOW?.5:1)*(buff==='clear'?1.25:1)*dt);
   if(P.buff){P.buff.t-=dt;if(P.buff.t<=0){log(BUFFS[P.buff.id].name+' has worn off.');P.buff=null;}}if(P.guard>0)P.guard-=dt;if(P.ward>0)P.ward-=dt;if(P.hot){heal(P.hot.rate*dt);P.hot.t-=dt;if(P.hot.t<=0)P.hot=null;}
-  P.atkCd-=dt;P.skillCd=Math.max(0,P.skillCd-dt);P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
+  // fatigue: play time since you last slept (not while in your room at the inn)
+  if(!P.room){const was=fatigueTier(P.fat);P.fat=Math.min(FATIGUE_MAX,P.fat+dt);const now=fatigueTier(P.fat);
+    if(now!==was){calcStats();log({1:'You are growing weary: your skills come back slower and you dodge less. Sleep at the inn soon.',2:'You are tired: slower on your feet, slower to cast. Find a bed.',3:'You are exhausted. Everything is harder now. Rest.'}[now]);}}
+  P.rested=Math.max(0,P.rested-dt);P.awake=Math.min(1e9,P.awake+dt);P.fireCd=Math.max(0,P.fireCd-dt);
+  // stamina comes back after a moment, slower while you do anything but walk; poise after a moment without a blow
+  const busy=P.swing||P.blocking||P.dash;
+  if(G.time-P.staT>COMBAT.sta.delay&&!P.dash)P.sta=Math.min(ST.maxSta,P.sta+COMBAT.sta.regen*(busy?COMBAT.sta.busy:1)*dt);
+  if(G.time-P.poiseT>COMBAT.poise.delay)P.poise=Math.min(ST.maxPoise,P.poise+COMBAT.poise.regen*dt);
+  if(P.stagger>0)P.stagger-=dt;
+  P.atkCd-=dt;for(const k in P.cds)if(P.cds[k]>0)P.cds[k]=Math.max(0,P.cds[k]-dt);
+  if(P.emp){P.emp.t-=dt;if(P.emp.t<=0)P.emp=null;}
+  for(const k of['berserkT','riposteT','cryT','vanishT'])if(P[k]>0)P[k]-=dt;if(P.shieldT>0){P.shieldT-=dt;if(P.shieldT<=0)P.shield=0;}P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
-  if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:1)*dt);
+  if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:buff==='morning'?1.25:1)*dt);
   updateNeeds(dt);if(P.dead)return;
   P.farmT=(P.farmT||0)-dt;if(P.farmT<=0){P.farmT=5;if(S.farm&&S.farm.farmer)farmWork();}   // the farmhand, while you play
   // Safe rooms: no fighting in either direction. The last one you stand in is where you wake after dying.
@@ -110,52 +129,69 @@ function updatePlayer(dt){
   steerPlayer(dt);
   if(!P.dash){
     if(P.atkBuf>0)P.atkBuf-=dt;
-    if((P.in.atk||P.atkBuf>0)&&P.atkCd<=0&&!P.blocking){P.atkBuf=0;if(P.safe)sheathed();else startSwing();}
+    if((P.in.atk||P.atkBuf>0)&&P.atkCd<=0&&!P.blocking&&!(P.stagger>0)){P.atkBuf=0;if(P.safe)sheathed();else startSwing();}
   }
   if(P.swing){const s=P.swing;s.t+=dt;
     if(!s.hit&&s.t>=s.d*.4){s.hit=true;
-      if(ST.magic)castBolt();
-      else if(ST.ranged)fireArrow(P.aim,1);
-      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,1,{melee:true});
+      const E=takeEmpower();   // an empowered attack (Smite and the like) hits harder
+      if(ST.magic)castBolt(E.m);
+      else if(ST.ranged)fireArrow(P.aim,E.m);
+      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,E.m,{melee:true,pz:E.pz,poison:E.poison});
       if(ST.thrust)vfx({k:'line',x:P.x,y:P.y,a:s.a,len:ST.range+5,t:0,d:.1});else slashFx(s.a,ST.arc,ST.range,s.dir,.14);}}
     if(s.t>=s.d)P.swing=null;}
 }
-// Facing, blocking and moving. Online, each browser runs this for its own player so movement answers at once, and
+// Aiming, blocking and moving. Online, each browser runs this for its own player so movement answers at once, and
 // sends where it ended up; the server (where P.remote is set) runs it too for facing and timers, but takes the
 // position from the browser after checking it (see the server's checkMove).
 function steerPlayer(dt){
   P.dodgeCd=Math.max(0,P.dodgeCd-dt);
   let mx=P.in.mx,my=P.in.my;const m=hyp(mx,my);if(m>1){mx/=m;my/=m;}
-  // Facing is one of four directions and follows movement; attacks, shots and skills all go the way you face.
-  // Moving diagonally keeps the current facing when it is one of the two directions held.
-  // Blocking: hold the key to raise the shield. You keep facing the same way (so you can back off or sidestep
-  // behind it), you move slowly, and you cannot swing.
+  // Aiming: attacks, shots and skills go toward the mouse (P.in.aim, an angle). The model faces it; the four-way
+  // facing (P.dir) follows, for the 2D drawing. Without a mouse (touch), they go the way you walk, as before.
+  const aim=P.in.aim;
+  if(typeof aim==='number'&&isFinite(aim)){P.aim=aim;P.dir=dirOf(aim);}
+  else{if(!P.swing&&!P.dash&&!P.blocking&&m>.2){const ax=Math.abs(mx),ay=Math.abs(my),h=mx>0?3:2,v=my>0?0:1;
+      if(ax>.25&&ay>.25){if(P.dir!==h&&P.dir!==v)P.dir=ax>=ay?h:v;}else P.dir=ax>ay?h:v;}
+    P.aim=DIR_ANGLE[P.dir];}
+  // Block (right button): pressing it opens a moment in which a blow is parried, with a shield, a sword or a dagger
+  // (ST.parry). Holding it holds a block, with a shield only: each blow it takes costs stamina, and you move slowly.
+  if(P.in.block&&!P.wasBlock&&ST.parry&&!P.dash&&!P.safe)P.parryAt=G.time;
+  P.wasBlock=!!P.in.block;
   const wasBlocking=P.blocking;
-  P.blocking=!!ST.shield&&P.in.block&&!P.swing&&!P.dash&&!P.safe;
+  P.blocking=!!ST.shield&&P.in.block&&!P.swing&&!P.dash&&!P.safe&&P.sta>0;
   P.blockT=P.blocking?(wasBlocking?P.blockT+dt:0):0;
-  if(!P.swing&&!P.dash&&!P.blocking&&m>.2){const ax=Math.abs(mx),ay=Math.abs(my),h=mx>0?3:2,v=my>0?0:1;
-    if(ax>.25&&ay>.25){if(P.dir!==h&&P.dir!==v)P.dir=ax>=ay?h:v;}else P.dir=ax>ay?h:v;}
-  P.aim=DIR_ANGLE[P.dir];
+  P.parrying=G.time-P.parryAt<COMBAT.parry.win;   // for the drawing: the guard goes up
+  // A blow's push (P.kx, P.ky), set by hurtPlayer; it dies away quickly.
+  if(Math.abs(P.kx)+Math.abs(P.ky)>1){if(!P.remote)moveEnt(P,P.kx*dt,P.ky*dt);const k=Math.max(0,1-10*dt);P.kx*=k;P.ky*=k;}else P.kx=P.ky=0;
   if(P.dash){
     const D=P.dash;if(!P.remote)moveEnt(P,D.vx*dt,D.vy*dt);D.t-=dt;
     if(Math.random()<.7)part({x:P.x,y:P.y+rand(-6,4),vx:0,vy:0,t:0,d:.22,c:'#4a4a5e'});
     if(D.t<=0)P.dash=null;
   }else{
-    const sp=ST.move*(P.swing?(ST.magic||ST.ranged?.3:0):P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1);   // you plant your feet to swing
+    // you keep moving while you attack, slower (COMBAT.swingSlow); staggered, you don't move at all
+    const sp=P.stagger>0?0:ST.move*(P.swing?COMBAT.swingSlow:P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1)*(P.buff&&P.buff.id==='morning'?1.08:1);
     if(P.lunge>0){P.lunge-=dt;if(!P.remote)moveEnt(P,Math.cos(P.aim)*110*dt,Math.sin(P.aim)*110*dt);}
     if(!P.remote)moveEnt(P,mx*sp*dt,my*sp*dt);
-    P.moving=m>.1;if(P.moving)P.walk+=dt*(sp/64)*7;
+    P.moving=m>.1&&sp>0;if(P.moving)P.walk+=dt*(sp/64)*7;
   }
+}
+// where a skill's shot stops (it hit, met a wall, or ran out): a Caustic Arrow leaves poison, a Tornado Shot bursts
+function shotEnds(p,x,y){
+  if(p.f==='caustic')later({k:'pool',x,y,r:26,d:5,tick:.5,use:p.use,vis:1});
+  else if(p.f==='tornado')later({k:'tornado',x,y,d:0,use:p.use});
 }
 function updateEnemy(e,dt){   // enemies never step into a safe room, whether walking or knocked back
   const ox=e.x,oy=e.y,T=ETYPES[e.type],sp=e.speed,thorny=!T.plant&&!e.boss&&!e.burrowed&&onThorns(e.x,e.y);
+  if(e.slowT>0){e.slowT-=dt;e.speed*=e.slowF||.6;}   // slowed by frost
   if(thorny){e.speed*=THORN_SLOW;e.thornT=(e.thornT||0)-dt;
     if(e.thornT<=0){e.thornT=.7;const d=Math.max(1,Math.round(THORN_DMG*G.dmgM));e.hp-=d;e.hurtT=4;addNum(e.x,e.y-e.r-5,d,'bleed');if(e.hp<=0){killEnemy(e);e.speed=sp;return;}}}
   updateEnemyCore(e,dt);e.speed=sp;
   if(!e.dead&&!e.boss&&inSafe(e.x,e.y)&&!inSafe(ox,oy)){e.x=ox;e.y=oy;e.kx=e.ky=0;}
 }
 function updateEnemyCore(e,dt){
-  if(e.flash>0)e.flash-=dt;if(e.hurtT>0)e.hurtT-=dt;if(e.sunder>0)e.sunder-=dt;
+  if(e.flash>0)e.flash-=dt;if(e.hurtT>0)e.hurtT-=dt;if(e.sunder>0)e.sunder-=dt;if(e.staggerT>0)e.staggerT-=dt;
+  // poise comes back after a few seconds without a blow (COMBAT.epoise)
+  if(e.maxPoise&&e.poise<e.maxPoise&&G.time-(e.poiseT??-9)>COMBAT.epoise.delay)e.poise=Math.min(e.maxPoise,e.poise+e.maxPoise*COMBAT.epoise.regen*dt);
   if(ETYPES[e.type].dummy){   // a scarecrow: shrugs off knockback and stuns, and is whole again once left alone
     e.kx=e.ky=0;e.stun=0;if(e.hurtT<=0){e.hp=e.maxHp;e.bleedT=0;}else if(e.bleedT>0){e.bleedT-=dt;e.bleedAcc+=e.bleedDps*dt;
       if(e.bleedAcc>=1){const d=Math.floor(e.bleedAcc);e.bleedAcc-=d;e.hp-=d;addNum(e.x,e.y-e.r-5,d,'bleed');}}
@@ -180,7 +216,7 @@ function updateEnemyCore(e,dt){
     let mv=0;if(d<52)mv=-1;else if(d>92)mv=1;
     moveEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);
     e.fire-=dt;
-    if(e.fire<=0&&d<140&&los(e.x,e.y,P.x,P.y)){e.fire=rand(1.9,2.6);e.flash=.06;const v=T.pspeed||88;G.proj.push({x:e.x,y:e.y,vx:ux*v,vy:uy*v,dmg:e.dmg,life:2.4,c:T.pcol,fam:famOf(e)});}
+    if(e.fire<=0&&d<140&&los(e.x,e.y,P.x,P.y)){e.fire=rand(1.9,2.6);e.flash=.06;const v=T.pspeed||88;G.proj.push({x:e.x,y:e.y,vx:ux*v,vy:uy*v,dmg:e.dmg,life:2.4,c:T.pcol,fam:famOf(e),dtype:ETYPES[e.type].dtype});}
     return;
   }
   if(e.state==='chase'){
@@ -223,7 +259,7 @@ function zeldaAI(e,dt,T,dx,dy,d){
   }
   if(T.ai==='archer'){
     if(e.state==='draw'){e.t-=dt;
-      if(e.t<=0){const a=DIR_ANGLE[e.dir],v=T.pspeed;G.proj.push({x:e.x,y:e.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,dmg:e.dmg,life:1.6,c:T.pcol,arrow:true,a,fam:famOf(e)});sfx('swing');e.state='chase';e.fire=rand(1.6,2.3);}
+      if(e.t<=0){const a=DIR_ANGLE[e.dir],v=T.pspeed;G.proj.push({x:e.x,y:e.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,dmg:e.dmg,life:1.6,c:T.pcol,arrow:true,a,fam:famOf(e),dtype:ETYPES[e.type].dtype});sfx('swing');e.state='chase';e.fire=rand(1.6,2.3);}
       return;}
     if(e.state!=='chase')e.state='chase';
     e.fire-=dt;const lined=ax<7||ay<7;
@@ -286,7 +322,7 @@ function boneAttack(e,d,ux,uy,rage){
     // Rib volley: seven bone shards in a cone. These are ordinary shots, so they can be evaded and a melee swing knocks them down.
     const a=Math.atan2(uy,ux),half=.5,dur=.75*rage;e.state='cast';e.t=dur+.15;e.atkT=1.4*rage;
     G.tele.push({cone:true,x:e.x,y:e.y,a,half,len:120,t:0,d:dur,fn:()=>{if(e.dead)return;sfx('swing');
-      for(let i=-3;i<=3;i++){const b=a+i*half/3;G.proj.push({x:e.x,y:e.y,vx:Math.cos(b)*135,vy:Math.sin(b)*135,dmg:e.dmg*.8,life:1.5,c:'#d9d4c4',fam:famOf(e)});}}});
+      for(let i=-3;i<=3;i++){const b=a+i*half/3;G.proj.push({x:e.x,y:e.y,vx:Math.cos(b)*135,vy:Math.sin(b)*135,dmg:e.dmg*.8,life:1.5,c:'#d9d4c4',fam:famOf(e),dtype:ETYPES[e.type].dtype});}}});
   }else if(kind==='spikes'){
     // Grave spikes: bone erupts under your feet four times in a row (five when enraged), each aimed at where you stand at that moment.
     const n=rage<1?5:4;e.state='cast';e.t=.3*n+.3;e.atkT=1.6*rage;

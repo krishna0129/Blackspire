@@ -10,7 +10,7 @@
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 
 const ROOT=path.join(__dirname,'..');
-const SIM_FILES=['util','data','items','rules','world','village','quests','fields','market','combat','update','floor3','actions'];
+const SIM_FILES=['util','data','tree','items','rules','world','village','quests','fields','market','combat','skills','update','floor3','actions'];
 const TICK=1/30;          // the rules run 30 times a second
 const SNAP_EVERY=2;       // each player gets a snapshot every second tick (15 a second)
 const VIEW=360;           // enemies and shots further than this from a player are left out of their snapshot
@@ -42,14 +42,16 @@ function hurtFlash(){if(P)__ev(P.id,'hurtFlash',[]);}
 function bossBar(n){__ev(null,'bossBar',[n]);}
 function persist(){if(P)P.dirty=true;}
 function onDeath(lost,cp){if(P)__ev(P.id,'onDeath',[lost,cp]);}
+function revived(){if(P)__ev(P.id,'revived',[]);}
 function mapChanged(){__ev(null,'gates',[]);}
 function __take(){const o=__out;__out=[];return o;}
 // const and let values in the rules are not visible from outside the sandbox; these hand them over.
-function __lists(){return{SKINS,HAIRS,EYES,OUTFITS,STYLES:STYLES.length,START:[...Object.keys(WTYPES).filter(k=>!WTYPES[k].magic),'grimoire:magic','grimoire:faith']};}
+function __lists(){return{CLASSES,CLASS_OF_WEAPON,SKINS,HAIRS,EYES,OUTFITS,STYLES:STYLES.length,START:[...Object.keys(WTYPES).filter(k=>!WTYPES[k].magic),'grimoire:magic','grimoire:faith']};}
 function __actions(){return ACTIONS;}
 function __boxSolid(x,y,r){return boxSolid(x,y,r);}
 function __nearHome(){return nearHome();}
 function __classOf(it){return classOf(it);}
+function __className(s){return CLASSES[s.char.cls]?CLASSES[s.char.cls].name:classOf(s.equip.weapon);}
 `;
 function loadRules(){
   const ctx=vm.createContext({console});
@@ -93,8 +95,10 @@ class Game{
     const look=o.look||{};
     if(!ok(L.SKINS,look.skin)||!ok(L.HAIRS,look.hair)||!ok(L.EYES,look.eyes)||!Number.isInteger(look.style)||look.style<0||look.style>=L.STYLES)return'That look is not available.';
     if(!ok(L.START,o.weapon)||!ok(L.OUTFITS,o.outfit))return'That outfit or weapon is not available.';
+    const cls=o.cls==null?L.CLASS_OF_WEAPON[o.weapon]:o.cls;   // older clients send no class: the weapon's
+    if(!L.CLASSES[cls]||!L.CLASSES[cls].weapons.includes(o.weapon))return'That class cannot start with that weapon.';
     if(o.custom!=null&&!validSheet(o.custom))return'A character sheet must be a PNG of 88 x 78 pixels, or a whole multiple of that up to x4, under 88 KB.';
-    const s=R.newState(name,{skin:look.skin,hair:look.hair,style:look.style,eyes:look.eyes},o.weapon,o.outfit);
+    const s=R.newState(name,{skin:look.skin,hair:look.hair,style:look.style,eyes:look.eyes},o.weapon,o.outfit,cls);
     s.char.custom=o.custom||null;
     m.S=JSON.parse(JSON.stringify(s));this.db.saveChar(m.account,m.S);return null;
   }
@@ -184,7 +188,7 @@ class Game{
     const R=this.R;R.setWorld(w.G);
     m.S.floor=w.n;const pl=R.makePlayer(m.pid,m.S);pl.remote=true;pl.name=m.S.char.name;
     if(m.S.hp!=null&&m.S.hp>0)pl.hp=Math.min(pl.ST.maxHp,m.S.hp);
-    m.pl=pl;m.budget=0;m.in={mx:0,my:0,atk:false,block:false};m.pos=null;w.G.players.push(pl);
+    m.pl=pl;m.budget=0;m.in={mx:0,my:0,atk:false,block:false,aim:null};m.pos=null;w.G.players.push(pl);
   }
 
   /* ---------- party notices ----------
@@ -194,7 +198,7 @@ class Game{
     const now=Date.now();
     this.notices=this.notices.filter(n=>{const p=this.parties.get(n.party);return p&&p.members.length<PARTY_MAX&&now-n.t<NOTICE_TTL;});
     return this.notices.map(n=>{const p=this.parties.get(n.party),L=p.leader.S;
-      return{id:n.id,code:p.code,name:L.char.name,level:L.char.level,cls:this.R.__classOf(L.equip.weapon),size:p.members.length,best:this.partyBest(p),
+      return{id:n.id,code:p.code,name:L.char.name,level:L.char.level,cls:this.R.__className(L),size:p.members.length,best:this.partyBest(p),
         text:n.text,mins:Math.floor((now-n.t)/60000),own:!!m&&m.party===p};});
   }
   postNotice(m,text){
@@ -234,19 +238,20 @@ class Game{
     const G=w.G,me=m.pl,near=e=>Math.abs(e.x-me.x)<VIEW&&Math.abs(e.y-me.y)<VIEW*.7;
     return{t:'s',time:r1(G.time),
       me:{hp:r1(me.hp),mp:r1(me.mp),food:r1(me.food),drink:r1(me.drink),buff:me.buff?[me.buff.id,Math.round(me.buff.t)]:0,x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
-        swing:me.swing?[r1(me.swing.t),r1(me.swing.d),me.swing.hit?1:0]:0,skillCd:r1(me.skillCd),skillMax:r1(me.skillMax),potCd:r1(me.potCd),dodgeCd:r1(me.dodgeCd),mom:me.mom,blocking:!!me.blocking},
+        swing:me.swing?[r1(me.swing.t),r1(me.swing.d),me.swing.hit?1:0]:0,cds:Object.fromEntries(Object.entries(me.cds||{}).filter(e=>e[1]>0).map(([k,v])=>[k,[r1(v),r1(me.cdMax[k])]])),shield:Math.round(me.shield||0),emp:me.emp?me.emp.n:0,hot:me.hot?1:0,deadAt:me.dead?r1(R.G.time-(me.deadAt??R.G.time)):0,potCd:r1(me.potCd),dodgeCd:r1(me.dodgeCd),mom:me.mom,blocking:!!me.blocking,sta:r1(me.sta),poise:r1(me.poise),stagger:r1(me.stagger),kb:[r1(me.kx),r1(me.ky),me.kbN],bag:me.bag?[r1(me.bag.x),r1(me.bag.y)]:0,fat:Math.round(me.fat||0),rested:Math.round(me.rested||0),awake:Math.round(Math.min(me.awake??1e9,1e9)),fireCd:Math.round(me.fireCd||0),room:!!me.room,fight:G.time-(me.fightT??-99)<5?1:0},
       // in a busy village, only the people near you
       pl:G.players.filter(q=>q!==me&&!q.gone&&(w.kind!=='village'||near(q))).map(q=>({id:q.id,x:r1(q.x),y:r1(q.y),dir:q.dir,moving:q.moving,dead:q.dead,inv:r1(q.inv),guard:r1(q.guard),hp:Math.ceil(q.hp),maxHp:q.ST.maxHp,
-        swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,blocking:!!q.blocking,dash:!!q.dash})),
+        swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,blocking:!!q.blocking||!!q.parrying,dash:!!q.dash,a:r1(q.aim),sh:q.shield>0?1:0,em:q.emp?1:0,ho:q.hot?1:0})),
       en:G.enemies.filter(e=>!e.dead&&(e.boss||near(e))).map(e=>({id:e.id,type:e.type,x:r1(e.x),y:r1(e.y),dir:e.dir,face:e.face,state:e.state,t:r1(e.t||0),hopT:e.hopT,
-        flash:e.flash>0?1:0,stun:e.stun>0?1:0,hurtT:e.hurtT>0?1:0,hp:Math.ceil(e.hp),maxHp:e.maxHp,elite:e.elite,boss:!!e.boss,sprite:e.sprite||null,name:e.name||null,moving:!!e.moving,lunge:e.lunge>0?1:0,ph:r1(e.ph),burrowed:!!e.burrowed,cx:e.state==='channel'?e.cx:undefined,cy:e.state==='channel'?e.cy:undefined})),
+        flash:e.flash>0?1:0,stun:e.stun>0?1:0,hurtT:e.hurtT>0?1:0,hp:Math.ceil(e.hp),maxHp:e.maxHp,elite:e.elite,boss:!!e.boss,sprite:e.sprite||null,name:e.name||null,moving:!!e.moving,lunge:e.lunge>0?1:0,ph:r1(e.ph),burrowed:!!e.burrowed,cx:e.state==='channel'?e.cx:undefined,cy:e.state==='channel'?e.cy:undefined,po:e.maxPoise?Math.round(e.poise/e.maxPoise*100)/100:undefined,sg:e.staggerT>0?1:0})),
       pr:G.proj.filter(near).map(q=>({x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),c:q.c,arrow:!!q.arrow,a:q.a})),
-      pp:G.pproj.filter(near).map(q=>({k:q.k,x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),a:q.a})),
+      pp:G.pproj.filter(near).map(q=>({k:q.k,f:q.f,x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),a:q.a})),
       dr:G.drops.filter(d=>d.owner===me.id).map(d=>({uid:d.uid,k:d.k,x:r1(d.x),y:r1(d.y),t:r1(d.t),r:d.item?d.item.rarity:0,id:d.k==='mat'?d.id:undefined})),
       co:G.corpses.filter(near).map(c=>({x:r1(c.x),y:r1(c.y)})),
       be:(G.beams||[]).map(B=>({x:r1(B.x),y:r1(B.y),a:B.a,va:B.va,len:B.len,t:r1(B.t)})),
+      pf:(G.pfx||[]).filter(q=>q.mark||q.vis).map(q=>({k:q.k,x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,mark:q.mark,vis:q.vis,a:q.a,i:q.i})),
       te:G.tele.map(q=>({x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,line:!!q.line,cone:!!q.cone,a:q.a,len:q.len,half:q.half})),
-      g:{open:G.gatesOpen,gate:G.gate,awake:G.bossAwake,boss:G.bossEnt?{hp:Math.ceil(G.bossEnt.hp),maxHp:G.bossEnt.maxHp,dead:G.bossEnt.dead}:null},
+      g:{open:G.gatesOpen,gate:G.gate,awake:G.bossAwake,boss:G.bossEnt?{hp:Math.ceil(G.bossEnt.hp),maxHp:G.bossEnt.maxHp,dead:G.bossEnt.dead,poise:G.bossEnt.maxPoise?Math.round(G.bossEnt.poise/G.bossEnt.maxPoise*100)/100:1,maxPoise:1,staggerT:G.bossEnt.staggerT>0?1:0}:null},
       ev:m.out.splice(0)};
   }
 
@@ -275,8 +280,9 @@ class Game{
   // A rejected report bumps tp, which tells the browser to jump back to where the server has them.
   checkMove(m){
     const R=this.R,pl=m.pl,q=m.pos;m.pos=null;
-    const fast=pl.ST.move,cap=fast*3.3*.25+16;
-    m.budget=Math.min(cap,m.budget+fast*(pl.dash?3.6:1.25)*TICK);
+    // a dash moves faster (by the class's dash), and a blow's push (kx, ky) adds its own distance
+    const fast=pl.ST.move,dash=3.3*(pl.ST.dashMul||1)*1.1,cap=fast*dash*.25+16+Math.hypot(pl.kx||0,pl.ky||0)*.3;
+    m.budget=Math.min(cap,m.budget+(fast*(pl.dash?dash:1.25)+Math.hypot(pl.kx||0,pl.ky||0)*1.2)*TICK);
     if(!q||pl.dead||q.tp!==pl.tp)return;
     const d=Math.hypot(q.x-pl.x,q.y-pl.y);if(d<.01)return;
     let ok=d<=m.budget;
@@ -292,12 +298,12 @@ class Game{
     R.setWorld(w.G);R.setPlayer(pl);
     switch(o.t){
       case'in':   // held input and where the browser has the player
-        m.in={mx:isNum(o.mx)?Math.max(-1,Math.min(1,o.mx)):0,my:isNum(o.my)?Math.max(-1,Math.min(1,o.my)):0,atk:!!o.atk,block:!!o.block};
+        m.in={mx:isNum(o.mx)?Math.max(-1,Math.min(1,o.mx)):0,my:isNum(o.my)?Math.max(-1,Math.min(1,o.my)):0,atk:!!o.atk,block:!!o.block,aim:isNum(o.aim)?o.aim:null};
         if(isNum(o.x)&&isNum(o.y)&&isNum(o.tp))m.pos={x:o.x,y:o.y,tp:o.tp};
         return;
       case'p':    // a one-off press
-        pl.in=m.in;
-        if(o.a==='atk')pl.atkBuf=.18;else if(o.a==='skill')R.useSkill();else if(o.a==='dodge')R.dodge();else if(o.a==='potion')R.usePotion();else if(o.a==='eat')R.eat();else if(o.a==='drink')R.drink();
+        if(isNum(o.aim))m.in.aim=o.aim;pl.in=m.in;if(isNum(o.aim)){pl.aim=o.aim;pl.dir=R.dirOf(o.aim);}
+        if(o.a==='atk')pl.atkBuf=.18;else if(o.a==='skill')R.useSkill(['q','e','c','x'].includes(o.s)?o.s:'q');else if(o.a==='dodge')R.dodge();else if(o.a==='potion')R.usePotion();else if(o.a==='eat')R.eat();else if(o.a==='drink')R.drink();
         return;
       case'act':{ // gear, attributes, traders, the stash, the forge, the well
         if(!Object.prototype.hasOwnProperty.call(R.__actions(),o.name)||!Array.isArray(o.args)||o.args.length>3)return this.send(m,{t:'ar',id:o.id,r:false});

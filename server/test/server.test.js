@@ -112,6 +112,27 @@ test('online play',async t=>{
     assert.ok(sa.dr.every(d=>G.drops.find(q=>q.uid===d.uid).owner===ma.pid));
   });
 
+  await t.test('combat online: the aim comes with the input, a push and a parry come back in the snapshot',async()=>{
+    const g=s.game,p=[...g.parties.values()].find(q=>q.members.length===2),R=g.R,G=p.floorW.G;
+    const ma=p.members.find(q=>q.S.char.name==='Alpha'),pl=ma.pl;
+    const me=A.last('s').me;
+    A.send({t:'in',mx:0,my:0,atk:false,block:false,aim:2,x:me.x,y:me.y,tp:me.tp});
+    await A.wait(o=>o.t==='s');await A.wait(o=>o.t==='s');
+    assert.strictEqual(pl.aim,2,'the server aims where the browser does');
+    // a blow pushes Alpha: the snapshot says so (kb[2] counts pushes), and the browser plays it out
+    R.setWorld(G);R.setPlayer(pl);pl.inv=0;pl.safe=false;
+    const e=R.makeEnemy('skel',pl.x+12,pl.y,1,1,false);e.state='chase';G.enemies.push(e);
+    const n0=pl.kbN;R.hurtPlayer(5,e);
+    const sn=await A.wait(o=>o.t==='s'&&o.me.kb&&o.me.kb[2]>n0);assert.ok(sn.me.kb[0]<0,'pushed away from the blow');
+    // block pressed toward it, just before the next blow: a parry (a longsword parries)
+    A.send({t:'in',mx:0,my:0,atk:false,block:false,aim:0,x:pl.x,y:pl.y,tp:pl.tp});await A.wait(o=>o.t==='s');
+    A.send({t:'in',mx:0,my:0,atk:false,block:true,aim:0,x:pl.x,y:pl.y,tp:pl.tp});await A.wait(o=>o.t==='s');
+    R.setWorld(G);R.setPlayer(pl);pl.inv=0;e.x=pl.x+12;e.y=pl.y;const hp=pl.hp;R.hurtPlayer(20,e);
+    assert.strictEqual(pl.hp,hp,'parried');assert.ok(e.stun>0,'the attacker reels');
+    A.send({t:'in',mx:0,my:0,atk:false,block:false,aim:0,x:pl.x,y:pl.y,tp:pl.tp});
+    G.enemies=G.enemies.filter(q=>q!==e);
+  });
+
   await t.test('only the leader picks the floor',async()=>{
     const since=B.msgs.length;B.send({t:'travel',n:0});
     assert.match((await B.wait(o=>o.t==='err',3000,since)).msg,/leader/);

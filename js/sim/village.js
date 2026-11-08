@@ -83,6 +83,7 @@ function genVillage(){
   const farmhand={x:vx(12.2),y:vy(26.5),name:'Farmhand',fields:true,look:{skin:SKINS[3],hair:HAIRS[4],style:1,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#5e4620'}}};
   const broker={x:vx(17.4),y:vy(27.7),name:'Crop broker',fields:true,look:{skin:SKINS[1],hair:HAIRS[5],style:3,eyes:EYES[3]},eq:{armor:{type:'coat',tint:'#6b4a2c'}}};
   talkers.push(farmhand,broker);
+  talkers.push({x:vx(11.6),y:vy(12.3),name:'Barkeep',rumours:true,line:'Pull up a stool. I hear things.',look:{skin:SKINS[2],hair:HAIRS[1],style:5,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#7a3a2a'}}});   // rumours (RUMOURS, data.js)
   const fieldDesk=[{x:vx(sgx),y:vy(sgy-.3),name:'Fields'},farmhand,broker];
   // the Adventurers' Guild's clerk, at its door: quests and party notices (js/sim/quests.js)
   const guild={x:vx(28),y:vy(32.8),name:'Guild clerk',look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}};
@@ -96,7 +97,7 @@ function genVillage(){
   // the fields' plots: drawn by render() from each player's own S.plots (a "for sale" sign on the ones you don't own)
   const all={x0:vx(0),y0:vy(0),x1:vx(VW),y1:vy(VH)},spawn=VILLAGE.square;
   return{n:0,village:true,map,rooms:[],start:{x:VOX+27,y:VOY+21,w:2,h:2},boss:{x:0,y:0,w:0,h:0},gates:[],gatesOpen:true,locked:false,
-    enemies,spar,chests:[],drops:[],proj:[],pproj:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
+    enemies,spar,chests:[],drops:[],proj:[],pproj:[],pfx:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
     gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],
     safe:[all],points:[],smiths,traders,talkers,props,wells,stashes,guild,board:{x:vx(22),y:vy(17.3)},fieldDesk,crops:['potato','glowcap'],home:{x:vx(spawn.x),y:vy(spawn.y)}};
 }

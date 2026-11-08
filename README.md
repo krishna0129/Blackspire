@@ -26,12 +26,15 @@ The only outside requests are the fonts, from Google Fonts. Offline, the game fa
 ## Graphics
 
 The tower's floors are 3D: the rules underneath are the same flat map as ever, and only the drawing changed, so
-single player and online look the same. The village is still drawn in 2D for now. The **Graphics** button in the
+single player and online look the same, and so is the root village. People (you, your party, the townsfolk and
+traders) are KayKit's adventurers stretched taller: long legs, longer arms, a small head, about six heads tall, so
+gear has room to show; skeletons keep a gentler stretch. The **Graphics** button in the
 Gear panel switches between **3D**, **3D (fast)** (no shadows or glow, for slower machines and phones) and **2D**;
 the choice is kept in the browser. A browser without WebGL gets 2D. The mouse wheel zooms the 3D view.
 
 The models (characters, skeletons, the dungeon and its props) are by Kay Lousberg ([kaylousberg.com](https://kaylousberg.com)),
-from the KayKit packs Dungeon Remastered, Character Pack: Adventurers, Character Pack: Skeletons and Halloween Bits,
+from the KayKit packs Dungeon Remastered, Character Pack: Adventurers, Character Pack: Skeletons, Halloween Bits,
+Medieval Hexagon, Restaurant Bits and Furniture Bits,
 all released under CC0. They are packed into `js/vendor/models.js` by `tools/pack-models.mjs` (its header says how to
 fetch the packs and rerun it), and three.js (MIT) is bundled into `js/vendor/three.js` by `npm run vendor`. Both files
 are generated: rebuild them rather than editing them.
@@ -46,6 +49,7 @@ js/sim/               the game rules. No page, canvas or sound: the browser runs
   util.js             small helpers
   data.js             tables: floors, weapons, skills, passives, gear, enemies and their families, materials,
                       loot, forging
+  tree.js             classes and their skill boards: tiers, ranks, points, challenges (docs/design/skills.md)
   items.js            item generation, prices, enhancement, forged gear, the traders' stock
   rules.js            players, saves, derived stats, and the list of host functions the rules call
   world.js            floor generation
@@ -66,6 +70,7 @@ js/client/            everything on screen, loaded after js/sim in the order ind
   render.js           drawing the world in 2D: the village, and the floors when 3D is off
   render3d.js         drawing the tower floors in 3D: rooms, props, lights, characters and their animations,
                       effects, and the numbers and health bars over them
+  treeui.js           the skill board screen
   ui.js               HUD, title flow, character creator, gear panel, blacksmith and forging, floor gate, debug menu
   net.js              online play: the connection, snapshots, smoothing other players and enemies
   main.js             start-up and the main loop
@@ -74,6 +79,7 @@ assets/sprites/       every sprite, as PNG (see assets/README.md)
 assets/templates/     a full-colour character sheet to repaint
 tools/make_sprites.py regenerates the default sprite PNGs (needs Pillow)
 tools/build.py        optional: packs single player into dist/blackspire.html
+tools/balance.js      the balance runner: plays every build through set scenes and writes docs/balance.md (npm run balance)
 tools/pack-models.mjs packs the 3D models into js/vendor/models.js (npm run models)
 tools/three-entry.js  what js/vendor/three.js is built from (npm run vendor)
 tools/wiki.js         writes docs/wiki (pages and charts) from the game's data
@@ -85,22 +91,27 @@ server/               the online server (Node): index.js (HTTP and WebSocket), g
 
 ## Controls
 
-Move with WASD or the arrow keys. You attack in the direction you face.
+Valorant's layout ([the combat design](docs/design/combat.md#keys)): move with WASD (or the arrow keys) and aim with
+the mouse. Attacks and skills go toward the mouse; you keep moving while you attack, slower.
 
 | Action | Keys |
 |---|---|
-| Attack | J, or a mouse click |
-| Skill | K, Space, or a right click |
-| Block (longsword and mace classes) | hold H or F |
-| Roll | Shift or L |
-| Potion | Q |
-| Eat a ration / drink water | R / T |
-| Interact (gates, the Teleport Gate, traders, the stash, the forge, the well, villagers) | E |
+| Attack | left mouse button |
+| Block (with a shield); a tap just before a blow parries (shields, swords and daggers) | right mouse button |
+| Dash (costs stamina) | Space or Shift |
+| Your four skills: three everyday ones, and your ultimate on X (choose them on the skill board, P) | Q, E, C, X |
+| Health potion, mana potion (coming), eat, drink | 1, 2, 3, 4 |
+| Interact (gates, traders, the stash, the forge, the well, villagers; lay out a sleeping bag in a safe place, then sleep in it) | F or Enter |
 | Gear | I or Tab |
+| Skill board (out of combat) | P, or the Tree button |
 | Pause menu (resume, save and quit) | Esc, or the Menu button |
 | Zoom the 3D view | mouse wheel |
 | Respawn after a death | R or Enter |
 | Debug menu (only with `?debug`, see below) | ` (backquote) |
+
+**Stamina** (the pale bar under mana) pays for dashing and blocking, and comes back slower while you fight. **Poise**
+(from your armour's weight) keeps a blow from interrupting your swing; **focus** (from Mind) keeps it from breaking a
+spell. Enemies have poise too, the thin bar under their health: break it and they reel, taking more damage.
 
 ## Online play
 
@@ -167,9 +178,45 @@ The guild's daily board also asks for monster drops and pays 30% over the usual 
   by `npm run wiki`. `npm test` fails if it is out of date. Its pictures (monsters, items, boss attacks) are
   rendered by the game itself with `npm run wiki:images`, which needs Playwright and a Chromium
   (`npx playwright install chromium`); rerun it after changing sprites.
+- [docs/roadmap.md](docs/roadmap.md): the decisions still to make, in order, toward the first friends' playtest.
+- [docs/build-plan.md](docs/build-plan.md): the order to build it in, each step playable.
 - [docs/design](docs/design): design proposals: [skills and the skill tree](docs/design/skills.md), the earlier
   [skill trees and mutations](docs/design/skill-trees.md) and [class trees](docs/design/class-trees.md) it replaces,
-  [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md).
+  [floor 3](docs/design/floor-3.md), [the world, economy and story](docs/design/world.md), [the root village](docs/design/root-village.md),
+  [gear: armour, weight and sets](docs/design/gear.md),
+  [combat and movement](docs/design/combat.md), [bosses](docs/design/bosses.md),
+  [class balancing](docs/design/classes.md), [multiplayer](docs/design/multiplayer.md),
+  [the character, the look and the sound](docs/design/look.md).
+
+## Fatigue and the inn
+
+Fatigue is play time since you last slept (time logged off does not count), up to 7 hours. Weary from 2 hours, tired
+from 4, exhausted from 6: skills take longer to come back, you move slower, dodge less and regain mana slower. It never
+stops you playing. To clear it:
+
+- **A room at the inn**, rented from the innkeeper for the day: sleep there and the fatigue is gone, you wake well
+  rested (10% more experience for an hour of play), and breakfast is on for ten minutes. Your stash is in the room,
+  and logging off in it counts as a night's sleep. In single player, falling on a floor before reaching its safe room
+  wakes you in that bed instead of at the entrance.
+- **A sleeping bag** (food and drink stall, used once): B in any safe room or safe point clears it, without the bonus.
+- **A safe room's campfire**: E beside it takes half, once every hour of play.
+
+The barkeep outside the inn has a rumour for you each time you talk to him. The numbers are `FATIGUE` and its
+neighbours in `js/sim/data.js`.
+
+## Classes and the skill board
+
+A character has a class, picked when it is made: Marauder, Duelist, Ranger, Shadow, Witch or Templar, each with its
+own weapons. Any weapon can be carried, but only your class's weapons bring their skill. P (or the Tree button) opens
+your class's skill board, out of combat only: five tiers, each opening as you spend more points on the board, with
+ranked bonuses and the class's skills. Points come one a level, and one for each floor whose boss you were first to
+beat. A point is placed with +, taken back with −, and spent only on Confirm (attribute points work the same way).
+Each skill has two variations, opened free by meeting a challenge with it (hit a crowd with it, kill so many with it).
+A full reset costs 20 shards a point spent. Design: [docs/design/skills.md](docs/design/skills.md).
+
+**Balance.** `npm run balance` plays every weapon's build through a training dummy, a room of six of the floor's
+enemies and the floor's boss, on floors 1 to 3, and writes [docs/balance.md](docs/balance.md). `npm test` fails if
+that table is out of date.
 
 ## Saves
 
