@@ -26,6 +26,9 @@ function onDeath(lost,cp){
   setTimeout(()=>{if(mode==='dead')$('#dead').hidden=false;},700);
 }
 
+// A Templar brought you back before your fall counted (docs/design/multiplayer.md#falling).
+function revived(){if(mode!=='dead')return;mode='play';$('#dead').hidden=true;log('A Templar brings you back. Nothing is lost.');}
+
 // Particles, slashes and floating numbers only exist on screen: they age here, every frame, in either mode.
 const NUM_LIFE=.5;   // seconds a floating number stays up; it fades over the last 0.15 (render.js)
 function updateCosmetics(dt){

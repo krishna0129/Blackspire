@@ -25,7 +25,7 @@ starts. Small open details are settled at the step that needs them (marked *Deci
 0.2 s, a dash 30 stamina, 80 to 120 stamina by class. The classes' base numbers (health, mana, stamina, dash) came in
 with it.
 
-## 2. Classes and skills
+## 2. Classes and skills (built)
 
 [classes.md](design/classes.md), [skills.md](design/skills.md)
 
@@ -34,7 +34,7 @@ with it.
 - The new skills, one class at a time: Templar first (the healing kit and its three ultimates), then Witch, Marauder,
   Duelist, Ranger, Shadow.
 
-*Playable:* each class with its full kit, after each class. *Decide:* starting attribute points.
+*Playable:* every class with its full kit. *Still to decide:* starting attribute points (with the creator, step 7).
 
 ## 3. Death, potions and stashes
 

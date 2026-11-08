@@ -96,9 +96,51 @@ const SKILLS={
   pierce:{tags:['melee','physical','spear'],name:'Piercing line',cd:5,mp:14,desc:'A long thrust that passes through every enemy in a line.'},
   volley:{tags:['projectile','physical','bow'],name:'Volley',cd:6,mp:16,desc:'Five arrows in a fan.'},
   fireball:{tags:['projectile','area','fire','grimoire'],name:'Fireball',cd:5,mp:18,desc:'A slow orb that bursts on impact and hits everything in the blast. Intelligence raises its damage.'},
-  heal:{tags:['aura','grimoire'],name:'Heal',cd:9,mp:24,desc:'Restores health to you and every ally near you. It never affects enemies. Faith raises the amount.'},
+  heal:{tags:['aura','grimoire'],name:'Heal',cd:6,mp:22,desc:'Restores a lot of health to the ally you aim at, or to you. Faith raises the amount.'},
+  // the Templar (docs/design/skills.md): heals, a shield, a revive, an empowered attack; and three ultimates
+  partyheal:{tags:['aura'],name:'Party Heal',cd:14,mp:34,desc:'Restores health to you and every ally near you. It never affects enemies.'},
+  renewal:{tags:['aura'],name:'Renewal',cd:10,mp:24,desc:'The ally you aim at (or you) heals steadily for 8 seconds.'},
+  aegis:{tags:['guard'],name:'Aegis',cd:14,mp:26,desc:'A shield on the ally you aim at (or you) takes the next blows, for 8 seconds.'},
+  revive:{tags:['aura'],name:'Revive',cd:40,mp:40,desc:'Brings back a fallen ally you aim at, within 15 seconds of the fall, with nothing lost.'},
+  smite:{tags:['melee','empower'],name:'Smite',cd:12,mp:22,sound:'crit',desc:'Your next four attacks strike with holy light: 70% more damage, for 8 seconds.'},
+  judgement:{tags:['area','lightning'],name:'Judgement',cd:75,mp:60,ult:true,desc:'Eight strikes of light fall where you aim, one after another.'},
+  massheal:{tags:['aura'],name:'Mass Heal',cd:90,mp:70,ult:true,desc:'A great heal for the whole party, wherever they are on the floor, and more over the next seconds.'},
+  resurrect:{tags:['aura'],name:'Resurrection',cd:150,mp:80,ult:true,desc:'Brings back every fallen ally, within 15 seconds of their fall, with nothing lost.'},
+  // the Marauder
+  heavy:{tags:['melee','physical','empower'],name:'Heavy Strike',cd:9,mp:16,sound:'crit',desc:'Your next three attacks land 60% harder and break poise three times as fast, for 8 seconds.'},
+  leap:{tags:['melee','area','movement','physical'],name:'Leap Slam',cd:8,mp:18,desc:'Leap to where you aim and slam down, striking everything around you.'},
+  cry:{tags:['warcry'],name:'Enduring Cry',cd:60,mp:40,ult:true,desc:'A warcry: you and every ally near you take 30% less damage for 10 seconds.'},
+  quake:{tags:['melee','area','physical'],name:'Earthquake',cd:60,mp:50,ult:true,desc:'A huge slam around you, and an aftershock a moment later. It breaks poise like nothing else.'},
+  berserk:{tags:['physical'],name:'Berserk',cd:70,mp:40,ult:true,desc:'For 10 seconds: 40% more damage, heal 10% of what you deal, and nothing knocks you back.'},
+  // the Duelist
+  riposte:{tags:['melee','guard','physical'],name:'Riposte',cd:7,mp:14,desc:'For a moment, any blow from the front is parried and answered with a hard counter.'},
+  double:{tags:['melee','physical','empower'],name:'Double Strike',cd:12,mp:10,desc:'For 10 seconds every attack lands twice, at 3 mana a hit.'},
+  cuts:{tags:['melee','physical'],name:'Thousand Cuts',cd:60,mp:45,ult:true,desc:'A blinding flurry of eight cuts on the enemy you aim at.'},
+  challenge:{tags:['physical'],name:'Challenge',cd:50,mp:30,ult:true,desc:'Mark the enemy you aim at for 12 seconds: it must fight you, and takes 40% more from you.'},
+  storm:{tags:['melee','physical'],name:'Piercing Storm',cd:60,mp:50,ult:true,desc:'Five long thrusts, one after another, that cross the room.'},
+  // the Ranger
+  lightarrow:{tags:['projectile','lightning','bow'],name:'Lightning Arrow',cd:5,mp:16,desc:'An arrow that leaps on to three more enemies.'},
+  caustic:{tags:['projectile','rot','bow'],name:'Caustic Arrow',cd:7,mp:18,desc:'An arrow that leaves a pool of poison where it lands, for 5 seconds.'},
+  split:{tags:['projectile','physical','bow'],name:'Split Arrow',cd:5,mp:14,desc:'A heavy arrow that passes through every enemy in a line.'},
+  rain:{tags:['projectile','area','physical'],name:'Rain of Arrows',cd:60,mp:50,ult:true,desc:'Arrows fall over a wide area where you aim, for 2 seconds.'},
+  ballista:{tags:['projectile','physical'],name:'Ballista',cd:60,mp:45,ult:true,desc:'Set down a ballista that shoots the nearest enemy for 15 seconds.'},
+  tornado:{tags:['projectile','physical'],name:'Tornado Shot',cd:50,mp:40,ult:true,desc:'One arrow that bursts into twelve, in every direction, where it stops.'},
+  // the Shadow
+  viper:{tags:['melee','rot','empower'],name:'Viper Strike',cd:10,mp:8,desc:'For 10 seconds your attacks poison, at 2 mana a hit.'},
+  vortex:{tags:['melee','area','physical'],name:'Blade Vortex',cd:8,mp:18,desc:'Blades spin around you for 4 seconds, cutting whatever comes close.'},
+  smoke:{tags:['movement'],name:'Smoke Cloud',cd:14,mp:20,desc:'A cloud of smoke where you stand: inside it, enemies lose track of you for 5 seconds.'},
+  deathmark:{tags:['physical'],name:'Death Mark',cd:50,mp:35,ult:true,desc:'Mark the enemy you aim at: after 4 seconds it takes half of everything you dealt it again.'},
+  dance:{tags:['melee','movement','physical'],name:'Shadow Dance',cd:60,mp:45,ult:true,desc:'Blink from enemy to enemy, striking up to six of them.'},
+  vanish:{tags:['movement'],name:'Vanish',cd:60,mp:35,ult:true,desc:'Vanish for 4 seconds: enemies lose you, nothing touches you, and your next attack deals four times the damage.'},
+  // the Witch
+  frostbolt:{tags:['projectile','cold','grimoire'],name:'Frostbolt',cd:4,mp:14,desc:'A bolt of ice that slows what it hits by 40% for 3 seconds.'},
+  arc:{tags:['lightning','chain','grimoire'],name:'Arc',cd:5,mp:16,desc:'Lightning that jumps from the enemy you aim at to four more.'},
+  icenova:{tags:['area','cold','grimoire'],name:'Ice Nova',cd:9,mp:22,desc:'A ring of frost bursts from you: it hurts, slows and pushes back everything near.'},
+  raise:{tags:['minion'],name:'Raise the Dead',cd:70,mp:55,ult:true,desc:'Three of the dead rise to fight beside you for 20 seconds.'},
+  meteor:{tags:['area','fire'],name:'Meteor',cd:60,mp:50,ult:true,desc:'After a moment, marked on the ground, a meteor strikes where you aimed.'},
+  blizzard:{tags:['area','cold'],name:'Blizzard',cd:60,mp:50,ult:true,desc:'A storm of ice where you aim, for 5 seconds: it slows and hurts everything inside.'},
 };
-const skillOf=it=>it.school==='faith'?'heal':WTYPES[it.type].skill;
+const skillOf=it=>it.school==='faith'?'heal':WTYPES[it.type].skill;   // a weapon's own skill (the board's "now" skills, and old saves)
 // the classes whose weapon this is (CLASSES, tree.js)
 const classOf=it=>classesFor(it).map(c=>CLASSES[c].name).join(' or ');
 // A grimoire belongs to exactly one school and only ever rolls bonuses from that school's pool.

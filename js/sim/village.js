@@ -97,7 +97,7 @@ function genVillage(){
   // the fields' plots: drawn by render() from each player's own S.plots (a "for sale" sign on the ones you don't own)
   const all={x0:vx(0),y0:vy(0),x1:vx(VW),y1:vy(VH)},spawn=VILLAGE.square;
   return{n:0,village:true,map,rooms:[],start:{x:VOX+27,y:VOY+21,w:2,h:2},boss:{x:0,y:0,w:0,h:0},gates:[],gatesOpen:true,locked:false,
-    enemies,spar,chests:[],drops:[],proj:[],pproj:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
+    enemies,spar,chests:[],drops:[],proj:[],pproj:[],pfx:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
     gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],
     safe:[all],points:[],smiths,traders,talkers,props,wells,stashes,guild,board:{x:vx(22),y:vy(17.3)},fieldDesk,crops:['potato','glowcap'],home:{x:vx(spawn.x),y:vy(spawn.y)}};
 }

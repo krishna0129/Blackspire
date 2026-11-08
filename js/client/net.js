@@ -10,7 +10,7 @@
 
 const DELAY=110;   // ms
 const ONLINE_KEY='blackspire.online';
-const EVENTS={num:addNum,burst,vfx,sfx,shake,log,banner,toast,bagBadge,hurtFlash,bossBar,onDeath,gates:()=>{}};
+const EVENTS={num:addNum,burst,vfx,sfx,shake,log,banner,toast,bagBadge,hurtFlash,bossBar,onDeath,revived,gates:()=>{}};
 
 Object.assign(NET,{
   on:false,ws:null,party:null,people:[],sheets:new Map(),ch:0,others:[],snaps:[],acts:new Map(),aid:0,sendT:0,last:null,bossName:null,
@@ -35,7 +35,7 @@ Object.assign(NET,{
   send(o){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(o));},
   act(name,args,done){const id=++this.aid;if(done)this.acts.set(id,done);this.send({t:'act',id,name,args:args||[]});},
   // one-off presses; a dodge-roll also starts here at once so it feels instant (the server runs its own)
-  press(a){this.send({t:'p',a,aim:P&&P.in.aim!=null?Math.round(P.in.aim*1000)/1000:undefined});if(a==='dodge'&&mode==='play')dodge();},
+  press(a,s){this.send({t:'p',a,s,aim:P&&P.in.aim!=null?Math.round(P.in.aim*1000)/1000:undefined});if(a==='dodge'&&mode==='play')dodge();},
 
   receive(o){
     switch(o.t){
@@ -91,12 +91,14 @@ Object.assign(NET,{
     {const was=fatigueTier(P.fat||0);Object.assign(P,{fat:me.fat,rested:me.rested,awake:me.awake,fireCd:me.fireCd,room:me.room});if(fatigueTier(P.fat)!==was)calcStats();}   // fatigue, as the server keeps it   // in a fight, as the server sees it: the skill board waits
     P.buff=me.buff?{id:me.buff[0],t:me.buff[1]}:null;
     // stamina, poise and a stagger, as the server keeps them; a new push (kb[2] counts them) is played out here
+    // each skill's cooldown, as the server counts it
+    P.cds={};P.cdMax={};for(const k in me.cds||{}){P.cds[k]=me.cds[k][0];P.cdMax[k]=me.cds[k][1];}P.emp=me.emp?{n:me.emp,t:1}:null;P.hot=me.hot?{t:1,rate:0}:null;
     Object.assign(P,{sta:me.sta,poise:me.poise,stagger:me.stagger,bag:me.bag?{x:me.bag[0],y:me.bag[1]}:null});
     if(me.kb&&me.kb[2]>(P.kbN||0)){P.kx=me.kb[0];P.ky=me.kb[1];}if(me.kb)P.kbN=me.kb[2];
-    Object.assign(P,{hp:me.hp,mp:me.mp,food:me.food,drink:me.drink,dead:me.dead,safe:me.safe,locked:me.locked,inv:me.inv,guard:me.guard,skillCd:me.skillCd,skillMax:me.skillMax,potCd:me.potCd,mom:me.mom});
+    Object.assign(P,{hp:me.hp,mp:me.mp,food:me.food,drink:me.drink,dead:me.dead,safe:me.safe,locked:me.locked,inv:me.inv,guard:me.guard,shield:me.shield,potCd:me.potCd,mom:me.mom});
     if(!P.dash)P.dodgeCd=Math.max(P.dodgeCd,me.dodgeCd);
     P.swing=me.swing?{t:me.swing[0],d:me.swing[1],a:P.aim,hit:!!me.swing[2]}:null;
-    G.proj=o.pr;G.pproj=o.pp;G.tele=o.te;G.corpses=o.co||[];G.beams=o.be||[];
+    G.proj=o.pr;G.pproj=o.pp;G.pfx=o.pf||[];G.tele=o.te;G.corpses=o.co||[];G.beams=o.be||[];
     G.drops=o.dr.map(d=>({k:d.k,x:d.x,y:d.y,t:d.t,id:d.id,uid:d.uid,owner:P.id,item:{rarity:d.r}}));
     const g=o.g;if(g.open&&!G.gatesOpen)openGates();G.gate=g.gate;G.bossAwake=g.awake;
     G.bossEnt=g.boss?Object.assign(G.bossEnt||{},g.boss,{name:this.bossName}):null;
@@ -120,7 +122,7 @@ Object.assign(NET,{
     const pprev=new Map(a.pl.map(q=>[q.id,q]));
     for(const q of this.others){const s=b.pl.find(x=>x.id===q.id);if(!s){q.x=-999;continue;}const r=pprev.get(q.id)||s;
       const nx=r.x+(s.x-r.x)*u,ny=r.y+(s.y-r.y)*u;q.moving=Math.hypot(nx-q.x,ny-q.y)>.05;if(q.moving)q.walk+=dt*7;q.x=nx;q.y=ny;
-      Object.assign(q,{dir:s.dir,dead:s.dead,inv:s.inv,guard:s.guard,hp:s.hp,maxHp:s.maxHp,blocking:s.blocking,dash:s.dash,aim:s.a});
+      Object.assign(q,{dir:s.dir,dead:s.dead,inv:s.inv,guard:s.guard,hp:s.hp,maxHp:s.maxHp,blocking:s.blocking,dash:s.dash,aim:s.a,shield:s.sh,emp:s.em,hot:s.ho});
       q.swing=s.swing?{t:s.swing[0],d:s.swing[1],a:s.a??DIR_ANGLE[s.dir],hit:s.swing[0]>=s.swing[1]*.4}:null;}
   },
 });

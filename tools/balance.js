@@ -32,6 +32,7 @@ function scene(floor,start,wkey,attr,kind,cls){
     const s=newState('B',{},'${wkey}','#222','${cls}');s.char.level=${LEVEL(floor)};s.char.${attr}=${Math.round((LEVEL(floor)-1)*3*.7)};s.char.vit=${Math.round((LEVEL(floor)-1)*3*.3)};
     s.equip.weapon=makeWeapon('${wkey.split(':')[0]}',${floor},0,${wkey.includes(':')?`'${wkey.split(':')[1]}'`:'undefined'});
     setWorld(genFloor(${floor},4242));const pl=makePlayer(1,s);G.players=[pl];setPlayer(pl);calcStats();P.hp=ST.maxHp;P.mp=ST.maxMp;
+    s.char.slots.q=skillOf(s.equip.weapon);   // each build uses its weapon's own skill, as before the four slots
     god=false;let lost=0,falls=0,dealt=0,t=0,casts=0;
     const room=G.rooms.filter(r=>r.kind==='room').sort((a,b)=>b.w*b.h-a.w*a.h)[0];
     let foes=[];
@@ -48,7 +49,7 @@ function scene(floor,start,wkey,attr,kind,cls){
       const mx=bd>reach?Math.cos(a):0,my=bd>reach?Math.sin(a):0;
       P.dir=dirOf(a);P.in={mx,my,atk:true,block:false,aim:a};
       const hp=P.hp,before=foes.reduce((n,e)=>n+Math.max(0,e.hp),0);   // before the skill, so its damage counts
-      if(P.skillCd<=0&&P.mp>=SKILLS[ST.skill].mp&&SKILLS[ST.skill].tags.some(x=>DTYPES[x])&&!P.swing){P.aim=DIR_ANGLE[P.dir];useSkill();casts++;}
+      const sk=S.char.slots.q;if(!(P.cds[sk]>0)&&P.mp>=SKILLS[sk].mp&&SKILLS[sk].tags.some(x=>DTYPES[x])&&!P.swing){P.aim=a;useSkill('q');casts++;}
       if(P.hp<ST.maxHp*.35&&P.potCd<=0&&S.potions>0)usePotion();
       simUpdate(${STEP});t+=${STEP};
       dealt+=before-foes.reduce((n,e)=>n+Math.max(0,e.hp),0);lost+=Math.max(0,hp-P.hp);

@@ -27,7 +27,7 @@ const playerById=id=>G.players.find(q=>q.id===id&&!q.gone);
 function newState(name,look,wkey,tint,cls){
   const[wt,school]=wkey.split(':');cls=CLASSES[cls]?cls:CLASS_OF_WEAPON[wt==='grimoire'?'grimoire:'+(school||'magic'):wt];
   return{v:1,seed:(Math.random()*2147483647)|0,
-    char:{name,cls,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0},
+    char:{name,cls,look,custom:null,level:1,xp:0,str:0,agi:0,dex:0,vit:0,int:0,fai:0,mnd:0,spr:0,pts:0,slots:defaultSlots(cls)},
     equip:{weapon:makeWeapon(wt,1,0,school),armor:makeArmor('tunic',1,0,tint),boots:makeBoots('boots',1,0),trinket:null},
     tree:{},prog:{},vars:{},inv:[],shards:0,mats:{scrap:0,ember:0,crystal:0},potions:3,rations:2,flasks:2,empties:0,plots:[],crops:{},food:100,drink:100,stash:[],floor:0,best:1,kills:0,deaths:0,hp:null,
     floors:{},fat:0,rested:0,awake:1e9,fireCd:0,bags:0,room:null,inRoom:false,rumour:0};
@@ -81,7 +81,9 @@ function computeStats(c,e,tree,fat=0){
   st.healPow=(1+st.fai*.05)*(1+(st.p.heal||0)/100);
   st.aspd=WT.aspd*(1+c.agi*.012);
   st.shield=WT.shield||null;
-  st.tags=WT.tags;st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;st.skill=classOK(c.cls,w)?skillOf(w):null;st.offClass=!st.skill;   // an off-class weapon brings no skill
+  st.tags=WT.tags;st.range=WT.range;st.arc=WT.arc;st.kb=WT.kb;
+  // skills: a class weapon brings the class's whole pool (js/sim/skills.js); an off-class weapon brings none
+  st.kit=classOK(c.cls,w)?c.cls:null;st.offClass=!st.kit;st.skill=st.kit&&c.slots?c.slots.q:null;
   st.thrust=!st.magic&&!st.ranged&&WT.arc<50;
   for(const k of['armor','boots','trinket']){const it=e[k];if(!it)continue;const m=itemMult(it);
     st.def+=(it.base.def||0)*m;st.maxHp+=(it.base.hp||0)*m;st.movePct+=it.base.move||0;
@@ -126,6 +128,7 @@ function migrateSave(s){
   migrateFloors(s);
   s.mats=Object.assign({scrap:0,ember:0,crystal:0},s.mats);
   if(!CLASSES[s.char.cls])s.char.cls=CLASS_OF_WEAPON[wkeyOf(s.equip.weapon)];   // saves from before classes: the class of the weapon carried
+  tidySlots(s.char);   // the four skill slots (saves from before them get the class's first skills)
   if(!s.tree||typeof s.tree!=='object'||Array.isArray(s.tree))s.tree={};   // the web became class boards: its points come back
   for(const id in s.tree)if(!TREE[id]||TREE[id].cls!==s.char.cls||!(s.tree[id]>0))delete s.tree[id];
   for(const k of['fat','rested','fireCd','bags','rumour'])if(!(s[k]>=0))s[k]=0;if(!(s.awake>=0))s.awake=1e9;
@@ -143,7 +146,7 @@ function makePlayer(id,save){
   if(save.inRoom){wake(save);save.inRoom=false;}   // logged off in a room at the inn: that was a night's sleep   // every arrival on a floor comes through here, in single player and on the server
   const st=computeStats(save.char,save.equip,save.tree,save.fat||0),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
   return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,sta:st.maxSta,poise:st.maxPoise,food:save.food==null?100:save.food,drink:save.drink==null?100:save.drink,buff:save.buff?Object.assign({},save.buff):null,fat:save.fat||0,rested:save.rested||0,awake:save.awake??1e9,fireCd:save.fireCd||0,room:false,
-    aim:0,face:1,atkCd:0,atkBuf:0,skillCd:0,skillMax:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
+    aim:0,face:1,atkCd:0,atkBuf:0,cds:{},cdMax:{},emp:null,shield:0,shieldT:0,deadAt:-99,deathLost:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
     guard:0,hot:null,ward:0,tp:0,in:{mx:0,my:0,atk:false,block:false,aim:null},lastBreak:-9,lastSheath:-9,lastNoMana:-9,
     kx:0,ky:0,kbN:0,stagger:0,staT:-9,poiseT:-9,parryAt:-9,wasBlock:false,bag:null};
 }

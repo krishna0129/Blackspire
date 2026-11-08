@@ -16,8 +16,8 @@ health), and falls count how often it died and was stood up again.
 | Greatsword | 58 | ⚠ +76% | 1.4 s | 0.0 | 7.4 s | 0.2 | 0, 0 |
 | Mace | 28 | -15% | 4.3 s | 0.1 | 17.8 s | 0.3 | 0, 0 |
 | Dagger | 33 | +0% | 4 s | 0.1 | 16.4 s | 0.7 | 0, 0 |
-| Bow | 33 | +0% | 6.6 s | 0.2 | 12.8 s | 0.6 | 0, 0 |
-| Grimoire (magic) | 28 | -15% | 5.4 s | 0.2 | 18.3 s | 0.7 | 0, 0 |
+| Bow | 33 | +0% | 6.6 s | 0.2 | 12.8 s | 0.7 | 0, 0 |
+| Grimoire (magic) | 28 | -15% | 3.7 s | 0.1 | 18.3 s | 0.7 | 0, 0 |
 | Grimoire (faith) | 19 | ⚠ -42% | 10.2 s | 0.4 | 25.4 s | 1.1 | 0, 0 |
 
 ## Floor 2 (level 10)
@@ -25,12 +25,12 @@ health), and falls count how often it died and was stood up again.
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
 | Longsword | 50 | +9% | 7.4 s | 0.2 | 11.1 s | 0.5 | 0, 0 |
-| Spear | 51 | +11% | 8.2 s | 0.2 | 10.7 s | 0.3 | 0, 0 |
-| Greatsword | 83 | ⚠ +80% | 6.6 s | 0.1 | 9.8 s | 0.1 | 0, 0 |
+| Spear | 51 | +11% | 8.4 s | 0.2 | 11.4 s | 0.4 | 0, 0 |
+| Greatsword | 83 | ⚠ +80% | 7.6 s | 0.3 | 9.8 s | 0.1 | 0, 0 |
 | Mace | 43 | -7% | 11.8 s | 0.3 | 16.8 s | 0.4 | 0, 0 |
 | Dagger | 44 | -4% | 10.2 s | 0.4 | 17.7 s | 0.9 | 0, 0 |
-| Bow | 48 | +4% | 15.6 s | 0.7 | 15.9 s | 0.6 | 0, 0 |
-| Grimoire (magic) | 42 | -9% | not cleared | 2.3 | not killed in 5 min | 14.4 | 0, 12 |
+| Bow | 48 | +4% | 15.9 s | 0.5 | 14.9 s | 0.7 | 0, 0 |
+| Grimoire (magic) | 42 | -9% | not cleared | 3.1 | 35.9 s | 2.1 | 1, 0 |
 | Grimoire (faith) | 30 | ⚠ -35% | not cleared | 3.5 | not killed in 5 min | 13.0 | 1, 10 |
 
 ## Floor 3 (level 14)
@@ -38,12 +38,12 @@ health), and falls count how often it died and was stood up again.
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
 | Longsword | 78 | +18% | 14.6 s | 0.6 | 16.2 s | 0.2 | 0, 0 |
-| Spear | 76 | +15% | 13 s | 0.5 | 11.1 s | 0.2 | 0, 0 |
-| Greatsword | 128 | ⚠ +94% | 8.6 s | 0.1 | 7.4 s | 0.1 | 0, 0 |
+| Spear | 76 | +15% | 11.5 s | 0.5 | 10.8 s | 0.2 | 0, 0 |
+| Greatsword | 128 | ⚠ +94% | 7.4 s | 0.2 | 7.4 s | 0.1 | 0, 0 |
 | Mace | 63 | -5% | 14.9 s | 0.5 | 15.2 s | 0.1 | 0, 0 |
 | Dagger | 48 | ⚠ -27% | 15.5 s | 0.7 | 21.6 s | 0.3 | 0, 0 |
-| Bow | 69 | +5% | 26.2 s | 1.4 | 18.1 s | 0.3 | 0, 0 |
-| Grimoire (magic) | 62 | -6% | 17.8 s | 1.1 | 22.1 s | 0.6 | 0, 0 |
+| Bow | 69 | +5% | 25.7 s | 1.4 | 19.1 s | 0.3 | 0, 0 |
+| Grimoire (magic) | 62 | -6% | 21.1 s | 1.3 | 21.2 s | 0.6 | 0, 0 |
 | Grimoire (faith) | 44 | ⚠ -33% | not cleared | 1.7 | 29.1 s | 0.6 | 0, 0 |
 
 ## Marked
