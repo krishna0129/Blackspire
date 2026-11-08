@@ -758,7 +758,18 @@ function frame3d(){
     else if(q.line){for(const[l,op]of[[q.len,.22],[q.len*p,.3]]){const g=take(P_LANE);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.set(wx(Math.max(l,.1)),1,wx(26));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
     else{disc(x,z,wx(q.r),'#ff2a1a',.16);disc(x,z,wx(q.r)*p,'#ff2a1a',.3);ring(x,z,wx(q.r),'#ff4a2a',.9);}}
   // your side's skills that land later (Judgement): a gold mark that fills as the strike comes
-  for(const q of G.pfx||[])if(q.mark){const p=clamp(q.t/q.d,0,1),x=wx(q.x),z=wz(q.y);disc(x,z,wx(q.r)*p,'#d9b24a',.22);ring(x,z,wx(q.r),'#e8c060',.45,.05);}
+  for(const q of G.pfx||[]){const p=clamp(q.t/q.d,0,1),x=wx(q.x),z=wz(q.y),r=wx(q.r||8),tt=performance.now()/1000;
+    if(q.mark){const fire=q.k==='meteor';disc(x,z,r*p,fire?'#ff6a2a':'#d9b24a',.22);ring(x,z,r,fire?'#ff8a2a':'#e8c060',.45,.05);
+      if(fire)orb(x,1+14*(1-p),z,'#ff8a2a',.5,30);continue;}
+    if(!q.vis)continue;const fade=Math.min(1,(q.d-q.t)*2);
+    if(q.k==='pool'){disc(x,z,r,'#5aa040',.3*fade);ring(x,z,r,'#8fe060',.5*fade);if(Math.random()<.3)glow(x+rand(-r,r)*.6,.2,z+rand(-r,r)*.6,'#8fe060',.3,.6);}
+    else if(q.k==='rain'){ring(x,z,r,'#c3c0b0',.4*fade);disc(x,z,r,'#c3c0b0',.08*fade);}
+    else if(q.k==='smoke'){for(let i=0;i<6;i++){const a=i*1.05+tt*.3;glow(x+Math.cos(a)*r*.5,.8+.3*Math.sin(tt+i),z+Math.sin(a)*r*.5,'#5a5a66',r*1.1,.45*fade);}disc(x,z,r,'#2a2a33',.4*fade);}
+    else if(q.k==='blizzard'){disc(x,z,r,'#9fd8ff',.14*fade);ring(x,z,r,'#cfe8ff',.5*fade);for(let i=0;i<5;i++)glow(x+rand(-r,r)*.8,rand(.5,3),z+rand(-r,r)*.8,'#ffffff',.25,.8*fade);}
+    else if(q.k==='vortex'){for(let i=0;i<4;i++){const a=tt*9+i*Math.PI/2;arc(x,z,1.1,r,.35,a,a+.7,'#cfe8ff',.8*fade);}}
+    else if(q.k==='ballista'){const b=take(P_ARROW);b.position.set(x,.7,z);b.rotation.y=-(q.a||0);ring(x,z,r*1.5,'#c9a46a',.6);orb(x,.5,z,'#8a6a3a',.25,0);}
+    else if(q.k==='minion'){glow(x,1.1,z,'#9be08a',1.4,.7*fade);orb(x,1.1,z,'#cfffc8',.18,8);ring(x,z,.45,'#9be08a',.5*fade);}
+  }
   // the Pale Collector's lantern sweep
   if(G.beams)for(const B of G.beams){const L=beamReach(B.x,B.y,B.a,B.len),g=take(P_LANE);g.position.set(wx(B.x),.1,wz(B.y));g.rotation.y=-B.a;g.scale.set(wx(L),1,wx(12));g.userData.m.material.color.set('#e2b93b');g.userData.m.material.opacity=.55;
     const c=take(P_LANE);c.position.set(wx(B.x),.11,wz(B.y));c.rotation.y=-B.a;c.scale.set(wx(L),1,wx(4));c.userData.m.material.color.set('#ffe9a8');c.userData.m.material.opacity=.8;
@@ -769,7 +780,9 @@ function frame3d(){
   for(const p of G.proj){const x=wx(p.x),z=wz(p.y);if(p.arrow){const a=take(P_ARROW);a.position.set(x,1.4,z);a.rotation.y=-(p.a??Math.atan2(p.vy,p.vx));}else orb(x,1.4,z,p.c||'#6fd6e6',.12,8);}
   for(const p of G.pproj){const x=wx(p.x),z=wz(p.y);
     if(p.k==='fire')orb(x,1.5,z,'#ff8a2a',.22,22);
-    else if(p.k==='arrow'){const a=take(P_ARROW);a.position.set(x,1.4,z);a.rotation.y=-(p.a??Math.atan2(p.vy,p.vx));}
+    else if(p.k==='frost')orb(x,1.5,z,'#9fd8ff',.16,16);
+    else if(p.k==='arrow'){const a=take(P_ARROW);a.position.set(x,1.4,z);a.rotation.y=-(p.a??Math.atan2(p.vy,p.vx));
+      const c={light:'#8fd0ff',caustic:'#8fe060',split:'#e8e8f0',tornado:'#ffffff'}[p.f];if(c)glow(x,1.4,z,c,.8,.7);}
     else orb(x,1.5,z,'#b9a8ff',.11,6);}
   // what you can pick up: a gem of its colour, bobbing; good gear casts a beam
   for(const d of G.drops){if(d.owner!==P.id)continue;const m=take(P_GEM),x=wx(d.x),z=wz(d.y);

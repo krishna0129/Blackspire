@@ -245,11 +245,11 @@ class Game{
       en:G.enemies.filter(e=>!e.dead&&(e.boss||near(e))).map(e=>({id:e.id,type:e.type,x:r1(e.x),y:r1(e.y),dir:e.dir,face:e.face,state:e.state,t:r1(e.t||0),hopT:e.hopT,
         flash:e.flash>0?1:0,stun:e.stun>0?1:0,hurtT:e.hurtT>0?1:0,hp:Math.ceil(e.hp),maxHp:e.maxHp,elite:e.elite,boss:!!e.boss,sprite:e.sprite||null,name:e.name||null,moving:!!e.moving,lunge:e.lunge>0?1:0,ph:r1(e.ph),burrowed:!!e.burrowed,cx:e.state==='channel'?e.cx:undefined,cy:e.state==='channel'?e.cy:undefined,po:e.maxPoise?Math.round(e.poise/e.maxPoise*100)/100:undefined,sg:e.staggerT>0?1:0})),
       pr:G.proj.filter(near).map(q=>({x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),c:q.c,arrow:!!q.arrow,a:q.a})),
-      pp:G.pproj.filter(near).map(q=>({k:q.k,x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),a:q.a})),
+      pp:G.pproj.filter(near).map(q=>({k:q.k,f:q.f,x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),a:q.a})),
       dr:G.drops.filter(d=>d.owner===me.id).map(d=>({uid:d.uid,k:d.k,x:r1(d.x),y:r1(d.y),t:r1(d.t),r:d.item?d.item.rarity:0,id:d.k==='mat'?d.id:undefined})),
       co:G.corpses.filter(near).map(c=>({x:r1(c.x),y:r1(c.y)})),
       be:(G.beams||[]).map(B=>({x:r1(B.x),y:r1(B.y),a:B.a,va:B.va,len:B.len,t:r1(B.t)})),
-      pf:(G.pfx||[]).filter(q=>q.mark).map(q=>({x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,mark:1})),
+      pf:(G.pfx||[]).filter(q=>q.mark||q.vis).map(q=>({k:q.k,x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,mark:q.mark,vis:q.vis,a:q.a,i:q.i})),
       te:G.tele.map(q=>({x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,line:!!q.line,cone:!!q.cone,a:q.a,len:q.len,half:q.half})),
       g:{open:G.gatesOpen,gate:G.gate,awake:G.bossAwake,boss:G.bossEnt?{hp:Math.ceil(G.bossEnt.hp),maxHp:G.bossEnt.maxHp,dead:G.bossEnt.dead,poise:G.bossEnt.maxPoise?Math.round(G.bossEnt.poise/G.bossEnt.maxPoise*100)/100:1,maxPoise:1,staggerT:G.bossEnt.staggerT>0?1:0}:null},
       ev:m.out.splice(0)};

@@ -28,8 +28,9 @@ budget rules and the balance runner do not wait, and can be built first.
 
 ## The playtest's skills (decided)
 
-**In the game:** the four slots and choosing skills on the board, a cooldown for each skill, empowered attacks, and the
-Templar's whole kit. The other classes' new skills come next, one class at a time.
+**In the game:** the four slots and choosing skills on the board (the loadout above the board), a cooldown for each
+skill, empowered attacks, and **every class's whole kit and its three ultimates**. Raise the Dead summons spectral orbs
+until the zombies get a model of their own (step 7).
 
 **Four slots, on Q, E, C and X** ([combat.md](combat.md#keys)). **X holds the class's ultimate**: a big skill, a long
 cooldown and a lot of mana. Each class has more skills than slots and chooses: three of its everyday skills for Q,
@@ -49,7 +50,7 @@ classes and the Templar: Heavy Strike, Double Strike, Viper Strike and Smite.
 | Witch | **Fireball**, Frostbolt (slows), Arc (lightning that jumps), Ice Nova (a ring of frost around you) | Raise the Dead (a pack of zombies), Meteor (a marked, delayed fire impact), Blizzard (a wide slowing storm) |
 | Templar | **Heal**, Party Heal, Renewal (healing over time), Aegis (a shield on an ally), Revive (brings a fallen ally back within about 15 s of their fall, with what they carried: [multiplayer.md](multiplayer.md#falling)), Smite (empowered), **Bulwark** | Judgement (a storm of holy smites), Mass Heal (a massive heal for the whole party), Resurrection (brings every fallen ally back, in the same window) |
 
-Skills in bold are in the game today. The rest are built for the playtest (names are working names). The Templar has
+All of them are in the game (names are working names; the bold ones were there before step 2). The Templar has
 the most to choose from, as the one healer ([classes.md](classes.md)).
 
 ## Classes and boards

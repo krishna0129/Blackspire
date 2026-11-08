@@ -60,6 +60,8 @@ function damageEnemy(e,mult,o={}){
   if(ST.p.execute&&e.hp/e.maxHp<.3)more+=ST.p.execute;
   if(ST.p.giant&&(e.boss||e.elite))more+=ST.p.giant;
   if(e.sunder>0)more+=25;
+  if(P.berserkT>0)more+=40;                                    // Berserk
+  if(e.tauntBy===P.id&&G.time<e.tauntT)more+=40;              // Challenge: it takes more from the one who marked it
   if(e.staggerT>0)more+=COMBAT.epoise.more;   // its poise is broken: it reels, and takes more
   d*=1+more/100;
   const T=ETYPES[e.type];
@@ -71,6 +73,11 @@ function damageEnemy(e,mult,o={}){
   d=Math.max(1,Math.round(d));
   e.hp-=d;e.flash=.09;e.hurtT=4;if(e.state==='idle'){if(e.boss)wakeBoss();else e.state='chase';}
   wearPoise(e,ST.dmg*mult*ST.pz*(o.pz??1));
+  // what skills leave on a blow: a slow, poison, a Death Mark counting, Berserk's healing
+  if(o.slow){e.slowT=Math.max(e.slowT||0,o.slow);e.slowF=.6;}
+  if(o.poison){e.bleedT=4;e.bleedDps=Math.max(e.bleedDps||0,ST.dmg*.6/4);e.bleedAcc=e.bleedAcc||0;}
+  if(e.mark&&e.mark.by===P.id)e.mark.acc+=d;
+  if(P.berserkT>0)heal(d*.1);
   addNum(e.x,e.y-e.r-5,d,resisted?'resist':crit?'crit':bane?'bane':'hit');
   if(resisted){if(G.time-e.resT>1.8){e.resT=G.time;addNum(e.x,e.y-e.r-13,'RESIST','resist');}}
   burst(e.x,e.y,crit?6:3,crit?'#ffe9a8':'#b9b4c8',crit?70:45);
@@ -163,13 +170,17 @@ function heal(v){P.hp=Math.min(ST.maxHp,P.hp+v);}
 // whoever fired it). Armour and boots forged against the attacker's family take their share off the damage.
 // ground = it comes up from under your feet, so no shield can stop it: the answer is to move.
 function hurtPlayer(dmg,src,sure,from,ground){
-  if(P.inv>0||P.dead||god)return;
+  if(P.inv>0||P.dead||god||P.vanishT>0)return;   // Vanish: nothing touches you
   const o=from||src,C=COMBAT;
   const type=(from&&from.dtype)||(src&&ETYPES[src.type]&&ETYPES[src.type].dtype)||'physical',magic=type!=='physical';
   const heavy=!magic&&!!(sure||(src&&(src.boss||(ETYPES[src.type]&&ETYPES[src.type].heavy))));
   const facing=arc=>o&&Math.abs(angDiff(Math.atan2(o.y-P.y,o.x-P.x),P.aim))<=arc*Math.PI/360;
   // Parry: block pressed just before the blow, facing it, with a shield, a sword or a dagger. Nothing gets through,
   // and the attacker is staggered (a boss only briefly). Telegraphed area attacks and the ground can't be parried.
+  // Riposte: for a moment every blow from the front is parried, free, and answered hard
+  if(P.riposteT>0&&!sure&&!ground&&facing(160)){P.inv=.15;addNum(P.x,P.y-16,'RIPOSTE','crit');sfx('block');
+    if(src&&!src.dead&&src.maxHp){src.stun=Math.max(src.stun||0,src.boss?C.parry.bossStun:C.parry.stun);damageEnemy(src,3,{crit:true,melee:true,tags:SKILLS.riposte.tags});slashFx(Math.atan2(src.y-P.y,src.x-P.x),100,ST.range+6);}
+    return;}
   if(ST.parry&&!sure&&!ground&&G.time-P.parryAt<C.parry.win&&facing(ST.shield?SHIELDS[ST.shield].arc:C.parry.arc)&&P.sta>=C.parry.cost){
     P.sta-=C.parry.cost;P.staT=G.time;P.parryAt=-9;P.inv=.15;
     addNum(P.x,P.y-16,'PARRY','evade');sfx('block');burst(P.x+Math.cos(P.aim)*8,P.y+Math.sin(P.aim)*8,8,'#ffe9a8',70);
@@ -190,7 +201,7 @@ function hurtPlayer(dmg,src,sure,from,ground){
     }
   }
   if(!sure&&ST.evade>0&&Math.random()*100<ST.evade){P.inv=.2;addNum(P.x,P.y-16,'DODGE','evade');return;}
-  let d=dmg*100/(100+ST.def);if(P.ward>0&&ST.p.ward)d*=1-ST.p.ward/100;if(P.guard>0)d*=.4;
+  let d=dmg*100/(100+ST.def);if(P.ward>0&&ST.p.ward)d*=1-ST.p.ward/100;if(P.guard>0)d*=.4;if(P.cryT>0)d*=.7;   // Enduring Cry
   d*=1-(ST.res[famOf(from)||famOf(src)]||0)/100;
   d*=1-(ST.eres[type]||0)/100;   // resistances from the skill tree
   d=Math.max(1,Math.round(d));
@@ -199,8 +210,8 @@ function hurtPlayer(dmg,src,sure,from,ground){
   P.hp-=d;P.inv=.45;P.fightT=G.time;shake(4,true);addNum(P.x,P.y-16,d,'hurt');sfx('hurt');hurtFlash();
   // What the blow does to you: a push (magic and heavy blows push further), a stagger from a heavy one, and perhaps
   // an interruption: a spell you are casting holds by focus (Mind), anything else by poise (armour weight).
-  push(o,magic?C.kb.magic:heavy?C.kb.heavy:C.kb.light);
-  if(heavy)P.stagger=Math.max(P.stagger,C.kb.stagger);
+  if(!(P.berserkT>0)){push(o,magic?C.kb.magic:heavy?C.kb.heavy:C.kb.light);   // Berserk: nothing knocks you back
+    if(heavy)P.stagger=Math.max(P.stagger,C.kb.stagger);}
   const casting=P.swing&&!P.swing.hit&&ST.magic;let broken=false;
   if(casting)broken=Math.random()*100>=ST.focus;
   else{P.poise-=heavy?C.poise.heavy:C.poise.light;P.poiseT=G.time;if(P.poise<=0){broken=true;P.poise=ST.maxPoise;P.stagger=Math.max(P.stagger,C.kb.stagger);}}
@@ -233,7 +244,7 @@ function slashFx(a,arc,r,dir=1,d=.16){vfx({k:'slash',x:P.x,y:P.y,a,arc,r,dir,t:0
 function sheathed(){if(G.time-P.lastSheath>3.5){P.lastSheath=G.time;log('Weapons stay sheathed in a safe room.');}}
 /* ---------- shots and spells ---------- */
 function castBolt(mult=1){const a=P.aim,v=190;G.pproj.push({k:'bolt',owner:P.id,mult,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
-function fireArrow(a,mult,tags,use){const v=260;G.pproj.push({k:'arrow',owner:P.id,a,mult,tags,use,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
+function fireArrow(a,mult,tags,use,f){const v=260;G.pproj.push({k:'arrow',f,owner:P.id,a,mult,tags,use,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:ST.range/v});}
 // Fire burns bodies to ash: they can no longer be raised.
 function burnCorpses(x,y,R){G.corpses=G.corpses.filter(c=>{if(hyp(c.x-x,c.y-y)>R+4)return true;burst(c.x,c.y,10,'#f08a3c',50);burst(c.x,c.y,6,'#3a3a3a',30);return false;});}
 function explode(x,y,use){

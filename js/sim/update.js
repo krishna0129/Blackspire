@@ -9,8 +9,11 @@
 // sealed in the boss chamber; the boss only cares about whoever is sealed in with it, if anyone is.
 function targetFor(e){
   const inside=e.boss&&G.players.some(q=>q.locked&&!q.dead&&!q.gone);let best=null,bd=1e9;
-  for(const pl of G.players){if(pl.dead||pl.gone)continue;if(e.boss?inside&&!pl.locked:pl.safe||pl.locked)continue;
+  // challenged: it fights the one who marked it, while that one stands
+  if(e.tauntBy!=null&&G.time<e.tauntT){const t=playerById(e.tauntBy);if(t&&!t.dead&&!t.gone)return t;}
+  for(const pl of G.players){if(pl.dead||pl.gone||hidden(pl))continue;if(e.boss?inside&&!pl.locked:pl.safe||pl.locked)continue;
     const d=hyp(pl.x-e.x,pl.y-e.y);if(d<bd){bd=d;best=pl;}}
+  if(!best&&G.players.some(q=>!q.dead&&!q.gone&&hidden(q)))return null;   // everyone it could chase is hidden: it stands, lost
   return best||G.players.find(q=>!q.gone)||null;
 }
 const pull=(d,pl,dt)=>{const dist=hyp(d.x-pl.x,d.y-pl.y);if(dist<46){const s=140*dt/Math.max(dist,1);d.x+=(pl.x-d.x)*s;d.y+=(pl.y-d.y)*s;}};
@@ -32,11 +35,15 @@ function simUpdate(dt){
     const fire=p.k==='fire';
     for(let i=0;i<2&&p.life>0;i++){
       const ox=p.x,oy=p.y;p.x+=p.vx*dt/2;p.y+=p.vy*dt/2;
-      if(solid(p.x,p.y)){p.life=0;if(fire)explode(ox,oy,p.use);else burst(ox,oy,3,p.k==='arrow'?'#8d8b98':'#cfc8ff',30);break;}
+      if(solid(p.x,p.y)){p.life=0;if(fire)explode(ox,oy,p.use);else{shotEnds(p,ox,oy);burst(ox,oy,3,p.k==='arrow'?'#8d8b98':'#cfc8ff',30);}break;}
       for(const e of G.enemies){if(e.dead||hyp(e.x-p.x,e.y-p.y)>e.r+(fire?4:3))continue;
-        p.life=0;if(fire)explode(p.x,p.y,p.use);else if(damageEnemy(e,p.mult||1,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use}))gainMomentum();break;}
+        if(p.f==='split'){if((p.hit||(p.hit=new Set())).has(e))continue;p.hit.add(e);damageEnemy(e,p.mult,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use});continue;}   // it goes on through
+        p.life=0;if(fire)explode(p.x,p.y,p.use);
+        else{if(damageEnemy(e,p.mult||1,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use,slow:p.k==='frost'?3:0}))gainMomentum();
+          if(p.f==='light')chain(e,3,.8,p.tags,p.use);shotEnds(p,p.x,p.y);}
+        break;}
     }
-    if(p.life>0){p.life-=dt;if(p.life<=0&&fire)explode(p.x,p.y,p.use);}
+    if(p.life>0){p.life-=dt;if(p.life<=0){if(fire)explode(p.x,p.y,p.use);else shotEnds(p,p.x,p.y);}}
     if(fire&&p.life>0)part({x:p.x+rand(-1,1),y:p.y+rand(-1,1),vx:rand(-6,6),vy:-10,t:0,d:.3,c:pick(['#f08a3c','#d9534f','#ffe9a8'])});
   }
   G.pproj=G.pproj.filter(p=>p.life>0);
@@ -104,7 +111,8 @@ function updatePlayer(dt){
   if(G.time-P.poiseT>COMBAT.poise.delay)P.poise=Math.min(ST.maxPoise,P.poise+COMBAT.poise.regen*dt);
   if(P.stagger>0)P.stagger-=dt;
   P.atkCd-=dt;for(const k in P.cds)if(P.cds[k]>0)P.cds[k]=Math.max(0,P.cds[k]-dt);
-  if(P.emp){P.emp.t-=dt;if(P.emp.t<=0)P.emp=null;}if(P.shieldT>0){P.shieldT-=dt;if(P.shieldT<=0)P.shield=0;}P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
+  if(P.emp){P.emp.t-=dt;if(P.emp.t<=0)P.emp=null;}
+  for(const k of['berserkT','riposteT','cryT','vanishT'])if(P[k]>0)P[k]-=dt;if(P.shieldT>0){P.shieldT-=dt;if(P.shieldT<=0)P.shield=0;}P.potCd=Math.max(0,P.potCd-dt);P.eatCd=Math.max(0,P.eatCd-dt);P.inv=Math.max(0,P.inv-dt);
   if(P.momT>0){P.momT-=dt;if(P.momT<=0)P.mom=0;}
   if(P.food>=NEED_LOW)heal(ST.regen*(buff==='hearty'?1.5:buff==='morning'?1.25:1)*dt);
   updateNeeds(dt);if(P.dead)return;
@@ -125,10 +133,10 @@ function updatePlayer(dt){
   }
   if(P.swing){const s=P.swing;s.t+=dt;
     if(!s.hit&&s.t>=s.d*.4){s.hit=true;
-      const em=takeEmpower();   // an empowered attack (Smite and the like) hits harder
-      if(ST.magic)castBolt(em);
-      else if(ST.ranged)fireArrow(P.aim,em);
-      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,em,{melee:true});
+      const E=takeEmpower();   // an empowered attack (Smite and the like) hits harder
+      if(ST.magic)castBolt(E.m);
+      else if(ST.ranged)fireArrow(P.aim,E.m);
+      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,E.m,{melee:true,pz:E.pz,poison:E.poison});
       if(ST.thrust)vfx({k:'line',x:P.x,y:P.y,a:s.a,len:ST.range+5,t:0,d:.1});else slashFx(s.a,ST.arc,ST.range,s.dir,.14);}}
     if(s.t>=s.d)P.swing=null;}
 }
@@ -167,8 +175,14 @@ function steerPlayer(dt){
     P.moving=m>.1&&sp>0;if(P.moving)P.walk+=dt*(sp/64)*7;
   }
 }
+// where a skill's shot stops (it hit, met a wall, or ran out): a Caustic Arrow leaves poison, a Tornado Shot bursts
+function shotEnds(p,x,y){
+  if(p.f==='caustic')later({k:'pool',x,y,r:26,d:5,tick:.5,use:p.use,vis:1});
+  else if(p.f==='tornado')later({k:'tornado',x,y,d:0,use:p.use});
+}
 function updateEnemy(e,dt){   // enemies never step into a safe room, whether walking or knocked back
   const ox=e.x,oy=e.y,T=ETYPES[e.type],sp=e.speed,thorny=!T.plant&&!e.boss&&!e.burrowed&&onThorns(e.x,e.y);
+  if(e.slowT>0){e.slowT-=dt;e.speed*=e.slowF||.6;}   // slowed by frost
   if(thorny){e.speed*=THORN_SLOW;e.thornT=(e.thornT||0)-dt;
     if(e.thornT<=0){e.thornT=.7;const d=Math.max(1,Math.round(THORN_DMG*G.dmgM));e.hp-=d;e.hurtT=4;addNum(e.x,e.y-e.r-5,d,'bleed');if(e.hp<=0){killEnemy(e);e.speed=sp;return;}}}
   updateEnemyCore(e,dt);e.speed=sp;

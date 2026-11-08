@@ -1,7 +1,7 @@
 # Combat and movement
 
 Status: **mostly in the game** (build plan step 1): aiming, keys, the dash and stamina, parrying and blocking, hit
-reactions, poise and focus, enemies' poise. Still to come: skill keys E, C and X and the classes' mana (step 2), mana
+reactions, poise and focus, enemies' poise. Skill keys Q, E, C and X and the classes' mana came with step 2. Still to come: mana
 potions, potion sizes and the death rule (step 3). The numbers (`COMBAT` in data.js) are first guesses, to be tuned
 by playing and the balance runner ([skills.md](skills.md#the-balance-runner)). Part of the road to the first
 friends' playtest ([roadmap](../roadmap.md)).
