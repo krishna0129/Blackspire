@@ -77,7 +77,7 @@ const BOARD_PLAN={
   templar:[
     [S_('Heal',{now:'heal',vars:[V('Holy Relic',{k:'uses',n:60}),V('Auras',{k:'uses',n:120})]}),
      S_('Bulwark',{now:'guard',vars:[V('Molten Shell',{k:'uses',n:60}),V('Bone Armour',{k:'uses',n:120})]}),P_('Devotion',{heal:5},5)],
-    [S_('Smite',{soon:true,vars:[V('Consecrated Ground',{k:'multi',min:3,n:50}),V('Holy Strike',{k:'kills',n:120})]}),P_('Faithful',{mregen:6},5),P_('Plated',{defPct:4},5)],
+    [S_('Smite',{now:'smite',vars:[V('Consecrated Ground',{k:'multi',min:3,n:50}),V('Holy Strike',{k:'kills',n:120})]}),P_('Faithful',{mregen:6},5),P_('Plated',{defPct:4},5)],
     [S_('Essence Drain',{soon:true,vars:[V('Contagion',{k:'multi',min:3,n:40}),V('Blight',{k:'fam',fam:'undead',n:60})]}),P_('Sanctity',{res:{rot:6}},3),P_('Zeal',{inc:{lightning:6}},3)],
     [S_('Storm Call',{soon:true,vars:[V('Orb of Storms',{k:'uses',n:60}),V('Shock Nova',{k:'multi',min:3,n:50})]}),P_('Guardian',{hpPct:4},3),P_('Mender',{regen:.4},3)],
     [K_('Divine Judgement',{inc:{lightning:15,fire:15}}),K_('Sanctuary',{heal:20,mana:30,mregen:20})],
@@ -150,8 +150,7 @@ function treeApply(st,tree){
 }
 // One line saying what a node does (per rank), for the board.
 function treeDesc(q){
-  if(q.k==='skill')return q.soon?'A skill that comes with the new combat.':`Your class knows it from the start. Its weapon: ${q.now==='guard'?'the mace':q.now==='heal'?'the grimoire of faith':q.now==='fireball'?'the grimoire of magic':
-    {circle:'the longsword',pierce:'the spear',sunder:'the greatsword',volley:'the bow',blink:'the dagger'}[q.now]}.`;
+  if(q.k==='skill')return q.soon?'A skill that comes in a later build.':'Your class knows it from the start, with any of its weapons. Put it in a slot above to use it; its forms open here.';
   const out=[],f=q.fx,pct=(v,s)=>`+${v}% ${s}`;
   for(const k in f){const v=f[k];
     if(k==='inc')for(const t in v)out.push(pct(v[t],`${TAGS[t].name.toLowerCase()} damage`));

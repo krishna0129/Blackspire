@@ -55,13 +55,19 @@ test('a room at the inn: rented for the day, slept in for a clean slate and a we
   assert.strictEqual(run(`P.fat+'|'+P.rested+'|'+S.inRoom`),'0|3600|false');
 });
 
-test('a sleeping bag clears fatigue in a safe room, without the bonus; a campfire takes half, once an hour',()=>{
+test('a sleeping bag is laid out in a safe room, then slept in; no bonus; a campfire takes half, once an hour',()=>{
   const run=world(1);
   run(`S.bags=1;P.fat=4*3600;P.safe=false;`);
-  assert.strictEqual(run(`runAction('sleepBag',[])`),false,'not out in the open');
+  assert.strictEqual(run(`runAction('layBag',[])`),false,'not out in the open');
   run(`P.safe=true;`);
+  assert.strictEqual(run(`runAction('sleepBag',[])`),false,'it has to be laid out first');
+  assert.strictEqual(run(`runAction('layBag',[])`),true);
+  assert.strictEqual(run(`S.bags+'|'+!!P.bag`),'0|true','laid out: used up, lying on the floor');
+  run(`P.x+=60;`);
+  assert.strictEqual(run(`runAction('sleepBag',[])`),false,'you sleep in it by going to it');
+  run(`P.x-=60;`);
   assert.strictEqual(run(`runAction('sleepBag',[])`),true);
-  assert.strictEqual(run(`P.fat+'|'+P.rested+'|'+S.bags`),'0|0|0');
+  assert.strictEqual(run(`P.fat+'|'+P.rested+'|'+S.bags+'|'+P.bag`),'0|0|0|null');
   assert.ok(run(`TRADER_SELLS.food.supplies.includes('bag')`),'sold at the food and drink stall');
   run(`const f=G.fires[0];P.x=f.x+10;P.y=f.y;P.fat=4000;`);
   assert.strictEqual(run(`runAction('restFire',[])`),true);

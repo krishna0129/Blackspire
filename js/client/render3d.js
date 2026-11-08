@@ -550,10 +550,18 @@ function heroActor(id,wt){
   if(!a){a=makeActor(key,h);ACTORS.set(id,a);}
   return a;
 }
+// What skills leave on a player: an Aegis (a pale shield around them), an empowered weapon (a gold glow in hand),
+// healing over time (green motes rising)
+function auras(pl){
+  if(pl.dead)return;const x=wx(pl.x),z=wz(pl.y),t=performance.now()/1000;
+  if(pl.shield>0){ring(x,z,.95,'#cfe4ff',.55+.2*Math.sin(t*4),.08);glow(x,1.4,z,'#cfe4ff',1.6,.18);}
+  if(pl.emp){const a=typeof pl.aim==='number'?pl.aim:0;glow(x+Math.cos(a)*.7,1.3,z+Math.sin(a)*.7,'#ffe9a8',.9,.6+.2*Math.sin(t*9));}
+  if(pl.hot){for(let i=0;i<3;i++){const k=(t*.8+i/3)%1;glow(x+Math.cos(i*2.1)*.5,.3+k*2.4,z+Math.sin(i*2.1)*.5,'#9be08a',.35,(1-k)*.7);}}
+}
 function animHero(a,pl,wt,dt){
   const h=HERO[wt]||HERO.sword;a.root.position.set(wx(pl.x),0,wz(pl.y));a.root.visible=pl.x>-900;
   if(pl.dead){if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
-  const sw=pl.swing;let ang=DIR_ANGLE[pl.dir||0];
+  const sw=pl.swing;let ang=typeof pl.aim==='number'?pl.aim:DIR_ANGLE[pl.dir||0];   // the mouse's aim, or the four-way facing
   if(sw){ang=sw.a??ang;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing
       const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;
       play(a,clip,{once:true,restart:true,fade:.06,speed:CLIP[clip].duration/dur});}
@@ -561,7 +569,7 @@ function animHero(a,pl,wt,dt){
   a.lock-=dt;
   if(a.lock<=0){
     if(pl.dash)play(a,'Dodge_Forward',{once:true,speed:1.6,fade:.08});
-    else if(pl.blocking)play(a,'Blocking',{fade:.1});
+    else if(pl.blocking||pl.parrying)play(a,'Blocking',{fade:.06});
     else if(pl.moving)play(a,'Running_A',{speed:1.05});
     else play(a,h.idle||'Idle',{fade:.2});
   }
@@ -707,9 +715,11 @@ function frame3d(){
   // you and your party
   const wt=S.equip&&S.equip.weapon?S.equip.weapon.type:'sword';
   seenIds.clear();npcs(dt);
-  const mine=heroActor('me',wt);seenIds.add('me');animHero(mine,P,wt,dt);
-  if(!P.dead){ring(px,pz,.75,'#e9c87a',.35,.06);disc(px,pz,.75,'#e9c87a',.06);}   // a faint ring under you, so you never lose yourself in a crowd
-  if(NET.on)for(const q of NET.others){if(q.x<-900)continue;const a=heroActor('p'+q.id,q.wtype||'sword');seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);
+  const mine=heroActor('me',wt);seenIds.add('me');animHero(mine,P,wt,dt);auras(P);
+  if(!P.dead){ring(px,pz,.75,'#e9c87a',.35,.06);disc(px,pz,.75,'#e9c87a',.06);   // a faint ring under you, so you never lose yourself in a crowd
+    disc(px+Math.cos(P.aim)*.98,pz+Math.sin(P.aim)*.98,.13,'#ffe9a8',.55);}   // and a mark on it where you aim
+  bagMesh();
+  if(NET.on)for(const q of NET.others){if(q.x<-900)continue;const a=heroActor('p'+q.id,q.wtype||'sword');seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);auras(q);
     DLIGHTS.push({x:wx(q.x),y:3.2,z:wz(q.y),col:'#ffe2b8',int:14,dist:11,pri:2});}
   // enemies near enough to matter
   const reachX=dist*.27*camera.aspect+5,reachZ=dist*.62+4;   // about what the camera sees, and a little more
@@ -747,6 +757,19 @@ function frame3d(){
     if(q.cone){for(const[r,op]of[[q.len,.18],[q.len*p,.32]]){const g=take(P_CONE);g.userData.m.geometry=sector(q.half);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.setScalar(wx(Math.max(r,.1)));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
     else if(q.line){for(const[l,op]of[[q.len,.22],[q.len*p,.3]]){const g=take(P_LANE);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.set(wx(Math.max(l,.1)),1,wx(26));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
     else{disc(x,z,wx(q.r),'#ff2a1a',.16);disc(x,z,wx(q.r)*p,'#ff2a1a',.3);ring(x,z,wx(q.r),'#ff4a2a',.9);}}
+  // your side's skills that land later (Judgement): a gold mark that fills as the strike comes
+  for(const q of G.pfx||[]){const p=clamp(q.t/q.d,0,1),x=wx(q.x),z=wz(q.y),r=wx(q.r||8),tt=performance.now()/1000;
+    if(q.mark){const fire=q.k==='meteor';disc(x,z,r*p,fire?'#ff6a2a':'#d9b24a',.22);ring(x,z,r,fire?'#ff8a2a':'#e8c060',.45,.05);
+      if(fire)orb(x,1+14*(1-p),z,'#ff8a2a',.5,30);continue;}
+    if(!q.vis)continue;const fade=Math.min(1,(q.d-q.t)*2);
+    if(q.k==='pool'){disc(x,z,r,'#5aa040',.3*fade);ring(x,z,r,'#8fe060',.5*fade);if(Math.random()<.3)glow(x+rand(-r,r)*.6,.2,z+rand(-r,r)*.6,'#8fe060',.3,.6);}
+    else if(q.k==='rain'){ring(x,z,r,'#c3c0b0',.4*fade);disc(x,z,r,'#c3c0b0',.08*fade);}
+    else if(q.k==='smoke'){for(let i=0;i<6;i++){const a=i*1.05+tt*.3;glow(x+Math.cos(a)*r*.5,.8+.3*Math.sin(tt+i),z+Math.sin(a)*r*.5,'#5a5a66',r*1.1,.45*fade);}disc(x,z,r,'#2a2a33',.4*fade);}
+    else if(q.k==='blizzard'){disc(x,z,r,'#9fd8ff',.14*fade);ring(x,z,r,'#cfe8ff',.5*fade);for(let i=0;i<5;i++)glow(x+rand(-r,r)*.8,rand(.5,3),z+rand(-r,r)*.8,'#ffffff',.25,.8*fade);}
+    else if(q.k==='vortex'){for(let i=0;i<4;i++){const a=tt*9+i*Math.PI/2;arc(x,z,1.1,r,.35,a,a+.7,'#cfe8ff',.8*fade);}}
+    else if(q.k==='ballista'){const b=take(P_ARROW);b.position.set(x,.7,z);b.rotation.y=-(q.a||0);ring(x,z,r*1.5,'#c9a46a',.6);orb(x,.5,z,'#8a6a3a',.25,0);}
+    else if(q.k==='minion'){glow(x,1.1,z,'#9be08a',1.4,.7*fade);orb(x,1.1,z,'#cfffc8',.18,8);ring(x,z,.45,'#9be08a',.5*fade);}
+  }
   // the Pale Collector's lantern sweep
   if(G.beams)for(const B of G.beams){const L=beamReach(B.x,B.y,B.a,B.len),g=take(P_LANE);g.position.set(wx(B.x),.1,wz(B.y));g.rotation.y=-B.a;g.scale.set(wx(L),1,wx(12));g.userData.m.material.color.set('#e2b93b');g.userData.m.material.opacity=.55;
     const c=take(P_LANE);c.position.set(wx(B.x),.11,wz(B.y));c.rotation.y=-B.a;c.scale.set(wx(L),1,wx(4));c.userData.m.material.color.set('#ffe9a8');c.userData.m.material.opacity=.8;
@@ -757,7 +780,9 @@ function frame3d(){
   for(const p of G.proj){const x=wx(p.x),z=wz(p.y);if(p.arrow){const a=take(P_ARROW);a.position.set(x,1.4,z);a.rotation.y=-(p.a??Math.atan2(p.vy,p.vx));}else orb(x,1.4,z,p.c||'#6fd6e6',.12,8);}
   for(const p of G.pproj){const x=wx(p.x),z=wz(p.y);
     if(p.k==='fire')orb(x,1.5,z,'#ff8a2a',.22,22);
-    else if(p.k==='arrow'){const a=take(P_ARROW);a.position.set(x,1.4,z);a.rotation.y=-(p.a??Math.atan2(p.vy,p.vx));}
+    else if(p.k==='frost')orb(x,1.5,z,'#9fd8ff',.16,16);
+    else if(p.k==='arrow'){const a=take(P_ARROW);a.position.set(x,1.4,z);a.rotation.y=-(p.a??Math.atan2(p.vy,p.vx));
+      const c={light:'#8fd0ff',caustic:'#8fe060',split:'#e8e8f0',tornado:'#ffffff'}[p.f];if(c)glow(x,1.4,z,c,.8,.7);}
     else orb(x,1.5,z,'#b9a8ff',.11,6);}
   // what you can pick up: a gem of its colour, bobbing; good gear casts a beam
   for(const d of G.drops){if(d.owner!==P.id)continue;const m=take(P_GEM),x=wx(d.x),z=wz(d.y);
@@ -771,12 +796,12 @@ function frame3d(){
       else if(f.k==='slash'){const s=Math.min(1,p*1.6),a0=f.a+(f.dir>0?-half:half),a1=f.a+(f.dir>0?-half+2*half*s:half-2*half*s);arc(x,z,1.15,r,.45,a0,a1,'#cfe8ff',al);}
       else arc(x,z,1.2,r,.35,f.a-1,f.a-1+2*Math.min(1,p*1.8),'#d9d4c4',al*.8);}
     else if(f.k==='line'){const g=take(P_LANE);g.position.set(x,1.1,z);g.rotation.y=-f.a;g.scale.set(wx(f.len),1,f.w?.5:.18);g.userData.m.material.color.set('#cfe8ff');g.userData.m.material.opacity=al*.8;}
-    else if(f.k==='ring'){ring(x,z,wx(f.r)*p,'#cfe8ff',al*.9,.15);}
+    else if(f.k==='ring'){ring(x,z,wx(f.r)*p,f.c||'#cfe8ff',al*.9,.15);}
     else if(f.k==='pulse'){ring(x,z,wx(f.r)*Math.min(1,.3+p*1.2),f.c||'#9be08a',al*.9,.15);}
-    else if(f.k==='boom'){const r=wx(f.r)*Math.min(1,p*1.8);disc(x,z,r,'#f08a3c',(1-p)*.45);ring(x,z,r,'#ffe9a8',al);glow(x,1,z,'#ff8a2a',r*3,(1-p)*.8);DLIGHTS.push({x,y:1.5,z,col:'#ff8a2a',int:40*(1-p),dist:14,pri:8});}
-    else if(f.k==='heal'){const r=wx(6+(f.r-6)*Math.min(1,p*1.7));ring(wx(P.x),wz(P.y),r,'#9be08a',al);disc(wx(P.x),wz(P.y),r,'#9be08a',(1-p)*.2);
-      for(let i=0;i<6;i++){const a=i*1.05+.4;glow(wx(P.x)+Math.cos(a)*.8,.4+p*2.6+(i%3)*.3,wz(P.y)+Math.sin(a)*.8,i%2?'#ffe9a8':'#9be08a',.5,al);}
-      DLIGHTS.push({x:wx(P.x),y:1.5,z:wz(P.y),col:'#9be08a',int:20*(1-p),dist:9,pri:7});}
+    else if(f.k==='boom'){const r=wx(f.r)*Math.min(1,p*1.8),c=f.c||'#ff8a2a';disc(x,z,r,f.c||'#f08a3c',(1-p)*.45);ring(x,z,r,'#ffe9a8',al);glow(x,1,z,c,r*3,(1-p)*.8);DLIGHTS.push({x,y:1.5,z,col:c,int:40*(1-p),dist:14,pri:8});}
+    else if(f.k==='heal'){const r=wx(6+(f.r-6)*Math.min(1,p*1.7));ring(x,z,r,'#9be08a',al);disc(x,z,r,'#9be08a',(1-p)*.2);   // where the heal lands
+      for(let i=0;i<6;i++){const a=i*1.05+.4;glow(x+Math.cos(a)*.8,.4+p*2.6+(i%3)*.3,z+Math.sin(a)*.8,i%2?'#ffe9a8':'#9be08a',.5,al);}
+      DLIGHTS.push({x,y:1.5,z,col:'#9be08a',int:20*(1-p),dist:9,pri:7});}
     else if(f.k==='spikes'){for(let i=0;i<8;i++){const a=i*.85,r=wx(3+(i%3)*6),s=take(P_SPIKE);s.position.set(x+Math.cos(a)*r,0,z+Math.sin(a)*r*.8);s.scale.set(1,(1-p)*(.9+(i%3)*.5),1);}}
     else if(f.k==='raise'){const x2=wx(f.x2),z2=wz(f.y2);line(u=>[x+(x2-x)*u,2.2*(1-u)+.5*u+Math.sin(u*Math.PI)*.8,z+(z2-z)*u],'#9be08a',al);}
     else if(f.k==='bolt'){const x2=wx(f.x2),z2=wz(f.y2);line(u=>[x+(x2-x)*u+(u>0&&u<1?rand(-.15,.15):0),1.4+(u>0&&u<1?rand(-.15,.15):0),z+(z2-z)*u],'#6fd6e6',al);}
@@ -798,6 +823,24 @@ function parts(){
   PARTS.geometry.setDrawRange(0,n);p.needsUpdate=c.needsUpdate=true;
 }
 
+// Your sleeping bag, once laid out: a rolled-out bedroll on the floor.
+let BAG=null;
+function bagMesh(){
+  if(!BAG){BAG=new THREE.Group();const cloth=new THREE.MeshStandardMaterial({color:'#5b6b4a',roughness:.95}),roll=new THREE.MeshStandardMaterial({color:'#7d8a62',roughness:.95});
+    const pad=new THREE.Mesh(new THREE.BoxGeometry(.9,.08,2),cloth);pad.position.y=.05;pad.receiveShadow=true;BAG.add(pad);
+    const pil=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.9,10),roll);pil.rotation.z=Math.PI/2;pil.position.set(0,.18,-.85);pil.castShadow=true;BAG.add(pil);scene.add(BAG);}
+  BAG.visible=!!(P&&P.bag);if(BAG.visible)BAG.position.set(wx(P.bag.x),0,wz(P.bag.y));
+}
+// Where a point on the screen (in page pixels) falls on the floor, at about chest height so aiming at an enemy's body
+// lands on it: game coordinates, or null.
+const pickRay=typeof THREE==='undefined'?null:new THREE.Raycaster(),pickPlane=typeof THREE==='undefined'?null:new THREE.Plane(new THREE.Vector3(0,1,0),-.9),pickHit=typeof THREE==='undefined'?null:new THREE.Vector3();
+me.pick=function(cx,cy){
+  if(!canvas||canvas.hidden||!camera)return null;const r=canvas.getBoundingClientRect();if(r.width<2)return null;
+  pickRay.setFromCamera({x:(cx-r.left)/r.width*2-1,y:-(cy-r.top)/r.height*2+1},camera);
+  return pickRay.ray.intersectPlane(pickPlane,pickHit)?{x:pickHit.x/U,y:pickHit.z/U}:null;
+};
+// The other way: where a game position (at a height in world units) shows on the page, in page pixels, or null.
+me.screenOf=function(x,y,h=1){if(!canvas||canvas.hidden||!camera)return null;const p=scr(wx(x),h,wz(y)),r=canvas.getBoundingClientRect();return p?{x:r.left+p[0]*r.width/VW,y:r.top+p[1]*r.height/VH}:null;};
 /* ---------- the overlay: numbers, health bars and names, drawn flat over the 3D view ---------- */
 const NUMCOL={crit:'#ffd45c',hurt:'#ff5a52',bleed:'#d0607a',heal:'#9be08a',evade:'#6fd6e6',mana:'#7fa8ff',resist:'#8e97b5',bane:'#f2a03c'};
 function scr(x,h,z){tmpV.set(x,h,z).project(camera);return tmpV.z>1?null:[(tmpV.x+1)/2*VW,(1-tmpV.y)/2*VH];}
@@ -806,9 +849,13 @@ function overlay(){
   const label=(s,x,h,z,col,font)=>{const p=scr(x,h,z);if(!p)return;c.font=font;c.lineWidth=3;c.strokeStyle='rgba(0,0,0,.85)';c.strokeText(s,p[0],p[1]);c.fillStyle=col;c.fillText(s,p[0],p[1]);};
   const bar=(x,h,z,w,f,col,edge)=>{const p=scr(x,h,z);if(!p)return;const X=Math.round(p[0]-w/2),Y=Math.round(p[1]);
     c.fillStyle='#000';c.fillRect(X-2,Y-2,w+4,9);if(edge){c.fillStyle=edge;c.fillRect(X-1,Y-1,w+2,7);}c.fillStyle='#160b0b';c.fillRect(X,Y,w,5);c.fillStyle=col;c.fillRect(X,Y,Math.ceil(w*clamp(f,0,1)),5);};
+  // under an enemy's health, its poise: worn down by blows; it flashes white while the enemy reels
+  const poiseBar=(x,h,z,w,f,broken)=>{const p=scr(x,h,z);if(!p)return;const X=Math.round(p[0]-w/2),Y=Math.round(p[1])+8;
+    c.fillStyle='#000';c.fillRect(X-1,Y-1,w+2,4);c.fillStyle=broken?(Math.floor(G.time*10)%2?'#ffffff':'#ffe9a8'):'#e8d9a8';c.fillRect(X,Y,Math.ceil(w*clamp(f,0,1)),2);};
   // enemy health, once hurt; elites and bosses by name
   for(const e of G.enemies){const a=ACTORS.get('e'+e.id);if(!a||e.burrowed)continue;const top=2.6*(a.o.s||1)*(e.elite?1.12:1);
-    if(e.hurtT>0&&!e.boss&&e.type!=='dummy')bar(a.x,top,a.z,e.elite?74:58,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
+    if(e.hurtT>0&&!e.boss&&e.type!=='dummy'){const w=e.elite?74:58;bar(a.x,top,a.z,w,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
+      if(e.maxPoise)poiseBar(a.x,top,a.z,w,e.staggerT>0?1:e.poise/e.maxPoise,e.staggerT>0);}
     if(e.elite&&!e.boss&&hyp(e.x-P.x,e.y-P.y)<200)label((ETYPES[e.type].name||'')+', elite',a.x,top+.55,a.z,'#e9c87a','600 13px Cinzel,Georgia,serif');}
   // your party: name and health
   if(NET.on)for(const q of NET.others){if(q.x<-900||q.dead)continue;label(q.name||'',wx(q.x),PERSON_TOP+.8,wz(q.y),'#e9dfc8','600 13px Cinzel,Georgia,serif');bar(wx(q.x),PERSON_TOP+.45,wz(q.y),46,q.hp/q.maxHp,'#7fc24a');}
