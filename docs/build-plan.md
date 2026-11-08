@@ -36,13 +36,14 @@ with it.
 
 *Playable:* every class with its full kit. *Still to decide:* starting attribute points (with the creator, step 7).
 
-## 3. Death, potions and stashes
+## 3. Death, potions and stashes (built)
 
 [combat.md](design/combat.md#death)
 
 - Falling loses everything carried but equipped gear.
 - Health and mana potions in sizes; the four quick slots bound by category.
-- A safe room with a stash and a trader before every boss chamber.
+- A safe room with a stash and a trader before every boss chamber (the antechamber; it was already there), and a
+  stash that keeps goods by count.
 
 ## 4. Bosses
 

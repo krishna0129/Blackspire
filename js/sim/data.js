@@ -304,18 +304,28 @@ const THORN_SLOW=.6,THORN_DMG=3;   // thorn patches: speed multiplier, and damag
 // Supplies: things you carry by count and use with a key. key: the save's counter; price: shards on floor 1 (+25% a floor).
 // need/gives: the meter a ration or flask refills, and by how much.
 const SUPPLIES={
-  potion:{key:'potions',name:'Health potion',price:25,color:'#d9534f',desc:'Restores 45% of your health.'},
-  ration:{key:'rations',name:'Ration',price:12,color:'#d9a441',need:'food',gives:40,desc:'Bread and dried meat. Fills 40% of your hunger meter.'},
-  bag:{key:'bags',name:'Sleeping bag',price:40,color:'#8a6a44',desc:'A night\u2019s sleep in any safe room or safe point, away from the inn: all your fatigue is gone (without the inn\u2019s well-rested bonus). Used once. B to sleep.'},
-  flask:{key:'flasks',name:'Water flask',price:8,color:'#5aa7e6',need:'drink',gives:50,desc:'Clean water. Fills 50% of your thirst meter. You keep the flask once it is drunk: the village well fills it again for free.'},
+  potS:{key:'potS',cat:'hp',fill:.1,name:'Small health potion',price:10,color:'#e0736f',desc:'Restores 10% of your health.'},
+  potion:{key:'potions',cat:'hp',fill:.25,name:'Health potion',price:25,color:'#d9534f',desc:'Restores 25% of your health.'},
+  potL:{key:'potL',cat:'hp',fill:.5,name:'Large health potion',price:50,color:'#b52f2c',desc:'Restores 50% of your health.'},
+  manaS:{key:'manaS',cat:'mp',fill:.1,name:'Small mana potion',price:10,color:'#7f8cf2',desc:'Restores 10% of your mana.'},
+  mana:{key:'manas',cat:'mp',fill:.25,name:'Mana potion',price:25,color:'#5b6cf0',desc:'Restores 25% of your mana.'},
+  manaL:{key:'manaL',cat:'mp',fill:.5,name:'Large mana potion',price:50,color:'#3a45c4',desc:'Restores 50% of your mana.'},
+  ration:{key:'rations',cat:'food',name:'Ration',price:12,color:'#d9a441',need:'food',gives:40,desc:'Bread and dried meat. Fills 40% of your hunger meter.'},
+  bag:{key:'bags',name:'Sleeping bag',price:40,color:'#8a6a44',desc:'A night\u2019s sleep in any safe room or safe point, away from the inn: all your fatigue is gone (without the inn\u2019s well-rested bonus). Used once: lay it on the ground, then F to sleep.'},
+  flask:{key:'flasks',cat:'drink',name:'Water flask',price:8,color:'#5aa7e6',need:'drink',gives:50,desc:'Clean water. Fills 50% of your thirst meter. You keep the flask once it is drunk: the village well fills it again for free.'},
 };
+// The quick slots, keys 1 to 4: one per category of supply (docs/design/combat.md#quick-slots-1-to-4). Each holds the
+// item of its category the player chose (S.quick); when that runs out, the slot reaches for another of the category.
+const QUICK=[{cat:'hp',name:'Health'},{cat:'mp',name:'Mana'},{cat:'food',name:'Food'},{cat:'drink',name:'Water'}];
+const QUICK_DEFAULT={hp:'potion',mp:'mana',food:'ration',drink:'flask'};
+const POTION_CD=1.2;   // seconds between any two potions, health or mana
 // What each kind of trader sells: gear slots, and supplies (SUPPLIES keys). Tower traders carry a bit of everything;
 // the village market splits it between stalls.
 const TRADER_SELLS={
-  all:{gear:['weapon','armor','boots','trinket'],supplies:['potion','ration','flask']},
+  all:{gear:['weapon','armor','boots','trinket'],supplies:['potS','potion','potL','manaS','mana','manaL','ration','flask']},
   weapons:{gear:['weapon'],supplies:[]},
   gear:{gear:['armor','boots','trinket'],supplies:[]},
-  potions:{gear:[],supplies:['potion']},
+  potions:{gear:[],supplies:['potS','potion','potL','manaS','mana','manaL']},
   food:{gear:[],supplies:['ration','flask','bag']},
   inn:{gear:[],supplies:[],meals:true},   // the innkeeper: meals, eaten at the table
   market:{gear:[],supplies:[],market:true},   // the exchange: materials and monster drops, at moving prices (MARKET)
@@ -374,13 +384,13 @@ const STASH_SIZE=60;   // the universal stash: one store, reached from any stash
 const ELITE_CHANCE=.07;   // share of room spawns that are elites: 2.4x health, 1.3x damage, 3x experience, better loot
 // Loot, rolled separately for every player who gets credit. shards: [min,max], scaled by +25% per floor above 1.
 // items: one roll each: chance, rarity bonus (see rollRarity), lowest rarity, item level above the floor's.
-// potions, rations, flasks: one chance each (SUPPLIES). mats: [chance, min, max] per material.
+// supplies (by SUPPLIES key: potions, potS, manas, rations, flasks...): one chance each. mats: [chance, min, max] per material.
 // fam: [chance, min, max] of the drop of the family of whatever died (chests have no family, so none).
 const LOOT={
-  normal:{shards:[1,4],items:[{chance:.13,bonus:0,minRar:0,ilvl:0}],potions:[.055],rations:[.04],flasks:[.05],mats:{scrap:[.3,1,1],ember:[.03,1,1]},fam:[.3,1,1]},
-  elite:{shards:[14,14],items:[{chance:.7,bonus:18,minRar:1,ilvl:0}],potions:[.3],rations:[.25],flasks:[.3],mats:{scrap:[1,1,3],ember:[.4,1,1],crystal:[.04,1,1]},fam:[1,2,3]},
-  boss:{shards:[60,60],items:[{chance:1,bonus:25,minRar:2,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1}],potions:[1,1],rations:[1],flasks:[1],
+  normal:{shards:[1,4],items:[{chance:.13,bonus:0,minRar:0,ilvl:0}],potS:[.05],manaS:[.04],rations:[.04],flasks:[.05],mats:{scrap:[.3,1,1],ember:[.03,1,1]},fam:[.3,1,1]},
+  elite:{shards:[14,14],items:[{chance:.7,bonus:18,minRar:1,ilvl:0}],potions:[.25],manas:[.2],potS:[.2],rations:[.25],flasks:[.3],mats:{scrap:[1,1,3],ember:[.4,1,1],crystal:[.04,1,1]},fam:[1,2,3]},
+  boss:{shards:[60,60],items:[{chance:1,bonus:25,minRar:2,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1},{chance:1,bonus:25,minRar:1,ilvl:1}],potions:[1],potL:[1],manaL:[1],rations:[1],flasks:[1],
     mats:{scrap:[1,4,6],ember:[1,2,3],crystal:[1,1,1]},fam:[1,6,8]},
-  chest:{shards:[8,16],items:[{chance:1,bonus:12,minRar:0,ilvl:0},{chance:.35,bonus:6,minRar:0,ilvl:0}],potions:[.5],rations:[.4],flasks:[.5],mats:{scrap:[1,1,2],ember:[.25,1,1]}},
+  chest:{shards:[8,16],items:[{chance:1,bonus:12,minRar:0,ilvl:0},{chance:.35,bonus:6,minRar:0,ilvl:0}],potions:[.4],manas:[.3],potL:[.05],manaL:[.04],rations:[.4],flasks:[.5],mats:{scrap:[1,1,2],ember:[.25,1,1]}},
 };
 // Names kept for floors still to be designed: 'Ash Regent', 'The Unlit King', 'Keeper of the Ninth Stair', 'Old Hunger', 'The Bell Below'.
