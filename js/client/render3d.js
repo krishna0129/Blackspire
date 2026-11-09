@@ -580,7 +580,7 @@ function makeActor(key,o){
 function rim(m){m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <emissivemap_fragment>',
   '#include <emissivemap_fragment>\ntotalEmissiveRadiance+=vec3(.16,.2,.3)*pow(1.-clamp(dot(normal,normalize(vViewPosition)),0.,1.),2.5);');};
   m.customProgramCacheKey=()=>'rim';}
-function dropActor(a){scene.remove(a.root);a.root.visible=false;if(a.mixer)a.mixer.stopAllAction();a.cur=null;a.curName='';a.dead=false;a.alpha=1;fade(a,1);
+function dropActor(a){scene.remove(a.root);a.root.visible=false;if(a.mixer)a.mixer.stopAllAction();a.cur=null;a.curName='';a.dead=false;fade(a,1);   // (fade before anything marks it opaque: it skips when alpha is already 1)
   (FREE.get(a.key)||FREE.set(a.key,[]).get(a.key)).push(a);}
 function fade(a,al){if(a.alpha===al)return;a.alpha=al;a.root.traverse(c=>{if(c.userData.inkMesh)c.userData.inkMesh.visible=c.visible&&al>=1;});for(const m of a.mats){m.transparent=al<1;m.opacity=al;}}
 // Plays a clip: loops by default; once: plays through and holds the last frame. A new clip fades in over `fade` s.
