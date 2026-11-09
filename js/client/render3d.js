@@ -189,7 +189,7 @@ function build(){
   for(const a of ACTORS.values())dropActor(a);ACTORS.clear();for(const a of DYING)dropActor(a);DYING.length=0;
   const g=G,map=g.map,group=new THREE.Group(),placed=new Map(),torches=[],flames={warm:[],green:[],blue:[]},floaters=[],fungi=[];
   const put=(key,x,y,z,ry,sx,sy,sz)=>{(placed.get(key)||placed.set(key,[]).get(key)).push(M4(x,y,z,ry,sx,sy,sz));};
-  const at=(x,y)=>x<0||y<0||x>=MW||y>=MH?0:map[y*MW+x],open=(x,y)=>{const v=at(x,y);return v===1||v===3;};
+  const at=(x,y)=>x<0||y<0||x>=MW||y>=MH?0:map[y*MW+x],open=(x,y)=>{const v=at(x,y);return v===1||v===3||v===4;};
   const inR=(r,x,y)=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h;
   const safeR=g.rooms.filter(r=>r.kind==='safe'||r.kind==='start'),theme=floorDef(g.n).theme;
   const rnd=mulberry32((g.seed*31+g.n*7919)>>>0);
@@ -259,11 +259,11 @@ function build(){
     }
     // an ordinary room: its floor's lights near the walls, clutter in a corner or two, the dead's leftovers
     for(const[i,j]of[[1,1],[r.w-2,1],[1,r.h-2],[r.w-2,r.h-2],[Math.floor(r.w/2),1]].slice(0,r.w*r.h>50?5:3))if(rr()<.85)themed((r.x+i+.5)*2,(r.y+j+.5)*2,rr);
-    for(const[i,j,c]of[[0,0,'n'],[r.w-1,0,'n'],[0,r.h-1,'s'],[r.w-1,r.h-1,'s']]){if(rr()<.45)continue;const x=(r.x+i)*2+1,z=(r.y+j)*2+1,k=rr();
-      if(k<.3)put(rp(['barrel_large','barrel_small_stack','keg']),x,0,z,rr()*6);
-      else if(k<.55)put(rp(['crates_stacked','box_stacked','box_large']),x,0,z,rr()*6);
-      else if(k<.8&&theme>0)put(rp(['coffin','coffin_decorated']),x,0,z,c==='n'?0:Math.PI);
-      else put('rubble_half',x,0,z,rr()*6);}
+    for(const q of g.clutter||[]){if(q.room!==ri)continue;const x=q.x*2+1,z=q.y*2+1,k=q.k,pick=a=>a[Math.floor(q.rot/6*a.length)%a.length];   // the rules chose these tiles and made them solid
+      if(k<.3)put(pick(['barrel_large','barrel_small_stack','keg']),x,0,z,q.rot);
+      else if(k<.55)put(pick(['crates_stacked','box_stacked','box_large']),x,0,z,q.rot);
+      else if(k<.8&&theme>0)put(pick(['coffin','coffin_decorated']),x,0,z,q.c==='n'?0:Math.PI);
+      else put('rubble_half',x,0,z,q.rot);}
     const bones=theme===0?1+Math.floor(rr()*2):3+Math.floor(rr()*4);
     for(let k=0;k<bones;k++)put(rp(['bone_A','bone_B','bone_C','skull','ribcage']),(r.x+1+rr()*(r.w-2))*2,0,(r.y+1+rr()*(r.h-2))*2,rr()*6,.9);
     if(theme===2&&rr()<.5)put(rp(['gravestone','grave_A_destroyed']),(r.x+.6)*2,0,(r.y+.7)*2,0);

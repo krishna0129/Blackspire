@@ -5,7 +5,7 @@
 // Builds floor n. The layout depends only on (seed, n), so a server and its clients build the same map.
 function genFloor(n,seed){
   const rng=mulberry32((seed^Math.imul(n,2654435761))>>>0),ri=(a,b)=>a+Math.floor(rng()*(b-a+1));
-  const map=new Uint8Array(MW*MH),rooms=[];   // 0 void, 1 floor, 2 wall, 3 boss gate (solid until the boss dies)
+  const map=new Uint8Array(MW*MH),rooms=[];   // 0 void, 1 floor, 2 wall, 3 boss gate (solid until the boss dies), 4 clutter (a floor tile with something on it you cannot walk through)
   const fits=r=>rooms.every(o=>r.x+r.w+2<=o.x||o.x+o.w+2<=r.x||r.y+r.h+2<=o.y||o.y+o.h+2<=r.y);
   const start={x:ri(3,9),y:ri(4,MH-13),w:8,h:7,kind:'start'};rooms.push(start);
   // The boss chamber sits alone on the east side. Everything else stays west of `limit`,
@@ -82,6 +82,18 @@ function genFloor(n,seed){
       const X=side===2?r.x:side===3?r.x+r.w-w:ri(r.x,r.x+r.w-w),Y=side===0?r.y:side===1?r.y+r.h-h:ri(r.y,r.y+r.h-h);
       for(let y=Y;y<Y+h;y++)for(let x=X;x<X+w;x++)if(map[y*MW+x]===1)g.thorns[y*MW+x]=1;
     }
+  }
+  // Clutter in the corners of ordinary rooms: barrels, crates, coffins, a heap of rubble. Each stands on one tile and
+  // blocks it (map 4), so you walk around it. Never on a tile beside a doorway. Its own random numbers, so the layouts
+  // of floors made before it stay the same; render3d.js draws what is here (k picks the kind, rot turns it).
+  const crng=mulberry32(((seed*7919)^Math.imul(n,40503)^0x5bd1e995)>>>0);g.clutter=[];
+  for(const r of rooms){
+    if(r.kind!=='room')continue;
+    for(const[i,j,c]of[[0,0,'n'],[r.w-1,0,'n'],[0,r.h-1,'s'],[r.w-1,r.h-1,'s']]){
+      const k=crng(),rot=crng()*6;if(crng()<.45)continue;const x=r.x+i,y=r.y+j;if(map[y*MW+x]!==1)continue;
+      const door=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]].some(([X,Y])=>(X<r.x||X>=r.x+r.w||Y<r.y||Y>=r.y+r.h)&&map[Y*MW+X]!==2&&map[Y*MW+X]!==0);
+      if(door||g.chests.some(q=>Math.floor(q.x/TILE)===x&&Math.floor(q.y/TILE)===y))continue;
+      map[y*MW+x]=4;g.clutter.push({x,y,c,k,rot,room:rooms.indexOf(r)});}
   }
   // The boss is always there, even on a floor you have cleared: a rematch is optional (the floor gate takes you past it)
   // and it is how boss loot is farmed. Its looks and behaviour come from the floor's entry in FLOORS.

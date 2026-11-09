@@ -13,7 +13,7 @@ function paintMap(g){
   x.fillStyle='#060609';x.fillRect(0,0,c.width,c.height);
   for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){
     const t=m[ty*MW+tx],px=tx*TILE,py=ty*TILE,h=hash2(tx,ty,g.n);
-    if(t===1){
+    if(t===1||t===4){
       x.fillStyle=TH.f[h<.33?0:h<.66?1:2];x.fillRect(px,py,16,16);
       x.fillStyle=TH.grid;x.fillRect(px+15,py,1,16);x.fillRect(px,py+15,16,1);
       if(h>.84){x.fillStyle=TH.speck;x.fillRect(px+3+Math.floor(h*97)%8,py+4+Math.floor(h*53)%8,2,1);x.fillRect(px+2+Math.floor(h*31)%10,py+3+Math.floor(h*71)%9,1,1);}
@@ -21,6 +21,7 @@ function paintMap(g){
       else if(TH.bones&&h<.085){x.fillStyle=TH.bones;const bx=px+3+Math.floor(h*977)%6,by=py+5+Math.floor(h*613)%6;x.fillRect(bx+1,by+1,4,1);x.fillRect(bx,by,1,3);x.fillRect(bx+5,by,1,3);}
       else if(TH.bones&&h<.1){x.fillStyle=TH.bones;const bx=px+4+Math.floor(h*977)%6,by=py+4+Math.floor(h*613)%6;x.fillRect(bx,by,4,3);x.fillRect(bx+1,by+3,2,1);x.fillStyle=TH.crack;x.fillRect(bx,by+1,1,1);x.fillRect(bx+3,by+1,1,1);}
       if(ty>0&&m[(ty-1)*MW+tx]===2){x.fillStyle='rgba(0,0,0,.4)';x.fillRect(px,py,16,3);x.fillStyle='rgba(0,0,0,.2)';x.fillRect(px,py+3,16,2);}
+      if(t===4){x.fillStyle='rgba(0,0,0,.45)';x.fillRect(px+2,py+12,13,3);x.fillStyle='#4a3626';x.fillRect(px+2,py+2,12,11);x.fillStyle='#6b4f36';x.fillRect(px+3,py+3,10,3);x.fillStyle='#2a1e14';x.fillRect(px+2,py+7,12,1);}   // clutter: a crate
     }else if(t===3){
       x.fillStyle='#1c0f13';x.fillRect(px,py,16,16);x.fillStyle='#4a2229';for(let i=1;i<16;i+=4)x.fillRect(px+i,py,2,16);
       x.fillStyle='#6a2f38';x.fillRect(px,py+2,16,1);x.fillRect(px,py+13,16,1);x.fillStyle='#b0464d';x.fillRect(px+6,py+6,4,4);x.fillStyle='#1c0f13';x.fillRect(px+7,py+7,2,2);

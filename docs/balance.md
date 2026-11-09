@@ -42,9 +42,9 @@ health), and falls count how often it died and was stood up again.
 | Greatsword | 128 | ⚠ +94% | 7.4 s | 0.1 | 7.4 s | 0.1 | 0, 0 |
 | Mace | 63 | -5% | 16.9 s | 0.6 | 15.2 s | 0.1 | 0, 0 |
 | Dagger | 48 | ⚠ -27% | 18.1 s | 1.0 | 21.6 s | 0.3 | 0, 0 |
-| Bow | 69 | +5% | 22.5 s | 1.3 | 19.1 s | 0.3 | 0, 0 |
+| Bow | 69 | +5% | 24.9 s | 1.5 | 19.1 s | 0.3 | 0, 0 |
 | Grimoire (magic) | 62 | -6% | 16.5 s | 1.2 | 21.2 s | 0.6 | 0, 0 |
-| Grimoire (faith) | 44 | ⚠ -33% | not cleared | 1.6 | 29.1 s | 0.6 | 0, 0 |
+| Grimoire (faith) | 44 | ⚠ -33% | not cleared | 1.5 | 29.1 s | 0.6 | 0, 0 |
 
 ## Marked
 
