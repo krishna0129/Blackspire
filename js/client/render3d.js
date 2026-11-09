@@ -112,8 +112,10 @@ function fit(){
 /* ---------- static props: instanced, in chunks so the camera only draws what is near ---------- */
 const M4=(x,y,z,ry=0,sx=1,sy=sx,sz=sx)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,ry,0)),new THREE.Vector3(sx,sy,sz));
 const CH=32;   // chunk size, world units (16 tiles)
-// The cutaway: walls between the camera and you would hide you, so anything tall in the stretch of floor just south
-// of you (nearer the camera) is drawn only up to the knee there, the way the old isometric games cut their walls.
+// The cutaway: walls between the camera and you would hide you, so what stands in the line of sight just south of you
+// (nearer the camera) is drawn only up to the knee there, the way the old isometric games cut their walls. Only what
+// truly hides you: a narrow strip down your column, and only the part above the camera's 55 degree line of sight to
+// your feet (a wall 2 units tall, 1.8 tiles south; a house, farther). Corridor side walls stay whole.
 const CUT={value:new THREE.Vector3(0,0,-999)},CUTKEYS=/^(wall_|pillar|torch_mounted|banner_|building_|mountain_|hills_|tree_single|post_lantern|tent)/,cutMats=new Map();
 function cutaway(mat){
   if(cutMats.has(mat))return cutMats.get(mat);const m=mat.clone();
@@ -121,7 +123,7 @@ function cutaway(mat){
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCutW;').replace('#include <project_vertex>',
       '#include <project_vertex>\nvec4 cw=vec4(transformed,1.);\n#ifdef USE_INSTANCING\ncw=instanceMatrix*cw;\n#endif\nvCutW=(modelMatrix*cw).xyz;');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vCutW;uniform vec3 uCut;').replace('#include <clipping_planes_fragment>',
-      '#include <clipping_planes_fragment>\nfloat cdz=vCutW.z-uCut.z;if(cdz>.6&&cdz<16.&&vCutW.y>1.05&&abs(vCutW.x-uCut.x)<7.+cdz*.5)discard;');};
+      '#include <clipping_planes_fragment>\nfloat cdz=vCutW.z-uCut.z;if(cdz>.3&&cdz<16.&&vCutW.y>max(1.05,1.43*cdz-1.2)&&abs(vCutW.x-uCut.x)<1.8+cdz*.12)discard;');};
   m.customProgramCacheKey=()=>'cut';cutMats.set(mat,m);return m;
 }
 function instance(group,placed){
