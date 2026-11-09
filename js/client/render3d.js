@@ -112,18 +112,17 @@ function fit(){
 /* ---------- static props: instanced, in chunks so the camera only draws what is near ---------- */
 const M4=(x,y,z,ry=0,sx=1,sy=sx,sz=sx)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,ry,0)),new THREE.Vector3(sx,sy,sz));
 const CH=32;   // chunk size, world units (16 tiles)
-// The cutaway: walls between the camera and you would hide you, so what stands in the line of sight just south of you
-// (nearer the camera) is drawn only up to the knee there, the way the old isometric games cut their walls. Only what
-// truly hides you: a narrow strip down your column, and only the part above the camera's 55 degree line of sight to
-// your feet (a wall 2 units tall, 1.8 tiles south; a house, farther). Corridor side walls stay whole.
-const CUT={value:new THREE.Vector3(0,0,-999)},CUTKEYS=/^(wall_|pillar|torch_mounted|banner_|building_|mountain_|hills_|tree_single|post_lantern|tent)/,cutMats=new Map();
+// The cutaway, for the village's big things only (houses, hills, trees): what stands in the line of sight just south
+// of you is drawn only up to the knee, a narrow strip down your column above the camera's 55 degree line to your feet.
+// The tower's walls are never cut: whoever a wall hides shows through it as a silhouette instead (xray, below).
+const CUT={value:new THREE.Vector3(0,0,-999)},CUTKEYS=/^(building_|mountain_|hills_|tree_single|post_lantern|tent)/,cutMats=new Map();
 function cutaway(mat){
   if(cutMats.has(mat))return cutMats.get(mat);const m=mat.clone();
   m.onBeforeCompile=sh=>{sh.uniforms.uCut=CUT;
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCutW;').replace('#include <project_vertex>',
       '#include <project_vertex>\nvec4 cw=vec4(transformed,1.);\n#ifdef USE_INSTANCING\ncw=instanceMatrix*cw;\n#endif\nvCutW=(modelMatrix*cw).xyz;');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vCutW;uniform vec3 uCut;').replace('#include <clipping_planes_fragment>',
-      '#include <clipping_planes_fragment>\nfloat cdz=vCutW.z-uCut.z;if(cdz>.3&&cdz<16.&&vCutW.y>max(1.05,1.43*cdz-1.2)&&abs(vCutW.x-uCut.x)<1.8+cdz*.12)discard;');};
+      '#include <clipping_planes_fragment>\nfloat cdz=vCutW.z-uCut.z;if(cdz>.3&&cdz<16.&&vCutW.y>max(1.05,1.43*cdz-1.2)&&abs(vCutW.x-uCut.x)<2.4+cdz*.15)discard;');};
   m.customProgramCacheKey=()=>'cut';cutMats.set(mat,m);return m;
 }
 function instance(group,placed){
@@ -152,6 +151,23 @@ function ink(o,w){const add=[];o.traverse(c=>{if(!c.isMesh||c.userData.ink||c.us
     const m=c.isSkinnedMesh?new THREE.SkinnedMesh(c.geometry,inkMat(w)):new THREE.Mesh(c.geometry,inkMat(w));
     if(c.isSkinnedMesh)m.bind(c.skeleton,c.bindMatrix);m.userData.ink=true;m.castShadow=false;m.frustumCulled=false;add.push([c,m]);});
   for(const[c,m]of add){if(c.isSkinnedMesh)c.parent.add(m);else{m.position.copy(c.position);m.quaternion.copy(c.quaternion);m.scale.copy(c.scale);c.parent.add(m);}m.visible=c.visible;c.userData.inkMesh=m;}}
+
+/* ---------- xray: who a wall hides shows through it ---------- */
+// Each actor gets a twin of its meshes in one flat colour, drawn after the world (renderOrder 1) but before any actor
+// (renderOrder 2), and only where the depth already there is nearer: where a wall stands in front. Dithered, so it
+// reads as a see-through ghost. Heroes in gold, enemies in red.
+const XRAY=new Map();
+function xrayMat(col){if(XRAY.has(col))return XRAY.get(col);
+  const m=new THREE.MeshBasicMaterial({color:col,depthFunc:THREE.GreaterDepth,depthWrite:false,fog:false});
+  m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <clipping_planes_fragment>',
+    '#include <clipping_planes_fragment>\nif(mod(floor(gl_FragCoord.x)+floor(gl_FragCoord.y),2.)<1.)discard;');};
+  m.customProgramCacheKey=()=>'xray';XRAY.set(col,m);return m;}
+function xray(root,col){const add=[];
+  root.traverse(c=>{c.renderOrder=2;if(!c.isMesh||c.userData.ink||c.userData.eyes||c.userData.xray)return;
+    const m=c.isSkinnedMesh?new THREE.SkinnedMesh(c.geometry,xrayMat(col)):new THREE.Mesh(c.geometry,xrayMat(col));
+    if(c.isSkinnedMesh)m.bind(c.skeleton,c.bindMatrix);m.userData.xray=true;m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;m.renderOrder=1;add.push([c,m]);});
+  for(const[c,m]of add){if(c.isSkinnedMesh)c.parent.add(m);else{m.position.copy(c.position);m.quaternion.copy(c.quaternion);m.scale.copy(c.scale);c.parent.add(m);}
+    m.visible=c.visible;c.userData.xrayMesh=m;}}
 
 /* ---------- glows and flames ---------- */
 let glowTex=null;
@@ -260,7 +276,7 @@ function build(){
       themed(X,Z,cr);lit.push([X,Z]);}}
   instance(group,placed);
   const FLAMES=FLAME_SETS;
-  for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAMES[k]){const p=points(flames[k],col,size,op);p.material=cutaway(p.material);group.add(p);}
+  for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAMES[k])group.add(points(flames[k],col,size,op));
   // the floating candles: one instanced candle each, moved every frame (frame3d), with a blue flame above it
   let floatSet=null;
   if(floaters.length){const parts=PROTO.candle_thin.parts.map(pt=>{const im=new THREE.InstancedMesh(pt.geo,pt.mat,floaters.length);im.castShadow=true;im.frustumCulled=false;group.add(im);return{im,m:pt.m};});
@@ -518,6 +534,7 @@ function makeActor(key,o){
     const y1=toe?toe.getWorldPosition(new THREE.Vector3()).y:0;for(const[b,v]of build)b.scale.divide(v);
     model.position.y=y0-y1;}
   if(STYLE.ink)ink(root,o.s&&o.s>2?.02:.045);
+  if(o.xray)xray(root,o.xray);
   root.scale.setScalar(o.s||1);scene.add(root);
   const a={key,root,model,build,mats,mixer:model?new THREE.AnimationMixer(model):null,acts:{},cur:null,curName:'',face:0,o,lock:0,swT:-1,st:'',n:0,x:0,z:0,alpha:1,seen:0};
   return a;
@@ -549,7 +566,7 @@ function flash(a,on,col,k=.9){for(const m of a.mats){const b=m.userData.base;if(
 function heroActor(id,wt){
   const h=HERO[wt]||HERO.sword,key='hero:'+wt;let a=ACTORS.get(id);
   if(a&&a.key!==key){dropActor(a);a=null;}
-  if(!a){a=makeActor(key,h);ACTORS.set(id,a);}
+  if(!a){a=makeActor(key,Object.assign({xray:'#f0cf7a'},h));ACTORS.set(id,a);}
   return a;
 }
 // What skills leave on a player: an Aegis (a pale shield around them), an empowered weapon (a gold glow in hand),
@@ -593,7 +610,7 @@ function foeActor(e){
   let a=ACTORS.get('e'+e.id);if(a)return a;
   const d=foeDef(e),T_=ETYPES[e.type]||{},key=(e.boss?e.sprite:e.type)+(e.elite?'*':'');
   const eyes=e.boss?'#ff3b2a':e.elite?'#ffd45c':T_.eye;
-  a=makeActor(key,Object.assign({},d,{eyes,rim:true,s:(d.s||1)*(e.elite?1.12:1)}));ACTORS.set('e'+e.id,a);
+  a=makeActor(key,Object.assign({},d,{eyes,rim:true,xray:'#e0503f',s:(d.s||1)*(e.elite?1.12:1)}));ACTORS.set('e'+e.id,a);
   a.x=wx(e.x);a.z=wz(e.y);a.face=Math.random()*TAU;
   // something that arrived after the floor was built climbs out of the ground (raised, called, summoned)
   if(performance.now()-FLOOR.born>1500&&!d.orb&&!d.prop&&!d.bloom&&!e.boss)play(a,'Skeletons_Awaken_Floor',{once:true,speed:1.6}),a.lock=1.1;
