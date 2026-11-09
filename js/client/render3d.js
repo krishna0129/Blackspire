@@ -19,7 +19,7 @@ const me={ready:false,failed:false,Q,g:null,cycle,label:()=>Q.off?'2D':Q.low?'3D
 
 /* ---------- start-up: the renderer and the models ---------- */
 let renderer,scene,camera,composer,bloom,grade,canvas,over,octx,moon,hemi,lantern;
-let PROTO={},CHARS={},CLIP={},TOP={},FLOOR=null,DYN=null;
+let PROTO={},CHARS={},CLIP={},TOP={},FOOT={},FLOOR=null,DYN=null;
 const T={};   // three.js classes, looked up once
 // A KayKit body comes in ten parts (head, arms, legs...), each its own draw call. They share one skeleton and one
 // material, so they are joined into one mesh; the eyes (which glow) and anything held (shown or hidden) stay apart.
@@ -66,7 +66,8 @@ me.init=async function(){
     props.scene.updateMatrixWorld(true);
     for(const h of props.scene.children){const parts=[];h.traverse(c=>{if(c.isMesh)parts.push({geo:c.geometry,mat:c.material,m:c.matrixWorld.clone()});});PROTO[h.name]={node:h,parts};}
     for(const c of anims.animations)CLIP[c.name]=c;
-    for(const k in PROTO){const b=new THREE.Box3();for(const p of PROTO[k].parts){p.geo.computeBoundingBox();b.union(p.geo.boundingBox.clone().applyMatrix4(p.m));}TOP[k]=b.max.y;}
+    for(const k in PROTO){const b=new THREE.Box3();for(const p of PROTO[k].parts){p.geo.computeBoundingBox();b.union(p.geo.boundingBox.clone().applyMatrix4(p.m));}TOP[k]=b.max.y;
+      FOOT[k]=Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z);}   // the footprint's diagonal: how wide it can get when turned
     for(const k of Object.keys(MODELS))if(k!=='props'&&k!=='anims')CHARS[k]=joinBody((await parse(k)).scene);
   }catch(e){console.warn('3D models failed to load, drawing in 2D',e);me.failed=true;return;}
   // post: bloom on everything hot, a vignette, then tone mapping
@@ -125,13 +126,45 @@ function cutaway(mat){
       '#include <clipping_planes_fragment>\nfloat cdz=vCutW.z-uCut.z;if(cdz>.3&&cdz<16.&&vCutW.y>max(1.05,1.43*cdz-1.2)&&abs(vCutW.x-uCut.x)<2.4+cdz*.15)discard;');};
   m.customProgramCacheKey=()=>'cut';cutMats.set(mat,m);return m;
 }
+// Grit: the tower's walls and pillars worn by age, in the shader, no new models. Grime and stains from noise, damp
+// darkening toward the floor, cracks in patches (the edges of a cellular pattern, only where a second noise allows),
+// and a few pale chips. All from the surface's world position, so no two stretches of wall look alike.
+const GRITKEYS=/^(wall_half|wall_gated|pillar|pillar_decorated)$/,gritMats=new Map();
+const GRIT_GLSL=`
+float gH(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+vec2 gH2(vec2 p){return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453);}
+float gN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(gH(i),gH(i+vec2(1,0)),f.x),mix(gH(i+vec2(0,1)),gH(i+vec2(1,1)),f.x),f.y);}
+float gF(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*gN(p);p*=2.03;a*=.5;}return v;}
+float gCrack(vec2 p){vec2 i=floor(p),f=fract(p);float d1=8.,d2=8.;
+  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(x,y),r=o+gH2(i+o)-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;}else if(d<d2)d2=d;}
+  return sqrt(d2)-sqrt(d1);}
+`;
+function grit(mat){
+  if(gritMats.has(mat))return gritMats.get(mat);const m=mat.clone();
+  m.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGW;varying vec3 vGN;').replace('#include <project_vertex>',
+      '#include <project_vertex>\nvec4 gw=vec4(transformed,1.);vec3 gn=objectNormal;\n#ifdef USE_INSTANCING\ngw=instanceMatrix*gw;gn=mat3(instanceMatrix)*gn;\n#endif\nvGW=(modelMatrix*gw).xyz;vGN=normalize(mat3(modelMatrix)*gn);');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vGW;varying vec3 vGN;'+GRIT_GLSL).replace('#include <color_fragment>',
+      `#include <color_fragment>
+      {vec3 an=abs(vGN);vec2 uv=an.y>.6?vGW.xz:(an.x>an.z?vGW.zy:vGW.xy);
+       float g=mix(.5,1.12,gF(uv*1.4))*mix(.62,1.,smoothstep(.3,.62,gF(uv*.45+3.)));   // grime, and big dark stains
+       float low=1.-smoothstep(0.,1.6,vGW.y);g*=1.-low*.45;                 // damp toward the floor
+       diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.8,.88,.68),low*.75);
+       vec2 cu=uv*1.1+vec2(gF(uv*2.1),gF(uv*2.1+9.))*.8;
+       float cd=gCrack(cu),crack=(1.-smoothstep(.0,.07,cd))*smoothstep(.4,.52,gF(uv*.33+17.));   // cracks, in patches
+       float lip=(smoothstep(.07,.1,cd)-smoothstep(.1,.14,cd))*smoothstep(.4,.52,gF(uv*.33+17.));   // a pale broken edge beside each
+       g*=1.-crack*.88;g+=lip*.1;
+       g+=step(.975,gH(floor(uv*11.)))*.16*(1.-crack);                     // pale chips
+       diffuseColor.rgb*=g;}`);};
+  m.customProgramCacheKey=()=>'grit';gritMats.set(mat,m);return m;
+}
 function instance(group,placed){
   const tmp=new THREE.Matrix4();
   for(const[key,list]of placed){const P_=PROTO[key];if(!P_){console.warn('no prop',key);continue;}
     const chunks=new Map();for(const m of list){const c=Math.floor(m.elements[12]/CH)+','+Math.floor(m.elements[14]/CH);(chunks.get(c)||chunks.set(c,[]).get(c)).push(m);}
     const flat=key.startsWith('floor_');
     for(const ms of chunks.values())for(const part of P_.parts){
-      const im=new THREE.InstancedMesh(part.geo,CUTKEYS.test(key)?cutaway(part.mat):part.mat,ms.length);ms.forEach((M,i)=>im.setMatrixAt(i,tmp.multiplyMatrices(M,part.m)));
+      const im=new THREE.InstancedMesh(part.geo,CUTKEYS.test(key)?cutaway(part.mat):GRITKEYS.test(key)?grit(part.mat):part.mat,ms.length);ms.forEach((M,i)=>im.setMatrixAt(i,tmp.multiplyMatrices(M,part.m)));
       im.castShadow=!flat;im.receiveShadow=true;im.computeBoundingSphere();group.add(im);
       if(STYLE.ink&&!flat&&!/^(wall_|pillar)/.test(key)){   // outlines on the props, sized to the prop's own (quantized) units
         const sc=new THREE.Vector3().setFromMatrixScale(part.m),o=new THREE.InstancedMesh(part.geo,inkMat(.04/Math.max(sc.x,sc.y,sc.z)),ms.length);
@@ -139,7 +172,7 @@ function instance(group,placed){
   }
 }
 // One model placed on its own, to move or change later (chests, the boss gates, a held weapon).
-function single(key){const P_=PROTO[key];const o=P_.node.clone(true);o.position.set(0,0,0);o.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;if(CUTKEYS.test(key))c.material=cutaway(c.material);}});return o;}
+function single(key){const P_=PROTO[key];const o=P_.node.clone(true);o.position.set(0,0,0);o.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;if(CUTKEYS.test(key))c.material=cutaway(c.material);else if(GRITKEYS.test(key))c.material=grit(c.material);}});return o;}
 
 /* ---------- ink: dark outlines, the model drawn again a little larger and inside out ---------- */
 const INK=new Map();
@@ -260,10 +293,8 @@ function build(){
     // an ordinary room: its floor's lights near the walls, clutter in a corner or two, the dead's leftovers
     for(const[i,j]of[[1,1],[r.w-2,1],[1,r.h-2],[r.w-2,r.h-2],[Math.floor(r.w/2),1]].slice(0,r.w*r.h>50?5:3))if(rr()<.85)themed((r.x+i+.5)*2,(r.y+j+.5)*2,rr);
     for(const q of g.clutter||[]){if(q.room!==ri)continue;const x=q.x*2+1,z=q.y*2+1,k=q.k,pick=a=>a[Math.floor(q.rot/6*a.length)%a.length];   // the rules chose these tiles and made them solid
-      if(k<.3)put(pick(['barrel_large','barrel_small_stack','keg']),x,0,z,q.rot);
-      else if(k<.55)put(pick(['crates_stacked','box_stacked','box_large']),x,0,z,q.rot);
-      else if(k<.8&&theme>0)put(pick(['coffin','coffin_decorated']),x,0,z,q.c==='n'?0:Math.PI);
-      else put('rubble_half',x,0,z,q.rot);}
+      const key=k<.3?pick(['barrel_large','barrel_small_stack','keg']):k<.55?pick(['crates_stacked','box_stacked','box_large']):k<.8&&theme>0?pick(['coffin','coffin_decorated']):'rubble_half';
+      put(key,x,0,z,key.startsWith('coffin')?(q.c==='n'?0:Math.PI):q.rot,Math.min(1,2.3/(FOOT[key]||2.3)));}   // shrunk to its one solid tile, however it is turned
     const bones=theme===0?1+Math.floor(rr()*2):3+Math.floor(rr()*4);
     for(let k=0;k<bones;k++)put(rp(['bone_A','bone_B','bone_C','skull','ribcage']),(r.x+1+rr()*(r.w-2))*2,0,(r.y+1+rr()*(r.h-2))*2,rr()*6,.9);
     if(theme===2&&rr()<.5)put(rp(['gravestone','grave_A_destroyed']),(r.x+.6)*2,0,(r.y+.7)*2,0);
@@ -957,7 +988,7 @@ me.info=()=>renderer&&Object.assign({},renderer.info.render,{geometries:renderer
 function applyStyle(){const g=STYLE.grade||[1,1,0,0,0],u=grade.uniforms;u.con.value=g[0];u.sat.value=g[1];u.cold.value=g[2];u.grain.value=g[3];u.lift.value=g[4]||0;
   for(const k in PROTO)for(const p of PROTO[k].parts)if(p.mat.flatShading!==!!STYLE.flat){p.mat.flatShading=!!STYLE.flat;p.mat.needsUpdate=true;}}
 me.style=i=>{if(i!=null){STYLE=STYLES[i];applyStyle();me.g=null;for(const a of ACTORS.values())dropActor(a);ACTORS.clear();FREE.clear();}return STYLE.name;};
-me.debug=()=>({floaters:FLOOR&&FLOOR.floatSet?FLOOR.floatSet.list.slice(0,3):null,torches:FLOOR&&FLOOR.torches.length,top:TOP.skull_candle,candle:TOP.candle_thin});
+me.debug=()=>({foot:FOOT,floaters:FLOOR&&FLOOR.floatSet?FLOOR.floatSet.list.slice(0,3):null,torches:FLOOR&&FLOOR.torches.length,top:TOP.skull_candle,candle:TOP.candle_thin});
 me.zoom=z=>{if(z)zoom=z;return zoom;};
 me.use=()=>me.ready&&!Q.off&&!!G&&!!P;
 me.draw=function(){
