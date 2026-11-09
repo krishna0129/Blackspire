@@ -37,7 +37,7 @@ function simUpdate(dt){
       const ox=p.x,oy=p.y;p.x+=p.vx*dt/2;p.y+=p.vy*dt/2;
       if(solid(p.x,p.y)){p.life=0;if(fire)explode(ox,oy,p.use);else{shotEnds(p,ox,oy);burst(ox,oy,3,p.k==='arrow'?'#8d8b98':'#cfc8ff',30);}break;}
       for(const e of G.enemies){if(e.dead||hyp(e.x-p.x,e.y-p.y)>e.r+(fire?4:3))continue;
-        if(p.f==='split'){if((p.hit||(p.hit=new Set())).has(e))continue;p.hit.add(e);damageEnemy(e,p.mult,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use});continue;}   // it goes on through
+        if(p.f==='split'){if((p.hit||(p.hit=new Set())).has(e))continue;p.hit.add(e);damageEnemy(e,p.mult,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use});if(p.hit.size>=REACH.split)p.life=0;continue;}   // it goes on through, up to four enemies
         p.life=0;if(fire)explode(p.x,p.y,p.use);
         else{if(damageEnemy(e,p.mult||1,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use,slow:p.k==='frost'?3:0}))gainMomentum();
           if(p.f==='light')chain(e,3,.8,p.tags,p.use);shotEnds(p,p.x,p.y);}

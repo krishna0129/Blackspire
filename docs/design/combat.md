@@ -13,6 +13,8 @@ friends' playtest ([roadmap](../roadmap.md)).
 - **Attacks and skills go toward the mouse.** WASD moves, the mouse aims, the left button attacks. (Today attacks go
   the way you face, which means moving to aim.)
 - **Attacking slows you**: you keep moving while you swing, slower.
+- **You face the mouse only while fighting**: a swing, a block, a skill just cast, and half a second after. Otherwise
+  you face the way you run.
 
 ### Keys
 

@@ -35,7 +35,7 @@ Object.assign(NET,{
   send(o){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(o));},
   act(name,args,done){const id=++this.aid;if(done)this.acts.set(id,done);this.send({t:'act',id,name,args:args||[]});},
   // one-off presses; a dodge-roll also starts here at once so it feels instant (the server runs its own)
-  press(a,s){this.send({t:'p',a,s,aim:P&&P.in.aim!=null?Math.round(P.in.aim*1000)/1000:undefined});if(a==='dodge'&&mode==='play')dodge();},
+  press(a,s){this.send({t:'p',a,s,aim:P&&P.in.aim!=null?Math.round(P.in.aim*1000)/1000:undefined,ad:P&&P.aimD!=null?P.aimD:undefined});if(a==='dodge'&&mode==='play')dodge();},
 
   receive(o){
     switch(o.t){

@@ -101,12 +101,15 @@ addEventListener('pointerup',endPtr);addEventListener('pointercancel',endPtr);
 function setMouse(e){const r=cv.getBoundingClientRect();inp.mx=(e.clientX-r.left)/SCALE;inp.my=(e.clientY-r.top)/SCALE;inp.cx=e.clientX;inp.cy=e.clientY;inp.mouse=true;}
 // Where the mouse points, as an angle from the player: through the 3D camera onto the floor, or on the 2D view.
 // Without a mouse (touch), null: attacks then go the way you walk.
-function aimAngle(){
+function aimPoint(){
   if(!inp.mouse||inp.touch||!P)return null;
   let q=null;if(R3.use())q=R3.pick(inp.cx,inp.cy);
   if(!q)q={x:camX+inp.mx,y:camY+inp.my};
-  return Math.atan2(q.y-P.y,q.x-P.x);
+  return q;
 }
+function aimAngle(){const q=aimPoint();return q?Math.atan2(q.y-P.y,q.x-P.x):null;}
+// how far the mouse points from the player: skills that land somewhere land there (within their reach)
+function aimDist(){const q=aimPoint();return q?Math.round(Math.hypot(q.x-P.x,q.y-P.y)):null;}
 function holdBtn(el,down,up){
   el.addEventListener('pointerdown',e=>{e.preventDefault();if(e.pointerType==='touch')inp.touch=true;if(mode==='play')down();});
   if(up){el.addEventListener('pointerup',up);el.addEventListener('pointerleave',up);el.addEventListener('pointercancel',up);}
@@ -121,7 +124,7 @@ const moveY=()=>(held('down')?1:0)-(held('up')?1:0)+inp.jy;
 const PRESS={atk:()=>{P.atkBuf=.18;},skill:s=>useSkill(s),dodge:()=>dodge(),potion:()=>usePotion(),mana:()=>useMana(),eat:()=>eat(),drink:()=>drink()};
 function press(a,s){
   // aim first, so a press acts toward the mouse even between two input reports
-  if(P&&!P.dead){const a=aimAngle();if(a!=null){P.in.aim=a;P.aim=a;P.dir=dirOf(a);}}
+  if(P&&!P.dead){const a=aimAngle();if(a!=null){P.in.aim=a;P.aim=a;P.dir=dirOf(a);}P.aimD=aimDist();}
   if(NET.on)NET.press(a,s);else PRESS[a](s);
 }
 const readInput=()=>({mx:moveX(),my:moveY(),atk:!!inp.atk,block:!!inp.block,aim:aimAngle()});

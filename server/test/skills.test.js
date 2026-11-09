@@ -190,3 +190,21 @@ test('the Witch: Frostbolt slows, Arc jumps, Meteor lands late, the dead rise an
   run(`w1.hp=1e6;w1.x=P.x+30;w1.y=P.y;slot('x','raise');`);fresh(run);run(`useSkill('x');tick(3);`);
   assert.ok(run(`w1.hp`)<1e6,'the risen fight');
 });
+
+test('reach: Piercing Line goes the weapon’s reach and a little more, not across the room; ground skills land at the mouse, within their reach',()=>{
+  const run=world('sword','duelist');
+  run(`slot('q','pierce');P.aim=0;P.in.aim=0;globalThis.near=foe('skel',50,0);globalThis.far=foe('skel',140,0);near.hp=far.hp=near.maxHp=far.maxHp=1e5;`);
+  run(`useSkill('q');`);
+  assert.ok(run(`near.hp<1e5`),'the near one is hit');
+  assert.strictEqual(run(`far.hp`),1e5,'the far one is not');
+  // Blizzard: at the mouse when it is near, at its reach when the mouse is farther
+  const w=world('grimoire:magic','witch');
+  w(`slot('x','blizzard');P.aim=0;P.aimD=40;useSkill('x');`);
+  assert.strictEqual(w(`Math.round(G.pfx.find(q=>q.k==='blizzard').x-P.x)`),40);
+  w(`G.pfx.length=0;P.cds={};P.aimD=900;useSkill('x');`);
+  assert.strictEqual(w(`Math.round(G.pfx.find(q=>q.k==='blizzard').x-P.x)`),110);
+  // Split Arrow: through four enemies at most
+  const r=world('bow','ranger');
+  r(`slot('q','split');P.aim=0;P.in.aim=0;globalThis.row=[30,45,60,75,90].map(d=>{const e=foe('skel',d,0);e.hp=e.maxHp=1e5;e.state='idle';e.speed=0;return e;});useSkill('q');tick(.8);`);
+  assert.strictEqual(r(`row.filter(e=>e.hp<1e5).length`),4);
+});

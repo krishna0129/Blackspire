@@ -302,7 +302,7 @@ class Game{
         if(isNum(o.x)&&isNum(o.y)&&isNum(o.tp))m.pos={x:o.x,y:o.y,tp:o.tp};
         return;
       case'p':    // a one-off press
-        if(isNum(o.aim))m.in.aim=o.aim;pl.in=m.in;if(isNum(o.aim)){pl.aim=o.aim;pl.dir=R.dirOf(o.aim);}
+        if(isNum(o.aim))m.in.aim=o.aim;pl.in=m.in;if(isNum(o.aim)){pl.aim=o.aim;pl.dir=R.dirOf(o.aim);}pl.aimD=isNum(o.ad)?Math.max(0,Math.min(400,o.ad)):null;
         if(o.a==='atk')pl.atkBuf=.18;else if(o.a==='skill')R.useSkill(['q','e','c','x'].includes(o.s)?o.s:'q');else if(o.a==='dodge')R.dodge();else if(o.a==='potion')R.usePotion();else if(o.a==='mana')R.useMana();else if(o.a==='eat')R.eat();else if(o.a==='drink')R.drink();
         return;
       case'act':{ // gear, attributes, traders, the stash, the forge, the well

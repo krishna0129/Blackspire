@@ -208,3 +208,17 @@ The long list, by how a skill fights. All of it is in scope; the tables above pl
   spear throw and recall, elemental infusions.
 
 The names above are working names for the ideas. Ours will be named and described as our own before they ship.
+
+## Reach
+
+How far skills go, in tiles (a tile is 16 units; the numbers are `REACH` in js/sim/skills.js):
+
+| Kind | Reach |
+|---|---|
+| Melee lines (Piercing Line, Piercing Storm) | the weapon's reach plus about 3 tiles (Storm: plus about 4) |
+| Thousand Cuts | an enemy within the weapon's reach plus 2.5 tiles |
+| Ground skills (Rain of Arrows, Meteor, Blizzard, Judgement) | land **at the mouse**, no farther than 7 to 8 tiles |
+| Leap Slam | to the mouse, up to about 5.5 tiles |
+| Shots (arrows, bolts, Fireball, Frostbolt) | the weapon's range (bow about 9 tiles, grimoire about 8.5) |
+| Split Arrow | through up to four enemies |
+| Aimed at an enemy (Arc, Death Mark, Challenge, Shadowstep) | 7.5 to 10 tiles |

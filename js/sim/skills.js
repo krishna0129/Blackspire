@@ -109,7 +109,7 @@ const LANDING={
   judge:q=>{const n=hitCircle(q.x,q.y,q.r,2.2,{kb:40,tags:SKILLS.judgement.tags,use:q.use});vfx({k:'boom',x:q.x,y:q.y,r:q.r,t:0,d:.3,c:'#ffe9a8'});burst(q.x,q.y,16,'#ffe9a8',90);shake(3);sfx('boom');},
   shock:q=>{hitCircle(P.x,P.y,q.r,1.4,{kb:80,pz:2,tags:SKILLS.quake.tags,use:q.use});vfx({k:'pulse',x:P.x,y:P.y,r:q.r,t:0,d:.4,c:'#c9a46a'});shake(6);sfx('boom');},
   cut:q=>{const e=G.enemies.find(x=>x.id===q.e&&!x.dead);if(!e)return;damageEnemy(e,.9,{melee:true,tags:SKILLS.cuts.tags,use:q.use});slashFx(Math.atan2(e.y-P.y,e.x-P.x)+rand(-.6,.6),90,ST.range+6,q.i%2?1:-1,.1);sfx('swing');},
-  thrust:q=>{hitLine(P.aim,170,10,2,{kb:40,tags:SKILLS.storm.tags,use:q.use});vfx({k:'line',x:P.x,y:P.y,a:P.aim,len:172,t:0,d:.18,w:1});shake(2);sfx('swing');},
+  thrust:q=>{const L=ST.range+REACH.storm;hitLine(P.aim,L,10,2,{kb:40,tags:SKILLS.storm.tags,use:q.use});vfx({k:'line',x:P.x,y:P.y,a:P.aim,len:L+2,t:0,d:.18,w:1});shake(2);sfx('swing');},
   dance:q=>{const e=G.enemies.find(x=>x.id===q.e&&!x.dead);if(!e)return;const a=Math.atan2(P.y-e.y,P.x-e.x),tx=e.x+Math.cos(a)*(e.r+8),ty=e.y+Math.sin(a)*(e.r+8);
     burst(P.x,P.y,8,'#55556a',50);if(!boxSolid(tx,ty,P.cr)){P.x=tx;P.y=ty;P.tp++;}P.aim=Math.atan2(e.y-P.y,e.x-P.x);P.dir=dirOf(P.aim);
     damageEnemy(e,1.8,{crit:true,melee:true,tags:SKILLS.dance.tags,use:q.use});slashFx(P.aim,120,ST.range+6);},
@@ -133,13 +133,18 @@ const LASTING={
       if(d>(best?12+best.r:10)){const v=Math.min(d,85*dt);q.x+=(tx-q.x)/d*v;q.y+=(ty-q.y)/d*v;}},
     go:q=>{const e=q.e!=null&&G.enemies.find(x=>x.id===q.e&&!x.dead);if(e){damageEnemy(e,.7,{fx:q.x,fy:q.y,tags:SKILLS.raise.tags,use:q.use,noProc:true});burst(e.x,e.y-4,4,'#9be08a',40);}}},
 };
+/* ---------- reach ---------- */
+// How far skills reach, in game units (a tile is 16). Melee skills go by the weapon's own reach (ST.range); skills
+// that land somewhere land at the mouse, no farther than their reach (P.aimD: how far the mouse points).
+const REACH={line:44,storm:60,cuts:40,leap:90,judge:110,rain:130,meteor:120,blizzard:110,mark:160,dance:120,blink:120,arc:140,split:4};
+function aimed(a,max){const d=P.aimD==null?max:clamp(P.aimD,0,max);return{x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d};}
 /* ---------- what each skill does ---------- */
 // go(a, tags, use): the effect; can(): whether there is anything to use it on (if not, nothing is spent)
 const SKILL_FX={
   // ----- skills from before the four slots -----
   circle:{go:(a,tags,use)=>{hitArc(0,360,ST.range*1.35,2.2,{kb:120,tags,use});slashFx(a,360,ST.range*1.35,1,.24);shake(4);}},
   blink:{go:(a,tags,use)=>{
-    let best=null,bd=150;for(const e of G.enemies){if(e.dead)continue;const d=hyp(e.x-P.x,e.y-P.y);if(d<bd&&los(P.x,P.y,e.x,e.y)){bd=d;best=e;}}
+    let best=null,bd=REACH.blink;for(const e of G.enemies){if(e.dead)continue;const d=hyp(e.x-P.x,e.y-P.y);if(d<bd&&los(P.x,P.y,e.x,e.y)){bd=d;best=e;}}
     burst(P.x,P.y,10,'#55556a',50);
     if(best){const dir=Math.atan2(best.y-P.y,best.x-P.x);let tx=best.x+Math.cos(dir)*(best.r+9),ty=best.y+Math.sin(dir)*(best.r+9);
       if(boxSolid(tx,ty,P.cr)){tx=best.x-Math.cos(dir)*(best.r+9);ty=best.y-Math.sin(dir)*(best.r+9);}
@@ -148,9 +153,9 @@ const SKILL_FX={
     else{P.dash={t:.12,vx:Math.cos(a)*300,vy:Math.sin(a)*300};P.inv=Math.max(P.inv,.2);}}},
   sunder:{go:(a,tags,use)=>{hitArc(a,170,ST.range*1.35,2.8,{sunder:4,kb:90,tags,use});slashFx(a,170,ST.range*1.35,1,.22);shake(6);}},
   guard:{go:()=>{P.guard=5;vfx({k:'ring',x:P.x,y:P.y,r:24,t:0,d:.3});burst(P.x,P.y,12,'#e6e1d3',50);}},
-  pierce:{go:(a,tags,use)=>{hitLine(a,120,9,2.5,{kb:50,tags,use});vfx({k:'line',x:P.x,y:P.y,a,len:122,t:0,d:.2,w:1});shake(3);}},
+  pierce:{go:(a,tags,use)=>{const L=ST.range+REACH.line;hitLine(a,L,9,2.5,{kb:50,tags,use});vfx({k:'line',x:P.x,y:P.y,a,len:L+2,t:0,d:.2,w:1});shake(3);}},
   volley:{go:(a,tags,use)=>{for(let i=-2;i<=2;i++)fireArrow(a+i*.15,.8,tags,use);}},
-  fireball:{go:(a,tags,use)=>{G.pproj.push({k:'fire',owner:P.id,use,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*135,vy:Math.sin(a)*135,life:1.25});}},
+  fireball:{go:(a,tags,use)=>{G.pproj.push({k:'fire',owner:P.id,use,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*135,vy:Math.sin(a)*135,life:ST.range/135});}},
   // ----- the Templar -----
   // Heal: one ally (the one you aim at, or yourself), a lot
   heal:{go:()=>{const t=allyAimed()||P,amt=healAmount()*1.4;healOn(t,amt);
@@ -172,7 +177,7 @@ const SKILL_FX={
   smite:{go:()=>{empower({id:'smite',t:8,n:4,mult:1.7,c:'#ffe9a8'});addNum(P.x,P.y-20,'SMITE','crit');burst(P.x,P.y-6,14,'#ffe9a8',60);}},
   // ----- the Templar's ultimates -----
   // Judgement: eight strikes of light fall where you aim, one after another
-  judgement:{go:(a,tags,use)=>{const cx=P.x+Math.cos(a)*70,cy=P.y+Math.sin(a)*70;
+  judgement:{go:(a,tags,use)=>{const{x:cx,y:cy}=aimed(a,REACH.judge);
     for(let i=0;i<8;i++){const r=i?rand(6,38):0,t=rand(0,Math.PI*2);later({k:'judge',x:cx+Math.cos(t)*r,y:cy+Math.sin(t)*r,r:22,d:.45+i*.22,use,mark:1});}}},
   // Mass Heal: the whole party, wherever they are on the floor, and a little over time after
   massheal:{go:()=>{const amt=healAmount()*2.2;
@@ -183,7 +188,7 @@ const SKILL_FX={
     vfx({k:'heal',x:P.x,y:P.y,r:HEAL_R*1.6,t:0,d:1.2});}},
   // ----- the Marauder -----
   heavy:{go:()=>{empower({id:'heavy',t:8,n:3,mult:1.6,pz:3,c:'#ffd27a'});addNum(P.x,P.y-20,'HEAVY','crit');}},
-  leap:{go:(a,tags,use)=>{const L=Math.min(95,hyp(Math.cos(a),Math.sin(a))*95);burst(P.x,P.y,10,'#8a7a66',60);
+  leap:{go:(a,tags,use)=>{const L=P.aimD==null?REACH.leap:clamp(P.aimD,16,REACH.leap);burst(P.x,P.y,10,'#8a7a66',60);
     for(let i=0;i<12;i++)moveEnt(P,Math.cos(a)*L/12,Math.sin(a)*L/12);P.tp++;
     hitCircle(P.x,P.y,32,2,{kb:110,pz:2,tags,use});vfx({k:'pulse',x:P.x,y:P.y,r:32,t:0,d:.35,c:'#c9a46a'});burst(P.x,P.y,16,'#8a7a66',90);shake(6);sfx('boom');}},
   cry:{go:()=>{for(const t of allies())if(!t.dead&&hyp(t.x-P.x,t.y-P.y)<140){t.cryT=10;addNum(t.x,t.y-22,'ENDURE','evade');}
@@ -194,30 +199,30 @@ const SKILL_FX={
   // ----- the Duelist -----
   riposte:{go:()=>{P.riposteT=1;P.parryAt=-9;addNum(P.x,P.y-20,'EN GARDE','evade');}},
   double:{go:()=>{empower({id:'double',t:10,n:99,mult:1.9,per:3,c:'#cfe8ff'});addNum(P.x,P.y-20,'DOUBLE','crit');}},
-  cuts:{can:()=>!!enemyAimed(110),go:(a,tags,use)=>{const e=enemyAimed(110);P.inv=Math.max(P.inv,1);for(let i=0;i<8;i++)later({k:'cut',e:e.id,i,d:.1+i*.11,use,dies:1});}},
+  cuts:{can:()=>!!enemyAimed(ST.range+REACH.cuts),go:(a,tags,use)=>{const e=enemyAimed(ST.range+REACH.cuts);P.inv=Math.max(P.inv,1);for(let i=0;i<8;i++)later({k:'cut',e:e.id,i,d:.1+i*.11,use,dies:1});}},
   challenge:{can:()=>!!enemyAimed(200),go:()=>{const e=enemyAimed(200);e.tauntBy=P.id;e.tauntT=G.time+12;if(e.state==='idle')e.state='chase';addNum(e.x,e.y-e.r-12,'CHALLENGED','crit');burst(e.x,e.y-6,12,'#e8c060',60);}},
   storm:{go:(a,tags,use)=>{for(let i=0;i<5;i++)later({k:'thrust',d:.05+i*.16,use,dies:1});}},
   // ----- the Ranger -----
   lightarrow:{go:(a,tags,use)=>{fireArrow(a,1.2,tags,use,'light');}},
   caustic:{go:(a,tags,use)=>{fireArrow(a,.8,tags,use,'caustic');}},
   split:{go:(a,tags,use)=>{fireArrow(a,1.5,tags,use,'split');}},
-  rain:{go:(a,tags,use)=>{later({k:'rain',x:P.x+Math.cos(a)*85,y:P.y+Math.sin(a)*85,r:50,d:2,tick:.25,use,vis:1});}},
+  rain:{go:(a,tags,use)=>{const t=aimed(a,REACH.rain);later({k:'rain',x:t.x,y:t.y,r:50,d:2,tick:.25,use,vis:1});}},
   ballista:{go:(a,tags,use)=>{later({k:'ballista',x:P.x+Math.cos(a)*14,y:P.y+Math.sin(a)*14,r:8,d:15,tick:.6,use,vis:1,a});}},
   tornado:{go:(a,tags,use)=>{fireArrow(a,1,tags,use,'tornado');}},
   // ----- the Shadow -----
   viper:{go:()=>{empower({id:'viper',t:10,n:99,mult:1.25,per:2,poison:1,c:'#7fd060'});addNum(P.x,P.y-20,'VIPER','crit');}},
   vortex:{go:(a,tags,use)=>{later({k:'vortex',x:P.x,y:P.y,r:30,d:4,tick:.3,use,vis:1,dies:1});}},
   smoke:{go:()=>{later({k:'smoke',x:P.x,y:P.y,r:42,d:5,tick:1,vis:1});burst(P.x,P.y,24,'#55556a',70);}},
-  deathmark:{can:()=>!!enemyAimed(200),go:(a,tags,use)=>{const e=enemyAimed(200);e.mark={by:P.id,acc:0};later({k:'mark',e:e.id,d:4,use});addNum(e.x,e.y-e.r-12,'MARKED','crit');}},
-  dance:{can:()=>G.enemies.some(e=>!e.dead&&hyp(e.x-P.x,e.y-P.y)<160),go:(a,tags,use)=>{
-    const list=G.enemies.filter(e=>!e.dead&&hyp(e.x-P.x,e.y-P.y)<160&&los(P.x,P.y,e.x,e.y)).sort((p,q)=>hyp(p.x-P.x,p.y-P.y)-hyp(q.x-P.x,q.y-P.y)).slice(0,6);
+  deathmark:{can:()=>!!enemyAimed(REACH.mark),go:(a,tags,use)=>{const e=enemyAimed(REACH.mark);e.mark={by:P.id,acc:0};later({k:'mark',e:e.id,d:4,use});addNum(e.x,e.y-e.r-12,'MARKED','crit');}},
+  dance:{can:()=>G.enemies.some(e=>!e.dead&&hyp(e.x-P.x,e.y-P.y)<REACH.dance),go:(a,tags,use)=>{
+    const list=G.enemies.filter(e=>!e.dead&&hyp(e.x-P.x,e.y-P.y)<REACH.dance&&los(P.x,P.y,e.x,e.y)).sort((p,q)=>hyp(p.x-P.x,p.y-P.y)-hyp(q.x-P.x,q.y-P.y)).slice(0,6);
     P.inv=Math.max(P.inv,list.length*.18+.3);list.forEach((e,i)=>later({k:'dance',e:e.id,d:.05+i*.18,use,dies:1}));}},
   vanish:{go:()=>{P.vanishT=4;burst(P.x,P.y,24,'#3a3a4a',80);addNum(P.x,P.y-20,'VANISH','evade');}},
   // ----- the Witch -----
-  frostbolt:{go:(a,tags,use)=>{G.pproj.push({k:'frost',owner:P.id,use,tags,mult:1.6,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*200,vy:Math.sin(a)*200,life:1.1});}},
-  arc:{can:()=>!!enemyAimed(150),go:(a,tags,use)=>{const e=enemyAimed(150);vfx({k:'bolt',x:P.x,y:P.y,x2:e.x,y2:e.y,t:0,d:.2});damageEnemy(e,1.4,{tags,use});chain(e,4,.9,tags,use);}},
+  frostbolt:{go:(a,tags,use)=>{G.pproj.push({k:'frost',owner:P.id,use,tags,mult:1.6,x:P.x+Math.cos(a)*8,y:P.y+Math.sin(a)*6,vx:Math.cos(a)*200,vy:Math.sin(a)*200,life:ST.range/200});}},
+  arc:{can:()=>!!enemyAimed(REACH.arc),go:(a,tags,use)=>{const e=enemyAimed(REACH.arc);vfx({k:'bolt',x:P.x,y:P.y,x2:e.x,y2:e.y,t:0,d:.2});damageEnemy(e,1.4,{tags,use});chain(e,4,.9,tags,use);}},
   icenova:{go:(a,tags,use)=>{hitCircle(P.x,P.y,48,1.6,{kb:120,slow:3,tags,use});vfx({k:'pulse',x:P.x,y:P.y,r:48,t:0,d:.4,c:'#9fd8ff'});burst(P.x,P.y,22,'#cfe8ff',100);}},
   raise:{go:(a,tags,use)=>{for(let i=0;i<3;i++)later({k:'minion',i,x:P.x+Math.cos(i*2.1)*14,y:P.y+Math.sin(i*2.1)*14,r:6,d:20,tick:.8,use,vis:1,dies:1});burst(P.x,P.y,20,'#9be08a',70);}},
-  meteor:{go:(a,tags,use)=>{later({k:'meteor',x:P.x+Math.cos(a)*90,y:P.y+Math.sin(a)*90,r:42,d:1.2,use,mark:1});}},
-  blizzard:{go:(a,tags,use)=>{later({k:'blizzard',x:P.x+Math.cos(a)*80,y:P.y+Math.sin(a)*80,r:52,d:5,tick:.4,use,vis:1});}},
+  meteor:{go:(a,tags,use)=>{const t=aimed(a,REACH.meteor);later({k:'meteor',x:t.x,y:t.y,r:42,d:1.2,use,mark:1});}},
+  blizzard:{go:(a,tags,use)=>{const t=aimed(a,REACH.blizzard);later({k:'blizzard',x:t.x,y:t.y,r:52,d:5,tick:.4,use,vis:1});}},
 };

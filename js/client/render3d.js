@@ -561,8 +561,15 @@ function auras(pl){
 function animHero(a,pl,wt,dt){
   const h=HERO[wt]||HERO.sword;a.root.position.set(wx(pl.x),0,wz(pl.y));a.root.visible=pl.x>-900;
   if(pl.dead){if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
-  const sw=pl.swing;let ang=typeof pl.aim==='number'?pl.aim:DIR_ANGLE[pl.dir||0];   // the mouse's aim, or the four-way facing
-  if(sw){ang=sw.a??ang;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing
+  // Facing: toward the mouse's aim only while fighting (a swing, a block, a skill just cast, and a moment after);
+  // otherwise the way you run, so running reads as running. Without an aim (touch), the four-way facing.
+  const aim=typeof pl.aim==='number'?pl.aim:DIR_ANGLE[pl.dir||0],sw=pl.swing;
+  let cast=0;if(pl.cds)for(const k in pl.cds){const v=pl.cds[k]||0;if(v>((a.cdSeen||{})[k]||0)+.05)cast=1;}a.cdSeen=Object.assign({},pl.cds||{});
+  if(sw||pl.blocking||pl.parrying||cast)a.fight=.5;else a.fight=(a.fight||0)-dt;
+  const mvx=pl.x-(a.lx??pl.x),mvy=pl.y-(a.ly??pl.y);a.lx=pl.x;a.ly=pl.y;
+  if(mvx*mvx+mvy*mvy>.04&&(pl.moving||pl.dash))a.run=Math.atan2(mvy,mvx);
+  let ang=a.fight>0||a.run==null?aim:a.run;
+  if(sw){ang=sw.a??aim;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing
       const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;
       play(a,clip,{once:true,restart:true,fade:.06,speed:CLIP[clip].duration/dur});}
     a.swT=sw.t;}else a.swT=-1;
@@ -902,21 +909,28 @@ function npcs(dt){
     upd(a,dt);});
 }
 
-/* ---------- the character preview: your model, turning slowly, in the Gear panel ---------- */
-let PV=null;
-me.preview=function(cv){
+/* ---------- the character preview: your model, turning slowly, in the Gear panel and the creator ---------- */
+// One small renderer per canvas. wt: the weapon type it holds (the model follows it), the save's by default.
+const PVS=new Map();
+me.preview=function(cv,wt,school){
   if(!me.ready||Q.off)return false;
+  let PV=PVS.get(cv);
   if(!PV){const r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.1;r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
     const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(28,1,.1,50);cam.position.set(0,1.7,6.9);cam.lookAt(0,1.3,0);
     sc.add(new THREE.HemisphereLight('#c8d0e8','#2a2016',1.4));const k=new THREE.DirectionalLight('#ffe2c0',2.2);k.position.set(2,4,5);sc.add(k);
     const rim=new THREE.DirectionalLight('#8aa0ff',1.6);rim.position.set(-3,3,-4);sc.add(rim);
     const disc=new THREE.Mesh(new THREE.CircleGeometry(1.1,40),new THREE.MeshBasicMaterial({color:'#000',transparent:true,opacity:.45}));disc.rotation.x=-Math.PI/2;sc.add(disc);
-    PV={r,sc,cam,a:null,key:'',cv,t:0,last:0};}
-  const wt=S.equip.weapon.type,key='pv:'+wt+':'+S.equip.weapon.school;
-  if(PV.key!==key){if(PV.a)PV.sc.remove(PV.a.root);const h=HERO[wt]||HERO.sword;const a=makeActor(key,h);scene.remove(a.root);a.root.position.set(0,0,0);PV.sc.add(a.root);play(a,h.idle||'Idle');PV.a=a;PV.key=key;}
+    PV={r,sc,cam,a:null,key:'',cv,t:0,last:0};PVS.set(cv,PV);}
+  if(!wt){wt=S.equip.weapon.type;school=S.equip.weapon.school;}
+  const key='pv:'+wt+':'+school;
+  if(PV.key!==key){let rot=0;if(PV.a){rot=PV.a.root.rotation.y;PV.sc.remove(PV.a.root);}const h=HERO[wt]||HERO.sword;const a=makeActor(key,h);scene.remove(a.root);
+    a.root.position.set(0,0,0);a.root.rotation.y=rot;PV.sc.add(a.root);play(a,h.idle||'Idle');PV.a=a;PV.key=key;
+    if(PV.key0){play(a,h.atk[0],{once:true,restart:true});a.lock=1;}PV.key0=key;}   // a new weapon: a swing to show it off
   const w=cv.clientWidth||180,hh=cv.clientHeight||220;PV.r.setSize(w,hh,false);PV.cam.aspect=w/hh;PV.cam.updateProjectionMatrix();
   if(!PV.loop){PV.loop=true;const step=now=>{if(!PV.cv.isConnected||PV.cv.offsetParent===null){PV.loop=false;PV.last=0;return;}
-      const dt=PV.last?Math.min(.05,(now-PV.last)/1000):0;PV.last=now;PV.a.root.rotation.y+=dt*.5;upd(PV.a,dt);PV.r.render(PV.sc,PV.cam);requestAnimationFrame(step);};
+      const dt=PV.last?Math.min(.05,(now-PV.last)/1000):0;PV.last=now;PV.a.root.rotation.y+=dt*.5;
+      if(PV.a.lock>0){PV.a.lock-=dt;if(PV.a.lock<=0){const h=HERO[PV.key.split(':')[1]]||HERO.sword;play(PV.a,h.idle||'Idle',{fade:.25});}}
+      upd(PV.a,dt);PV.r.render(PV.sc,PV.cam);requestAnimationFrame(step);};
     requestAnimationFrame(step);}
   return true;
 };
