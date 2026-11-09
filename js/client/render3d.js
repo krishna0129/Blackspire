@@ -223,6 +223,7 @@ function build(){
   const g=G,map=g.map,group=new THREE.Group(),placed=new Map(),torches=[],flames={warm:[],green:[],blue:[]},floaters=[],fungi=[];
   const put=(key,x,y,z,ry,sx,sy,sz)=>{(placed.get(key)||placed.set(key,[]).get(key)).push(M4(x,y,z,ry,sx,sy,sz));};
   const at=(x,y)=>x<0||y<0||x>=MW||y>=MH?0:map[y*MW+x],open=(x,y)=>{const v=at(x,y);return v===1||v===3||v===4;};
+  const front=(x,y)=>!open(x,y)&&open(x,y-1);   // a block of rock with floor right behind it
   const inR=(r,x,y)=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h;
   const safeR=g.rooms.filter(r=>r.kind==='safe'||r.kind==='start'),theme=floorDef(g.n).theme;
   const rnd=mulberry32((g.seed*31+g.n*7919)>>>0);
@@ -235,17 +236,21 @@ function build(){
     else if(inR(g.boss,x,y))put(r<.12?'floor_tile_small_broken_A':'floor_tile_small',cx,0,cz,rot);
     else if(g.thorns&&g.thorns[y*MW+x])put(r<.5?'floor_dirt_small_weeds':'floor_dirt_small_A',cx,0,cz,rot);
     else put(r<.72?'floor_tile_small':r<.8?'floor_tile_small_broken_A':r<.86?'floor_tile_small_broken_B':r<.93?'floor_tile_small_decorated':'floor_tile_small_weeds_A',cx,0,cz,rot);
-    const X=x*2,Z=y*2;
-    if(!open(x,y-1))put('wall_half',X,0,Z,0);
+    // every face of a block of rock that has floor right behind it (north, farther from the camera) is knee-high, so
+    // it never hides that floor: the faces toward the camera, and the side faces of the same block where a corridor
+    // bends (they used to stand full height there, a stub of wall in front of the way on)
+    const X=x*2,Z=y*2,h=(vx,vy)=>front(vx,vy)?.26:1;
+    if(!open(x,y-1))put('wall_half',X,0,Z,0,1,h(x,y-1),1);
     if(!open(x,y+1))put('wall_half',X,0,Z+2,0,1,.26,1);
-    if(!open(x-1,y))put('wall_half',X,0,Z,-Math.PI/2);
-    if(!open(x+1,y))put('wall_half',X+2,0,Z,-Math.PI/2);
+    if(!open(x-1,y))put('wall_half',X,0,Z,-Math.PI/2,1,h(x-1,y),1);
+    if(!open(x+1,y))put('wall_half',X+2,0,Z,-Math.PI/2,1,h(x+1,y),1);
   }
   for(let y=0;y<=MH;y++)for(let x=0;x<=MW;x++){
     const q=[open(x-1,y-1),open(x,y-1),open(x-1,y),open(x,y)],n=q.filter(Boolean).length;
     if(n===0||n===4)continue;
     if(n===2&&((q[0]&&q[1])||(q[2]&&q[3])||(q[0]&&q[2])||(q[1]&&q[3])))continue;   // a straight run of wall
-    const low=(q[2]||q[3])&&!q[0]&&!q[1];
+    // a post is as tall as the tallest wall it joins: knee-high when every block of rock around it is a low one
+    const low=[[x-1,y-1],[x,y-1],[x-1,y],[x,y]].every(([a,b],i)=>q[i]||front(a,b));
     put('pillar',x*2,0,y*2,0,.62,low?.26:1.02,.62);
   }
   // thorns: dark spikes in the patches (floor 3)
