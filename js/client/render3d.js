@@ -530,11 +530,15 @@ const PERSON_TOP=2.6;   // a person stands about 2.5 tall, a helmet a little mor
 // (The change is taken back before each update: a clip without a scale track for a bone leaves the scale alone, and
 // it would otherwise compound frame after frame.)
 function upd(a,dt){if(!a.mixer)return;if(a.build&&a.built)for(const[b,v]of a.build)b.scale.divide(v);
-  a.mixer.update(dt);if(a.build){for(const[b,v]of a.build)b.scale.multiply(v);a.built=true;}}
+  a.mixer.update(dt);if(a.build){for(const[b,v]of a.build)b.scale.multiply(v);a.built=true;}
+  // The sidestep clips turn the hips 58 degrees toward the way they go and twist the chest back. With the arms' own
+  // clip over those legs (a swing, a guard) nothing twists back, so the spine is turned by hand to face the front.
+  if(a.twist){const sp=a.spine||(a.spine=bone(a.root,'spine'));if(sp)sp.quaternion.premultiply(TWQ.setFromAxisAngle(UP,a.twist));}}
+const TWQ=new THREE.Quaternion(),UP=new THREE.Vector3(0,1,0);
 const bone=(root,n)=>root.getObjectByName(n)||root.getObjectByName(n.replace('.',''));
 // A character model, ready to animate. key: what it is (for reuse), o: {m, hold, r, l, s, ghost, tint, eyes}
 function makeActor(key,o){
-  const free=FREE.get(key);if(free&&free.length){const a=free.pop();a.root.visible=true;scene.add(a.root);a.cur=null;a.curName='';a.up=null;a.px=null;a.root.rotation.x=a.root.rotation.z=0;for(const x of Object.values(a.acts))x.stop();return a;}
+  const free=FREE.get(key);if(free&&free.length){const a=free.pop();a.root.visible=true;scene.add(a.root);a.cur=null;a.curName='';a.up=null;a.px=null;a.twist=0;a.root.rotation.x=a.root.rotation.z=0;for(const x of Object.values(a.acts))x.stop();return a;}
   let root,mats=[];
   if(o.orb){   // a wisp: a small skull adrift in a cold flame, not a ball of light
     root=new THREE.Group();const sk=single('skull');sk.scale.setScalar(.55);sk.position.y=1.15;
@@ -717,6 +721,7 @@ function animHero(a,pl,wt,dt){
       if(moving&&loco(a,a.vx,a.vz,'lo'))playUp(a,'Blocking',{fade:.08});else{stopUp(a,.08);play(a,'Blocking',{fade:.06});}}
     else{stopUp(a);if(!(moving&&loco(a,a.vx,a.vz)))play(a,h.idle||'Idle',{fade:.18});}
   }
+  const tw=a.up&&a.curName.endsWith('|lo')&&a.curName.startsWith('Running_Strafe_')?(a.curName.includes('Left')?-1.01:1.01):0;a.twist=(a.twist||0)+(tw-(a.twist||0))*Math.min(1,12*dt);if(Math.abs(a.twist)<.01)a.twist=0;
   lean(a,dt);
   flash(a,pl.inv>0&&!pl.dash&&Math.floor(G.time*12)%2,'#ff3a2a',.3);
   upd(a,dt);
