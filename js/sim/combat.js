@@ -8,6 +8,15 @@ function moveEnt(e,dx,dy){
   const r=e.cr,stepN=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/6));dx/=stepN;dy/=stepN;
   for(let i=0;i<stepN;i++){if(!boxSolid(e.x+dx,e.y,r))e.x+=dx;if(!boxSolid(e.x,e.y+dy,r))e.y+=dy;}
 }
+// An enemy walking (chasing, backing off, patrolling): it gathers pace over a quarter of a second from a standing
+// start instead of being at full speed on the first frame, and starts again from slow after any stop (an attack, a
+// stagger). Blows, lunges, hops and charges still move it at once (moveEnt).
+function walkEnt(e,dx,dy){
+  if(!dx&&!dy)return;
+  const gap=G.time-(e.gaitAt??-9);if(gap>.12)e.gait=0;
+  e.gait=Math.min(1,(e.gait||0)+Math.min(.05,Math.max(0,gap))/COMBAT.walk.foe);e.gaitAt=G.time;
+  const k=.35+.65*e.gait*e.gait*(3-2*e.gait);moveEnt(e,dx*k,dy*k);
+}
 // line of sight through the tile map, so nothing reaches through walls or a sealed gate
 function los(x1,y1,x2,y2){const n=Math.ceil(hyp(x2-x1,y2-y1)/6);for(let i=1;i<n;i++){const u=i/n;if(solid(x1+(x2-x1)*u,y1+(y2-y1)*u))return false;}return true;}
 const after=(t,fn)=>G.timers.push({t,fn});

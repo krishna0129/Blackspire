@@ -166,13 +166,24 @@ function steerPlayer(dt){
   if(P.dash){
     const D=P.dash;if(!P.remote)moveEnt(P,D.vx*dt,D.vy*dt);D.t-=dt;
     if(Math.random()<.7)part({x:P.x,y:P.y+rand(-6,4),vx:0,vy:0,t:0,d:.22,c:'#4a4a5e'});
-    if(D.t<=0)P.dash=null;
+    if(D.t<=0){P.dash=null;P.vx=mx*ST.move;P.vy=my*ST.move;}   // you come out of a dash already running
   }else{
-    // you keep moving while you attack, slower (COMBAT.swingSlow); staggered, you don't move at all
-    const sp=P.stagger>0?0:ST.move*(P.swing?COMBAT.swingSlow:P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1)*(P.buff&&P.buff.id==='morning'?1.08:1);
+    // you keep moving while you attack, slower (COMBAT.swingSlow), through the whole of a string of swings (attack
+    // held: the gaps between swings no longer let you bolt); staggered, you don't move at all
+    const sp=P.stagger>0?0:ST.move*(P.swing||(P.in.atk&&P.atkCd>0&&!P.safe)?COMBAT.swingSlow:P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1)*(P.buff&&P.buff.id==='morning'?1.08:1);
     if(P.lunge>0){P.lunge-=dt;if(!P.remote)moveEnt(P,Math.cos(P.aim)*110*dt,Math.sin(P.aim)*110*dt);}
-    if(!P.remote)moveEnt(P,mx*sp*dt,my*sp*dt);
-    P.moving=m>.1&&sp>0;if(P.moving)P.walk+=dt*(sp/64)*7;
+    // Your pace is a velocity that gathers and sheds speed (COMBAT.walk): about a tenth of a second to full speed,
+    // a little less to stop, and a reversal has to brake first. Short enough to stay sharp, long enough that the
+    // body has weight. (Remote: the server takes the position the client sends.)
+    if(P.remote)P.moving=m>.1&&sp>0;
+    else{
+      const W=COMBAT.walk,tx=mx*sp,ty=my*sp,ex=tx-P.vx,ey=ty-P.vy,ed=hyp(ex,ey);
+      if(ed>.01){const pushing=m>.1&&sp>0,step=Math.min(ed,ST.move/(pushing?W.up:W.down)*dt);P.vx+=ex/ed*step;P.vy+=ey/ed*step;}else{P.vx=tx;P.vy=ty;}
+      const ox=P.x,oy=P.y;moveEnt(P,P.vx*dt,P.vy*dt);
+      if(dt>0){if(Math.abs(P.x-ox)<1e-6&&Math.abs(P.vx)>1)P.vx*=.5;if(Math.abs(P.y-oy)<1e-6&&Math.abs(P.vy)>1)P.vy*=.5;}   // a wall takes the pace out of you
+      P.moving=hyp(P.vx,P.vy)>ST.move*.08;
+    }
+    if(P.moving)P.walk+=dt*(sp/64)*7;
   }
 }
 // where a skill's shot stops (it hit, met a wall, or ran out): a Caustic Arrow leaves poison, a Tornado Shot bursts
@@ -214,13 +225,13 @@ function updateEnemyCore(e,dt){
   if(T.ai)return zeldaAI(e,dt,T,dx,dy,d);
   if(T.ranged){
     let mv=0;if(d<52)mv=-1;else if(d>92)mv=1;
-    moveEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);
+    walkEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);
     e.fire-=dt;
     if(e.fire<=0&&d<140&&los(e.x,e.y,P.x,P.y)){e.fire=rand(1.9,2.6);e.flash=.06;const v=T.pspeed||88;G.proj.push({x:e.x,y:e.y,vx:ux*v,vy:uy*v,dmg:e.dmg,life:2.4,c:T.pcol,fam:famOf(e),dtype:ETYPES[e.type].dtype});}
     return;
   }
   if(e.state==='chase'){
-    moveEnt(e,ux*e.speed*dt,uy*e.speed*dt);
+    walkEnt(e,ux*e.speed*dt,uy*e.speed*dt);
     if(d<e.r+P.r+T.reach){e.state='windup';e.t=T.windup;}
   }else if(e.state==='windup'){
     e.t-=dt;if(e.t<=0){if(d<e.r+P.r+T.reach+7)hurtPlayer(e.dmg,e);e.state='recover';e.t=T.recover;e.lunge=.12;}
@@ -234,7 +245,7 @@ function updateEnemyCore(e,dt){
      darknut  bone knight: turns slowly, shield stops everything from its front, heavy swing with a long recovery */
 function faceTo(e,dx,dy){e.dir=Math.abs(dx)>=Math.abs(dy)?(dx>0?3:2):(dy>0?0:1);}
 function stepAxis(e,dt,dx,dy,speed){
-  const a=DIR_ANGLE[e.dir],ox=e.x,oy=e.y;moveEnt(e,Math.cos(a)*speed*dt,Math.sin(a)*speed*dt);e.moving=true;
+  const a=DIR_ANGLE[e.dir],ox=e.x,oy=e.y;walkEnt(e,Math.cos(a)*speed*dt,Math.sin(a)*speed*dt);e.moving=true;
   if(hyp(e.x-ox,e.y-oy)<speed*dt*.3)e.dir=e.dir>=2?(dy>0?0:1):(dx>0?3:2);   // walked into a wall: try the other axis
 }
 function zeldaAI(e,dt,T,dx,dy,d){
@@ -291,7 +302,7 @@ function updateBoss(e,dt,d,ux,uy){
     return;
   }
   if(e.state==='cast'){e.t-=dt;if(e.t<=0)e.state='chase';return;}
-  if(d>e.r+P.r+6)moveEnt(e,ux*e.speed*dt,uy*e.speed*dt);
+  if(d>e.r+P.r+6)walkEnt(e,ux*e.speed*dt,uy*e.speed*dt);
   const need=e.summons===0?.66:e.summons===1?.33:-1;
   if(e.hp/e.maxHp<need){e.summons++;banner(e.ai==='regent'?'The dead answer':'It calls the swarm','',1400);
     for(let i=0;i<(e.ai==='regent'?2:3+Math.min(3,G.n-1));i++){const a=Math.random()*TAU,s=makeEnemy(e.calls||'skitter',e.x,e.y,G.hpM,G.dmgM,false);s.state='chase';s.summoned=true;s.kx=Math.cos(a)*120;s.ky=Math.sin(a)*120;G.enemies.push(s);}}

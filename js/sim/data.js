@@ -53,6 +53,7 @@ const COMBAT={
   epoise:{share:.35,elite:.45,boss:.14,stun:1.2,bossStun:3,more:30,regen:.25,delay:3},
   kb:{light:45,heavy:120,magic:85,stagger:.35},
   swingSlow:.45,
+  walk:{up:.11,down:.085,foe:.25},   // seconds: you to full speed, you to a stop, an enemy to its full pace
 };
 // What each piece of armour weighs, until the new gear arrives (docs/design/gear.md#weight): poise grows with it.
 const ARMOR_WEIGHT={tunic:1,leather:2,coat:2,plate:5,striders:.5,boots:1,greaves:2};

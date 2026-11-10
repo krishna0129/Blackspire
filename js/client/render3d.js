@@ -534,7 +534,7 @@ function upd(a,dt){if(!a.mixer)return;if(a.build&&a.built)for(const[b,v]of a.bui
 const bone=(root,n)=>root.getObjectByName(n)||root.getObjectByName(n.replace('.',''));
 // A character model, ready to animate. key: what it is (for reuse), o: {m, hold, r, l, s, ghost, tint, eyes}
 function makeActor(key,o){
-  const free=FREE.get(key);if(free&&free.length){const a=free.pop();a.root.visible=true;scene.add(a.root);a.cur=null;a.curName='';for(const x of Object.values(a.acts))x.stop();return a;}
+  const free=FREE.get(key);if(free&&free.length){const a=free.pop();a.root.visible=true;scene.add(a.root);a.cur=null;a.curName='';a.up=null;a.px=null;a.root.rotation.x=a.root.rotation.z=0;for(const x of Object.values(a.acts))x.stop();return a;}
   let root,mats=[];
   if(o.orb){   // a wisp: a small skull adrift in a cold flame, not a ball of light
     root=new THREE.Group();const sk=single('skull');sk.scale.setScalar(.55);sk.position.y=1.15;
@@ -571,7 +571,7 @@ function makeActor(key,o){
     model.position.y=y0-y1;}
   if(STYLE.ink)ink(root,o.s&&o.s>2?.02:.045);
   if(o.xray)xray(root,o.xray);
-  root.scale.setScalar(o.s||1);scene.add(root);
+  root.scale.setScalar(o.s||1);root.rotation.order='YXZ';scene.add(root);   // (turn first, then lean: the lean follows the facing)
   const a={key,root,model,build,mats,mixer:model?new THREE.AnimationMixer(model):null,acts:{},cur:null,curName:'',face:0,o,lock:0,swT:-1,st:'',n:0,x:0,z:0,alpha:1,seen:0};
   return a;
 }
@@ -584,14 +584,74 @@ function dropActor(a){scene.remove(a.root);a.root.visible=false;if(a.mixer)a.mix
   (FREE.get(a.key)||FREE.set(a.key,[]).get(a.key)).push(a);}
 function fade(a,al){if(a.alpha===al)return;a.alpha=al;a.root.traverse(c=>{if(c.userData.inkMesh)c.userData.inkMesh.visible=c.visible&&al>=1;});for(const m of a.mats){m.transparent=al<1;m.opacity=al;}}
 // Plays a clip: loops by default; once: plays through and holds the last frame. A new clip fades in over `fade` s.
+/* ---------- gait: the ground speed each walking clip was drawn for ---------- */
+// The clips walk on the spot. A planted foot slides back under the body at exactly the speed the body should travel,
+// so that speed is measured once for each kind of actor (its own legs, its own size): the clip is stepped through
+// and each foot timed while it is on the ground (the low part of its path). Moving, the clip nearest the true speed
+// is played at (true speed / its speed), and the feet hold the floor instead of skating over it.
+// What touches the ground is the heel as a foot lands and the toes as it leaves, so each foot is followed at both
+// (the ankle and the toe bones): the lower of the two is the contact, planted while it is in the lowest part of its path.
+const PLANTED=.18,FWD=['Walking_A','Running_A','Running_C'],LOCO=[...FWD,'Running_Strafe_Left','Running_Strafe_Right','Walking_Backwards'],GAIT=new Map();
+const footBones=a=>['l','r'].map(s_=>[bone(a.root,'foot.'+s_),bone(a.root,'toes.'+s_)].filter(Boolean)).filter(f=>f.length);
+// frames: [per foot][per bone][per sample] = [x,y,z]; dt between samples. The speeds over the floor of each planted contact.
+function plantedSpeeds(frames,dt){
+  const out=[];
+  for(const foot of frames){const rng=foot.map(b=>{const ys=b.map(q=>q[1]),lo=Math.min(...ys);return[lo,Math.max(...ys)-lo];}),n=foot[0].length;
+    for(let i=0;i<n-1;i++){let k=0;for(let j=1;j<foot.length;j++)if(foot[j][i][1]-rng[j][0]<foot[k][i][1]-rng[k][0])k=j;   // the bone nearest the floor
+      const b=foot[k],cut=rng[k][0]+rng[k][1]*PLANTED;if(b[i][1]<=cut&&b[i+1][1]<=cut)out.push(Math.hypot(b[i+1][0]-b[i][0],b[i+1][2]-b[i][2])/dt);}}
+  return out;
+}
+function gaitOf(a){
+  if(GAIT.has(a.key))return GAIT.get(a.key);
+  const g={},feet=footBones(a),inv=new THREE.Matrix4(),v=new THREE.Vector3();
+  if(a.mixer&&feet.length)for(const name of LOCO){if(!CLIP[name])continue;
+    a.mixer.stopAllAction();const act=a.mixer.clipAction(CLIP[name]);act.reset();act.setLoop(THREE.LoopRepeat,Infinity);act.play();
+    const N=96,D=CLIP[name].duration,fr=feet.map(f=>f.map(()=>[]));
+    for(let i=0;i<=N;i++){act.time=Math.min(D*i/N,D-1e-4);upd(a,0);a.root.updateMatrixWorld(true);inv.copy(a.root.matrixWorld).invert();
+      feet.forEach((f,j)=>f.forEach((b,k)=>{b.getWorldPosition(v).applyMatrix4(inv);fr[j][k].push([v.x,v.y,v.z]);}));}
+    const sp=plantedSpeeds(fr,D/N).sort((x,y)=>x-y);g[name]=sp.length?sp[sp.length>>1]*a.root.scale.x:0;act.stop();}   // the middle speed: the one that slides least
+  if(a.mixer){a.mixer.stopAllAction();a.cur=null;a.curName='';a.up=null;}
+  GAIT.set(a.key,g);return g;
+}
+// The body's parts, to move them apart: the legs can run while the arms swing or hold a guard. A clip cut down to
+// the upper body (spine up, and the arms) or to the rest (hips and legs).
+const UPPER=/^(spine|chest|head|upperarm|lowerarm|wrist|hand|elbowIK|handIK)/,PART={up:{},lo:{}};
+function partClip(name,part){
+  const c=PART[part][name];if(c)return c;const src=CLIP[name];if(!src)return null;
+  return PART[part][name]=new THREE.AnimationClip(name+'|'+part,src.duration,src.tracks.filter(t=>UPPER.test(t.name)===(part==='up')));
+}
+// The upper body's own clip, over whatever the legs do (a swing, a guard).
+function playUp(a,name,o={}){
+  const clip=partClip(name,'up');if(!a.mixer||!clip)return null;
+  const act=a.acts[name+'|up']||(a.acts[name+'|up']=a.mixer.clipAction(clip));act.timeScale=o.speed||1;
+  if(a.up===act&&!o.restart)return act;
+  if(a.up&&a.up!==act)a.up.fadeOut(o.fade??.08);
+  act.reset();act.setLoop(o.once?THREE.LoopOnce:THREE.LoopRepeat,Infinity);act.clampWhenFinished=!!o.once;act.fadeIn(o.fade??.08);act.play();
+  a.up=act;a.upName=name;return act;
+}
+function stopUp(a,fade=.14){if(a.up){a.up.fadeOut(fade);a.up=null;a.upName='';}}
+// Walking, running, sidestepping or backing away, by how the body truly moves (vx, vz: world units a second) against
+// the way it faces. Picks the clip whose own ground speed is nearest, and plays it at the rate that plants the feet.
+// part 'lo': the legs alone (the upper body is doing something else). Returns false when it is standing.
+function loco(a,vx,vz,part){
+  const sp=Math.hypot(vx,vz);if(sp<.5)return false;
+  const g=gaitOf(a),rel=angDiff(Math.atan2(vx,vz),a.face),ar=Math.abs(rel);
+  const set=ar<1?FWD:ar>2.2?['Walking_Backwards']:[rel>0?'Running_Strafe_Left':'Running_Strafe_Right'];
+  // nearest in pace; hurried legs look sillier than slow ones, so a clip that must be sped up counts as a worse fit
+  // (a huge thing runs in slow motion rather than patter along); it keeps the clip it has unless another fits clearly better
+  let best=null,bc=1e9;for(const c of set){if(!g[c])continue;const r=sp/g[c],cost=Math.abs(Math.log(r))*(r>1.25?1.4:1)*(a.gaitClip===c?.75:1);if(cost<bc){bc=cost;best=c;}}
+  if(!best)return false;a.gaitClip=best;
+  play(a,best,{speed:clamp(sp/g[best],.5,(best==='Walking_Backwards'?2:1.6)/Math.min(1,a.root.scale.x)),fade:.16,part,sync:true});return true;   // (small things may scuttle; backing off is quick short steps)
+}
 function play(a,name,o={}){
-  if(!a.mixer||!CLIP[name])return null;
-  const act=a.acts[name]||(a.acts[name]=a.mixer.clipAction(CLIP[name]));
+  const clip=o.part?partClip(name,o.part):CLIP[name];if(!a.mixer||!clip)return null;
+  const key=o.part?name+'|'+o.part:name,act=a.acts[key]||(a.acts[key]=a.mixer.clipAction(clip));
   act.timeScale=o.speed||1;
   if(a.cur===act&&!o.restart)return act;
   act.reset();act.setLoop(o.once?THREE.LoopOnce:THREE.LoopRepeat,Infinity);act.clampWhenFinished=!!o.once;act.play();
+  if(o.sync&&a.cur&&a.gaitOn)act.time=a.cur.time/a.cur.getClip().duration*clip.duration;   // one stride into another, in step
   if(a.cur&&a.cur!==act)act.crossFadeFrom(a.cur,o.fade??.15,false);
-  a.cur=act;a.curName=name;return act;
+  a.cur=act;a.curName=key;a.gaitOn=!!o.sync;return act;
 }
 const turn=(a,to,dt,k=14)=>{a.face+=angDiff(to,a.face)*Math.min(1,k*dt);a.root.rotation.y=a.face;};
 const faceOf=ang=>Math.atan2(Math.cos(ang),Math.sin(ang));   // a game angle as the model's turn (models face +z)
@@ -613,29 +673,51 @@ function auras(pl){
   if(pl.emp){const a=typeof pl.aim==='number'?pl.aim:0;glow(x+Math.cos(a)*.7,1.3,z+Math.sin(a)*.7,'#ffe9a8',.9,.6+.2*Math.sin(t*9));}
   if(pl.hot){for(let i=0;i<3;i++){const k=(t*.8+i/3)%1;glow(x+Math.cos(i*2.1)*.5,.3+k*2.4,z+Math.sin(i*2.1)*.5,'#9be08a',.35,(1-k)*.7);}}
 }
+// How an actor truly moves, from where it was a frame ago: its velocity (world units a second, smoothed), and from
+// that the lean of its body: forward as it gathers speed, back as it brakes, into a turn. What loco() walks by.
+function motion(a,nx,nz,dt){
+  if(a.px==null||dt<=0||Math.hypot(nx-a.px,nz-a.pz)>4){a.px=nx;a.pz=nz;a.vx=a.vz=0;a.sp=0;a.fwd=0;a.lean=a.roll=0;a.pface=a.face;return;}   // just made, or it jumped (a door, a blink)
+  const k=Math.min(1,16*dt);a.vx+=((nx-a.px)/dt-a.vx)*k;a.vz+=((nz-a.pz)/dt-a.vz)*k;a.px=nx;a.pz=nz;a.sp=Math.hypot(a.vx,a.vz);
+}
+function lean(a,dt){
+  const f=a.vx*Math.sin(a.face)+a.vz*Math.cos(a.face),acc=(f-(a.fwd||0))/Math.max(dt,1e-3),spin=angDiff(a.face,a.pface??a.face)/Math.max(dt,1e-3);a.fwd=f;a.pface=a.face;
+  // the sprint clip pitches the whole body forward by itself, more than reads well from above: most of that is taken back
+  const k=Math.min(1,7*dt),sprint=a.sp>.5&&a.gaitClip==='Running_C'&&a.curName.startsWith('Running_C')?-.11:0;
+  a.lean+=(clamp(acc*.005,-.09,.09)+sprint-a.lean)*k;a.roll+=(clamp(-spin*.022,-.1,.1)*Math.min(1,a.sp/3)-a.roll)*k;
+  a.root.rotation.x=a.lean;a.root.rotation.z=a.roll;
+}
 function animHero(a,pl,wt,dt){
-  const h=HERO[wt]||HERO.sword;a.root.position.set(wx(pl.x),0,wz(pl.y));a.root.visible=pl.x>-900;
-  if(pl.dead){if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
+  const h=HERO[wt]||HERO.sword,nx=wx(pl.x),nz=wz(pl.y);motion(a,nx,nz,dt);a.root.position.set(nx,0,nz);a.root.visible=pl.x>-900;
+  if(pl.dead){stopUp(a,.05);a.root.rotation.x=a.root.rotation.z=0;if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
   // Facing: toward the mouse's aim only while fighting (a swing, a block, a skill just cast, and a moment after);
   // otherwise the way you run, so running reads as running. Without an aim (touch), the four-way facing.
   const aim=typeof pl.aim==='number'?pl.aim:DIR_ANGLE[pl.dir||0],sw=pl.swing;
   let cast=0;if(pl.cds)for(const k in pl.cds){const v=pl.cds[k]||0;if(v>((a.cdSeen||{})[k]||0)+.05)cast=1;}a.cdSeen=Object.assign({},pl.cds||{});
   if(sw||pl.blocking||pl.parrying||cast)a.fight=.5;else a.fight=(a.fight||0)-dt;
-  const mvx=pl.x-(a.lx??pl.x),mvy=pl.y-(a.ly??pl.y);a.lx=pl.x;a.ly=pl.y;
-  if(mvx*mvx+mvy*mvy>.04&&(pl.moving||pl.dash))a.run=Math.atan2(mvy,mvx);
+  if(a.sp>1.2&&(pl.moving||pl.dash))a.run=Math.atan2(a.vz,a.vx);   // (a game angle: x east, y south)
   let ang=a.fight>0||a.run==null?aim:a.run;
-  if(sw){ang=sw.a??aim;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing
-      const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;
-      play(a,clip,{once:true,restart:true,fade:.06,speed:CLIP[clip].duration/dur});}
+  // (nobody sprints backward: in the moment after a cast, still at a run and heading away from the aim, you look where you run)
+  if(a.fight>0&&!sw&&!pl.blocking&&!pl.parrying&&a.run!=null&&a.sp>(gaitOf(a).Running_Strafe_Left||4.5)*1.3&&Math.abs(angDiff(aim,a.run))>1.9)ang=a.run;
+  if(sw){ang=sw.a??aim;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing: the arms take it at once, whatever the legs are doing
+      const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;a.atk=clip;a.atkSp=CLIP[clip].duration/dur;a.atkNew=true;
+      playUp(a,clip,{once:true,restart:true,fade:.06,speed:a.atkSp});}
     a.swT=sw.t;}else a.swT=-1;
   a.lock-=dt;
-  if(a.lock<=0){
-    if(pl.dash)play(a,'Dodge_Forward',{once:true,speed:1.6,fade:.08});
-    else if(pl.blocking||pl.parrying)play(a,'Blocking',{fade:.06});
-    else if(pl.moving)play(a,'Running_A',{speed:1.05});
-    else play(a,h.idle||'Idle',{fade:.2});
-  }
   turn(a,faceOf(ang),dt);
+  const moving=a.sp>.7&&(pl.moving||Math.abs(pl.kx||0)+Math.abs(pl.ky||0)>1);
+  if(pl.dash){   // the dodge, the way it goes against the way you face
+    stopUp(a,.05);a.atk=null;const D=pl.dash,rel=angDiff(Math.atan2(D.vx,D.vy),a.face),ar=Math.abs(rel);
+    play(a,ar<.8?'Dodge_Forward':ar>2.35?'Dodge_Backward':rel>0?'Dodge_Left':'Dodge_Right',{once:true,speed:1.6,fade:.08});}
+  else if(a.lock>0&&a.atk){   // swinging: the legs keep running under it if you move, else the whole body swings
+    if(!(moving&&loco(a,a.vx,a.vz,'lo'))){const was=a.cur,act=play(a,a.atk,{part:'lo',once:true,speed:a.atkSp,fade:.1,restart:a.atkNew});
+      if(act&&(a.atkNew||was!==act))act.time=a.up?a.up.time:0;}
+    a.atkNew=false;}
+  else{a.atk=null;
+    if(pl.blocking||pl.parrying){   // the guard stays up while the legs walk
+      if(moving&&loco(a,a.vx,a.vz,'lo'))playUp(a,'Blocking',{fade:.08});else{stopUp(a,.08);play(a,'Blocking',{fade:.06});}}
+    else{stopUp(a);if(!(moving&&loco(a,a.vx,a.vz)))play(a,h.idle||'Idle',{fade:.18});}
+  }
+  lean(a,dt);
   flash(a,pl.inv>0&&!pl.dash&&Math.floor(G.time*12)%2,'#ff3a2a',.3);
   upd(a,dt);
 }
@@ -655,7 +737,7 @@ function foeActor(e){
 const ATK=d=>d.two?'2H_Melee_Attack_Chop':'1H_Melee_Attack_Chop';
 function animFoe(a,e,dt){
   const d=a.o,nx=wx(e.x),nz=wz(e.y),mx=nx-a.x,mz=nz-a.z,moved=Math.hypot(mx,mz)/Math.max(dt,1e-3);
-  a.x=nx;a.z=nz;let y=0;
+  a.x=nx;a.z=nz;let y=0;motion(a,nx,nz,dt);
   if(d.orb){y=Math.sin(G.time*3+(e.ph||0))*.18;   // it drifts, and its flame licks upward
     a.root.userData.flame.forEach((f,i)=>{f.position.x=Math.sin(G.time*7+i*1.7)*.06*(i+1);f.material.opacity=(.45-i*.1)*(.75+.25*Math.sin(G.time*11+i));});}
   a.root.position.set(nx,y,nz);
@@ -687,8 +769,8 @@ function animFoe(a,e,dt){
   else if(st==='shell')play(a,'Blocking',{fade:.1});
   else if(st==='charge')play(a,'Running_B',{speed:1.5,fade:.1});
   else if(e.stun>0)play(a,'Hit_A',{fade:.05});
-  else if(moved>.6)play(a,moved>7?'Running_A':'Walking_A',{speed:clamp(moved/(moved>7?9:4),.6,1.8),fade:.15});
-  else play(a,st==='idle'?'Idle':'Idle_Combat',{fade:.25});
+  else if(!loco(a,a.vx,a.vz))play(a,st==='idle'?'Idle':'Idle_Combat',{fade:.25});   // walking, running, or backing off, in step with the ground
+  lean(a,dt);
   upd(a,dt);
 }
 function nearestHero(e){let best=null,bd=1e9;for(const q of[P,...(NET.on?NET.others:[])]){if(!q||q.dead||q.x<-900)continue;const d=hyp(q.x-e.x,q.y-e.y);if(d<bd){bd=d;best=q;}}return best;}
@@ -752,7 +834,7 @@ let lastT=0;
 function frame3d(){
   fit();renderer.info.reset();
   if(me.g!==G||!FLOOR)build();
-  const now=performance.now(),dt=Math.min(.05,lastT?(now-lastT)/1000:0);lastT=now;
+  const now=performance.now(),dt=me.fixedDt??Math.min(.05,lastT?(now-lastT)/1000:0);lastT=now;   // (fixedDt: a test steps the drawing by hand)
   const F=FLOOR,t=G.time;
   // the camera: high in the south, looking down at you. Wider screens see more; tall ones step back.
   const px=wx(P.x),pz=wz(P.y),tgt=tmpV.set(px,.8,pz);
@@ -993,7 +1075,23 @@ me.info=()=>renderer&&Object.assign({},renderer.info.render,{geometries:renderer
 function applyStyle(){const g=STYLE.grade||[1,1,0,0,0],u=grade.uniforms;u.con.value=g[0];u.sat.value=g[1];u.cold.value=g[2];u.grain.value=g[3];u.lift.value=g[4]||0;
   for(const k in PROTO)for(const p of PROTO[k].parts)if(p.mat.flatShading!==!!STYLE.flat){p.mat.flatShading=!!STYLE.flat;p.mat.needsUpdate=true;}}
 me.style=i=>{if(i!=null){STYLE=STYLES[i];applyStyle();me.g=null;for(const a of ACTORS.values())dropActor(a);ACTORS.clear();FREE.clear();}return STYLE.name;};
-me.debug=()=>({foot:FOOT,floaters:FLOOR&&FLOOR.floatSet?FLOOR.floatSet.list.slice(0,3):null,torches:FLOOR&&FLOOR.torches.length,top:TOP.skull_candle,candle:TOP.candle_thin});
+me.feet=id=>{const a=ACTORS.get(id);if(!a)return null;a.root.updateMatrixWorld(true);const v=new THREE.Vector3();return['foot.l','foot.r'].map(n=>{bone(a.root,n).getWorldPosition(v);return[v.x,v.y,v.z];}).concat([[a.curName,a.cur?+a.cur.timeScale.toFixed(2):0,+(a.sp||0).toFixed(2)]]);};
+me.ids=()=>[...ACTORS.keys()];
+// A check, for the tests and the tuning: walk an actor in a line at a speed (world units a second) facing a way
+// (relative to its travel: 0 ahead, PI/2 its left side leading...), and report how fast its planted feet slide over
+// the floor (0: they hold it), with the clip it chose. old: the way it was before (the jog at one fixed rate).
+me.slip=(id,speed,rel=0,old=false,force=null)=>{
+  const a=ACTORS.get(id);if(!a||!a.mixer)return null;const save=[a.root.position.clone(),a.face,a.root.visible];
+  const feet=footBones(a),v=new THREE.Vector3(),dt=1/60,fr=feet.map(f=>f.map(()=>[]));let x=0;
+  a.px=null;a.face=Math.PI/2-rel;a.root.rotation.set(0,a.face,0);a.gaitClip=null;stopUp(a,0);a.lock=0;   // travelling along +x
+  for(let i=0;i<220;i++){x+=speed*dt;motion(a,x,0,dt);a.root.position.set(x,0,0);
+    if(force)play(a,force,{speed:speed/gaitOf(a)[force]});else if(old)play(a,'Running_A',{speed:1.05});else if(!loco(a,a.vx,a.vz))play(a,'Idle');
+    upd(a,dt);if(i<60)continue;a.root.updateMatrixWorld(true);
+    feet.forEach((f,j)=>f.forEach((b,k)=>{b.getWorldPosition(v);fr[j][k].push([v.x,v.y,v.z]);}));}
+  const sp=plantedSpeeds(fr,dt),out={clip:a.curName,rate:+a.cur.timeScale.toFixed(2),slide:+(sp.reduce((p,q)=>p+q,0)/Math.max(1,sp.length)).toFixed(2)};
+  a.root.visible=save[2];
+  a.root.position.copy(save[0]);a.face=save[1];a.root.rotation.y=a.face;a.px=null;return out;};
+me.debug=()=>({foot:FOOT,gait:Object.fromEntries([...ACTORS.values()].map(a=>[a.key,gaitOf(a)])),floaters:FLOOR&&FLOOR.floatSet?FLOOR.floatSet.list.slice(0,3):null,torches:FLOOR&&FLOOR.torches.length,top:TOP.skull_candle,candle:TOP.candle_thin});
 me.zoom=z=>{if(z)zoom=z;return zoom;};
 me.use=()=>me.ready&&!Q.off&&!!G&&!!P;
 me.draw=function(){
