@@ -113,10 +113,10 @@ function fit(){
 /* ---------- static props: instanced, in chunks so the camera only draws what is near ---------- */
 const M4=(x,y,z,ry=0,sx=1,sy=sx,sz=sx)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,ry,0)),new THREE.Vector3(sx,sy,sz));
 const CH=32;   // chunk size, world units (16 tiles)
-// The cutaway, for the village's big things only (houses, hills, trees): what stands in the line of sight just south
-// of you is drawn only up to the knee, a narrow strip down your column above the camera's 55 degree line to your feet.
-// The tower's walls are never cut: whoever a wall hides shows through it as a silhouette instead (xray, below).
-const CUT={value:new THREE.Vector3(0,0,-999)},CUTKEYS=/^(building_|mountain_|hills_|tree_single|post_lantern|tent)/,cutMats=new Map();
+// The cutaway: what stands in the line of sight just south of you drawn only up to the knee. Nothing is cut any more,
+// in the tower or the village: a cut opens a house or a wall and shows its hollow inside. Whoever something hides shows
+// through it as a silhouette instead (xray, below). Kept, matching nothing, should a prop ever need it again.
+const CUT={value:new THREE.Vector3(0,0,-999)},CUTKEYS=/^$^/,cutMats=new Map();
 function cutaway(mat){
   if(cutMats.has(mat))return cutMats.get(mat);const m=mat.clone();
   m.onBeforeCompile=sh=>{sh.uniforms.uCut=CUT;
@@ -403,7 +403,7 @@ function buildVillage(){
   // grass and stones on the open ground
   group.add(...villageTufts());
   instance(group,placed);
-  for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAME_SETS[k]){const p=points(flames[k],col,size,op);p.material=cutaway(p.material);group.add(p);}
+  for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAME_SETS[k])group.add(points(flames[k],col,size,op));
   scene.add(group);
   FLOOR={g,group,torches,gates:[],chests:[],stashes,floatSet:null,born:performance.now(),village:true};me.g=g;
 }
