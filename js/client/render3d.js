@@ -166,7 +166,7 @@ function instance(group,placed){
     for(const ms of chunks.values())for(const part of P_.parts){
       const im=new THREE.InstancedMesh(part.geo,CUTKEYS.test(key)?cutaway(part.mat):GRITKEYS.test(key)?grit(part.mat):part.mat,ms.length);ms.forEach((M,i)=>im.setMatrixAt(i,tmp.multiplyMatrices(M,part.m)));
       im.castShadow=!flat;im.receiveShadow=true;im.computeBoundingSphere();group.add(im);
-      if(STYLE.ink&&!flat&&!/^(wall_|pillar)/.test(key)){   // outlines on the props, sized to the prop's own (quantized) units
+      if(STYLE.ink&&!flat&&!G.village&&!/^(wall_|pillar)/.test(key)){   // (no ink outlines in the village: at its buildings' size they break into loose strokes)   // outlines on the props, sized to the prop's own (quantized) units
         const sc=new THREE.Vector3().setFromMatrixScale(part.m),o=new THREE.InstancedMesh(part.geo,inkMat(.04/Math.max(sc.x,sc.y,sc.z)),ms.length);
         o.instanceMatrix=im.instanceMatrix;o.boundingSphere=im.boundingSphere;group.add(o);}}
   }

@@ -18,7 +18,7 @@ const STALLS=[   // the market, along the high street east of the plaza: x, y of
   {x:67,y:25,kind:'food',name:'Food and drink stall',awning:'#6b4a2c'},
 ];
 const FORGE={x:44,y:40},WITCH={x:50,y:40},EXCHANGE={x:62,y:41};   // the craftsmen, on the south lane
-const INN={x:24,y:22,w:9,h:5},GUILD={x:8,y:23,w:10,h:4};
+const INN={x:26,y:22,w:6,h:5},GUILD={x:10,y:23,w:6,h:4};   // (what each blocks is what you see of it, no more)
 const KINGDOMS=[   // the three camps inside the palisade, each a command tent with its captain out front
   {x:8.5,y:51,name:'Iron Crown',color:'#8e97b5',armor:'plate',line:'The Iron Crown holds floor after floor. We could use another blade.'},
   {x:16,y:51,name:'Sun Choir',color:'#e6d9a8',armor:'coat',line:'The Choir prays for every climber. Come back alive and we will pray less.'},
@@ -27,22 +27,18 @@ const KINGDOMS=[   // the three camps inside the palisade, each a command tent w
 const VILLAGE={
   square:{x:40,y:30,r:7},
   // cobbled streets [x, y, w, h]: the avenue, the high street, the north and south lanes, the west and east side streets
-  streets:[[38,4,4,53],[3,28,74,4],[5,15,70,2],[5,43,70,2],[20,15,2,30],[58,15,2,30]],
+  streets:[[38,4,4,53],[3,28,74,4],[5,15,70,2],[5,43,70,2],[20,15,2,30],[58,15,2,30],
+    [11,45,3,3],[28,45,3,3],[52,45,2,3]],   // and the short ways in: to the camps' gate, the training yard, the fields' gate
   market:[46,24,28,4],
   camp:[5,47,15,10],campGate:[11,14],
   fields:[45,47,30,10],fieldGate:[52,54],fieldSign:[51.3,47],plots:[[47,49],[52,49],[57,49],[47,53],[52,53],[57,53]],
   yard:[23,48,13,7],
-  paths:[   // worn dirt, each a cubic curve: start, two control points, end
-    [[53,45],[53,47],[53,50],[53,56]],          // down through the fields
-    [[46,52],[52,51.6],[58,52.4],[66,51.5]],    // across them, to the windmill
-    [[12.5,45],[12.5,46],[12.5,47],[12.5,53]],  // into the camps
-    [[29.5,45],[29.5,46],[29.5,47],[29.5,48.5]],// to the training yard
-  ],
+  paths:[],   // (no dirt tracks left: every way is cobbled)
   trees:[[49,23,'a'],[55.5,22.5,'b'],[63.5,23,'a'],[70.5,22.6,'b'],[74.5,26.5,'a'],[6,26.5,'b'],[19,24.5,'a'],[34.5,25,'b'],[23,26.8,'a'],
     [34.5,35.5,'a'],[45.5,35.2,'b'],[45.5,24.6,'a'],[4.5,46.2,'b'],[21.5,50,'a'],[21.3,55,'b'],[36.8,56.5,'a'],[43.5,48,'b'],[43.4,54,'a'],
     [76,48,'a'],[76.2,54,'b'],[69,56.5,'a'],[4.5,12,'b'],[75.5,12,'a'],[36,6.5,'b'],[44,6.5,'a'],[57,38.5,'b'],[76,38,'a'],[4,35,'b']],
   lamps:[[37.4,10],[42.6,10],[37.4,20],[42.6,20],[37.4,40],[42.6,40],[37.4,50],[42.6,50],[42.6,56.5],
-    [8,32.5],[16,32.5],[25,32.5],[31,32.5],[49,32.5],[56,32.5],[64,32.5],[72,32.5],[22.5,27.4],[46.2,27.4],[59.5,27.6],
+    [8,32.5],[16,32.5],[25,32.5],[31,32.5],[49,32.5],[56,32.5],[64,32.5],[72,32.5],[22.5,27.4],[46.2,27.4],[60.5,27.6],
     [12,17.4],[28,17.4],[52,17.4],[68,17.4],[10,45.4],[19.5,45.4],[36,45.4],[49.5,45.4],[57,45.4],[68,45.4],[33.4,22.6],[46.6,37.4]],
   scarecrows:[[26.5,52.5],[29.5,52.5],[32.5,52.5]],
   // things that stand in the way, one tile each [model, x, y, size, turn]: the camps' and the fields' gear, a few crates
@@ -80,7 +76,7 @@ function genVillage(){
   block(INN.x,INN.y,INN.w,INN.h);prop('village/inn',INN.x+INN.w/2,INN.y+INN.h);
   block(GUILD.x,GUILD.y,GUILD.w,GUILD.h);prop('village/guild',GUILD.x+GUILD.w/2,GUILD.y+GUILD.h);
   block(35,24,2,1);prop('village/well',36,25);
-  const wells=[{x:vx(36),y:vy(25.1)}],stashes=[{x:vx(INN.x+2),y:vy(INN.y+INN.h+.9)}];   // the well, and the inn's stash chest by its door
+  const wells=[{x:vx(36),y:vy(25.1)}],stashes=[{x:vx(INN.x+.6),y:vy(INN.y+INN.h+.9)}];   // the well, and the inn's stash chest by its door
   // the plaza: the Teleport Gate's four pillars and the notice board
   for(const[x,y]of[[36,26],[43,26],[36,33],[43,33]]){block(x,y,1,1);prop('village/pillar',x+.5,y+1);}
   block(44,34,2,1);prop('village/board',45,35);
@@ -90,8 +86,8 @@ function genVillage(){
     prop('village/stall',st.x+2.5,st.y+.9,{tint:st.awning,goods:'village/goods_'+st.kind});prop('village/counter',st.x+2.5,st.y+2);
     traders.push({x:vx(st.x+2.5),y:vy(st.y+1.25),name:st.name,sells:st.kind,stall:true,
       look:{skin:SKINS[(st.x+st.y)%SKINS.length],hair:HAIRS[(st.x*3+st.y)%HAIRS.length],style:(st.x+st.y)%6,eyes:EYES[0]},eq:{armor:{type:'leather',tint:'#6b4a2c'}}});}
-  block(FORGE.x,FORGE.y,5,2);prop('village/forge',FORGE.x+2.5,FORGE.y+1.1);smiths.push({x:vx(FORGE.x+3),y:vy(FORGE.y+1.4)});
-  block(WITCH.x,WITCH.y,5,2);prop('village/witch',WITCH.x+2.5,WITCH.y+.9);prop('village/cauldron',WITCH.x+2.5,WITCH.y+2,{brew:true});
+  block(FORGE.x,FORGE.y,4,2);prop('village/forge',FORGE.x+2.5,FORGE.y+1.1);smiths.push({x:vx(FORGE.x+3),y:vy(FORGE.y+1.4)});
+  block(WITCH.x+1,WITCH.y,3,2);block(WITCH.x+2,WITCH.y+2,1,1);   // the tent, and the cauldron before itprop('village/witch',WITCH.x+2.5,WITCH.y+.9);prop('village/cauldron',WITCH.x+2.5,WITCH.y+2,{brew:true});
   // the arcanist writes grimoires from monster drops, the way the forge makes everything else (ACTIONS.forge)
   talkers.push({x:vx(WITCH.x+4),y:vy(WITCH.y+1.3),name:'Arcanist',arcanist:true,line:'Bring me what the tower’s monsters leave behind and I will write you a grimoire against them.',
     look:{skin:SKINS[5],hair:HAIRS[5],style:2,eyes:EYES[5]},eq:{armor:{type:'coat',tint:'#3c2c52'}}});
@@ -122,8 +118,8 @@ function genVillage(){
   // the Adventurers' Guild's clerk, at its door: quests and party notices (js/sim/quests.js)
   const guild={x:vx(GUILD.x+GUILD.w/2),y:vy(GUILD.y+GUILD.h+.8),name:'Guild clerk',look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}};
   // scenery
-  for(const[x,y,v]of VILLAGE.trees){block(Math.floor(x),Math.floor(y)-1,1,1);prop('village/tree_'+v,x,y);}
-  for(const[x,y]of VILLAGE.lamps)prop('village/lamp',x,y,{lamp:true});
+  for(const[x,y,v]of VILLAGE.trees){block(Math.floor(x),Math.floor(y-.4),1,1);prop('village/tree_'+v,x,y);}
+  for(const[x,y]of VILLAGE.lamps){block(Math.floor(x),Math.floor(y),1,1);prop('village/lamp',x,y,{lamp:true});}
   for(const[,x,y]of VILLAGE.decor)block(Math.floor(x),Math.floor(y),1,1);
   // the training yard's scarecrows are enemies that never fight back or fall (ETYPES.dummy); fighting is allowed there
   // (their tiles stay open: a hit needs a clear line to its target)
