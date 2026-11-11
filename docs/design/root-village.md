@@ -11,15 +11,38 @@ channel of up to 30, sees the others there, and parties form and leave through t
 inn serves meals, the training yard's scarecrows take hits, the Adventurers' Guild runs its quest board and party
 notices, and the fields grow potatoes and glowcaps (below). The whole village plan is in.
 
-![Plan of the root village: the Teleport Gate glowing in the middle of the square under the tower's trunk; winding paths lined with trees, shrubs, flowers and lamps lead to the inn and well, the market of six stalls including the forge and the witchcraft room, the kingdom camps, the fields of plots for sale, and the training yard with scarecrow dummies](img/root-village.svg)
-
 ## What it is
 
-A small, hand-made village of about 56 × 38 tiles, walled in by the tower's roots, with the trunk rising behind it.
+A walled medieval town of 80 × 60 tiles at the foot of the tree, the trunk rising behind its north wall, in the spirit
+of SAO's Town of Beginnings: dense rows of timber-framed houses, cobbled streets, and a round plaza in the middle.
 There is no fighting anywhere in it: weapons stay sheathed, as in a safe room. Hunger and thirst don't drain here.
 
-It should feel lived in: paths that wander instead of running straight, trees and shrubs along them, flowers in the
-grass, lamps at the corners, smoke from the forge and bubbles from the witchcraft room.
+**The plan** (js/sim/village.js; north is up):
+
+- **The plaza** in the centre, flagstones in rings round the **Teleport Gate**; the well and the notice board at its edge.
+- **The avenue** runs north to south through the plaza, from the trunk to the south gate. **The high street** crosses
+  it west to east. Two lanes (north and south) and two side streets make the rest of the grid.
+- **The high street, west:** the **inn** (innkeeper, barkeep, the stash chest) and the **Adventurers' Guild**.
+- **The high street, east:** the **market**, four stalls in a row (weapons, gear, potions, food).
+- **The south lane, east:** the craftsmen: the **forge**, the **arcanist**, the **exchange**.
+- **South-west:** the **kingdom camps** inside a palisade with a gate: a command tent in each kingdom's colour with
+  its banner and captain, a fire, racks and a target. Beside it the **training yard** and its scarecrows.
+- **South-east:** the **fields** behind a fence: six plots, a barn, the windmill; the farmhand and the crop broker
+  stand at the gate.
+- **Everywhere else:** about fifty **houses** in rows. Nobody lives in them yet (they can't be entered); they are
+  the town. Rows with a street behind them are one storey and set back, so they never hide the street.
+
+**The hour.** The village has an hour (`VILLAGE_HOUR` in village.js): `day` (an overcast daylight, windows dark),
+`evening` (golden dusk, windows lit dim and steady) or `night`. It is fixed at day for now; a real cycle is still to
+come. To look at the others, type `R3.hour('evening')` or `R3.hour('night')` in the browser's console.
+
+**Surfaces** are drawn by shaders, not textures: stone in courses with dark mortar, old plaster with stains, rain
+streaks, cracks and patches fallen away to the brick, roof tiles in lapping rows with moss, weathered wood. Each
+house has its own roof, ending in dark bargeboards at its own walls.
+
+Everyone you can talk to stands on the north side of a street, facing south, where no roof covers them. Houses are
+built in the renderer from boxes (footings, plaster, a timber frame, doors, lit windows, pitched roofs, chimneys),
+each different by its own seed. The old flat renderer still works but draws no houses.
 
 ### The square and the Teleport Gate
 

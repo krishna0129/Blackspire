@@ -166,7 +166,7 @@ function instance(group,placed){
     for(const ms of chunks.values())for(const part of P_.parts){
       const im=new THREE.InstancedMesh(part.geo,CUTKEYS.test(key)?cutaway(part.mat):GRITKEYS.test(key)?grit(part.mat):part.mat,ms.length);ms.forEach((M,i)=>im.setMatrixAt(i,tmp.multiplyMatrices(M,part.m)));
       im.castShadow=!flat;im.receiveShadow=true;im.computeBoundingSphere();group.add(im);
-      if(STYLE.ink&&!flat&&!/^(wall_|pillar)/.test(key)){   // outlines on the props, sized to the prop's own (quantized) units
+      if(STYLE.ink&&!flat&&!G.village&&!/^(wall_|pillar)/.test(key)){   // (no ink outlines in the village: at its buildings' size they break into loose strokes)   // outlines on the props, sized to the prop's own (quantized) units
         const sc=new THREE.Vector3().setFromMatrixScale(part.m),o=new THREE.InstancedMesh(part.geo,inkMat(.04/Math.max(sc.x,sc.y,sc.z)),ms.length);
         o.instanceMatrix=im.instanceMatrix;o.boundingSphere=im.boundingSphere;group.add(o);}}
   }
@@ -345,8 +345,9 @@ function camp(group,x,z){
 /* ---------- the root village ---------- */
 // The tower is night and torchlight; the village, at the foot of the great tree, is a long golden evening.
 function mood(village){
-  if(village){scene.background.set('#2a2e3a');scene.fog.color.set('#2a2e3a');scene.fog.density=.0065;hemi.color.set('#c8d0e8');hemi.groundColor.set('#3a3020');hemi.intensity=1.3;
-    moon.color.set('#ffd2a0');moon.intensity=2.1;}
+  if(village){const[bg,fog,sky,gnd,hi,sun,si]={   // by the village's hour: an overcast day, the long golden evening, night
+      day:['#7d8794','#7d8794','#dfe6f0','#5a5444',2.1,'#fff1dc',3.1],evening:['#2a2e3a','#2a2e3a','#c8d0e8','#3a3020',1.3,'#ffd2a0',2.1],night:['#0c1018','#0c1018','#6f86b8','#141210',.7,'#9fb4e0',1]}[VILLAGE_HOUR]||[];
+    scene.background.set(bg);scene.fog.color.set(fog);scene.fog.density=.0065;hemi.color.set(sky);hemi.groundColor.set(gnd);hemi.intensity=hi;moon.color.set(sun);moon.intensity=si;}
   else{scene.background.set('#030304');scene.fog.color.set('#05060a');scene.fog.density=.016;hemi.color.set('#4a5a80');hemi.groundColor.set('#0b0806');hemi.intensity=.42;
     moon.color.set('#8aa0d8');moon.intensity=.42;}
   MOOD.village=village;
@@ -362,42 +363,69 @@ function buildVillage(){
   // the ground: one painted plane over the village, and dark grass beyond it
   group.add(villageGround());
   {const far=new THREE.Mesh(new THREE.PlaneGeometry(700,700),new THREE.MeshStandardMaterial({color:'#24321e',roughness:1}));far.rotation.x=-Math.PI/2;far.position.set(VT(VILLAGE_W/2,VILLAGE_H/2)[0],-.03,VT(VILLAGE_W/2,VILLAGE_H/2)[1]);far.receiveShadow=true;group.add(far);}
-  // the village's edge: wooded hills all the way round, a little outside its border
+  // the town's edge: wooded hills all the way round, a little outside its wall
   const hill=['mountain_A_grass_trees','mountain_B_grass_trees','mountain_C_grass_trees','hills_A_trees','hills_B_trees'];
-  for(let x=-2;x<=VILLAGE_W+2;x+=5)for(const y of[-3,VILLAGE_H+3]){if(y<0&&x>17&&x<39)continue;put(hill[Math.floor(rnd()*5)],x+rnd()*2,y+rnd()*1.5,rnd()*6,5.5+rnd()*2);}
+  for(let x=-2;x<=VILLAGE_W+2;x+=5)for(const y of[-3,VILLAGE_H+3]){if(y<0&&x>27&&x<53)continue;put(hill[Math.floor(rnd()*5)],x+rnd()*2,y+rnd()*1.5,rnd()*6,5.5+rnd()*2);}
   for(let y=2;y<=VILLAGE_H;y+=5)for(const x of[-3,VILLAGE_W+3])put(hill[Math.floor(rnd()*5)],x+rnd()*1.5,y+rnd()*2,rnd()*6,5.5+rnd()*2);
-  for(const[x,y,k,sc]of[[-6,36,'building_windmill_yellow',7],[-5,8,'building_home_A_red',6],[61,13,'building_home_B_blue',6],[60,30,'building_home_A_yellow',6]])put(k,x,y,rnd()*.6-.3,sc);
-  // the great tree's trunk, rising behind the village
-  group.add(trunk(...VT(28,-1)));
-  // buildings: the inn, the guild, the well, the Teleport Gate's pillars
-  put('building_tavern_red',9.5,8.4,0,8);
-  put('building_church_blue',28,30,0,8.5);
-  put('building_well_blue',16,12.4,0,4.6);
-  for(const[x,y]of[[25,14],[30,14],[25,19],[30,19]])put('pillar_decorated',x+.5,y+.5,0,.75);
-  group.add(noticeBoard(...VT(22,16.6)));
+  for(const[x,y,k,sc]of[[-6,56,'building_windmill_yellow',7],[-5,10,'building_home_A_red',6],[85,14,'building_home_B_blue',6],[84,40,'building_home_A_yellow',6]])put(k,x,y,rnd()*.6-.3,sc);
+  // the great tree's trunk, rising behind the town
+  group.add(trunk(...VT(40,-1)));
+  const T=townBuilder(),lamp=(x,y,h,col,int,dist,fire)=>{const[X,Z]=VT(x,y);flames.warm.push(X,h,Z);torches.push({x:X,y:h+.3,z:Z,col,int,dist,fire});};
+  // the town wall: tall behind and at the sides, knee-high along the south so it hides nothing; towers at the far corners
+  {const[x0,z0]=VT(2.5,2.5),[x1,z1]=VT(VILLAGE_W-2.5,VILLAGE_H-2.5),[ta,]=VT(30.5,0),[tb,]=VT(49.5,0),st='#6f6b62|s',st2='#5e5a52|s';
+    const run=(xa,za,xb,zb,h)=>{const len=Math.hypot(xb-xa,zb-za),ry=Math.atan2(-(zb-za),xb-xa),n=Math.floor(len/1.5);T.box((xa+xb)/2,h/2,(za+zb)/2,len,h,1.3,st,0,ry);T.box((xa+xb)/2,h*.12,(za+zb)/2,len+.2,h*.24,1.6,st2,0,ry);
+      if(h>2)for(let i=0;i<n;i+=2){const u=(i+.5)/n;T.box(xa+(xb-xa)*u,h+.3,za+(zb-za)*u,.8,.6,1.3,st,0,ry);}};
+    run(x0,z0,ta,z0,5);run(tb,z0,x1,z0,5);run(x0,z0,x0,z1,5);run(x1,z0,x1,z1,5);
+    const[ga,]=VT(38,0),[gb,]=VT(42,0);run(x0,z1,ga,z1,1.3);run(gb,z1,x1,z1,1.3);
+    for(const gx of[ga,gb]){T.box(gx,1.6,z1,1.6,3.2,1.6,st);T.box(gx,3.35,z1,1.9,.3,1.9,st2);flames.warm.push(gx,3.9,z1);torches.push({x:gx,y:4.2,z:z1,col:'#ffc070',int:14,dist:12});}
+    put('building_tower_A_blue',2.5,2.5,0,7.5);put('building_tower_A_blue',VILLAGE_W-2.5,2.5,0,7.5);}
+  // the houses, row on row
+  for(const h of g.houses||[])T.house(h);
+  // the inn, the guild, the well, the Teleport Gate's pillars, the notice board
+  put('building_tavern_red',INN.x+INN.w/2,INN.y+2.4,0,8);
+  put('building_church_blue',GUILD.x+GUILD.w/2,GUILD.y+2,0,8.5);
+  put('building_well_blue',36,24.4,0,4.6);
+  for(const[x,y]of[[36,26],[43,26],[36,33],[43,33]])put('pillar_decorated',x+.5,y+.5,0,.75);
+  group.add(noticeBoard(...VT(45,34.6)));
   // the market: four stalls in their colours, with goods; the forge; the arcanist's tent and cauldron; the exchange
   const STALL_MODEL={weapons:'building_market_red',gear:'building_market_blue',potions:'building_market_green',food:'building_market_yellow'};
-  const GOODS={weapons:['weaponrack','weaponrack'],gear:['crate_A_big','sack'],potions:['barrel','bucket_water'],food:['crate_potatoes','crate_carrots']};
   for(const st of STALLS){put(STALL_MODEL[st.kind],st.x+2.5,st.y+.6,0,5);
-    GOODS[st.kind].forEach((k,i)=>put(k,st.x+.6+i*3.8,st.y+2.2,rnd()*6,k.startsWith('crate_')?.5:3.5));}
-  put('building_blacksmith_red',FORGE.x+2.5,FORGE.y+.6,0,5.5);
-  {const[x,z]=VT(FORGE.x+4.4,FORGE.y+1.6);flames.warm.push(x,1.1,z);torches.push({x,y:1.6,z,col:'#ff8a3a',int:26,dist:12,fire:true});}
+    {const[X,Z]=VT(st.x+2.5,st.y+2);T.box(X,.55,Z,7.6,1.1,.7,'#5a4028');T.box(X,1.14,Z,7.9,.1,.9,'#7a5a38');for(const sx of[-3.9,3.9])T.box(X+sx,.9,Z,.2,1.8,.2,st.awning);}}   // its counter, with posts in its colour
+  put('building_blacksmith_red',FORGE.x+2.5,FORGE.y+.6,0,5.5);lamp(FORGE.x+4.4,FORGE.y+1.6,1.1,'#ff8a3a',26,12,true);
   put('tent',WITCH.x+2.5,WITCH.y+.4,0,7);put('pot_large',WITCH.x+2.5,WITCH.y+2.2,0,.75);
   {const[x,z]=VT(WITCH.x+2.5,WITCH.y+2.2);flames.green.push(x,.8,z,x+.3,.75,z+.2,x-.3,.7,z-.1);torches.push({x,y:1.4,z,col:'#7cf07a',int:14,dist:9});}
-  put('table_medium_long',EXCHANGE.x+2.5,EXCHANGE.y+.5,0,1.3);
-  // the kingdoms' camps, each with its flag
-  const FLAG={'Iron Crown':'flag_blue','Sun Choir':'flag_yellow','Gilded League':'flag_red'};
-  for(const k of KINGDOMS){put('tent',k.x,k.y-1.1,0,6.5);put(FLAG[k.name],k.x+1.8,k.y-.2,0,7);}
-  // the training yard: a rack of weapons and a fence round it; the scarecrows are drawn as enemies (targets)
-  {const[yx,yy,yw,yh]=VILLAGE.yard;put('weaponrack',yx+yw-1,yy+1,Math.PI/2,4);
-    for(let x=yx;x<yx+yw;x+=2.3)put('fence_wood_straight',x+1.1,yy,Math.PI/2,3.8);}
-  // the fields: a fence along the top, a signpost
-  {const[fx,fy,fw]=VILLAGE.fields;for(let x=fx;x<fx+fw;x+=2.3)if(Math.abs(x-VILLAGE.fieldGate[0])>1.4)put('fence_wood_straight',x+1.1,fy-.2,Math.PI/2,3.8);
+  {const[X,Z]=VT(EXCHANGE.x+2.5,EXCHANGE.y+.5);put('table_medium_long',EXCHANGE.x+2.5,EXCHANGE.y+.5,0,1.3);   // the exchange: a desk under a board of the day's prices
+    for(const sx of[-4.2,4.2])T.box(X+sx,1.8,Z-.8,.24,3.6,.24,'#4a3422');T.box(X,2.6,Z-.8,8.4,1.7,.14,'#2a2622');T.box(X,3.55,Z-.8,9,.22,.3,'#4a3422');
+    for(let i=0;i<5;i++)T.box(X-3+i*1.5,2.6+(i%2?.2:-.15),Z-.71,.9,.12,.04,'#c9c2a8');}
+  // the kingdoms' camps: a palisade with a gate, a command tent in each kingdom's colour with its banner, a fire in the middle
+  {const[cx,cy,cw,ch]=VILLAGE.camp,[g0,g1]=VILLAGE.campGate,wood=['#5a4028','#4e3722','#664a2e'];
+    const stake=(x,y)=>{const[X,Z]=VT(x,y),hh=2.3+rnd()*.7;T.box(X,hh/2,Z,.36,hh,.36,wood[Math.floor(rnd()*3)],0,rnd());T.box(X,hh+.12,Z,.2,.3,.2,'#3a2a1a');};
+    for(let x=cx;x<cx+cw;x+=.24)if(x<g0||x>g1)stake(x,cy+.5);for(let y=cy+.6;y<cy+ch;y+=.24)stake(cx+cw-.5,y);
+    for(const gx of[g0,g1]){const[X,Z]=VT(gx,cy+.5);T.box(X,2,Z,.5,4,.5,'#4a3422');}
+    {const[X,Z]=VT((g0+g1)/2,cy+.5);T.box(X,3.9,Z,(g1-g0)*2+.8,.36,.4,'#4a3422');KINGDOMS.forEach((k,i)=>T.box(X-1.6+i*1.6,3.1,Z,.9,1.3,.06,k.color));}}
+  for(const k of KINGDOMS){const[X,Z]=VT(k.x,k.y-1),dark=new THREE.Color(k.color).multiplyScalar(.55).getStyle();
+    T.prism(X,0,Z,3.6,3.3,5.6,k.color,Math.PI/2);T.box(X,3.3,Z,.16,.16,4,dark);T.box(X,.95,Z+1.82,1.3,1.9,.08,'#1c1612');   // the tent, its ridge, its open door
+    for(const sx of[-1.9,1.9])T.box(X+sx,.9,Z+1.84,.5,1.8,.06,dark,0,0,sx>0?.5:-.5);
+    for(const sx of[-2.9,2.9])for(const sz of[-1.2,1.2])T.box(X+sx,.25,Z+sz,.14,.5,.14,'#4a3422');
+    const[fx,fz]=VT(k.x+2.4,k.y-.1);T.box(fx,2.6,fz,.16,5.2,.16,'#4a3422');T.box(fx+.75,4.3,fz,1.4,1.5,.06,k.color);T.box(fx+.75,4.3,fz+.04,.5,.5,.04,dark);}
+  // the training yard: its ground is marked; the scarecrows are drawn as enemies (targets)
+  // the fields: a fence along the lane with a gate, the barn, the windmill, a signpost
+  {const[fx,fy,fw]=VILLAGE.fields,[g0,g1]=VILLAGE.fieldGate;
+    for(let x=fx;x<=fx+fw-3;x+=1){if(x>=g0&&x<=g1&&x!==g0&&x!==g1)continue;const[X,Z]=VT(x,fy+.5);T.box(X,.7,Z,.22,1.4,.22,'#5a4028');
+      if(!(x>=g0&&x<g1)){T.box(X+1,1.05,Z,2,.14,.1,'#6b4e30');T.box(X+1,.55,Z,2,.14,.1,'#6b4e30');}}
+    for(const[px,py]of VILLAGE.plots){const[X,Z]=VT(px+1.5,py+1);for(const[sx,sz,w,d]of[[0,-2,6,.2],[0,2,6,.2],[-3,0,.2,4.2],[3,0,.2,4.2]])T.box(X+sx,.12,Z+sz,w,.24,d,'#5a4028');}
+    T.house({x:66,y:49,w:4,h:3,floors:1,seed:77,barn:true});put('building_windmill_yellow',72.5,54.6,0,7);
     group.add(signpost(...VT(...VILLAGE.fieldSign)));}
-  // trees, lamps, and a little life: barrels, sacks, lumber
+  // what stands about: the camps' fire and gear, the fields' barrows and crates, tables by the inn
+  for(const[k,x,y,sc,ry]of VILLAGE.decor){
+    if(k==='campfire'){const[X,Z]=VT(x,y);for(let i=0;i<8;i++){const a=i/8*TAU;T.box(X+Math.cos(a)*.75,.14,Z+Math.sin(a)*.75,.4,.28,.34,'#6f6c64',0,a);}
+      for(let i=0;i<3;i++)T.box(X,.3,Z,1.2,.2,.22,'#3a2616',.25,i*1.05);lamp(x,y,.7,'#ff8a3a',30,14,true);flames.warm.push(X+.2,.9,Z+.1,X-.2,1.1,Z-.1);}
+    else put(k,x,y,ry||0,sc);}
+  // trees and street lamps
   for(const[x,y,v]of VILLAGE.trees)put(v==='a'?'tree_single_A':'tree_single_B',x,y-.4,rnd()*6,4.2+rnd()*.8);
   for(const[x,y]of VILLAGE.lamps){put('post_lantern',x,y,rnd()*6,1.1);const[X,Z]=VT(x,y);flames.warm.push(X,3.1,Z);torches.push({x:X,y:3.4,z:Z,col:'#ffc070',int:14,dist:12});}
-  for(const[k,x,y,sc]of[['barrel',12.5,11.2,3.5],['barrel',13.1,11.6,3.5],['sack',6.2,11.4,4],['resource_lumber',41.5,24.8,3.5],['wheelbarrow',17,26.3,3.5],['crate_B_small',39,13,4]])put(k,x,y,rnd()*6,sc);
+  for(const[k,x,y,sc,ry]of g.extras||[])put(k,x,y-(k.startsWith('tree')?.4:0),ry,sc);
+  const tm=T.meshes();group.add(...tm);
   // the inn's stash, by its door
   const stashes=(g.stashes||[]).map(q=>{const o=single('chest_gold');o.position.set(wx(q.x),0,wz(q.y));group.add(o);return o;});
   // grass and stones on the open ground
@@ -409,6 +437,102 @@ function buildVillage(){
 }
 const FLAME_SETS={warm:[['#ff8a2a',1.7,.85],['#ffcf6a',.65,1],[null,.22,1]],green:[['#2fd05a',.9,.55],['#a8ffa0',.35,.8],[null,.14,1]],blue:[['#3a6cff',1.6,.9],['#9cc0ff',.7,1],[null,.26,1]]};
 for(const k in FLAME_SETS)FLAME_SETS[k][2][0]=typeof THREE==='undefined'?'#fff':new THREE.Color(k==='warm'?'#fff0c0':k==='green'?'#e8ffe0':'#eef4ff').multiplyScalar(2);
+// What the town is made of, drawn into each surface by where it is in the world (no textures): s stone laid in
+// courses with dark mortar, each block its own shade; p old plaster, stained, streaked by rain and damp at the foot;
+// r roof tiles in overlapping rows, some darker, moss where it gathers; w wood, weathered.
+const TOWN_MATS={};
+function townMat(k){
+  if(TOWN_MATS[k])return TOWN_MATS[k];const m=new THREE.MeshStandardMaterial({roughness:k==='r'?.85:.97});
+  const body={
+    s:`vec2 b=uv/vec2(.7,.34);b.x+=.5*mod(floor(b.y),2.);vec2 id=floor(b),f=fract(b);
+       float mo=smoothstep(0.,.07,f.x)*smoothstep(0.,.07,1.-f.x)*smoothstep(0.,.13,f.y)*smoothstep(0.,.13,1.-f.y);
+       float g=mix(.38,.7+.45*gH(id),mo)*mix(.7,1.08,gF(uv*2.2));g*=1.-.25*step(.93,gH(id+7.));   // mortar, each block its own shade, a few blackened
+       float low=1.-smoothstep(0.,1.4,vGW.y);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.72,.86,.6),low*.6*smoothstep(.35,.6,gF(uv*.6+4.)));
+       diffuseColor.rgb*=g*1.35;`,
+    p:`float g=mix(.66,1.08,gF(uv*1.3))*mix(.7,1.,smoothstep(.28,.6,gF(uv*.4+3.)));                    // grime, and big stains
+       g*=mix(.72,1.,smoothstep(.3,.62,gF(vec2(uv.x*5.,uv.y*.3+2.))));                                 // rain streaks, running down
+       float low=1.-smoothstep(.3,2.4,vGW.y);g*=1.-low*.4;diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.78,.86,.66),low*.6);
+       vec2 cu=uv*.9+vec2(gF(uv*2.1),gF(uv*2.1+9.))*.8;float cd=gCrack(cu),patchy=smoothstep(.42,.55,gF(uv*.3+17.));
+       g*=1.-(1.-smoothstep(0.,.06,cd))*patchy*.8;                                                      // cracks, in patches
+       float bare=smoothstep(.66,.7,gF(uv*.8+31.));                                                     // plaster fallen away: the brick under it
+       vec2 b=uv/vec2(.5,.22);b.x+=.5*mod(floor(b.y),2.);vec2 f=fract(b);float mo=smoothstep(0.,.1,f.x)*smoothstep(0.,.18,f.y);
+       diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.3,.16,.11)*(.7+.5*gH(floor(b)))*mix(.5,1.,mo),bare);
+       diffuseColor.rgb*=g*1.6;`,
+    r:`float across=abs(vGN.z)>abs(vGN.x)?vGW.x:vGW.z,v=vGW.y/.24;across=across/.36+.5*mod(floor(v),2.);
+       vec2 id=vec2(floor(across),floor(v)),f=vec2(fract(across),fract(v));
+       float g=mix(.42,1.,smoothstep(0.,.3,f.y))*mix(.55,1.,smoothstep(0.,.1,f.x)*smoothstep(0.,.1,1.-f.x))*(.68+.5*gH(id));   // each tile laps the row below
+       g*=1.-.45*step(.94,gH(id+3.));g*=mix(.7,1.05,gF(vGW.xz*.9));                                     // slipped and blackened tiles; soot
+       float moss=smoothstep(.56,.72,gF(vGW.xz*.45+7.))*smoothstep(.2,.6,f.y);
+       diffuseColor.rgb=mix(diffuseColor.rgb*g*1.55,vec3(.2,.25,.11)*(.7+.5*gH(id)),moss*.55);`,
+    w:`float g=mix(.7,1.1,gF(uv*vec2(2.,7.)))*mix(.8,1.,gF(uv*.7+5.));float low=1.-smoothstep(0.,1.2,vGW.y);g*=1.-low*.25;diffuseColor.rgb*=g*1.25;`}[k];
+  m.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGW;varying vec3 vGN;').replace('#include <project_vertex>',
+      '#include <project_vertex>\nvec4 gw=vec4(transformed,1.);vec3 gn=objectNormal;\n#ifdef USE_INSTANCING\ngw=instanceMatrix*gw;gn=mat3(instanceMatrix)*gn;\n#endif\nvGW=(modelMatrix*gw).xyz;vGN=normalize(mat3(modelMatrix)*gn);');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vGW;varying vec3 vGN;'+GRIT_GLSL).replace('#include <color_fragment>',
+      '#include <color_fragment>\n{vec3 an=abs(vGN);vec2 uv=an.y>.75?vGW.xz:(an.x>an.z?vGW.zy:vGW.xy);\n'+body+'}');};
+  m.customProgramCacheKey=()=>'town-'+k;return TOWN_MATS[k]=m;
+}
+// The town's own carpentry: boxes and gable ends by the thousand, in two draws, each with its own colour. A house is
+// stone footings, plaster walls in a timber frame, a door, windows (most of them lit), a pitched roof and a chimney.
+function townBuilder(){
+  const boxes=[],prisms=[],glows=[];
+  const mat=(x,y,z,sx,sy,sz,rx=0,ry=0,rz=0)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz,'YXZ')),new THREE.Vector3(sx,sy,sz));
+  let cur=null;const emit=(list,M,c)=>{const i=typeof c==='string'?c.indexOf('|'):-1;list.push([cur?M.premultiply(cur):M,i<0?c:c.slice(0,i),i<0?'w':c[i+1]]);};   // a colour may name its stuff: '#777|s' stone, p plaster, r roof tiles, w wood (the default)   // cur: where the house being built stands, and how it is turned
+  const box=(x,y,z,sx,sy,sz,c,rx,ry,rz)=>emit(boxes,mat(x,y,z,sx,sy,sz,rx,ry,rz),c),prism=(x,y,z,sx,sy,sz,c,ry)=>emit(prisms,mat(x,y,z,sx,sy,sz,0,ry),c);
+  const PLASTER=['#b3a688','#a6997b','#9a8e76','#ad9d80','#8f8672','#a39478'],ROOF=['#6e3328','#5e2c24','#743a2a','#4a3d36','#39444c','#54402a','#414832','#63302b'],SHUT=['#33473a','#532823','#2c4052','#4a3d24'],TIMBER='#2e2118',STONE='#6f6b62|s';
+  function house(h){
+    const r=mulberry32(h.seed),pick=a=>a[Math.floor(r()*a.length)],[X0,Zb]=VT(h.x+h.w/2,h.y),turned=Math.abs(h.rot||0)>.02;
+    const ar=Math.abs(h.rot||0),W=h.w*2-.24-ar*h.h*2.2,D=h.h*2-.8-ar*h.w*1.1,X=0,zc=0,st=2.7,fl=h.floors,plaster=h.barn?'#663c2c|w':pick(PLASTER)+'|p',roofB=h.barn?'#40332b':pick(ROOF),roof=roofB+'|r',timber=h.barn?'#40261c':TIMBER;
+    const stoneLow=!h.barn&&fl===2&&r()<.35,jet=fl===2&&r()<.55?.5:0,H=st*fl,y0=.4+r()*.5,top=y0+H,pitch=.42+r()*.2;   // (no two eaves at one height, no two roofs at one pitch)
+    cur=mat(X0+(h.dx||0),0,Zb+.25+(h.h*2-.8)/2,1,1,1,0,h.rot||0);
+    box(X,y0/2+.02,zc,W+.2,y0+.04,D+.2,'#625e56|s');
+    for(let f=0;f<fl;f++){const j=f?jet:0,zF=zc+D/2+j,yb=y0+f*st,col=f===0&&stoneLow?STONE:plaster;
+      box(X,yb+st/2,zc+j/2,W,st,D+j,col);
+      box(X,yb+st-.1,zc+j/2,W+.08,.2,D+j+.08,timber);if(f)box(X,yb+.08,zc+j/2,W+.1,.2,D+j+.1,timber);
+      const n=Math.max(2,Math.round(W/2)),pw=(W-.2)/n,door=f===0?Math.floor(r()*n):-1,wins=new Set();
+      {const free=[];for(let i=0;i<n;i++)if(i!==door)free.push(i);for(let k=Math.min(free.length,h.w>=5?3:2,1+Math.floor(r()*3));k>0;k--)wins.add(free.splice(Math.floor(r()*free.length),1)[0]);}   // three windows a floor at most
+      if(!(f===0&&stoneLow))for(let i=0;i<=n;i++)box(X-W/2+.1+i*pw,yb+st/2,zF+.02,.18,st,.1,timber);
+      for(let i=0;i<n;i++){const px=X-W/2+.1+(i+.5)*pw;
+        if(i===door){const dw=h.barn?1.8:1;box(px,y0+.95,zF+.05,dw,1.9,.12,h.barn?'#3a241a':'#3b2616');box(px,y0+1.96,zF+.05,dw+.24,.14,.16,timber);box(px,y0/2,zF+.4,dw+.5,y0,.7,STONE);
+          if(!h.barn&&r()<.5){emit(glows,mat(px+dw/2+.35,y0+1.75,zF+.2,.16,.2,.16),0);box(px+dw/2+.35,y0+1.95,zF+.12,.06,.06,.3,timber);}continue;}
+        if(h.barn||!wins.has(i)){if(!(f===0&&stoneLow)&&r()<.6)box(px,yb+st/2,zF+.03,.14,st*1.12,.08,timber,0,0,r()<.5?.5:-.5);continue;}
+        const wy=yb+1.5,lit=r()<.45;emit(lit?glows:boxes,mat(px,wy,zF+.04,.8,.95,.08),lit?Math.floor(r()*3):'#1d242c');
+        box(px,wy,zF+.07,.06,.95,.06,timber);box(px,wy,zF+.07,.8,.06,.06,timber);box(px,wy-.56,zF+.1,1,.1,.22,timber);
+        if(r()<.45){const sc=pick(SHUT);for(const sx of[-.53,.53])box(px+sx,wy,zF+.05,.24,.95,.06,sc);}
+        else if(r()<.4){box(px,wy-.7,zF+.2,.9,.2,.26,'#5a3a22');box(px,wy-.55,zF+.2,.8,.16,.2,pick(['#b8405a','#d8b040','#c86a8a','#5a8a3a']));}}}
+    // the roof: mostly eaves to the street; on some narrow houses the gable faces it
+    const jz=jet/2,Dr=D+jet,gable=!h.barn&&h.w<=5&&r()<.3,dark='#'+new THREE.Color(roofB).multiplyScalar(.55).getHexString()+'|r',lite='#'+new THREE.Color(roofB).multiplyScalar(1.12).getHexString()+'|r',board='#'+new THREE.Color(roofB).multiplyScalar(.4).getHexString();
+    if(gable){const half=W/2+.3,rise=Math.min(3.8,W*pitch*1.05),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
+      prism(X,top,zc+jz,Dr,rise,W,plaster,Math.PI/2);
+      for(const sd of[-1,1]){box(X+sd*half/2,top+rise/2+.06,zc+jz,L+.1,.2,Dr+.7,sd<0?roof:lite,0,0,-sd*th);
+        for(const e of[-1,1])box(X+sd*half/2,top+rise/2+.02,zc+jz+e*(Dr/2+.37),L+.16,.26,.1,board,0,0,-sd*th);}   // bargeboards: each roof ends in its own dark edge
+      box(X,top+rise+.1,zc+jz,.26,.2,Dr+.74,dark);if(r()<.5)emit(glows,mat(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06),Math.floor(r()*3));else box(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06,'#1d242c');
+      box(X,top+.05,zc+jz+Dr/2+.03,W,.16,.08,timber);}
+    else{const half=Dr/2+.45,rise=Math.min(3.5,Dr*pitch),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
+      prism(X,top,zc+jz,W,rise,Dr,plaster);
+      for(const sd of[-1,1]){box(X,top+rise/2+.06,zc+jz+sd*half/2,W+.16,.2,L+.1,sd>0?lite:roof,sd*th);   // (the roof stops at the house's own walls: next door's is another roof)
+        for(const e of[-1,1])box(X+e*(W/2+.1),top+rise/2+.02,zc+jz+sd*half/2,.1,.26,L+.16,board,sd*th);}
+      box(X,top+rise+.1,zc+jz,W+.2,.2,.26,dark);
+      if(!h.barn&&h.w>=5&&r()<.4){const dx=X+(r()-.5)*(W-3);   // a dormer in the roof
+        box(dx,top+rise*.55,zc+jz+half*.45,1.3,1.1,1.2,plaster);if(r()<.5)emit(glows,mat(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06),Math.floor(r()*3));else box(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06,'#1d242c');box(dx,top+rise*.55+.66,zc+jz+half*.45,1.6,.16,1.5,roof);}}
+    if(!h.barn){const rise=gable?Math.min(3.8,W*pitch*1.05):Math.min(3.5,Dr*pitch);box(X+(r()<.5?-1:1)*(W/2-1),top+rise*.5+.5,zc-D*.15,.62,rise+1.2,.62,'#5f5b54|s');}
+    cur=null;
+  }
+  function meshes(){
+    const out=[],col=new THREE.Color(),unit=new THREE.BoxGeometry(1,1,1);
+    const pg=new THREE.BufferGeometry();   // a gable: a triangle (apex up) pulled along x
+    pg.setAttribute('position',new THREE.BufferAttribute(new Float32Array([-.5,0,.5, .5,0,.5, .5,1,0, -.5,0,.5, .5,1,0, -.5,1,0,  .5,0,-.5, -.5,0,-.5, -.5,1,0, .5,0,-.5, -.5,1,0, .5,1,0,
+      -.5,0,-.5, -.5,0,.5, -.5,1,0,  .5,0,.5, .5,0,-.5, .5,1,0]),3));pg.computeVertexNormals();
+    const make=(list,geo,m,shadow)=>{if(!list.length)return;const im=new THREE.InstancedMesh(geo,m,list.length);list.forEach(([M,c],i)=>{im.setMatrixAt(i,M);im.setColorAt(i,col.set(c));});
+      im.instanceColor.needsUpdate=true;im.castShadow=shadow;im.receiveShadow=shadow;im.computeBoundingSphere();im.frustumCulled=false;out.push(im);};
+    for(const k of'sprw'){make(boxes.filter(q=>q[2]===k),unit,townMat(k),true);make(prisms.filter(q=>q[2]===k),pg,townMat(k),true);}
+    // the panes: dark glass by day; in the evening and at night a dim, steady candlelight (VILLAGE_HOUR, village.js)
+    const dayTime=VILLAGE_HOUR==='day';
+    make(glows.map(q=>[q[0],dayTime?'#1d242c':q[1]===0?'#5a3414':q[1]===1?'#4e2c12':'#633a18']),unit,dayTime?new THREE.MeshStandardMaterial({roughness:.4}):new THREE.MeshBasicMaterial({}),false);
+    return out;
+  }
+  return{box,prism,house,meshes};
+}
 // The village's ground, painted once into a canvas: grass with its lighter and darker patches, the worn paths, the
 // square's flagstones, the market's cobbles, the fields' tilled earth and the training yard's packed dirt.
 const GP=24;   // canvas pixels a tile
@@ -419,25 +543,30 @@ function groundCanvas(){
   for(let i=0;i<5200;i++){const px=r()*c.width,py=r()*c.height,rr=4+r()*22;x.fillStyle=['#456634','#3a5429','#4c6e38','#36502a','#52733c'][Math.floor(r()*5)];x.globalAlpha=.35+r()*.4;x.beginPath();x.ellipse(px,py,rr,rr*.6,r()*3,0,7);x.fill();}
   x.globalAlpha=1;
   // the border, where the roots and the woods begin
-  for(let y=0;y<VILLAGE_H;y++)for(let X=0;X<VILLAGE_W;X++)if(G.map[(VOY+y)*MW+VOX+X]===2&&Math.min(X,y,VILLAGE_W-1-X,VILLAGE_H-1-y)<3){x.fillStyle='rgba(28,38,22,.75)';x.fillRect(T(X)-2,T(y)-2,GP+4,GP+4);}
+  for(let y=0;y<VILLAGE_H;y++)for(let X=0;X<VILLAGE_W;X++)if(Math.min(X,y,VILLAGE_W-1-X,VILLAGE_H-1-y)<3){x.fillStyle='rgba(28,38,22,.75)';x.fillRect(T(X)-2,T(y)-2,GP+4,GP+4);}
   const soft=(draw,col,w,al)=>{x.save();x.globalAlpha=al;x.strokeStyle=col;x.lineWidth=w;x.lineCap='round';draw();x.restore();};
+  // packed earth round the houses and in the camps and the yard
+  const earth=(X,Y,W,H,c='#6b5a3e',al=.8)=>{x.globalAlpha=al;x.fillStyle=c;x.beginPath();x.roundRect(T(X),T(Y),T(W),T(H),GP*.6);x.fill();x.globalAlpha=1;for(let i=0;i<W*H*3;i++){x.fillStyle=r()<.5?'rgba(0,0,0,.07)':'rgba(255,240,200,.05)';x.fillRect(T(X)+r()*T(W),T(Y)+r()*T(H),5,3);}};
+  for(const[x0,x1,base,depth]of VILLAGE.rows)earth(x0-.4,base-depth-.4,x1-x0+.8,depth+1.5,'#5e5038',.7);
+  {const[cx,cy,cw,ch]=VILLAGE.camp;earth(cx-2,cy+.6,cw+1.4,ch,'#6e5c40',.95);const[yx,yy,yw,yh]=VILLAGE.yard;earth(yx,yy,yw,yh,'#76664a',.9);
+    x.strokeStyle='#4a3c28';x.lineWidth=3;x.setLineDash([10,8]);x.strokeRect(T(yx)+4,T(yy)+4,T(yw)-8,T(yh)-8);x.setLineDash([]);}
   for(const[a,b,cc,d]of VILLAGE.paths){const path=()=>{x.beginPath();x.moveTo(T(a[0]),T(a[1]));x.bezierCurveTo(T(b[0]),T(b[1]),T(cc[0]),T(cc[1]),T(d[0]),T(d[1]));x.stroke();};
-    soft(path,'#5e4c30',T(2.6),.45);soft(path,'#7a6440',T(1.8),.9);soft(path,'#8c7650',T(.9),.5);}
-  // the square: flagstones in rings
-  {const sq=VILLAGE.square,cx=T(sq.x),cy=T(sq.y),R0=T(sq.r);x.fillStyle='#77746a';x.beginPath();x.arc(cx,cy,R0,0,7);x.fill();
+    soft(path,'#5e4c30',T(2.4),.45);soft(path,'#7a6440',T(1.6),.9);soft(path,'#8c7650',T(.8),.5);}
+  // the streets: cobbles between two kerbs, laid in rows across the way
+  const cob=['#74706a','#67635c','#6e6a62','#7b776f','#5f5b55'];
+  for(const[sx,sy,sw,sh]of VILLAGE.streets){x.fillStyle='#4c4944';x.fillRect(T(sx)-3,T(sy)-3,T(sw)+6,T(sh)+6);}
+  for(const[sx,sy,sw,sh]of VILLAGE.streets){x.fillStyle='#57534d';x.fillRect(T(sx),T(sy),T(sw),T(sh));const along=sw>sh,s=GP*.42;
+    for(let j=0;j*s<T(sh);j++)for(let i=0;i*s<T(sw);i++){const ox=along?0:(j%2)*s/2,oy=along?(i%2)*s/2:0;x.fillStyle=cob[Math.floor(r()*5)];x.beginPath();x.roundRect(T(sx)+i*s+ox+1,T(sy)+j*s+oy+1,s-2,s-2,3);x.fill();}
+    x.fillStyle='rgba(0,0,0,.14)';if(along)x.fillRect(T(sx),T(sy)+T(sh)/2-2,T(sw),4);else x.fillRect(T(sx)+T(sw)/2-2,T(sy),4,T(sh));}   // the gutter down the middle
+  // the plaza: flagstones in rings round the Teleport Gate
+  {const sq=VILLAGE.square,cx=T(sq.x),cy=T(sq.y),R0=T(sq.r);x.fillStyle='#4c4944';x.beginPath();x.arc(cx,cy,R0+4,0,7);x.fill();x.fillStyle='#7d7a70';x.beginPath();x.arc(cx,cy,R0,0,7);x.fill();
     x.strokeStyle='#4e4c46';x.lineWidth=2;for(let rr=GP*.9;rr<R0;rr+=GP*.9){x.beginPath();x.arc(cx,cy,rr,0,7);x.stroke();const n=Math.max(6,Math.floor(rr/GP*3.2));
-      for(let i=0;i<n;i++){const a=i/n*TAU+rr;x.beginPath();x.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);x.lineTo(cx+Math.cos(a)*(rr+GP*.9),cy+Math.sin(a)*(rr+GP*.9));x.stroke();}}
-    for(let i=0;i<500;i++){const a=r()*TAU,d=r()*R0;x.fillStyle=r()<.5?'rgba(255,255,255,.05)':'rgba(0,0,0,.08)';x.fillRect(cx+Math.cos(a)*d,cy+Math.sin(a)*d,8,6);}
-    x.strokeStyle='#8fb8c0';x.globalAlpha=.25;x.lineWidth=3;x.beginPath();x.arc(cx,cy,T(2.2),0,7);x.stroke();x.globalAlpha=1;}
-  // the market's cobbles
-  {const[mx,my,mw,mh]=VILLAGE.market;x.fillStyle='#6a665c';x.fillRect(T(mx),T(my),T(mw),T(mh));
-    for(let j=0;j<mh*2;j++)for(let i=0;i<mw*2;i++){x.fillStyle=['#726e63','#625e55','#6d695f'][Math.floor(r()*3)];x.beginPath();x.ellipse(T(mx)+(i+.5+(j%2)*.5)*GP/2,T(my)+(j+.5)*GP/2,GP*.21,GP*.18,0,0,7);x.fill();}}
+      for(let i=0;i<n;i++){const a=i/n*TAU+rr;x.beginPath();x.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);x.lineTo(cx+Math.cos(a)*Math.min(R0,rr+GP*.9),cy+Math.sin(a)*Math.min(R0,rr+GP*.9));x.stroke();}}
+    for(let i=0;i<700;i++){const a=r()*TAU,d=r()*R0;x.fillStyle=r()<.5?'rgba(255,255,255,.05)':'rgba(0,0,0,.08)';x.fillRect(cx+Math.cos(a)*d,cy+Math.sin(a)*d,8,6);}
+    x.strokeStyle='#8fb8c0';x.globalAlpha=.3;x.lineWidth=4;x.beginPath();x.arc(cx,cy,T(2.4),0,7);x.stroke();x.lineWidth=2;x.beginPath();x.arc(cx,cy,T(4.6),0,7);x.stroke();x.globalAlpha=1;}
   // the fields: tilled earth, and each plot's rows
-  {const[fx,fy,fw,fh]=VILLAGE.fields;x.fillStyle='#4e3d27';x.fillRect(T(fx),T(fy),T(fw),T(fh));
+  {const[fx,fy,fw,fh]=VILLAGE.fields;x.fillStyle='#63502f';x.fillRect(T(fx),T(fy)+GP/2,T(fw),T(fh));for(let i=0;i<900;i++){x.fillStyle=r()<.5?'rgba(0,0,0,.08)':'rgba(255,235,190,.06)';x.fillRect(T(fx)+r()*T(fw),T(fy)+r()*T(fh),6,3);}
     for(const[px,py]of VILLAGE.plots){x.fillStyle='#3e2f1d';x.fillRect(T(px)+3,T(py)+3,T(3)-6,T(2)-6);x.fillStyle='#5a4730';for(let k=0;k<4;k++)x.fillRect(T(px)+6,T(py)+8+k*GP*.45,T(3)-12,3);}}
-  // the training yard
-  {const[yx,yy,yw,yh]=VILLAGE.yard;x.fillStyle='#76664a';x.globalAlpha=.85;x.fillRect(T(yx),T(yy),T(yw),T(yh));x.globalAlpha=1;
-    for(let i=0;i<300;i++){x.fillStyle='rgba(0,0,0,.07)';x.fillRect(T(yx)+r()*T(yw),T(yy)+r()*T(yh),5,3);}}
   return GROUND=c;
 }
 function villageGround(){
@@ -1206,6 +1335,8 @@ me.slip=(id,speed,rel=0,old=false,force=null)=>{
   a.root.position.copy(save[0]);a.face=save[1];a.root.rotation.y=a.face;a.px=null;return out;};
 me.debug=()=>({foot:FOOT,gait:Object.fromEntries([...ACTORS.values()].map(a=>[a.key,gaitOf(a)])),floaters:FLOOR&&FLOOR.floatSet?FLOOR.floatSet.list.slice(0,3):null,torches:FLOOR&&FLOOR.torches.length,top:TOP.skull_candle,candle:TOP.candle_thin});
 me.zoom=z=>{if(z)zoom=z;return zoom;};
+// The village's hour, to look at it by day, in the evening or at night (its windows for now): R3.hour('night').
+me.hour=h=>{if(h){VILLAGE_HOUR=h;if(G&&G.village)buildVillage();}return VILLAGE_HOUR;};
 me.use=()=>me.ready&&!Q.off&&!!G&&!!P;
 me.draw=function(){
   canvas.hidden=false;over.hidden=false;cv.style.visibility='hidden';

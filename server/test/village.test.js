@@ -23,8 +23,11 @@ test('every building, stall and tree blocks its footprint, and every person can 
   const run=village();
   for(const q of['G.traders','G.smiths','G.talkers'])
     assert.ok(run(`${q}.every(n=>[[0,1],[0,1.6],[0,2]].some(([dx,dy])=>!solid(n.x+dx*TILE,n.y+dy*TILE)&&hyp(dy*TILE,0)<24))`),q+' reachable from the front');
-  assert.ok(run(`solid(vx(9.5),vy(8))`),'inside the inn is blocked');
-  assert.ok(run(`solid(vx(44),vy(7.5))`),'a stall is blocked');
+  assert.ok(run(`solid(vx(28.5),vy(24))`),'inside the inn is blocked');
+  assert.ok(run(`solid(vx(49),vy(25.5))`),'a stall is blocked');
+  assert.ok(run(`G.houses.length>=40&&G.houses.every(h=>solid(vx(h.x+h.w/2),vy(h.y+h.h/2)))`),'a town of houses, each solid');
+  // every street is open from end to end, and the plaza
+  assert.ok(run(`VILLAGE.streets.every(([x,y,w,h])=>{for(let j=y+.5;j<y+h;j++)for(let i=x+.5;i<x+w;i++)if(solid(vx(i),vy(j))&&hyp(i-40,j-30)>8)return false;return true;})`),'streets are clear');
 });
 
 test('hunger and thirst hold still at home',()=>{
