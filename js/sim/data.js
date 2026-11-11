@@ -294,7 +294,7 @@ const FLOORS=[
     boss:{name:'The Gate Warden',fam:'spirit',sprite:'boss',ai:'warden',line:'#7a4a52',calls:'skitter',hpX:18}},
   {theme:1,intro:'The dead here shrug off magic. Bring steel.',introMs:4200,
     spawns:['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'],
-    boss:{name:'The Bone Regent',fam:'undead',sprite:'boneboss',ai:'regent',line:'#9a8f6a',mres:.5,calls:'skel'}},
+    boss:{name:'The Bone Regent',fam:'undead',sprite:'boneboss',ai:'regent',line:'#9a8f6a',mres:.3,calls:'skel',hpX:16}},
   {theme:2,intro:'Roots have broken into the crypt. Kill whatever raises the dead.',introMs:4200,
     spawns:['thrall','thrall','thrall','gravecaller','gravecaller','hermit','bloodbloom','skelarcher'],
     wall:{type:'thornroot',chance:.55},thorns:true,

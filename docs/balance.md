@@ -24,14 +24,14 @@ health), and falls count how often it died and was stood up again.
 
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
-| Longsword | 55 | ⚠ +24% | 9 s | 0.1 | 11.8 s | 0.4 | 0, 0 |
-| Spear | 51 | +15% | 7.6 s | 0.2 | 12.2 s | 0.5 | 0, 0 |
-| Greatsword | 89 | ⚠ +100% | 9.1 s | 0.3 | 9.8 s | 0.0 | 0, 0 |
-| Mace | 44 | -1% | 12.7 s | 0.3 | 14.6 s | 0.4 | 0, 0 |
-| Dagger | 42 | -6% | 11.9 s | 0.6 | 16.3 s | 0.7 | 0, 0 |
-| Bow | 45 | +1% | 14.8 s | 0.5 | 15.1 s | 0.8 | 0, 0 |
-| Grimoire (magic) | 40 | -10% | not cleared | 2.8 | 35.6 s | 1.9 | 1, 1 |
-| Grimoire (faith) | 30 | ⚠ -33% | not cleared | 2.9 | 53.4 s | 3.2 | 1, 2 |
+| Longsword | 55 | ⚠ +24% | 9 s | 0.1 | 308.2 s | 6.8 | 0, 5 |
+| Spear | 51 | +15% | 7.6 s | 0.2 | 267.9 s | 4.8 | 0, 3 |
+| Greatsword | 89 | ⚠ +100% | 9.1 s | 0.3 | 185.3 s | 4.1 | 0, 3 |
+| Mace | 44 | -1% | 12.7 s | 0.3 | 291.3 s | 5.4 | 0, 3 |
+| Dagger | 42 | -6% | 11.9 s | 0.6 | 387.3 s | 7.5 | 0, 5 |
+| Bow | 45 | +1% | 14.8 s | 0.5 | 443.9 s | 14.1 | 0, 13 |
+| Grimoire (magic) | 40 | -10% | not cleared | 2.8 | 691.4 s | 27.8 | 1, 26 |
+| Grimoire (faith) | 30 | ⚠ -33% | not cleared | 2.9 | 844.1 s | 29.5 | 1, 27 |
 
 ## Floor 3 (level 14)
 

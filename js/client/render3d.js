@@ -696,7 +696,7 @@ const FOE={
   hermit:{m:'Skeleton_Warrior',tint:'#a08a62',s:1.3,r:'Skeleton_Axe',l:'Skeleton_Shield_Large_A'},
   dummy:{prop:'target',s:6},
   boss:{m:'Skeleton_Warrior',ghost:'#b85a4a',s:2.5,r:'Skeleton_Axe',l:'Skeleton_Shield_Large_A',two:true},
-  boneboss:{m:'Skeleton_Warrior',s:2.7,r:'Skeleton_Axe',two:true},
+  boneboss:{m:'Skeleton_Warrior',s:2.8,tint:'#e6d8a8',eyes:'#ffd060',r:'Skeleton_Blade',l:'Skeleton_Shield_Large_A',crown:true},   // the Bone Regent: gilded bone, a crown, a tower shield until it breaks
   collector:{m:'Skeleton_Mage',tint:'#d8d4e6',s:2.5,r:'Skeleton_Staff',caster:true},
 };
 const ACTORS=new Map(),DYING=[],FREE=new Map();
@@ -751,6 +751,10 @@ function makeActor(key,o){
       if(o.rim)rim(c.material);
     });
     if(o.hero&&WEAR.Knight)dress(root,o.hero,mats);
+    if(o.crown){const hb=bone(root,'head');if(hb){const gold=new THREE.MeshStandardMaterial({color:'#d9a441',roughness:.35,metalness:.7,emissive:'#5a3a08',emissiveIntensity:.5}),g=new THREE.Group();   // a crown: a band and its points
+        const band=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,.14,10,1,true),gold);band.material.side=THREE.DoubleSide;g.add(band);
+        for(let i=0;i<6;i++){const a=i/6*TAU,p=new THREE.Mesh(new THREE.ConeGeometry(.08,.3,4),gold);p.position.set(Math.cos(a)*.36,.2,Math.sin(a)*.36);g.add(p);}
+        g.position.y=.72;hb.add(g);mats.push(gold);}}
     for(const[slot,w]of[['handslot.r',o.r],['handslot.l',o.l]])if(w){const b=bone(root,slot);if(b){const wm=single(w);if(o.ghost)wm.traverse(c=>{if(c.isMesh){c.material=c.material.clone();c.material.emissive=new THREE.Color(o.ghost);c.material.emissiveIntensity=.35;}});b.add(wm);}}
   }
   for(const m of mats){m.userData.base=[m.emissive?m.emissive.clone():null,m.emissiveIntensity||0];if(STYLE.flat){m.flatShading=true;m.needsUpdate=true;}}
@@ -878,7 +882,8 @@ const SKILL_ANIM={circle:['2H_Melee_Attack_Spin',1.5,.16],sunder:['2H_Melee_Atta
 // timed: the clip is drawn out so its blow lands exactly when the rules say (raise, hold, strike).
 const WACT={sweep:{c:'2H_Melee_Attack_Slice',timed:1},back:{c:'1H_Melee_Attack_Slice_Horizontal',timed:1},cleave:{c:'2H_Melee_Attack_Chop',timed:1},whirl:{c:'2H_Melee_Attack_Spinning',timed:1,loop:1},
   leap:{c:'1H_Melee_Attack_Jump_Chop',timed:1},brace:{c:'Blocking'},charge:{c:'Running_B',sp:1.7},summon:{c:'Spellcast_Summon'},chains:{c:'Spellcast_Raise',sp:.8},vanish:{c:'Spellcast_Raise',sp:1.6},
-  appear:{c:'Idle_Combat'},roar:{c:'Taunt_Longer',sp:.75},reel:{c:'Hit_B',sp:.6}};
+  appear:{c:'Idle_Combat'},roar:{c:'Taunt_Longer',sp:.75},reel:{c:'Hit_B',sp:.6},
+  bash:{c:'Block_Attack',timed:1},volley:{c:'Throw',timed:1},spikes:{c:'Spellcast_Long',sp:.9},slam:{c:'1H_Melee_Attack_Jump_Chop',timed:1}};   // (the Bone Regent's own)
 function animWarden(a,e,dt,nx,nz){
   const W=e.act==='reel'&&!(e.stun>0)?null:WACT[e.act],age=G.time-(e.actAt||0),D=Math.max(.05,e.actD||.3);let y=0,alpha=e.echo&&Math.sin(G.time*1.7+e.id)>.93?.35:1;   // (the echo flickers, now and then: the tell)
   a.root.visible=!e.gone;
@@ -891,10 +896,14 @@ function animWarden(a,e,dt,nx,nz){
     if(e.act==='cleave'&&age<D){const u=age/D,b=bone(a.root,'handslot.r');if(b){b.getWorldPosition(tmpV);glow(tmpV.x,tmpV.y+.6,tmpV.z,'#fff3c0',.6+2.4*u,.35+.5*u);DLIGHTS.push({x:tmpV.x,y:tmpV.y,z:tmpV.z,col:'#ffe9a8',int:30*u,dist:10,pri:9});}}
     a.root.rotation.x=e.act==='charge'?.28:e.act==='brace'?-.1:0;
   }else{a.wAct=null;a.root.rotation.x=0;
+    if(e.guard!==undefined)turn(a,faceOf(e.aimA||0),dt,10);   // (the Regent faces where its shield does: no faster than the rules turn it)
+    if(e.guard&&!(e.stun>0)){playUp(a,'Blocking',{fade:.15});}else if(a.up)stopUp(a,.15);
     if(e.stun>0||e.staggerT>0)play(a,'Hit_B',{speed:.6,fade:.1});
-    else if(!loco(a,a.vx,a.vz)){const t=nearestHero(e);if(t&&G.bossAwake)turn(a,Math.atan2(wx(t.x)-nx,wz(t.y)-nz),dt,6);play(a,G.bossAwake?'Idle_Combat':'Idle',{fade:.25});}
-    else if(Math.hypot(a.vx,a.vz)>.4)turn(a,Math.atan2(a.vx,a.vz),dt,8);
+    else if(!loco(a,a.vx,a.vz,e.guard?'lo':undefined)){const t=nearestHero(e);if(e.guard===undefined&&t&&G.bossAwake)turn(a,Math.atan2(wx(t.x)-nx,wz(t.y)-nz),dt,6);play(a,G.bossAwake?'Idle_Combat':'Idle',{fade:.25});}
+    else if(e.guard===undefined&&Math.hypot(a.vx,a.vz)>.4)turn(a,Math.atan2(a.vx,a.vz),dt,8);
   }
+  if(e.shield===false&&!a.noShield){a.noShield=true;const hs=bone(a.root,'handslot.l');if(hs)hs.visible=false;}   // the shield has shattered
+  else if(e.shield!==false&&a.noShield){a.noShield=false;const hs=bone(a.root,'handslot.l');if(hs)hs.visible=true;}
   if((e.stun>0||e.staggerT>0)&&Math.random()<.5)glow(nx+rand(-1,1),4.6+rand(-.3,.3),nz+rand(-.6,.6),'#ffe9a8',.5,.8);   // reeling: stars about its head
   a.root.position.y=y;fade(a,alpha);
   const hit=e.flash>0;flash(a,hit||e.immune||e.enraged,hit?'#ffffff':e.immune?'#3fd0c0':'#ff3020',hit?.9:e.immune?.5:.25+.15*Math.sin(G.time*9));
@@ -1141,7 +1150,7 @@ function frame3d(){
   for(const e of G.enemies){if(Math.abs(wx(e.x)-camT.x)>reachX||Math.abs(wz(e.y)-camT.z)>reachZ)continue;
     const a=foeActor(e);seenIds.add('e'+e.id);a.last=e;a.seen=now;animFoe(a,e,dt);
     if(a.o.orb)DLIGHTS.push({x:a.x,y:1.4,z:a.z,col:a.o.orb,int:3,dist:5,pri:0});
-    if(e.boss&&!e.gone)DLIGHTS.push({x:a.x,y:5.5*(a.o.s||1)/2.7,z:a.z+1,col:e.phase>1?'#40c0b0':'#ff3020',int:40,dist:16,pri:9});
+    if(e.boss&&!e.gone)DLIGHTS.push({x:a.x,y:5.5*(a.o.s||1)/2.7,z:a.z+1,col:e.guard!==undefined?'#ffd890':e.phase>1?'#40c0b0':'#ff3020',int:e.guard!==undefined?22:40,dist:16,pri:9});
     if(e.burrowed){const m=take(P_MOUND);m.position.set(wx(e.x),0,wz(e.y));m.scale.set(1+.1*Math.sin(t*8),.35,1);}
     if(e.state==='channel'&&e.cx!=null){const sx=a.x,sz=a.z,ex=wx(e.cx),ez=wz(e.cy);
       line(u=>[sx+(ex-sx)*u,2.2*(1-u)+.5*u+Math.sin(u*Math.PI)*.8+Math.sin(u*18+t*8)*.06,sz+(ez-sz)*u],'#8cf07a');

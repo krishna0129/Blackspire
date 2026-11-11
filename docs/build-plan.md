@@ -54,7 +54,7 @@ with it.
 
 *Playable:* each boss, alone and (in the in-process test) with a party.
 
-**Built so far:** the Gate Warden ([as built](design/bosses.md#the-gate-warden-floor-1-spirit)), with its own
+**Built so far:** the Bone Regent ([as built](design/bosses.md#the-bone-regent-floor-2-undead)); the Gate Warden ([as built](design/bosses.md#the-gate-warden-floor-1-spirit)), with its own
 animations, and a pass over how skills look and feel: a motion for every skill, and blows that land with light,
 recoil, a pause and a sound of their own ([skills.md](design/skills.md#how-a-blow-lands)).
 
