@@ -45,8 +45,7 @@ const VILLAGE={
   decor:[['campfire',12.5,49.6],['weaponrack',6.5,49.4,4,0],['weaponrack',18.4,52.5,4,1.57],['target',17.6,55.6,4.5,-.5],['crate_A_big',6.4,55.5,3.5,.3],['barrel',7.5,56.3,3.5,0],
     ['sack',16,56.4,4,1],['pallet',9.6,56.3,3.5,.2],['tent',5.9,53.4,3.6,.5],['tent',18,49.6,3.6,-.4],
     ['wheelbarrow',63.5,50.5,3.5,.6],['crate_potatoes',62.5,54.5,.5,0],['crate_carrots',63.6,54.6,.5,.4],['sack',64.5,53.6,4,2],['resource_lumber',70.5,48.6,3.5,.2],
-    ['crate_A_big',52.5,22.6,3.5,.2],['barrel',66.4,22.6,3.5,0],['barrel',67.2,23.1,3.5,1],['crate_B_small',57.3,23.4,4,.5],['weaponrack',35.5,49.5,4,1.57],
-    ['table_round_A',34.4,27.3,1.25,0],['barrel',33.6,26.3,3.5,0]],
+    ['crate_A_big',52.5,22.6,3.5,.2],['barrel',66.4,22.6,3.5,0],['barrel',67.2,23.1,3.5,1],['crate_B_small',57.3,23.4,4,.5],['weaponrack',35.5,49.5,4,1.57]],
   // rows of houses [x0, x1, the row's south edge, depth, tall]: a row with a street at its back is low and set back from it
   rows:[[5,37,9,4,1],[43,75,9,4,1],[5,37,15,4,1],[43,75,15,4,1],
     [5,20,21,3,0],[22,37,21,3,0],[43,58,21,3,0],[60,75,21,3,0],
@@ -86,10 +85,10 @@ function genVillage(){
     prop('village/stall',st.x+2.5,st.y+.9,{tint:st.awning,goods:'village/goods_'+st.kind});prop('village/counter',st.x+2.5,st.y+2);
     traders.push({x:vx(st.x+2.5),y:vy(st.y+1.25),name:st.name,sells:st.kind,stall:true,
       look:{skin:SKINS[(st.x+st.y)%SKINS.length],hair:HAIRS[(st.x*3+st.y)%HAIRS.length],style:(st.x+st.y)%6,eyes:EYES[0]},eq:{armor:{type:'leather',tint:'#6b4a2c'}}});}
-  block(FORGE.x,FORGE.y,4,2);prop('village/forge',FORGE.x+2.5,FORGE.y+1.1);smiths.push({x:vx(FORGE.x+3),y:vy(FORGE.y+1.4)});
+  block(FORGE.x,FORGE.y,4,2);prop('village/forge',FORGE.x+2.5,FORGE.y+1.1);smiths.push({x:vx(FORGE.x+1.4),y:vy(FORGE.y+2.5),name:'Blacksmith',look:{skin:SKINS[3],hair:HAIRS[0],style:5,eyes:EYES[3]},eq:{armor:{type:'leather',tint:'#4a3422'}}});   // the smith, at his anvil
   block(WITCH.x+1,WITCH.y,3,2);block(WITCH.x+2,WITCH.y+2,1,1);   // the tent, and the cauldron before itprop('village/witch',WITCH.x+2.5,WITCH.y+.9);prop('village/cauldron',WITCH.x+2.5,WITCH.y+2,{brew:true});
   // the arcanist writes grimoires from monster drops, the way the forge makes everything else (ACTIONS.forge)
-  talkers.push({x:vx(WITCH.x+4),y:vy(WITCH.y+1.3),name:'Arcanist',arcanist:true,line:'Bring me what the tower’s monsters leave behind and I will write you a grimoire against them.',
+  talkers.push({x:vx(WITCH.x+3.8),y:vy(WITCH.y+2.5),name:'Arcanist',arcanist:true,line:'Bring me what the tower’s monsters leave behind and I will write you a grimoire against them.',
     look:{skin:SKINS[5],hair:HAIRS[5],style:2,eyes:EYES[5]},eq:{armor:{type:'coat',tint:'#3c2c52'}}});
   // the exchange: a broker at a desk, with the day's prices chalked up behind (js/sim/market.js). Last in the list of
   // traders but one, so the stalls keep their places in every save's list of shops.

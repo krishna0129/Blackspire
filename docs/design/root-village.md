@@ -36,6 +36,14 @@ There is no fighting anywhere in it: weapons stay sheathed, as in a safe room. H
 `evening` (golden dusk, windows lit dim and steady) or `night`. It is fixed at day for now; a real cycle is still to
 come. To look at the others, type `R3.hour('evening')` or `R3.hour('night')` in the browser's console.
 
+**Landmarks** are built the same way as the houses (no stock models left but trees, lamp posts, the gate's pillars
+and loose gear): the inn (the biggest house, a sign and a bench), the guild hall (all stone, slate roof, banners),
+the well, the four stalls (timber frames with striped awnings in each stall's colour, goods on the counter), the
+smithy (a stone forge and chimney, a lean-to, the anvil, and the **blacksmith** beside it), the **arcanist's study**
+(a narrow stone house under a steep indigo roof, a lit rune over the door and in the window, a crystal on the spire,
+books and crystals outside, the cauldron before it), the windmill, the barn and the wall's towers. The townsfolk are
+dressed like players: each in their own skin, hair and clothes.
+
 **Surfaces** are drawn by shaders, not textures: stone in courses with dark mortar, old plaster with stains, rain
 streaks, cracks and patches fallen away to the brick, roof tiles in lapping rows with moss, weathered wood. Each
 house has its own roof, ending in dark bargeboards at its own walls.
