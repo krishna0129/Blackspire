@@ -1015,7 +1015,7 @@ function frame3d(){
   for(const f of G.fx){const p=f.t/f.d,x=wx(f.x),z=wz(f.y),al=1-p*p;
     if(f.k==='slash'||f.k==='eslash'){const half=(f.arc||120)/2*Math.PI/180,r=wx(f.r);
       if(f.k==='slash'&&f.arc>=360){const a=f.a+p*TAU;arc(x,z,1.15,r,.5,a-2.6,a,f.c||'#bfe9ff',al);arc(x,z,1.2,r*.8,.25,a-1.6,a,'#ffffff',al*.7);}
-      else if(f.k==='slash'){const s=Math.min(1,p*1.6),a0=f.a+(f.dir>0?-half:half),a1=f.a+(f.dir>0?-half+2*half*s:half-2*half*s);arc(x,z,1.15,r,f.c?.7:.45,a0,a1,f.c||'#cfe8ff',al);
+      else if(f.k==='slash'){const s=Math.min(1,.3+p*1.6),a0=f.a+(f.dir>0?-half:half),a1=f.a+(f.dir>0?-half+2*half*s:half-2*half*s);arc(x,z,1.15,r,f.c?.7:.45,a0,a1,f.c||'#cfe8ff',al);
         if(f.c){arc(x,z,1.2,r*.86,.22,a0,a1,'#ffffff',al*.8);glow(x+Math.cos(a1)*r,1.2,z+Math.sin(a1)*r,f.c,1.6,al*.7);}}
       else if(f.big){const s=Math.min(1,p*1.5),d=f.dir<0?-1:1,a0=f.a-d*half,a1=a0+d*2*half*s,h=2.2;   // the Warden's blade: a wide red wake at its own height
         arc(x,z,h,r*.78,r*.44,a0,a1,f.c||'#ff9a7a',al*.75);arc(x,z,h+.05,r*.97,.3,a0,a1,'#ffffff',al);DLIGHTS.push({x:x+Math.cos(a1)*r*.8,y:h,z:z+Math.sin(a1)*r*.8,col:f.c||'#ff9a7a',int:30*al,dist:10,pri:8});}
@@ -1025,14 +1025,14 @@ function frame3d(){
       const n=Math.min(6,2+Math.round(w*1.5));for(let i=0;i<n;i++){const sp=((i*.618)%1-.5)*(1.3+.3*w),c2=Math.cos(f.a+sp),s2=Math.sin(f.a+sp),L=(.35+.5*w)*(.6+((i*.37)%1)*.6),r0=.2+p*L*1.4;
         line(u=>[x+c2*(r0+L*u*(1-p*.5)),h+(((i*.77)%1)-.4)*(.5+u*.8)*(1+p),z+s2*(r0+L*u*(1-p*.5))],i%2?'#ffffff':f.c,k*.8).material.color.multiplyScalar(.3);}
       if(w>=1){ring(x-cs*.2,z-sn*.2,(.4+.9*w)*(.3+p),f.c,k*.8,.14);DLIGHTS.push({x,y:h,z,col:f.c,int:7*w*k,dist:6,pri:7});}}
-    else if(f.k==='thrust'){const L=wx(f.len)*Math.min(1,p*(f.small?5:4)),c=f.c||'#cfe8ff',wd=f.big?.95:f.small?.3:.6,k=al,cs=Math.cos(f.a),sn=Math.sin(f.a);   // a lance of light down the line
+    else if(f.k==='thrust'){const L=wx(f.len)*Math.min(1,.4+p*(f.small?5:4)),c=f.c||'#cfe8ff',wd=f.big?.95:f.small?.3:.6,k=al,cs=Math.cos(f.a),sn=Math.sin(f.a);   // a lance of light down the line
       lane(x,z,f.a,L,wd*(1-p*.6),c,k*.55);lane(x,z,f.a,L,wd*.3*(1-p*.5),'#ffffff',k,1.14);
       glow(x+cs*L,1.15,z+sn*L,'#ffffff',f.small?.5:.9,k*.8);if(!f.small){glow(x+cs*L,1.15,z+sn*L,c,f.big?2.4:1.6,k*.4);
         for(const sd of[-1,1])line(u=>[x+cs*L*u-sn*sd*(wd*.5+.25*Math.sin(u*Math.PI)),1.15,z+sn*L*u+cs*sd*(wd*.5+.25*Math.sin(u*Math.PI))],c,k*.8);
         ring(x+cs*L*.3,z+sn*L*.3,.3+p*(f.big?2.2:1.4),c,k*.6,.14);DLIGHTS.push({x:x+cs*L*.6,y:1.2,z:z+sn*L*.6,col:c,int:9*k,dist:8,pri:6});}}
-    else if(f.k==='cut'){const L=wx(f.len),c=f.c||'#e8f4ff',s=Math.min(1,p*3),cs=Math.cos(f.a),sn=Math.sin(f.a),x0=x-cs*L/2,z0=z-sn*L/2;   // one cut across a body
+    else if(f.k==='cut'){const L=wx(f.len),c=f.c||'#e8f4ff',s=Math.min(1,.45+p*3),cs=Math.cos(f.a),sn=Math.sin(f.a),x0=x-cs*L/2,z0=z-sn*L/2;   // one cut across a body
       lane(x0,z0,f.a,L*s,.34*(1-p),c,al*.7,1.25);lane(x0,z0,f.a,L*s,.1,'#ffffff',al,1.28);glow(x0+cs*L*s,1.25,z0+sn*L*s,'#ffffff',.6,al*.7);}
-    else if(f.k==='quake'){const r=wx(f.r),c=f.c||'#c9a46a',g=Math.min(1,p*2.4),n=f.big?11:7;   // the floor breaks: cracks run out, dust rises
+    else if(f.k==='quake'){const r=wx(f.r),c=f.c||'#c9a46a',g=Math.min(1,.35+p*2.4),n=f.big?11:7;   // the floor breaks: cracks run out, dust rises
       disc(x,z,r*g,'#0a0806',(1-p)*.5);ring(x,z,r*Math.min(1.25,.3+p*1.6),c,al*.9,.12);ring(x,z,r*Math.min(1,.2+p*1.1),'#ffffff',al*.5,.13);
       for(let i=0;i<n;i++){const a=i/n*TAU+(f.x*.13+f.y*.07)%1,j1=((i*.618)%1-.5)*.5,j2=((i*.33)%1-.5)*.6,L=r*(.7+((i*.41)%1)*.55)*g;
         line(u=>[x+Math.cos(a+j1*u+j2*u*u)*L*u,.12,z+Math.sin(a+j1*u+j2*u*u)*L*u],c,al);}

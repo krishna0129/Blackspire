@@ -119,7 +119,7 @@ function impact(e,o,type,crit){
   vfx({k:'hit',x:e.x,y:e.y,a,c,w:W,t:0,d:.14+.05*W});
   for(let i=0,n=Math.round(2+3*W);i<n;i++){const b=a+rand(-.8,.8),s=rand(35,70+45*W);part({x:e.x,y:e.y,vx:Math.cos(b)*s,vy:Math.sin(b)*s,t:0,d:rand(.15,.4),c:i%3?c:'#fff6dc'});}
   if(W>=1)shake(Math.min(8,.6+1.9*W));
-  if(o.melee||W>=1.4)hitstop(Math.min(.12,.03+.022*W));
+  if((o.melee||W>=1.4)&&G.time-(G.stopAt??-9)>.22){G.stopAt=G.time;hitstop(Math.min(.12,.03+.022*W));}   // (not again at once: a flurry must not stutter)
   e.hitA=a;e.hitW=W;e.hitAt=G.time;   // the way it was struck, for its recoil
   sfx(crit?'crit':W>=1.9?'hitHeavy':type==='fire'?'hitFire':type==='cold'?'hitCold':type==='lightning'?'hitZap':o.melee?'hit':'hitSoft');
 }
