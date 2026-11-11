@@ -78,7 +78,7 @@ Object.assign(NET,{
       const sig=JSON.stringify(m);if(q.sig!==sig){q.sig=sig;q.name=m.name;q.wtype=m.weapon.type;const W=WTYPES[m.weapon.type];
         q.st={ranged:!!W.ranged,magic:!!W.magic,arc:W.arc,thrust:!W.magic&&!W.ranged&&W.arc<50,shield:W.shield||null};
         q.wspr=buildWeapon(m.weapon.type,m.weapon.tint,m.weapon.school);q.bowf=m.weapon.type==='bow'?bowFrames(m.weapon.tint):null;
-        q.av=buildAvatar(m.look,{armor:m.armor,boots:m.boots},null);
+        q.av=buildAvatar(m.look,{armor:m.armor,boots:m.boots},null);q.spec={look:m.look,armor:m.armor,boots:m.boots};
         if(m.custom)loadImage(m.custom).then(im=>{if(sheetImage(im)&&q.sig===sig)q.av=buildAvatar(m.look,{},im);});}
       return q;});
   },
@@ -92,7 +92,7 @@ Object.assign(NET,{
       if(e.hit){const at=G.time-e.hit[2];if(m.hit==null||Math.abs(at-m.hit)>.1)m.hit=at;e.hitAtC=m.hit;}}
     if(this.marks.size>400)this.marks.clear();
     if(me.tp>P.tp){P.x=me.x;P.y=me.y;P.tp=me.tp;P.dash=null;}   // the server moved us (a teleport, a respawn, or a refused report)
-    P.fightT=me.fight?G.time:-99;
+    P.fightT=me.fight?G.time:-99;P.restT=me.rest?1:0;
     // a skill you used, as the server saw it (for its animation), and a Leap Slam's flight
     if(me.ca){if(me.ca[0]!==P.castId||me.ca[1]<(P.castAge??9)-.01){P.castId=me.ca[0];P.castAt=G.time-me.ca[1];}P.castAge=me.ca[1];}
     if(me.lp){if(!P.dash||!P.dash.leap){P.x=me.x;P.y=me.y;}P.dash={vx:me.lp[0],vy:me.lp[1],t:me.lp[2],leap:1,remoteLeap:1};}
@@ -130,7 +130,7 @@ Object.assign(NET,{
     const pprev=new Map(a.pl.map(q=>[q.id,q]));
     for(const q of this.others){const s=b.pl.find(x=>x.id===q.id);if(!s){q.x=-999;continue;}const r=pprev.get(q.id)||s;
       const nx=r.x+(s.x-r.x)*u,ny=r.y+(s.y-r.y)*u;q.moving=Math.hypot(nx-q.x,ny-q.y)>.05;if(q.moving)q.walk+=dt*7;q.x=nx;q.y=ny;
-      Object.assign(q,{dir:s.dir,dead:s.dead,inv:s.inv,guard:s.guard,hp:s.hp,maxHp:s.maxHp,blocking:s.blocking,dash:s.dash,aim:s.a,shield:s.sh,emp:s.em,hot:s.ho});
+      Object.assign(q,{dir:s.dir,dead:s.dead,inv:s.inv,guard:s.guard,hp:s.hp,maxHp:s.maxHp,blocking:s.blocking,dash:s.dash,restT:s.rest?1:0,aim:s.a,shield:s.sh,emp:s.em,hot:s.ho});
       if(s.ca){if(s.ca[0]!==q.castId||s.ca[1]<(q.castAge??9)-.01){q.castId=s.ca[0];q.castAt=G.time-s.ca[1];}q.castAge=s.ca[1];}
       q.swing=s.swing?{t:s.swing[0],d:s.swing[1],a:s.a??DIR_ANGLE[s.dir],hit:s.swing[0]>=s.swing[1]*.4}:null;}
   },

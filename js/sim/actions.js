@@ -51,7 +51,10 @@ const ACTIONS={
   layBag(){if(!P.safe||!(S.bags>0)||P.room||P.bag||P.dead)return false;S.bags--;P.bag={x:P.x,y:P.y+8};return true;},
   sleepBag(){if(!P.bag||hyp(P.bag.x-P.x,P.bag.y-P.y)>22||P.fat<1)return false;P.bag=null;P.fat=0;P.fireCd=0;calcStats();storeNeeds(P);return true;},
   // resting by a safe room's campfire: half your fatigue, once every FIRE_EVERY seconds of play
-  restFire(){const f=nearFire();if(!f||P.fireCd>0||P.fat<60)return false;P.fat=Math.floor(P.fat/2);P.fireCd=FIRE_EVERY;calcStats();storeNeeds(P);return true;},
+  // You sit down (REST_SIT seconds, or until you move): health, mana and stamina come back as you sit. Returns 2 when
+  // the fire also took half your fatigue, 1 when you only sat.
+  restFire(){const f=nearFire();if(!f||P.dead)return false;P.restT=REST_SIT;P.swing=null;
+    if(P.fireCd>0||P.fat<60)return 1;P.fat=Math.floor(P.fat/2);P.fireCd=FIRE_EVERY;calcStats();storeNeeds(P);return 2;},
   // the barkeep's next rumour (its index)
   rumour(){if(!nearTalkerKind('rumours'))return false;const i=(S.rumour||0)%RUMOURS.length;S.rumour=i+1;return i;},
   // attribute points, also confirmed together: add is a JSON object {attribute: points}

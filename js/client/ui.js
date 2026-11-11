@@ -190,8 +190,8 @@ function buildCreator(){
       :`<span>${T.name}</span><small>${T.blurb}. Skill: ${sk}</small>`);
     b.onclick=()=>{draft.weapon=k;buildCreator();};wp.appendChild(b);}
   // the 3D model when the 3D graphics are on (it follows the weapon); else the 2D sprite with its colours
-  const c3=$('#cPrev3d'),on3=R3.ready&&!R3.Q.off;c3.hidden=!on3;$('#cPrev').hidden=on3;$('#cLookMsg').hidden=!on3;
-  if(on3){const[t,sc]=draft.weapon.split(':');R3.preview(c3,t,sc);}else drawPreview($('#cPrev'),draft,draftEquip(),draftImg);
+  const c3=$('#cPrev3d'),on3=R3.ready&&!R3.Q.off;c3.hidden=!on3;$('#cPrev').hidden=on3;$("#cLookMsg").hidden=true;
+  if(on3){const[t,sc]=draft.weapon.split(':'),e=draftEquip();R3.preview(c3,t,sc,{look:{skin:draft.skin,hair:draft.hair,style:draft.style,eyes:draft.eyes},armor:e.armor,boots:e.boots});}else drawPreview($('#cPrev'),draft,draftEquip(),draftImg);
   if(!R3.ready&&!R3.failed&&!R3.Q.off)setTimeout(()=>{if(mode==='creator'&&R3.ready)buildCreator();},600);   // the models still loading
   $('#cCustomDel').hidden=!draft.custom;
 }
@@ -323,8 +323,7 @@ function interact(){
   if(nearFields(24)){openFields();return;}
   if(nearWell()){act('fillFlasks',[],n=>{if(n){sfx('pick');log(`Filled ${n} flask${n>1?'s':''} at the well.`);}
     else log('You have no empty flasks to fill. The food and drink stall sells water flasks; drink one and the flask is yours to refill.');hc.near=null;});return;}
-  if(nearFire()){act('restFire',[],r=>{if(r){sfx('heal');log('You rest a while by the fire. Some of the weariness goes.');}
-      else log(P.fireCd>0?`The fire has done what it can for now. Try again in ${Math.ceil(P.fireCd/60)} minutes of play.`:'You are not tired enough to need it.');hc.near=null;});return;}
+  if(nearFire()){act('restFire',[],r=>{if(r){sfx('heal');log(r===2?'You sit by the fire. Your wounds close, and some of the weariness goes.':'You sit by the fire. Your wounds close.');}hc.near=null;});return;}
   const tk=nearTalker();if(tk&&tk.arcanist){openPanel(tk,'arcanist');return;}
   if(tk&&tk.rumours){act('rumour',[],i=>{if(i!==false){tk.line=RUMOURS[i];tk.sayUntil=G.time+9;sfx('pick');}});return;}
   if(tk){tk.sayUntil=G.time+6;sfx('pick');return;}

@@ -140,3 +140,9 @@ Every binding can be changed once there is a settings screen ([roadmap](../roadm
 - The numbers: the parry window, stamina costs and regen, poise per weight point, focus per point of Mind, the
   stagger's damage bonus.
 - **Bosses**: length, phases and mechanics (next).
+
+## Campfires
+
+Every safe place in the tower has a campfire: the start room and each safe room. Press F beside one to sit down.
+While you sit (8 seconds, or until you move) a fifth of your health, mana and stamina comes back each second. Once
+an hour of play the fire also takes half your fatigue, as before.

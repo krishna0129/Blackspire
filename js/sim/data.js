@@ -357,7 +357,7 @@ const FATIGUE=[
   {at:4*3600,name:'Tired',cd:20,move:8,dodge:35,mregen:20},
   {at:6*3600,name:'Exhausted',cd:35,move:15,dodge:60,mregen:40},
 ];
-const FATIGUE_MAX=7*3600,WELL_RESTED=3600,REST_XP=10,FIRE_EVERY=3600,BREAKFAST_WINDOW=600;
+const FATIGUE_MAX=7*3600,WELL_RESTED=3600,REST_XP=10,FIRE_EVERY=3600,REST_SIT=8,REST_HEAL=.2,BREAKFAST_WINDOW=600;
 const fatigueTier=sec=>{let i=0;for(let k=0;k<FATIGUE.length;k++)if(sec>=FATIGUE[k].at)i=k;return i;};
 const roomPrice=level=>20+4*level;   // a room at the inn, for the day
 // The barkeep's rumours: one each time you talk to him, in turn.
