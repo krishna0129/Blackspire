@@ -1021,9 +1021,9 @@ function frame3d(){
         arc(x,z,h,r*.78,r*.44,a0,a1,f.c||'#ff9a7a',al*.75);arc(x,z,h+.05,r*.97,.3,a0,a1,'#ffffff',al);DLIGHTS.push({x:x+Math.cos(a1)*r*.8,y:h,z:z+Math.sin(a1)*r*.8,col:f.c||'#ff9a7a',int:30*al,dist:10,pri:8});}
       else arc(x,z,1.2,r,.35,f.a-1,f.a-1+2*Math.min(1,p*1.8),'#d9d4c4',al*.8);}
     else if(f.k==='hit'){const w=f.w||.5,cs=Math.cos(f.a),sn=Math.sin(f.a),h=1.25,k=1-p;   // a blow landing: a burst of light and streaks flying on along the blow
-      glow(x,h,z,'#ffffff',(.3+.35*w)*(1+p),k*.7);glow(x,h,z,f.c,(.8+.8*w)*(1+p),k*.4);
-      const n=Math.min(7,2+Math.round(w*2));for(let i=0;i<n;i++){const sp=((i*.618)%1-.5)*(1.3+.3*w),c2=Math.cos(f.a+sp),s2=Math.sin(f.a+sp),L=(.5+.9*w)*(.6+((i*.37)%1)*.6),r0=.2+p*L*1.4;
-        line(u=>[x+c2*(r0+L*u*(1-p*.5)),h+(((i*.77)%1)-.4)*(.5+u*.8)*(1+p),z+s2*(r0+L*u*(1-p*.5))],i%2?'#ffffff':f.c,k);}
+      glow(x,h,z,'#ffffff',(.25+.25*w)*(1+p),k*.45);glow(x,h,z,f.c,(.7+.6*w)*(1+p),k*.25);
+      const n=Math.min(6,2+Math.round(w*1.5));for(let i=0;i<n;i++){const sp=((i*.618)%1-.5)*(1.3+.3*w),c2=Math.cos(f.a+sp),s2=Math.sin(f.a+sp),L=(.35+.5*w)*(.6+((i*.37)%1)*.6),r0=.2+p*L*1.4;
+        line(u=>[x+c2*(r0+L*u*(1-p*.5)),h+(((i*.77)%1)-.4)*(.5+u*.8)*(1+p),z+s2*(r0+L*u*(1-p*.5))],i%2?'#ffffff':f.c,k*.8).material.color.multiplyScalar(.3);}
       if(w>=1){ring(x-cs*.2,z-sn*.2,(.4+.9*w)*(.3+p),f.c,k*.8,.14);DLIGHTS.push({x,y:h,z,col:f.c,int:7*w*k,dist:6,pri:7});}}
     else if(f.k==='thrust'){const L=wx(f.len)*Math.min(1,p*(f.small?5:4)),c=f.c||'#cfe8ff',wd=f.big?.95:f.small?.3:.6,k=al,cs=Math.cos(f.a),sn=Math.sin(f.a);   // a lance of light down the line
       lane(x,z,f.a,L,wd*(1-p*.6),c,k*.55);lane(x,z,f.a,L,wd*.3*(1-p*.5),'#ffffff',k,1.14);
