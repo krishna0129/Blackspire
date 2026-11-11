@@ -31,6 +31,20 @@ const INSIDE={
   inn:{x:-18,y:23,w:12,h:8,name:'The inn'},
   room:{x:-18,y:37,w:7,h:5,name:'Your room'},
 };
+// The people who fill the hall and the common room. They can't be talked to yet: each stands where they are, turned
+// toward the table or the friend they're with, and now and then says one of their lines in a bubble (render3d.js).
+// [which inside, x and y within it, the point they face]
+const CROWD=[['hall',3,2.4,3.4,3.5],['hall',4.8,2.4,4.4,3.5],['hall',2.5,5.3,4,5.2],['hall',5.2,5.3,4,5.2],['hall',7.9,3.4,8.5,4.5],['hall',9.7,3.4,8.5,4.5],
+  ['hall',10.7,6.6,12.5,4.2],['hall',6.1,7.5,7.3,7.6],['hall',7.4,7.7,6.1,7.5],['hall',1.7,2.7,0,3],['hall',9.6,1.5,11,0],
+  ['inn',2.3,3.7,3.5,3.5],['inn',4.6,3.6,3.5,3.5],['inn',6.3,3.7,7.5,3.5],['inn',8.6,3.5,7.5,3.5],['inn',2.4,6.6,3.5,6.5],['inn',9.4,6.6,8.5,6.5],['inn',7.5,6.9,8.5,6.5],
+  ['inn',1.6,5.3,0,4],['inn',1.9,1.6,1.9,0],['inn',9.3,1.7,8.5,0]];
+const CROWD_LINES={
+  hall:['Third floor tomorrow. If my knees agree.','Never climb on an empty stomach.','That Warden nearly had me. Nearly.','Parry the big swing. Everyone forgets.','I am one quest off a new blade.','Who took the last notice off the board?','We need a healer. We always need a healer.',
+    'Shards are shards. I take the easy contracts.','You hear the Regent hides behind a shield?','Stay off the marked ground. Simple.','My party left without me. Again.','Leather is fine until it is not.','The clerk never forgets a debt.','One day I will see the hundredth floor.',
+    'Skitters. Why is it always skitters.','Keep a potion for the way back.','I counted eleven rooms. Then I stopped counting.','A good dodge beats a good shield.','Bone dust gets everywhere.','Sign here, die there. Same as always.'],
+  inn:['Another round over here!','The stew is better than it looks.','I slept like the dead. Fitting.','Best bed in the roots, they say. Only bed.','To the ones who did not come down.','My feet. My poor feet.','He swears he saw the fourth floor.','Do not play dice with the League.',
+    'Breakfast is the only reason I rent.','Quiet night. I do not trust it.','Keep your coin close and your room closer.','The barkeep hears everything.','One more and then the tower. One more.','Hot food, dry boots. That is all I ask.','She outdrank a captain. I saw it.','Wake me if the tree falls.'],
+};
 // doors: where you stand to use each, where it takes you, and what it says. rent: only with a room rented today.
 const DOORS=[
   {x:GUILD.door.x,y:GUILD.door.y,to:[-11.5,15.6],name:'Enter the guild hall'},
@@ -153,6 +167,10 @@ function genVillage(){
   for(const[dx,dy,name,line,look,arm]of[[3.4,4.6,'Veteran climber','Floor two? Mind the shield. Get behind him, or make him swing first.',{skin:SKINS[3],hair:HAIRS[5],style:5,eyes:EYES[0]},{type:'plate',tint:'#5a2630'}],
       [8.4,5.6,'Young scout','They say the tower has a hundred floors. Nobody here has seen the fourth.',{skin:SKINS[0],hair:HAIRS[4],style:3,eyes:EYES[2]},{type:'leather',tint:'#2f4a3a'}]])
     talkers.push({x:vx(INSIDE.hall.x+dx),y:vy(INSIDE.hall.y+dy),name,line,look,eq:{armor:arm}});
+  const cr=mulberry32(7713),pickc=a=>a[Math.floor(cr()*a.length)],TINTS=['#5a2630','#2b3350','#2f4a3a','#6b4a2c','#3c2c52','#8a8474','#4a3422','#23232b'];
+  const crowd=CROWD.map(([k,dx,dy,lx,ly],i)=>{const I=INSIDE[k],L=CROWD_LINES[k],n=3+Math.floor(cr()*2),lines=[];for(let j=0;j<n;j++)lines.push(L[(i*3+j*7+Math.floor(cr()*L.length))%L.length]);
+    return{x:vx(I.x+dx),y:vy(I.y+dy),face:Math.atan2(lx-dx,ly-dy),crowd:true,lines,every:11+cr()*10,at:cr()*20,
+      look:{skin:pickc(SKINS),hair:pickc(HAIRS),style:Math.floor(cr()*6),eyes:pickc(EYES)},eq:{armor:{type:pickc(['tunic','tunic','leather','leather','coat','plate']),tint:pickc(TINTS)}}};});
   const guild={x:vx(INSIDE.hall.x+6.5),y:vy(INSIDE.hall.y+1.5),name:'Guild clerk',look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}};
   // scenery
   for(const[x,y,v]of VILLAGE.trees){block(Math.floor(x),Math.floor(y-.4),1,1);prop('village/tree_'+v,x,y);}
@@ -167,7 +185,7 @@ function genVillage(){
   return{n:0,village:true,map,rooms:[],start:{x:VOX+39,y:VOY+33,w:2,h:2},boss:{x:0,y:0,w:0,h:0},gates:[],gatesOpen:true,locked:false,
     enemies,spar,chests:[],drops:[],proj:[],pproj:[],pfx:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
     gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],houses,extras,
-    safe:[all,...inside],inside,furn,doors:DOORS.map(d=>({x:vx(d.x),y:vy(d.y),tx:vx(d.to[0]),ty:vy(d.to[1]),name:d.name,rent:!!d.rent,room:!!d.room,leave:!!d.leave,out:!!d.out})),beds,
+    safe:[all,...inside],inside,furn,crowd,doors:DOORS.map(d=>({x:vx(d.x),y:vy(d.y),tx:vx(d.to[0]),ty:vy(d.to[1]),name:d.name,rent:!!d.rent,room:!!d.room,leave:!!d.leave,out:!!d.out})),beds,
     points:[],smiths,traders,talkers,props,wells,stashes,guild,board:{x:vx(45),y:vy(35.3)},boards:[{x:vx(45),y:vy(35.3)},{x:vx(INSIDE.hall.x+1.4),y:vy(INSIDE.hall.y+3)}],fieldDesk,crops:['potato','glowcap'],home:{x:vx(spawn.x),y:vy(spawn.y)}};
 }
 const nearArcanist=(r=24)=>{for(const q of G.talkers||[])if(q.arcanist&&hyp(q.x-P.x,q.y-P.y)<r)return q;return null;};

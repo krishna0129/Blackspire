@@ -1456,6 +1456,12 @@ function overlay(){
     const bw=Math.ceil(Math.max(...lines.map(l=>c.measureText(l).width)))+20,bh=lines.length*19+14,X=Math.round(p[0]-bw/2),Y=Math.round(p[1]-bh-6);
     c.globalAlpha=Math.min(1,(q.sayUntil-G.time)*2);c.fillStyle='rgba(14,11,8,.94)';c.fillRect(X,Y,bw,bh);c.strokeStyle='#7a6436';c.lineWidth=1;c.strokeRect(X+.5,Y+.5,bw-1,bh-1);
     c.fillStyle='#e9dfc8';c.textAlign='left';c.textBaseline='top';lines.forEach((l,i)=>c.fillText(l,X+10,Y+8+i*19));c.textAlign='center';c.textBaseline='middle';c.globalAlpha=1;}
+  // the crowd indoors: now and then one of them says a line, in a bubble over their head
+  if(FLOOR.areas&&FLOOR.areaK)for(const q of G.crowd||[]){if(areaKey(q)!==FLOOR.areaK)continue;const tt=(G.time+q.at)%q.every;if(tt>4.4)continue;
+    const p=scr(wx(q.x),2.75,wz(q.y));if(!p)continue;const s=q.lines[Math.floor((G.time+q.at)/q.every)%q.lines.length],al=Math.min(1,tt/.25,(4.4-tt)/.4);q.sayUntil=G.time+.2;
+    c.font='500 13px Georgia,serif';const w=c.measureText(s).width+16,X=Math.round(p[0]-w/2),Y=Math.round(p[1]-26);c.globalAlpha=al;
+    c.fillStyle='rgba(20,14,10,.9)';c.beginPath();c.roundRect(X-1,Y-1,w+2,24,7);c.fill();c.fillStyle='#efe6d2';c.beginPath();c.roundRect(X,Y,w,22,6);c.fill();
+    c.beginPath();c.moveTo(p[0]-5,Y+21);c.lineTo(p[0],Y+29);c.lineTo(p[0]+5,Y+21);c.fill();c.fillStyle='#2a1c12';c.textAlign='center';c.textBaseline='middle';c.fillText(s,p[0],Y+12);c.globalAlpha=1;}
   for(const q of G.stashes||[])if(near(q,80))label('Stash',wx(q.x),1.6,wz(q.y),'#e9c87a','600 13px Cinzel,Georgia,serif');
   if(near(G.home,90))label(G.village?'Teleport Gate':'Floor gate',wx(G.home.x),2.2,wz(G.home.y),'#f5e2a8','600 13px Cinzel,Georgia,serif');
   if(near(G.gate,120))label('The way up',wx(G.gate.x),2.2,wz(G.gate.y),'#c8f3fa','600 13px Cinzel,Georgia,serif');
@@ -1471,6 +1477,7 @@ function overlay(){
 // (each is then dressed as the village made them: their own skin, hair and clothes, like a player: dress())
 function npcLook(q){const L=npcModel(q);if(q.look)L.hero={look:q.look,armor:q.eq&&q.eq.armor,boots:{type:'boots'}};return L;}
 function npcModel(q){const n=q.name||'';
+  if(q.crowd)return{m:'Knight',hold:[]};
   if(/Blacksmith/.test(n))return{m:'Barbarian',hold:[]};
   if(/Innkeeper|Barkeep|Farmhand/.test(n))return{m:'Barbarian',hold:/Farmhand/.test(n)?[]:['Mug']};
   if(/Weapons/.test(n))return{m:'Knight',hold:['1H_Sword']};
@@ -1484,10 +1491,10 @@ function npcModel(q){const n=q.name||'';
   if(/Food|Crop/.test(n))return{m:'Rogue',hold:[]};
   return{m:'Rogue_Hooded',hold:[]};}
 function npcs(dt){
-  const list=[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[]),...(G.smiths||[]).filter(q=>q.name)];
+  const list=[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[]),...(G.smiths||[]).filter(q=>q.name),...(G.crowd||[])];
   list.forEach((q,i)=>{if(FLOOR.areas&&areaKey(q)!==FLOOR.areaK)return;const id='n'+i;let a=ACTORS.get(id);if(!a){const L=npcLook(q);a=makeActor('npc:'+L.m+L.hold.join()+(L.hero?specKey(L.hero):''),L);ACTORS.set(id,a);a.face=0;play(a,'Idle');a.npc=q;}
     seenIds.add(id);a.root.position.set(wx(q.x),0,wz(q.y));const d=hyp(P.x-q.x,P.y-q.y);
-    turn(a,d<90?Math.atan2(wx(P.x-q.x),wz(P.y-q.y)):0,dt,4);
+    turn(a,q.crowd?q.face:d<90?Math.atan2(wx(P.x-q.x),wz(P.y-q.y)):0,dt,4);
     if(q.sayUntil>G.time&&a.curName!=='Interact')play(a,'Interact',{once:true,fade:.2});else if(!(q.sayUntil>G.time)&&a.curName==='Interact'&&!a.cur.isRunning())play(a,'Idle',{fade:.3});
     upd(a,dt);});
 }
