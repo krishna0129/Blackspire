@@ -102,3 +102,34 @@ test('enemies have poise: blows wear it down (a greatsword fastest); broken, the
   const reeling=run(`g.staggerT=1;g.poise=g.maxPoise;const h=g.hp;damageEnemy(g,1,{crit:false,noProc:true});h-g.hp`);
   assert.ok(Math.abs(reeling/plain-(1+run(`COMBAT.epoise.more`)/100))<.05,`${reeling} vs ${plain}`);
 });
+
+test('weight: you gather speed and brake over a moment, a string of swings keeps you slow, and enemies start from slow',()=>{
+  const run=world();
+  run(`globalThis.home=[P.x,P.y];`);
+  const go=`P.in={mx:1,my:0,atk:false,block:false,aim:0};`,stop=`P.in={mx:0,my:0,atk:false,block:false,aim:0};`;
+  // from a stand: not at full speed on the first frame, there within a fifth of a second
+  assert.ok(run(`${go}steerPlayer(1/60);hyp(P.vx,P.vy)/ST.move`)<.3,'the first frame is slow');
+  run(`for(let i=0;i<12;i++){${go}steerPlayer(1/60);}`);
+  assert.ok(Math.abs(run(`P.vx/ST.move`)-1)<1e-6,'full speed after 0.2 s');
+  // letting go: still moving on the next frame, stopped within a tenth of a second or so
+  assert.ok(run(`${stop}steerPlayer(1/60);P.vx`)>0,'it takes a moment to stop');
+  assert.strictEqual(run(`for(let i=0;i<8;i++){${stop}steerPlayer(1/60);}P.vx`),0);
+  assert.strictEqual(run(`P.moving`),false);
+  // a reversal brakes first: for a moment you still drift the old way
+  run(`for(let i=0;i<12;i++){${go}steerPlayer(1/60);}`);
+  assert.ok(run(`P.in={mx:-1,my:0,atk:false,block:false,aim:0};steerPlayer(1/60);P.vx`)>0);
+  // attack held: slow between the swings too, not only during them
+  run(`P.vx=P.vy=0;P.swing=null;P.atkCd=.3;for(let i=0;i<20;i++){P.in={mx:1,my:0,atk:true,block:false,aim:0};steerPlayer(1/60);}`);
+  assert.ok(Math.abs(run(`P.vx/ST.move`)-run(`COMBAT.swingSlow`))<1e-6,'slow while the string of swings goes on');
+  // a dash leaves you running
+  run(`P.atkCd=0;P.vx=0;P.sta=ST.maxSta;P.in={mx:1,my:0,atk:false,block:false,aim:0};dodge();for(let i=0;i<40&&P.dash;i++)steerPlayer(1/60);`);
+  assert.ok(run(`P.vx/ST.move`)>.99,'out of the dash at a run');
+  // an enemy: its first step is short, its pace full a quarter of a second on
+  run(`globalThis.wk=makeEnemy('skel',home[0]+24,home[1],1,1,false);wk.speed=40;`);
+  const first=run(`const x=wk.x;walkEnt(wk,-40/60,0);G.time+=1/60;x-wk.x`);
+  run(`for(let i=0;i<20;i++){walkEnt(wk,-40/60,0);G.time+=1/60;}`);
+  const later=run(`const x=wk.x;walkEnt(wk,-40/60,0);G.time+=1/60;x-wk.x`);
+  assert.ok(first<later*.5&&Math.abs(later-40/60)<1e-6,`${first} then ${later}`);
+  run(`G.time+=.5;`);
+  assert.ok(run(`const x=wk.x;walkEnt(wk,-40/60,0);x-wk.x`)<later*.5,'after a stop it starts from slow again');
+});

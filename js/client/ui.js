@@ -189,7 +189,10 @@ function buildCreator(){
     b.insertAdjacentHTML('beforeend',sc?`<span>Grimoire of ${GRIM[sc].label}</span><small>Ranged bolts, scales with ${sc==='faith'?'faith':'intelligence'}. Skill: ${sk}</small>`
       :`<span>${T.name}</span><small>${T.blurb}. Skill: ${sk}</small>`);
     b.onclick=()=>{draft.weapon=k;buildCreator();};wp.appendChild(b);}
-  drawPreview($('#cPrev'),draft,draftEquip(),draftImg);
+  // the 3D model when the 3D graphics are on (it follows the weapon); else the 2D sprite with its colours
+  const c3=$('#cPrev3d'),on3=R3.ready&&!R3.Q.off;c3.hidden=!on3;$('#cPrev').hidden=on3;$('#cLookMsg').hidden=!on3;
+  if(on3){const[t,sc]=draft.weapon.split(':');R3.preview(c3,t,sc);}else drawPreview($('#cPrev'),draft,draftEquip(),draftImg);
+  if(!R3.ready&&!R3.failed&&!R3.Q.off)setTimeout(()=>{if(mode==='creator'&&R3.ready)buildCreator();},600);   // the models still loading
   $('#cCustomDel').hidden=!draft.custom;
 }
 let creatorFor='solo';   // solo: a new local save; online: a character on the server

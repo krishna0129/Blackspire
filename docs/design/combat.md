@@ -13,6 +13,17 @@ friends' playtest ([roadmap](../roadmap.md)).
 - **Attacks and skills go toward the mouse.** WASD moves, the mouse aims, the left button attacks. (Today attacks go
   the way you face, which means moving to aim.)
 - **Attacking slows you**: you keep moving while you swing, slower.
+- **You face the mouse only while fighting**: a swing, a block, a skill just cast, and half a second after. Otherwise
+  you face the way you run.
+- **Weight.** You gather speed over about a tenth of a second and brake a little faster; turning back has to brake
+  first. Enemies build up to their pace over a quarter of a second from a standing start (`COMBAT.walk`).
+- **A string of swings keeps you slow**: with attack held, the slow lasts through the gaps between swings, not only
+  during each one.
+- **Feet hold the floor.** Every walking clip's own ground speed is measured for each kind of body (its legs, its
+  size), and the clip nearest the true speed is played at exactly the rate that plants the feet: a walk, a jog or a
+  sprint; a sidestep or a backward walk when you move one way and face another. The legs keep running under a swing
+  or a raised guard (the arms play it over them). The body leans into a start and back into a stop, and rolls a
+  little through a turn. The dodge goes the way you dash: forward, back or to a side.
 
 ### Keys
 

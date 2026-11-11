@@ -93,7 +93,8 @@
       <header><h2>Create a character</h2><span>Everything here shows on your avatar in the dungeon.</span></header>
       <div class="cols">
         <section>
-          <canvas class="pv" id="cPrev" width="34" height="34" style="width:204px;height:204px"></canvas>
+          <canvas class="pv" id="cPrev" width="34" height="34" style="width:204px;height:204px"></canvas><canvas class="pv3 cpv3" id="cPrev3d" hidden></canvas>
+          <p class="muted" id="cLookMsg" hidden>Skin, hair, eyes and outfit show in 2D graphics for now. The 3D creator, with a face, hair and two builds of body, comes with the character work (build plan step 7).</p>
           <h3>Name</h3>
           <input type="text" id="cName" maxlength="14" value="Wanderer" autocomplete="off" spellcheck="false">
           <h3>Your own sprite</h3>
@@ -215,6 +216,7 @@
 <script src="js/sim/combat.js"></script>
 <script src="js/sim/skills.js"></script>
 <script src="js/sim/update.js"></script>
+<script src="js/sim/warden.js"></script>
 <script src="js/sim/floor3.js"></script>
 <script src="js/sim/actions.js"></script>
 <script src="js/vendor/three.js"></script>

@@ -53,6 +53,7 @@ const COMBAT={
   epoise:{share:.35,elite:.45,boss:.14,stun:1.2,bossStun:3,more:30,regen:.25,delay:3},
   kb:{light:45,heavy:120,magic:85,stagger:.35},
   swingSlow:.45,
+  walk:{up:.11,down:.085,foe:.25},   // seconds: you to full speed, you to a stop, an enemy to its full pace
 };
 // What each piece of armour weighs, until the new gear arrives (docs/design/gear.md#weight): poise grows with it.
 const ARMOR_WEIGHT={tunic:1,leather:2,coat:2,plate:5,striders:.5,boots:1,greaves:2};
@@ -93,7 +94,7 @@ const SKILLS={
   blink:{tags:['melee','movement','physical','dagger'],name:'Shadowstep',cd:5,mp:14,desc:'Appear behind the nearest enemy for a guaranteed critical.'},
   sunder:{tags:['melee','area','physical','greatsword'],name:'Sunder',cd:6,mp:16,desc:'A huge cleave. Enemies hit take 25% more damage for 4s.'},
   guard:{tags:['guard','mace'],name:'Bulwark',cd:12,mp:18,desc:'Take 60% less damage for 5 seconds.'},
-  pierce:{tags:['melee','physical','spear'],name:'Piercing line',cd:5,mp:14,desc:'A long thrust that passes through every enemy in a line.'},
+  pierce:{tags:['melee','physical','spear'],name:'Piercing line',cd:5,mp:14,desc:'A thrust that passes through every enemy in a short line: your weapon\u2019s reach and almost three tiles more.'},
   volley:{tags:['projectile','physical','bow'],name:'Volley',cd:6,mp:16,desc:'Five arrows in a fan.'},
   fireball:{tags:['projectile','area','fire','grimoire'],name:'Fireball',cd:5,mp:18,desc:'A slow orb that bursts on impact and hits everything in the blast. Intelligence raises its damage.'},
   heal:{tags:['aura','grimoire'],name:'Heal',cd:6,mp:22,desc:'Restores a lot of health to the ally you aim at, or to you. Faith raises the amount.'},
@@ -108,20 +109,20 @@ const SKILLS={
   resurrect:{tags:['aura'],name:'Resurrection',cd:150,mp:80,ult:true,desc:'Brings back every fallen ally, within 15 seconds of their fall, with nothing lost.'},
   // the Marauder
   heavy:{tags:['melee','physical','empower'],name:'Heavy Strike',cd:9,mp:16,sound:'crit',desc:'Your next three attacks land 60% harder and break poise three times as fast, for 8 seconds.'},
-  leap:{tags:['melee','area','movement','physical'],name:'Leap Slam',cd:8,mp:18,desc:'Leap to where you aim and slam down, striking everything around you.'},
+  leap:{tags:['melee','area','movement','physical'],name:'Leap Slam',cd:8,mp:18,desc:'Leap to the mouse (up to five or six tiles) and slam down, striking everything around you.'},
   cry:{tags:['warcry'],name:'Enduring Cry',cd:60,mp:40,ult:true,desc:'A warcry: you and every ally near you take 30% less damage for 10 seconds.'},
   quake:{tags:['melee','area','physical'],name:'Earthquake',cd:60,mp:50,ult:true,desc:'A huge slam around you, and an aftershock a moment later. It breaks poise like nothing else.'},
   berserk:{tags:['physical'],name:'Berserk',cd:70,mp:40,ult:true,desc:'For 10 seconds: 40% more damage, heal 10% of what you deal, and nothing knocks you back.'},
   // the Duelist
   riposte:{tags:['melee','guard','physical'],name:'Riposte',cd:7,mp:14,desc:'For a moment, any blow from the front is parried and answered with a hard counter.'},
   double:{tags:['melee','physical','empower'],name:'Double Strike',cd:12,mp:10,desc:'For 10 seconds every attack lands twice, at 3 mana a hit.'},
-  cuts:{tags:['melee','physical'],name:'Thousand Cuts',cd:60,mp:45,ult:true,desc:'A blinding flurry of eight cuts on the enemy you aim at.'},
+  cuts:{tags:['melee','physical'],name:'Thousand Cuts',cd:60,mp:45,ult:true,desc:'A blinding flurry of eight cuts on the enemy you aim at, within a few steps of your reach.'},
   challenge:{tags:['physical'],name:'Challenge',cd:50,mp:30,ult:true,desc:'Mark the enemy you aim at for 12 seconds: it must fight you, and takes 40% more from you.'},
-  storm:{tags:['melee','physical'],name:'Piercing Storm',cd:60,mp:50,ult:true,desc:'Five long thrusts, one after another, that cross the room.'},
+  storm:{tags:['melee','physical'],name:'Piercing Storm',cd:60,mp:50,ult:true,desc:'Five thrusts, one after another, each through every enemy in a line: your reach and almost four tiles more.'},
   // the Ranger
   lightarrow:{tags:['projectile','lightning','bow'],name:'Lightning Arrow',cd:5,mp:16,desc:'An arrow that leaps on to three more enemies.'},
   caustic:{tags:['projectile','rot','bow'],name:'Caustic Arrow',cd:7,mp:18,desc:'An arrow that leaves a pool of poison where it lands, for 5 seconds.'},
-  split:{tags:['projectile','physical','bow'],name:'Split Arrow',cd:5,mp:14,desc:'A heavy arrow that passes through every enemy in a line.'},
+  split:{tags:['projectile','physical','bow'],name:'Split Arrow',cd:5,mp:14,desc:'A heavy arrow that passes through up to four enemies.'},
   rain:{tags:['projectile','area','physical'],name:'Rain of Arrows',cd:60,mp:50,ult:true,desc:'Arrows fall over a wide area where you aim, for 2 seconds.'},
   ballista:{tags:['projectile','physical'],name:'Ballista',cd:60,mp:45,ult:true,desc:'Set down a ballista that shoots the nearest enemy for 15 seconds.'},
   tornado:{tags:['projectile','physical'],name:'Tornado Shot',cd:50,mp:40,ult:true,desc:'One arrow that bursts into twelve, in every direction, where it stops.'},
@@ -240,7 +241,7 @@ const ETYPES={
   bloodbloom:{fam:'plant',name:'Bloodbloom',hp:30,dmg:0,speed:0,r:6,xp:14,eye:'#9be08a',line:'#4e1520',ai:'bloodbloom',rooted:true,plant:true},
   hermit:{fam:'beast',name:'Ossuary hermit',hp:120,dmg:20,speed:52,r:9,xp:30,eye:'#f2a03c',line:'#2b261c',ai:'hermit',heavy:true,famDrop:[1,1,2]},
   wisp:{fam:'spirit',dtype:'cold',name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
-  boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d'},
+  boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d',heavy:true},
 };
 // Materials. The first three are for enhancing, from common to rare: enemies, chests and bosses drop them, and
 // salvaging gear gives them back. The rest are monster drops, one per family (fam): only that family drops it, and the
@@ -290,7 +291,7 @@ const MARKET_HOUR=3600000;
 const FLOORS=[
   {theme:0,intro:'Find the boss chamber. It is somewhere to the east.',introMs:2800,
     spawns:['shade','shade','shade','skitter','skitter','skitter','brute','wisp'],
-    boss:{name:'The Gate Warden',fam:'spirit',sprite:'boss',ai:'warden',line:'#7a4a52',calls:'skitter'}},
+    boss:{name:'The Gate Warden',fam:'spirit',sprite:'boss',ai:'warden',line:'#7a4a52',calls:'skitter',hpX:18}},
   {theme:1,intro:'The dead here shrug off magic. Bring steel.',introMs:4200,
     spawns:['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'],
     boss:{name:'The Bone Regent',fam:'undead',sprite:'boneboss',ai:'regent',line:'#9a8f6a',mres:.5,calls:'skel'}},

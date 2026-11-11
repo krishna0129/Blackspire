@@ -19,7 +19,7 @@ const me={ready:false,failed:false,Q,g:null,cycle,label:()=>Q.off?'2D':Q.low?'3D
 
 /* ---------- start-up: the renderer and the models ---------- */
 let renderer,scene,camera,composer,bloom,grade,canvas,over,octx,moon,hemi,lantern;
-let PROTO={},CHARS={},CLIP={},TOP={},FLOOR=null,DYN=null;
+let PROTO={},CHARS={},CLIP={},TOP={},FOOT={},FLOOR=null,DYN=null;
 const T={};   // three.js classes, looked up once
 // A KayKit body comes in ten parts (head, arms, legs...), each its own draw call. They share one skeleton and one
 // material, so they are joined into one mesh; the eyes (which glow) and anything held (shown or hidden) stay apart.
@@ -66,7 +66,8 @@ me.init=async function(){
     props.scene.updateMatrixWorld(true);
     for(const h of props.scene.children){const parts=[];h.traverse(c=>{if(c.isMesh)parts.push({geo:c.geometry,mat:c.material,m:c.matrixWorld.clone()});});PROTO[h.name]={node:h,parts};}
     for(const c of anims.animations)CLIP[c.name]=c;
-    for(const k in PROTO){const b=new THREE.Box3();for(const p of PROTO[k].parts){p.geo.computeBoundingBox();b.union(p.geo.boundingBox.clone().applyMatrix4(p.m));}TOP[k]=b.max.y;}
+    for(const k in PROTO){const b=new THREE.Box3();for(const p of PROTO[k].parts){p.geo.computeBoundingBox();b.union(p.geo.boundingBox.clone().applyMatrix4(p.m));}TOP[k]=b.max.y;
+      FOOT[k]=Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z);}   // the footprint's diagonal: how wide it can get when turned
     for(const k of Object.keys(MODELS))if(k!=='props'&&k!=='anims')CHARS[k]=joinBody((await parse(k)).scene);
   }catch(e){console.warn('3D models failed to load, drawing in 2D',e);me.failed=true;return;}
   // post: bloom on everything hot, a vignette, then tone mapping
@@ -112,17 +113,50 @@ function fit(){
 /* ---------- static props: instanced, in chunks so the camera only draws what is near ---------- */
 const M4=(x,y,z,ry=0,sx=1,sy=sx,sz=sx)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,ry,0)),new THREE.Vector3(sx,sy,sz));
 const CH=32;   // chunk size, world units (16 tiles)
-// The cutaway: walls between the camera and you would hide you, so anything tall in the stretch of floor just south
-// of you (nearer the camera) is drawn only up to the knee there, the way the old isometric games cut their walls.
-const CUT={value:new THREE.Vector3(0,0,-999)},CUTKEYS=/^(wall_|pillar|torch_mounted|banner_|building_|mountain_|hills_|tree_single|post_lantern|tent)/,cutMats=new Map();
+// The cutaway: what stands in the line of sight just south of you drawn only up to the knee. Nothing is cut any more,
+// in the tower or the village: a cut opens a house or a wall and shows its hollow inside. Whoever something hides shows
+// through it as a silhouette instead (xray, below). Kept, matching nothing, should a prop ever need it again.
+const CUT={value:new THREE.Vector3(0,0,-999)},CUTKEYS=/^$^/,cutMats=new Map();
 function cutaway(mat){
   if(cutMats.has(mat))return cutMats.get(mat);const m=mat.clone();
   m.onBeforeCompile=sh=>{sh.uniforms.uCut=CUT;
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCutW;').replace('#include <project_vertex>',
       '#include <project_vertex>\nvec4 cw=vec4(transformed,1.);\n#ifdef USE_INSTANCING\ncw=instanceMatrix*cw;\n#endif\nvCutW=(modelMatrix*cw).xyz;');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vCutW;uniform vec3 uCut;').replace('#include <clipping_planes_fragment>',
-      '#include <clipping_planes_fragment>\nfloat cdz=vCutW.z-uCut.z;if(cdz>.6&&cdz<16.&&vCutW.y>1.05&&abs(vCutW.x-uCut.x)<7.+cdz*.5)discard;');};
+      '#include <clipping_planes_fragment>\nfloat cdz=vCutW.z-uCut.z;if(cdz>.3&&cdz<16.&&vCutW.y>max(1.05,1.43*cdz-1.2)&&abs(vCutW.x-uCut.x)<2.4+cdz*.15)discard;');};
   m.customProgramCacheKey=()=>'cut';cutMats.set(mat,m);return m;
+}
+// Grit: the tower's walls and pillars worn by age, in the shader, no new models. Grime and stains from noise, damp
+// darkening toward the floor, cracks in patches (the edges of a cellular pattern, only where a second noise allows),
+// and a few pale chips. All from the surface's world position, so no two stretches of wall look alike.
+const GRITKEYS=/^(wall_half|wall_gated|pillar|pillar_decorated)$/,gritMats=new Map();
+const GRIT_GLSL=`
+float gH(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+vec2 gH2(vec2 p){return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453);}
+float gN(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(gH(i),gH(i+vec2(1,0)),f.x),mix(gH(i+vec2(0,1)),gH(i+vec2(1,1)),f.x),f.y);}
+float gF(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*gN(p);p*=2.03;a*=.5;}return v;}
+float gCrack(vec2 p){vec2 i=floor(p),f=fract(p);float d1=8.,d2=8.;
+  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(x,y),r=o+gH2(i+o)-f;float d=dot(r,r);if(d<d1){d2=d1;d1=d;}else if(d<d2)d2=d;}
+  return sqrt(d2)-sqrt(d1);}
+`;
+function grit(mat){
+  if(gritMats.has(mat))return gritMats.get(mat);const m=mat.clone();
+  m.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGW;varying vec3 vGN;').replace('#include <project_vertex>',
+      '#include <project_vertex>\nvec4 gw=vec4(transformed,1.);vec3 gn=objectNormal;\n#ifdef USE_INSTANCING\ngw=instanceMatrix*gw;gn=mat3(instanceMatrix)*gn;\n#endif\nvGW=(modelMatrix*gw).xyz;vGN=normalize(mat3(modelMatrix)*gn);');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vGW;varying vec3 vGN;'+GRIT_GLSL).replace('#include <color_fragment>',
+      `#include <color_fragment>
+      {vec3 an=abs(vGN);vec2 uv=an.y>.6?vGW.xz:(an.x>an.z?vGW.zy:vGW.xy);
+       float g=mix(.5,1.12,gF(uv*1.4))*mix(.62,1.,smoothstep(.3,.62,gF(uv*.45+3.)));   // grime, and big dark stains
+       float low=1.-smoothstep(0.,1.6,vGW.y);g*=1.-low*.45;                 // damp toward the floor
+       diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.8,.88,.68),low*.75);
+       vec2 cu=uv*1.1+vec2(gF(uv*2.1),gF(uv*2.1+9.))*.8;
+       float cd=gCrack(cu),crack=(1.-smoothstep(.0,.07,cd))*smoothstep(.4,.52,gF(uv*.33+17.));   // cracks, in patches
+       float lip=(smoothstep(.07,.1,cd)-smoothstep(.1,.14,cd))*smoothstep(.4,.52,gF(uv*.33+17.));   // a pale broken edge beside each
+       g*=1.-crack*.88;g+=lip*.1;
+       g+=step(.975,gH(floor(uv*11.)))*.16*(1.-crack);                     // pale chips
+       diffuseColor.rgb*=g;}`);};
+  m.customProgramCacheKey=()=>'grit';gritMats.set(mat,m);return m;
 }
 function instance(group,placed){
   const tmp=new THREE.Matrix4();
@@ -130,7 +164,7 @@ function instance(group,placed){
     const chunks=new Map();for(const m of list){const c=Math.floor(m.elements[12]/CH)+','+Math.floor(m.elements[14]/CH);(chunks.get(c)||chunks.set(c,[]).get(c)).push(m);}
     const flat=key.startsWith('floor_');
     for(const ms of chunks.values())for(const part of P_.parts){
-      const im=new THREE.InstancedMesh(part.geo,CUTKEYS.test(key)?cutaway(part.mat):part.mat,ms.length);ms.forEach((M,i)=>im.setMatrixAt(i,tmp.multiplyMatrices(M,part.m)));
+      const im=new THREE.InstancedMesh(part.geo,CUTKEYS.test(key)?cutaway(part.mat):GRITKEYS.test(key)?grit(part.mat):part.mat,ms.length);ms.forEach((M,i)=>im.setMatrixAt(i,tmp.multiplyMatrices(M,part.m)));
       im.castShadow=!flat;im.receiveShadow=true;im.computeBoundingSphere();group.add(im);
       if(STYLE.ink&&!flat&&!/^(wall_|pillar)/.test(key)){   // outlines on the props, sized to the prop's own (quantized) units
         const sc=new THREE.Vector3().setFromMatrixScale(part.m),o=new THREE.InstancedMesh(part.geo,inkMat(.04/Math.max(sc.x,sc.y,sc.z)),ms.length);
@@ -138,7 +172,7 @@ function instance(group,placed){
   }
 }
 // One model placed on its own, to move or change later (chests, the boss gates, a held weapon).
-function single(key){const P_=PROTO[key];const o=P_.node.clone(true);o.position.set(0,0,0);o.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;if(CUTKEYS.test(key))c.material=cutaway(c.material);}});return o;}
+function single(key){const P_=PROTO[key];const o=P_.node.clone(true);o.position.set(0,0,0);o.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;if(CUTKEYS.test(key))c.material=cutaway(c.material);else if(GRITKEYS.test(key))c.material=grit(c.material);}});return o;}
 
 /* ---------- ink: dark outlines, the model drawn again a little larger and inside out ---------- */
 const INK=new Map();
@@ -150,6 +184,23 @@ function ink(o,w){const add=[];o.traverse(c=>{if(!c.isMesh||c.userData.ink||c.us
     const m=c.isSkinnedMesh?new THREE.SkinnedMesh(c.geometry,inkMat(w)):new THREE.Mesh(c.geometry,inkMat(w));
     if(c.isSkinnedMesh)m.bind(c.skeleton,c.bindMatrix);m.userData.ink=true;m.castShadow=false;m.frustumCulled=false;add.push([c,m]);});
   for(const[c,m]of add){if(c.isSkinnedMesh)c.parent.add(m);else{m.position.copy(c.position);m.quaternion.copy(c.quaternion);m.scale.copy(c.scale);c.parent.add(m);}m.visible=c.visible;c.userData.inkMesh=m;}}
+
+/* ---------- xray: who a wall hides shows through it ---------- */
+// Each actor gets a twin of its meshes in one flat colour, drawn after the world (renderOrder 1) but before any actor
+// (renderOrder 2), and only where the depth already there is nearer: where a wall stands in front. Dithered, so it
+// reads as a see-through ghost. Heroes in gold, enemies in red.
+const XRAY=new Map();
+function xrayMat(col){if(XRAY.has(col))return XRAY.get(col);
+  const m=new THREE.MeshBasicMaterial({color:col,depthFunc:THREE.GreaterDepth,depthWrite:false,fog:false});
+  m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <clipping_planes_fragment>',
+    '#include <clipping_planes_fragment>\nif(mod(floor(gl_FragCoord.x)+floor(gl_FragCoord.y),2.)<1.)discard;');};
+  m.customProgramCacheKey=()=>'xray';XRAY.set(col,m);return m;}
+function xray(root,col){const add=[];
+  root.traverse(c=>{c.renderOrder=2;if(!c.isMesh||c.userData.ink||c.userData.eyes||c.userData.xray)return;
+    const m=c.isSkinnedMesh?new THREE.SkinnedMesh(c.geometry,xrayMat(col)):new THREE.Mesh(c.geometry,xrayMat(col));
+    if(c.isSkinnedMesh)m.bind(c.skeleton,c.bindMatrix);m.userData.xray=true;m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;m.renderOrder=1;add.push([c,m]);});
+  for(const[c,m]of add){if(c.isSkinnedMesh)c.parent.add(m);else{m.position.copy(c.position);m.quaternion.copy(c.quaternion);m.scale.copy(c.scale);c.parent.add(m);}
+    m.visible=c.visible;c.userData.xrayMesh=m;}}
 
 /* ---------- glows and flames ---------- */
 let glowTex=null;
@@ -171,7 +222,8 @@ function build(){
   for(const a of ACTORS.values())dropActor(a);ACTORS.clear();for(const a of DYING)dropActor(a);DYING.length=0;
   const g=G,map=g.map,group=new THREE.Group(),placed=new Map(),torches=[],flames={warm:[],green:[],blue:[]},floaters=[],fungi=[];
   const put=(key,x,y,z,ry,sx,sy,sz)=>{(placed.get(key)||placed.set(key,[]).get(key)).push(M4(x,y,z,ry,sx,sy,sz));};
-  const at=(x,y)=>x<0||y<0||x>=MW||y>=MH?0:map[y*MW+x],open=(x,y)=>{const v=at(x,y);return v===1||v===3;};
+  const at=(x,y)=>x<0||y<0||x>=MW||y>=MH?0:map[y*MW+x],open=(x,y)=>{const v=at(x,y);return v===1||v===3||v===4;};
+  const front=(x,y)=>!open(x,y)&&open(x,y-1);   // a block of rock with floor right behind it
   const inR=(r,x,y)=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h;
   const safeR=g.rooms.filter(r=>r.kind==='safe'||r.kind==='start'),theme=floorDef(g.n).theme;
   const rnd=mulberry32((g.seed*31+g.n*7919)>>>0);
@@ -184,17 +236,21 @@ function build(){
     else if(inR(g.boss,x,y))put(r<.12?'floor_tile_small_broken_A':'floor_tile_small',cx,0,cz,rot);
     else if(g.thorns&&g.thorns[y*MW+x])put(r<.5?'floor_dirt_small_weeds':'floor_dirt_small_A',cx,0,cz,rot);
     else put(r<.72?'floor_tile_small':r<.8?'floor_tile_small_broken_A':r<.86?'floor_tile_small_broken_B':r<.93?'floor_tile_small_decorated':'floor_tile_small_weeds_A',cx,0,cz,rot);
-    const X=x*2,Z=y*2;
-    if(!open(x,y-1))put('wall_half',X,0,Z,0);
+    // every face of a block of rock that has floor right behind it (north, farther from the camera) is knee-high, so
+    // it never hides that floor: the faces toward the camera, and the side faces of the same block where a corridor
+    // bends (they used to stand full height there, a stub of wall in front of the way on)
+    const X=x*2,Z=y*2,h=(vx,vy)=>front(vx,vy)?.26:1;
+    if(!open(x,y-1))put('wall_half',X,0,Z,0,1,h(x,y-1),1);
     if(!open(x,y+1))put('wall_half',X,0,Z+2,0,1,.26,1);
-    if(!open(x-1,y))put('wall_half',X,0,Z,-Math.PI/2);
-    if(!open(x+1,y))put('wall_half',X+2,0,Z,-Math.PI/2);
+    if(!open(x-1,y))put('wall_half',X,0,Z,-Math.PI/2,1,h(x-1,y),1);
+    if(!open(x+1,y))put('wall_half',X+2,0,Z,-Math.PI/2,1,h(x+1,y),1);
   }
   for(let y=0;y<=MH;y++)for(let x=0;x<=MW;x++){
     const q=[open(x-1,y-1),open(x,y-1),open(x-1,y),open(x,y)],n=q.filter(Boolean).length;
     if(n===0||n===4)continue;
     if(n===2&&((q[0]&&q[1])||(q[2]&&q[3])||(q[0]&&q[2])||(q[1]&&q[3])))continue;   // a straight run of wall
-    const low=(q[2]||q[3])&&!q[0]&&!q[1];
+    // a post is as tall as the tallest wall it joins: knee-high when every block of rock around it is a low one
+    const low=[[x-1,y-1],[x,y-1],[x-1,y],[x,y]].every(([a,b],i)=>q[i]||front(a,b));
     put('pillar',x*2,0,y*2,0,.62,low?.26:1.02,.62);
   }
   // thorns: dark spikes in the patches (floor 3)
@@ -241,11 +297,9 @@ function build(){
     }
     // an ordinary room: its floor's lights near the walls, clutter in a corner or two, the dead's leftovers
     for(const[i,j]of[[1,1],[r.w-2,1],[1,r.h-2],[r.w-2,r.h-2],[Math.floor(r.w/2),1]].slice(0,r.w*r.h>50?5:3))if(rr()<.85)themed((r.x+i+.5)*2,(r.y+j+.5)*2,rr);
-    for(const[i,j,c]of[[0,0,'n'],[r.w-1,0,'n'],[0,r.h-1,'s'],[r.w-1,r.h-1,'s']]){if(rr()<.45)continue;const x=(r.x+i)*2+1,z=(r.y+j)*2+1,k=rr();
-      if(k<.3)put(rp(['barrel_large','barrel_small_stack','keg']),x,0,z,rr()*6);
-      else if(k<.55)put(rp(['crates_stacked','box_stacked','box_large']),x,0,z,rr()*6);
-      else if(k<.8&&theme>0)put(rp(['coffin','coffin_decorated']),x,0,z,c==='n'?0:Math.PI);
-      else put('rubble_half',x,0,z,rr()*6);}
+    for(const q of g.clutter||[]){if(q.room!==ri)continue;const x=q.x*2+1,z=q.y*2+1,k=q.k,pick=a=>a[Math.floor(q.rot/6*a.length)%a.length];   // the rules chose these tiles and made them solid
+      const key=k<.3?pick(['barrel_large','barrel_small_stack','keg']):k<.55?pick(['crates_stacked','box_stacked','box_large']):k<.8&&theme>0?pick(['coffin','coffin_decorated']):'rubble_half';
+      put(key,x,0,z,key.startsWith('coffin')?(q.c==='n'?0:Math.PI):q.rot,Math.min(1,2.3/(FOOT[key]||2.3)));}   // shrunk to its one solid tile, however it is turned
     const bones=theme===0?1+Math.floor(rr()*2):3+Math.floor(rr()*4);
     for(let k=0;k<bones;k++)put(rp(['bone_A','bone_B','bone_C','skull','ribcage']),(r.x+1+rr()*(r.w-2))*2,0,(r.y+1+rr()*(r.h-2))*2,rr()*6,.9);
     if(theme===2&&rr()<.5)put(rp(['gravestone','grave_A_destroyed']),(r.x+.6)*2,0,(r.y+.7)*2,0);
@@ -258,7 +312,7 @@ function build(){
       themed(X,Z,cr);lit.push([X,Z]);}}
   instance(group,placed);
   const FLAMES=FLAME_SETS;
-  for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAMES[k]){const p=points(flames[k],col,size,op);p.material=cutaway(p.material);group.add(p);}
+  for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAMES[k])group.add(points(flames[k],col,size,op));
   // the floating candles: one instanced candle each, moved every frame (frame3d), with a blue flame above it
   let floatSet=null;
   if(floaters.length){const parts=PROTO.candle_thin.parts.map(pt=>{const im=new THREE.InstancedMesh(pt.geo,pt.mat,floaters.length);im.castShadow=true;im.frustumCulled=false;group.add(im);return{im,m:pt.m};});
@@ -349,7 +403,7 @@ function buildVillage(){
   // grass and stones on the open ground
   group.add(...villageTufts());
   instance(group,placed);
-  for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAME_SETS[k]){const p=points(flames[k],col,size,op);p.material=cutaway(p.material);group.add(p);}
+  for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAME_SETS[k])group.add(points(flames[k],col,size,op));
   scene.add(group);
   FLOOR={g,group,torches,gates:[],chests:[],stashes,floatSet:null,born:performance.now(),village:true};me.g=g;
 }
@@ -476,11 +530,15 @@ const PERSON_TOP=2.6;   // a person stands about 2.5 tall, a helmet a little mor
 // (The change is taken back before each update: a clip without a scale track for a bone leaves the scale alone, and
 // it would otherwise compound frame after frame.)
 function upd(a,dt){if(!a.mixer)return;if(a.build&&a.built)for(const[b,v]of a.build)b.scale.divide(v);
-  a.mixer.update(dt);if(a.build){for(const[b,v]of a.build)b.scale.multiply(v);a.built=true;}}
+  a.mixer.update(dt);if(a.build){for(const[b,v]of a.build)b.scale.multiply(v);a.built=true;}
+  // The sidestep clips turn the hips 58 degrees toward the way they go and twist the chest back. With the arms' own
+  // clip over those legs (a swing, a guard) nothing twists back, so the spine is turned by hand to face the front.
+  if(a.twist){const sp=a.spine||(a.spine=bone(a.root,'spine'));if(sp)sp.quaternion.premultiply(TWQ.setFromAxisAngle(UP,a.twist));}}
+const TWQ=new THREE.Quaternion(),UP=new THREE.Vector3(0,1,0);
 const bone=(root,n)=>root.getObjectByName(n)||root.getObjectByName(n.replace('.',''));
 // A character model, ready to animate. key: what it is (for reuse), o: {m, hold, r, l, s, ghost, tint, eyes}
 function makeActor(key,o){
-  const free=FREE.get(key);if(free&&free.length){const a=free.pop();a.root.visible=true;scene.add(a.root);a.cur=null;a.curName='';for(const x of Object.values(a.acts))x.stop();return a;}
+  const free=FREE.get(key);if(free&&free.length){const a=free.pop();a.root.visible=true;scene.add(a.root);a.cur=null;a.curName='';a.up=null;a.px=null;a.twist=0;a.root.rotation.x=a.root.rotation.z=0;for(const x of Object.values(a.acts))x.stop();return a;}
   let root,mats=[];
   if(o.orb){   // a wisp: a small skull adrift in a cold flame, not a ball of light
     root=new THREE.Group();const sk=single('skull');sk.scale.setScalar(.55);sk.position.y=1.15;
@@ -516,7 +574,8 @@ function makeActor(key,o){
     const y1=toe?toe.getWorldPosition(new THREE.Vector3()).y:0;for(const[b,v]of build)b.scale.divide(v);
     model.position.y=y0-y1;}
   if(STYLE.ink)ink(root,o.s&&o.s>2?.02:.045);
-  root.scale.setScalar(o.s||1);scene.add(root);
+  if(o.xray)xray(root,o.xray);
+  root.scale.setScalar(o.s||1);root.rotation.order='YXZ';scene.add(root);   // (turn first, then lean: the lean follows the facing)
   const a={key,root,model,build,mats,mixer:model?new THREE.AnimationMixer(model):null,acts:{},cur:null,curName:'',face:0,o,lock:0,swT:-1,st:'',n:0,x:0,z:0,alpha:1,seen:0};
   return a;
 }
@@ -525,29 +584,147 @@ function makeActor(key,o){
 function rim(m){m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <emissivemap_fragment>',
   '#include <emissivemap_fragment>\ntotalEmissiveRadiance+=vec3(.16,.2,.3)*pow(1.-clamp(dot(normal,normalize(vViewPosition)),0.,1.),2.5);');};
   m.customProgramCacheKey=()=>'rim';}
-function dropActor(a){scene.remove(a.root);a.root.visible=false;if(a.mixer)a.mixer.stopAllAction();a.cur=null;a.curName='';a.dead=false;a.alpha=1;fade(a,1);
+function dropActor(a){scene.remove(a.root);a.root.visible=false;if(a.mixer)a.mixer.stopAllAction();a.cur=null;a.curName='';a.dead=false;fade(a,1);   // (fade before anything marks it opaque: it skips when alpha is already 1)
   (FREE.get(a.key)||FREE.set(a.key,[]).get(a.key)).push(a);}
 function fade(a,al){if(a.alpha===al)return;a.alpha=al;a.root.traverse(c=>{if(c.userData.inkMesh)c.userData.inkMesh.visible=c.visible&&al>=1;});for(const m of a.mats){m.transparent=al<1;m.opacity=al;}}
 // Plays a clip: loops by default; once: plays through and holds the last frame. A new clip fades in over `fade` s.
+/* ---------- gait: the ground speed each walking clip was drawn for ---------- */
+// The clips walk on the spot. A planted foot slides back under the body at exactly the speed the body should travel,
+// so that speed is measured once for each kind of actor (its own legs, its own size): the clip is stepped through
+// and each foot timed while it is on the ground (the low part of its path). Moving, the clip nearest the true speed
+// is played at (true speed / its speed), and the feet hold the floor instead of skating over it.
+// What touches the ground is the heel as a foot lands and the toes as it leaves, so each foot is followed at both
+// (the ankle and the toe bones): the lower of the two is the contact, planted while it is in the lowest part of its path.
+const PLANTED=.18,FWD=['Walking_A','Running_A','Running_C'],LOCO=[...FWD,'Running_Strafe_Left','Running_Strafe_Right','Walking_Backwards'],GAIT=new Map();
+const footBones=a=>['l','r'].map(s_=>[bone(a.root,'foot.'+s_),bone(a.root,'toes.'+s_)].filter(Boolean)).filter(f=>f.length);
+// frames: [per foot][per bone][per sample] = [x,y,z]; dt between samples. The speeds over the floor of each planted contact.
+function plantedSpeeds(frames,dt){
+  const out=[];
+  for(const foot of frames){const rng=foot.map(b=>{const ys=b.map(q=>q[1]),lo=Math.min(...ys);return[lo,Math.max(...ys)-lo];}),n=foot[0].length;
+    for(let i=0;i<n-1;i++){let k=0;for(let j=1;j<foot.length;j++)if(foot[j][i][1]-rng[j][0]<foot[k][i][1]-rng[k][0])k=j;   // the bone nearest the floor
+      const b=foot[k],cut=rng[k][0]+rng[k][1]*PLANTED;if(b[i][1]<=cut&&b[i+1][1]<=cut)out.push(Math.hypot(b[i+1][0]-b[i][0],b[i+1][2]-b[i][2])/dt);}}
+  return out;
+}
+function gaitOf(a){
+  if(GAIT.has(a.key))return GAIT.get(a.key);
+  const g={},feet=footBones(a),inv=new THREE.Matrix4(),v=new THREE.Vector3();
+  if(a.mixer&&feet.length)for(const name of LOCO){if(!CLIP[name])continue;
+    a.mixer.stopAllAction();const act=a.mixer.clipAction(CLIP[name]);act.reset();act.setLoop(THREE.LoopRepeat,Infinity);act.play();
+    const N=96,D=CLIP[name].duration,fr=feet.map(f=>f.map(()=>[]));
+    for(let i=0;i<=N;i++){act.time=Math.min(D*i/N,D-1e-4);upd(a,0);a.root.updateMatrixWorld(true);inv.copy(a.root.matrixWorld).invert();
+      feet.forEach((f,j)=>f.forEach((b,k)=>{b.getWorldPosition(v).applyMatrix4(inv);fr[j][k].push([v.x,v.y,v.z]);}));}
+    const sp=plantedSpeeds(fr,D/N).sort((x,y)=>x-y);g[name]=sp.length?sp[sp.length>>1]*a.root.scale.x:0;act.stop();}   // the middle speed: the one that slides least
+  if(a.mixer){a.mixer.stopAllAction();a.cur=null;a.curName='';a.up=null;}
+  GAIT.set(a.key,g);return g;
+}
+// The body's parts, to move them apart: the legs can run while the arms swing or hold a guard. A clip cut down to
+// the upper body (spine up, and the arms) or to the rest (hips and legs).
+const UPPER=/^(spine|chest|head|upperarm|lowerarm|wrist|hand|elbowIK|handIK)/,PART={up:{},lo:{}};
+function partClip(name,part){
+  const c=PART[part][name];if(c)return c;const src=CLIP[name];if(!src)return null;
+  return PART[part][name]=new THREE.AnimationClip(name+'|'+part,src.duration,src.tracks.filter(t=>UPPER.test(t.name)===(part==='up')));
+}
+// The upper body's own clip, over whatever the legs do (a swing, a guard).
+function playUp(a,name,o={}){
+  const clip=partClip(name,'up');if(!a.mixer||!clip)return null;
+  const act=a.acts[name+'|up']||(a.acts[name+'|up']=a.mixer.clipAction(clip));act.timeScale=o.speed||1;
+  if(a.up===act&&!o.restart)return act;
+  if(a.up&&a.up!==act)a.up.fadeOut(o.fade??.08);
+  act.reset();act.setLoop(o.once?THREE.LoopOnce:THREE.LoopRepeat,Infinity);act.clampWhenFinished=!!o.once;act.fadeIn(o.fade??.08);act.play();
+  a.up=act;a.upName=name;return act;
+}
+function stopUp(a,fade=.14){if(a.up){a.up.fadeOut(fade);a.up=null;a.upName='';}}
+// Walking, running, sidestepping or backing away, by how the body truly moves (vx, vz: world units a second) against
+// the way it faces. Picks the clip whose own ground speed is nearest, and plays it at the rate that plants the feet.
+// part 'lo': the legs alone (the upper body is doing something else). Returns false when it is standing.
+function loco(a,vx,vz,part){
+  const sp=Math.hypot(vx,vz);if(sp<.5)return false;
+  const g=gaitOf(a),rel=angDiff(Math.atan2(vx,vz),a.face),ar=Math.abs(rel);
+  const set=ar<1?FWD:ar>2.2?['Walking_Backwards']:[rel>0?'Running_Strafe_Left':'Running_Strafe_Right'];
+  // nearest in pace; hurried legs look sillier than slow ones, so a clip that must be sped up counts as a worse fit
+  // (a huge thing runs in slow motion rather than patter along); it keeps the clip it has unless another fits clearly better
+  let best=null,bc=1e9;for(const c of set){if(!g[c])continue;const r=sp/g[c],cost=Math.abs(Math.log(r))*(r>1.25?1.4:1)*(a.gaitClip===c?.75:1);if(cost<bc){bc=cost;best=c;}}
+  if(!best)return false;a.gaitClip=best;
+  play(a,best,{speed:clamp(sp/g[best],.5,(best==='Walking_Backwards'?2:1.6)/Math.min(1,a.root.scale.x)),fade:.16,part,sync:true});return true;   // (small things may scuttle; backing off is quick short steps)
+}
 function play(a,name,o={}){
-  if(!a.mixer||!CLIP[name])return null;
-  const act=a.acts[name]||(a.acts[name]=a.mixer.clipAction(CLIP[name]));
+  const clip=o.part?partClip(name,o.part):CLIP[name];if(!a.mixer||!clip)return null;
+  const key=o.part?name+'|'+o.part:name,act=a.acts[key]||(a.acts[key]=a.mixer.clipAction(clip));
   act.timeScale=o.speed||1;
   if(a.cur===act&&!o.restart)return act;
   act.reset();act.setLoop(o.once?THREE.LoopOnce:THREE.LoopRepeat,Infinity);act.clampWhenFinished=!!o.once;act.play();
+  if(o.sync&&a.cur&&a.gaitOn)act.time=a.cur.time/a.cur.getClip().duration*clip.duration;   // one stride into another, in step
   if(a.cur&&a.cur!==act)act.crossFadeFrom(a.cur,o.fade??.15,false);
-  a.cur=act;a.curName=name;return act;
+  a.cur=act;a.curName=key;a.gaitOn=!!o.sync;return act;
 }
 const turn=(a,to,dt,k=14)=>{a.face+=angDiff(to,a.face)*Math.min(1,k*dt);a.root.rotation.y=a.face;};
 const faceOf=ang=>Math.atan2(Math.cos(ang),Math.sin(ang));   // a game angle as the model's turn (models face +z)
 function flash(a,on,col,k=.9){for(const m of a.mats){const b=m.userData.base;if(!b||!b[0])continue;
   if(on){m.emissive.set(col||'#ffffff');m.emissiveIntensity=k;}else if(m.emissiveIntensity!==b[1]||!m.emissive.equals(b[0])){m.emissive.copy(b[0]);m.emissiveIntensity=b[1];}}}
 
+// When a clip's blow lands: the moment the weapon hand moves fastest (measured once per clip, on whoever asks first).
+const HITT=new Map();
+function hitT(a,name){
+  if(HITT.has(name))return HITT.get(name);const clip=CLIP[name],h=bone(a.root,'handslot.r')||bone(a.root,'hand.r');
+  if(!clip||!a.mixer||!h){return clip?clip.duration*.4:.3;}
+  a.mixer.stopAllAction();const act=a.mixer.clipAction(clip);act.reset();act.play();
+  const N=60,D=clip.duration,inv=new THREE.Matrix4(),v=new THREE.Vector3(),pts=[];
+  for(let i=0;i<=N;i++){act.time=Math.min(D*i/N,D-1e-4);upd(a,0);a.root.updateMatrixWorld(true);inv.copy(a.root.matrixWorld).invert();h.getWorldPosition(v).applyMatrix4(inv);pts.push([v.x,v.y,v.z]);}
+  let best=0,bi=N>>1;for(let i=2;i<N-1;i++){const d=Math.hypot(pts[i+1][0]-pts[i-1][0],pts[i+1][1]-pts[i-1][1],pts[i+1][2]-pts[i-1][2]);if(d>best){best=d;bi=i;}}
+  act.stop();a.mixer.stopAllAction();a.cur=null;a.curName='';a.up=null;
+  const t=D*bi/N;HITT.set(name,t);return t;
+}
+// Each skill's own motion. [clip, speed, lead]: lead is how long before the clip's blow it starts (skills land at once,
+// so the body is already most of the way through the swing when the effect shows).
+const SKILL_ANIM={circle:['2H_Melee_Attack_Spin',1.5,.16],sunder:['2H_Melee_Attack_Chop',1.3,.14],pierce:['2H_Melee_Attack_Stab',1.2,.1],storm:['2H_Melee_Attack_Stab',1.9,.07],
+  heavy:['2H_Melee_Attack_Chop',1,.3],riposte:['Block_Attack',1.3,.3],double:['Dualwield_Melee_Attack_Slice',1.4,.12],cuts:['Dualwield_Melee_Attack_Stab',2.2,.06],dance:['Dualwield_Melee_Attack_Chop',1.8,.08],
+  blink:['Dualwield_Melee_Attack_Chop',1.3,.1],vortex:['2H_Melee_Attack_Spinning',1.6,.15],viper:['Dualwield_Melee_Attack_Stab',1.2,.12],quake:['1H_Melee_Attack_Jump_Chop',1.3,.14],
+  volley:['2H_Ranged_Shoot',1.3,.1],lightarrow:['2H_Ranged_Shoot',1.3,.1],caustic:['2H_Ranged_Shoot',1.3,.1],split:['2H_Ranged_Shoot',1.3,.1],tornado:['2H_Ranged_Shoot',1.1,.12],rain:['2H_Ranged_Shoot',1,.15],
+  fireball:['Spellcast_Shoot',1.3,.14],frostbolt:['Spellcast_Shoot',1.5,.12],arc:['Spellcast_Shoot',1.5,.12],smite:['Spellcast_Shoot',1.3,.14],
+  icenova:['Spellcast_Raise',1.4,.2],heal:['Spellcast_Raise',1.3,.25],renewal:['Spellcast_Raise',1.3,.25],aegis:['Spellcast_Raise',1.3,.25],guard:['Block_Attack',1,.4],
+  meteor:['Spellcast_Long',1.4,.5],blizzard:['Spellcast_Long',1.4,.5],judgement:['Spellcast_Long',1.4,.5],partyheal:['Spellcast_Long',1.5,.5],massheal:['Spellcast_Long',1.5,.5],resurrect:['Spellcast_Long',1.2,.6],
+  raise:['Spellcast_Summon',1.3,.4],revive:['Spellcast_Summon',1.3,.4],pool:['Spellcast_Summon',1.4,.3],cry:['Taunt_Longer',1.6,.3],challenge:['Taunt_Longer',1.6,.3],berserk:['Taunt_Longer',1.6,.3],
+  smoke:['Throw',1.4,.2],deathmark:['Throw',1.4,.2],ballista:['Throw',1.2,.25],vanish:['Dodge_Backward',1.5,.1]};
+// The Gate Warden's moves (js/sim/warden.js: e.act, since e.actAt, landing after e.actD, facing e.aimA).
+// timed: the clip is drawn out so its blow lands exactly when the rules say (raise, hold, strike).
+const WACT={sweep:{c:'2H_Melee_Attack_Slice',timed:1},back:{c:'1H_Melee_Attack_Slice_Horizontal',timed:1},cleave:{c:'2H_Melee_Attack_Chop',timed:1},whirl:{c:'2H_Melee_Attack_Spinning',timed:1,loop:1},
+  leap:{c:'1H_Melee_Attack_Jump_Chop',timed:1},brace:{c:'Blocking'},charge:{c:'Running_B',sp:1.7},summon:{c:'Spellcast_Summon'},chains:{c:'Spellcast_Raise',sp:.8},vanish:{c:'Spellcast_Raise',sp:1.6},
+  appear:{c:'Idle_Combat'},roar:{c:'Taunt_Longer',sp:.75},reel:{c:'Hit_B',sp:.6}};
+function animWarden(a,e,dt,nx,nz){
+  const W=e.act==='reel'&&!(e.stun>0)?null:WACT[e.act],age=G.time-(e.actAt||0),D=Math.max(.05,e.actD||.3);let y=0,alpha=e.echo&&Math.sin(G.time*1.7+e.id)>.93?.35:1;   // (the echo flickers, now and then: the tell)
+  a.root.visible=!e.gone;
+  if(W){turn(a,faceOf(e.aimA||0),dt,e.act==='charge'?30:9);
+    if(a.wAct!==e.act||a.wAt!==e.actAt){a.wAct=e.act;a.wAt=e.actAt;a.wHit=W.timed?hitT(a,W.c):0;stopUp(a,.05);const c=play(a,W.c,{once:!!W.timed,restart:true,speed:W.sp||1,fade:.12});if(c&&W.timed)c.timeScale=0;}
+    if(W.timed&&a.cur){const u=clamp(age/D,0,1),f=u<.8?.6*(u/.8)*(u/.8)*(3-2*u/.8):.6+.4*((u-.8)/.2)**2,dur=a.cur.getClip().duration;
+      let t=age<D?a.wHit*f:a.wHit+(age-D)*1.1;if(W.loop&&t>dur-.05)t=a.wHit*.6+((t-a.wHit*.6)%(dur-a.wHit*.6-.05));a.cur.time=Math.min(t,dur-.02);}
+    if(e.act==='leap'&&age<D){const u=clamp((age/D-.25)/.75,0,1);y=Math.sin(u*Math.PI)*4.2;}
+    if(e.act==='vanish')alpha=1-clamp(age/D,0,1);else if(e.act==='appear')alpha=clamp(age/D,0,1);
+    if(e.act==='cleave'&&age<D){const u=age/D,b=bone(a.root,'handslot.r');if(b){b.getWorldPosition(tmpV);glow(tmpV.x,tmpV.y+.6,tmpV.z,'#fff3c0',.6+2.4*u,.35+.5*u);DLIGHTS.push({x:tmpV.x,y:tmpV.y,z:tmpV.z,col:'#ffe9a8',int:30*u,dist:10,pri:9});}}
+    a.root.rotation.x=e.act==='charge'?.28:e.act==='brace'?-.1:0;
+  }else{a.wAct=null;a.root.rotation.x=0;
+    if(e.stun>0||e.staggerT>0)play(a,'Hit_B',{speed:.6,fade:.1});
+    else if(!loco(a,a.vx,a.vz)){const t=nearestHero(e);if(t&&G.bossAwake)turn(a,Math.atan2(wx(t.x)-nx,wz(t.y)-nz),dt,6);play(a,G.bossAwake?'Idle_Combat':'Idle',{fade:.25});}
+    else if(Math.hypot(a.vx,a.vz)>.4)turn(a,Math.atan2(a.vx,a.vz),dt,8);
+  }
+  if((e.stun>0||e.staggerT>0)&&Math.random()<.5)glow(nx+rand(-1,1),4.6+rand(-.3,.3),nz+rand(-.6,.6),'#ffe9a8',.5,.8);   // reeling: stars about its head
+  a.root.position.y=y;fade(a,alpha);
+  const hit=e.flash>0;flash(a,hit||e.immune||e.enraged,hit?'#ffffff':e.immune?'#3fd0c0':'#ff3020',hit?.9:e.immune?.5:.25+.15*Math.sin(G.time*9));
+  a.root.rotation.z=0;   // (the recoil adds to the pose: it must start from upright every frame)
+  recoil(a,e,.35);
+  upd(a,dt);
+}
+// A blow shows on the one struck: knocked along the blow and bent back by it for a moment (e.hitA, e.hitW, e.hitAt).
+function recoil(a,e,k=1){
+  const age=G.time-(e.hitAt??-9);if(!(age>=0&&age<.2)||!e.hitW)return;
+  const u=Math.sin(age/.2*Math.PI),w=Math.min(2.6,e.hitW)*k,dx=Math.cos(e.hitA),dz=Math.sin(e.hitA),f=dx*Math.sin(a.face)+dz*Math.cos(a.face),r=dx*Math.cos(a.face)-dz*Math.sin(a.face);
+  a.root.position.x+=dx*u*.14*w;a.root.position.z+=dz*u*.14*w;a.root.rotation.x+=f*u*.22*w;a.root.rotation.z+=-r*u*.22*w;
+}
+
 // A player: you, or someone in your party online. wt: their weapon type.
 function heroActor(id,wt){
   const h=HERO[wt]||HERO.sword,key='hero:'+wt;let a=ACTORS.get(id);
   if(a&&a.key!==key){dropActor(a);a=null;}
-  if(!a){a=makeActor(key,h);ACTORS.set(id,a);}
+  if(!a){a=makeActor(key,Object.assign({xray:'#f0cf7a'},h));ACTORS.set(id,a);}
   return a;
 }
 // What skills leave on a player: an Aegis (a pale shield around them), an empowered weapon (a gold glow in hand),
@@ -558,22 +735,61 @@ function auras(pl){
   if(pl.emp){const a=typeof pl.aim==='number'?pl.aim:0;glow(x+Math.cos(a)*.7,1.3,z+Math.sin(a)*.7,'#ffe9a8',.9,.6+.2*Math.sin(t*9));}
   if(pl.hot){for(let i=0;i<3;i++){const k=(t*.8+i/3)%1;glow(x+Math.cos(i*2.1)*.5,.3+k*2.4,z+Math.sin(i*2.1)*.5,'#9be08a',.35,(1-k)*.7);}}
 }
+// How an actor truly moves, from where it was a frame ago: its velocity (world units a second, smoothed), and from
+// that the lean of its body: forward as it gathers speed, back as it brakes, into a turn. What loco() walks by.
+function motion(a,nx,nz,dt){
+  if(a.px==null||dt<=0||Math.hypot(nx-a.px,nz-a.pz)>4){a.px=nx;a.pz=nz;a.vx=a.vz=0;a.sp=0;a.fwd=0;a.lean=a.roll=0;a.pface=a.face;return;}   // just made, or it jumped (a door, a blink)
+  const k=Math.min(1,16*dt);a.vx+=((nx-a.px)/dt-a.vx)*k;a.vz+=((nz-a.pz)/dt-a.vz)*k;a.px=nx;a.pz=nz;a.sp=Math.hypot(a.vx,a.vz);
+}
+function lean(a,dt){
+  const f=a.vx*Math.sin(a.face)+a.vz*Math.cos(a.face),acc=(f-(a.fwd||0))/Math.max(dt,1e-3),spin=angDiff(a.face,a.pface??a.face)/Math.max(dt,1e-3);a.fwd=f;a.pface=a.face;
+  // the sprint clip pitches the whole body forward by itself, more than reads well from above: most of that is taken back
+  const k=Math.min(1,7*dt),sprint=a.sp>.5&&a.gaitClip==='Running_C'&&a.curName.startsWith('Running_C')?-.11:0;
+  a.lean+=(clamp(acc*.005,-.09,.09)+sprint-a.lean)*k;a.roll+=(clamp(-spin*.022,-.1,.1)*Math.min(1,a.sp/3)-a.roll)*k;
+  a.root.rotation.x=a.lean;a.root.rotation.z=a.roll;
+}
 function animHero(a,pl,wt,dt){
-  const h=HERO[wt]||HERO.sword;a.root.position.set(wx(pl.x),0,wz(pl.y));a.root.visible=pl.x>-900;
-  if(pl.dead){if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
-  const sw=pl.swing;let ang=typeof pl.aim==='number'?pl.aim:DIR_ANGLE[pl.dir||0];   // the mouse's aim, or the four-way facing
-  if(sw){ang=sw.a??ang;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing
-      const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;
-      play(a,clip,{once:true,restart:true,fade:.06,speed:CLIP[clip].duration/dur});}
+  const h=HERO[wt]||HERO.sword,nx=wx(pl.x),nz=wz(pl.y);motion(a,nx,nz,dt);a.root.position.set(nx,0,nz);a.root.visible=pl.x>-900;
+  if(pl.dead){stopUp(a,.05);a.root.rotation.x=a.root.rotation.z=0;if(a.curName!=='Death_A')play(a,'Death_A',{once:true,fade:.1});upd(a,dt);return;}
+  // Facing: toward the mouse's aim only while fighting (a swing, a block, a skill just cast, and a moment after);
+  // otherwise the way you run, so running reads as running. Without an aim (touch), the four-way facing.
+  const aim=typeof pl.aim==='number'?pl.aim:DIR_ANGLE[pl.dir||0],sw=pl.swing;
+  let cast=0;if(pl.cds)for(const k in pl.cds){const v=pl.cds[k]||0;if(v>((a.cdSeen||{})[k]||0)+.05)cast=1;}a.cdSeen=Object.assign({},pl.cds||{});
+  if(sw||pl.blocking||pl.parrying||cast)a.fight=.5;else a.fight=(a.fight||0)-dt;
+  if(a.sp>1.2&&(pl.moving||pl.dash))a.run=Math.atan2(a.vz,a.vx);   // (a game angle: x east, y south)
+  let ang=a.fight>0||a.run==null?aim:a.run;
+  // (nobody sprints backward: in the moment after a cast, still at a run and heading away from the aim, you look where you run)
+  if(a.fight>0&&!sw&&!pl.blocking&&!pl.parrying&&a.run!=null&&a.sp>(gaitOf(a).Running_Strafe_Left||4.5)*1.3&&Math.abs(angDiff(aim,a.run))>1.9)ang=a.run;
+  // a skill just used: its own motion, begun just before its blow
+  if(pl.castAt!=null&&pl.castAt!==a.castSeen){const first=a.castSeen===undefined;a.castSeen=pl.castAt;const K=SKILL_ANIM[pl.castId];
+    if(K&&!first&&G.time-pl.castAt<.3&&CLIP[K[0]]){const ht=hitT(a,K[0]),t0=Math.max(0,ht-K[2]*K[1]);a.fight=.6;a.lock=(CLIP[K[0]].duration-t0)/K[1]*.8;a.atk=K[0];a.atkSp=K[1];a.atkNew=true;
+      const u=playUp(a,K[0],{once:true,restart:true,fade:.05,speed:K[1]});if(u)u.time=t0;a.swT=sw?sw.t:-1;}}
+  if(sw){ang=sw.a??aim;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing: the arms take it at once, whatever the legs are doing
+      const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;a.atk=clip;a.atkSp=CLIP[clip].duration/dur;a.atkNew=true;
+      playUp(a,clip,{once:true,restart:true,fade:.06,speed:a.atkSp});}
     a.swT=sw.t;}else a.swT=-1;
   a.lock-=dt;
-  if(a.lock<=0){
-    if(pl.dash)play(a,'Dodge_Forward',{once:true,speed:1.6,fade:.08});
-    else if(pl.blocking||pl.parrying)play(a,'Blocking',{fade:.06});
-    else if(pl.moving)play(a,'Running_A',{speed:1.05});
-    else play(a,h.idle||'Idle',{fade:.2});
-  }
   turn(a,faceOf(ang),dt);
+  const moving=a.sp>.7&&(pl.moving||Math.abs(pl.kx||0)+Math.abs(pl.ky||0)>1);
+  const leaping=pl.dash&&(pl.dash.leap||pl.dash===2);a.leapT=leaping?(a.leapT||0)+dt:0;
+  if(leaping){   // Leap Slam: up and over, the axe coming down as you land
+    stopUp(a,.05);a.atk=null;const act=play(a,'1H_Melee_Attack_Jump_Chop',{once:true,fade:.05}),u=clamp(a.leapT/.32,0,1);
+    if(act)act.timeScale=0,act.time=hitT(a,'1H_Melee_Attack_Jump_Chop')*(.25+.75*u);a.root.position.y=Math.sin(u*Math.PI)*1.7;a.lock=.25;a.atk='1H_Melee_Attack_Jump_Chop';a.atkSp=1.1;a.landed=1;}
+  else if(pl.dash){   // the dodge, the way it goes against the way you face
+    stopUp(a,.05);a.atk=null;const D=pl.dash,rel=angDiff(Math.atan2(D.vx,D.vy),a.face),ar=Math.abs(rel);
+    play(a,ar<.8?'Dodge_Forward':ar>2.35?'Dodge_Backward':rel>0?'Dodge_Left':'Dodge_Right',{once:true,speed:1.6,fade:.08});}
+  else if(a.landed&&a.lock>0){if(a.cur)a.cur.timeScale=1.1;}   // the landing plays out
+  else if(a.lock>0&&a.atk){   // swinging: the legs keep running under it if you move, else the whole body swings
+    a.landed=0;if(!(moving&&loco(a,a.vx,a.vz,'lo'))){const was=a.cur,act=play(a,a.atk,{part:'lo',once:true,speed:a.atkSp,fade:.1,restart:a.atkNew});
+      if(act&&(a.atkNew||was!==act))act.time=a.up?a.up.time:0;}
+    a.atkNew=false;}
+  else{a.atk=null;a.landed=0;
+    if(pl.blocking||pl.parrying){   // the guard stays up while the legs walk
+      if(moving&&loco(a,a.vx,a.vz,'lo'))playUp(a,'Blocking',{fade:.08});else{stopUp(a,.08);play(a,'Blocking',{fade:.06});}}
+    else{stopUp(a);if(!(moving&&loco(a,a.vx,a.vz)))play(a,h.idle||'Idle',{fade:.18});}
+  }
+  const tw=a.up&&a.curName.endsWith('|lo')&&a.curName.startsWith('Running_Strafe_')?(a.curName.includes('Left')?-1.01:1.01):0;a.twist=(a.twist||0)+(tw-(a.twist||0))*Math.min(1,12*dt);if(Math.abs(a.twist)<.01)a.twist=0;
+  lean(a,dt);
   flash(a,pl.inv>0&&!pl.dash&&Math.floor(G.time*12)%2,'#ff3a2a',.3);
   upd(a,dt);
 }
@@ -584,19 +800,20 @@ function foeActor(e){
   let a=ACTORS.get('e'+e.id);if(a)return a;
   const d=foeDef(e),T_=ETYPES[e.type]||{},key=(e.boss?e.sprite:e.type)+(e.elite?'*':'');
   const eyes=e.boss?'#ff3b2a':e.elite?'#ffd45c':T_.eye;
-  a=makeActor(key,Object.assign({},d,{eyes,rim:true,s:(d.s||1)*(e.elite?1.12:1)}));ACTORS.set('e'+e.id,a);
+  a=makeActor(key,Object.assign({},d,{eyes,rim:true,xray:'#e0503f',s:(d.s||1)*(e.elite?1.12:1)}));ACTORS.set('e'+e.id,a);
   a.x=wx(e.x);a.z=wz(e.y);a.face=Math.random()*TAU;
   // something that arrived after the floor was built climbs out of the ground (raised, called, summoned)
-  if(performance.now()-FLOOR.born>1500&&!d.orb&&!d.prop&&!d.bloom&&!e.boss)play(a,'Skeletons_Awaken_Floor',{once:true,speed:1.6}),a.lock=1.1;
+  if(performance.now()-FLOOR.born>1500&&!d.orb&&!d.prop&&!d.bloom&&!e.boss&&!e.echo)play(a,'Skeletons_Awaken_Floor',{once:true,speed:1.6}),a.lock=1.1;
   return a;
 }
 const ATK=d=>d.two?'2H_Melee_Attack_Chop':'1H_Melee_Attack_Chop';
 function animFoe(a,e,dt){
   const d=a.o,nx=wx(e.x),nz=wz(e.y),mx=nx-a.x,mz=nz-a.z,moved=Math.hypot(mx,mz)/Math.max(dt,1e-3);
-  a.x=nx;a.z=nz;let y=0;
+  a.x=nx;a.z=nz;let y=0;motion(a,nx,nz,dt);
   if(d.orb){y=Math.sin(G.time*3+(e.ph||0))*.18;   // it drifts, and its flame licks upward
     a.root.userData.flame.forEach((f,i)=>{f.position.x=Math.sin(G.time*7+i*1.7)*.06*(i+1);f.material.opacity=(.45-i*.1)*(.75+.25*Math.sin(G.time*11+i));});}
   a.root.position.set(nx,y,nz);
+  if(e.act!==undefined&&a.mixer){animWarden(a,e,dt,nx,nz);return;}
   // where it looks: at whoever is nearest while it attacks, else where it walks
   const st=e.state,fighting=st==='windup'||st==='strike'||st==='draw'||st==='cast'||st==='channel'||st==='charge'||st==='shell';
   if(fighting){const t=nearestHero(e);if(t)turn(a,Math.atan2(wx(t.x)-nx,wz(t.y)-nz),dt,10);}
@@ -625,8 +842,9 @@ function animFoe(a,e,dt){
   else if(st==='shell')play(a,'Blocking',{fade:.1});
   else if(st==='charge')play(a,'Running_B',{speed:1.5,fade:.1});
   else if(e.stun>0)play(a,'Hit_A',{fade:.05});
-  else if(moved>.6)play(a,moved>7?'Running_A':'Walking_A',{speed:clamp(moved/(moved>7?9:4),.6,1.8),fade:.15});
-  else play(a,st==='idle'?'Idle':'Idle_Combat',{fade:.25});
+  else if(!loco(a,a.vx,a.vz))play(a,st==='idle'?'Idle':'Idle_Combat',{fade:.25});   // walking, running, or backing off, in step with the ground
+  lean(a,dt);
+  recoil(a,e,e.boss?.35:e.elite?.7:1);
   upd(a,dt);
 }
 function nearestHero(e){let best=null,bd=1e9;for(const q of[P,...(NET.on?NET.others:[])]){if(!q||q.dead||q.x<-900)continue;const d=hyp(q.x-e.x,q.y-e.y);if(d<bd){bd=d;best=q;}}return best;}
@@ -665,6 +883,10 @@ function arc(x,z,h,r,w,a0,a1,col,op=.9){const m=take(P_ARC),p=m.geometry.attribu
   for(let i=0;i<33;i++){const u=i/32,a=a0+(a1-a0)*u,k=Math.pow(u,1.6),cs=Math.cos(a),sn=Math.sin(a);
     p.setXYZ(i*2,x+cs*(r-w/2),h,z+sn*(r-w/2));p.setXYZ(i*2+1,x+cs*(r+w/2),h,z+sn*(r+w/2));c.setXYZ(i*2,k,k,k);c.setXYZ(i*2+1,k,k,k);}
   p.needsUpdate=c.needsUpdate=true;m.geometry.computeBoundingSphere();m.material.color.set(col).multiplyScalar(1.6);m.material.opacity=op;return m;}
+const DONUTS=new Map(),P_DONUT=pool(ground(unitRing,{c:'#ff2a1a',o:.25}));
+function donut(x,z,r,k,col,op){const g=take(P_DONUT),key=Math.round(k*50);if(!DONUTS.has(key))DONUTS.set(key,new THREE.RingGeometry(key/50,1,64));
+  g.userData.m.geometry=DONUTS.get(key);g.position.set(x,.08+op*.01,z);g.scale.setScalar(Math.max(r,.01));g.userData.m.material.color.set(col);g.userData.m.material.opacity=op;return g;}
+function lane(x,z,a,len,w,col,op,h=1.1){const g=take(P_LANE);g.position.set(x,h,z);g.rotation.y=-a;g.scale.set(Math.max(len,.01),1,w);g.userData.m.material.color.set(col);g.userData.m.material.opacity=op;return g;}
 function disc(x,z,r,col,op){const g=take(P_DISC);g.position.set(x,.08,z);g.scale.setScalar(Math.max(r,.01));g.userData.m.material.color.set(col);g.userData.m.material.opacity=op;return g;}
 function ring(x,z,r,col,op,y=.09){const g=take(P_RING);g.position.set(x,y,z);g.scale.setScalar(Math.max(r,.01));g.userData.m.material.color.set(col);g.userData.m.material.opacity=op;return g;}
 function glow(x,y,z,col,size,op=1){const s=take(P_GLOW);s.position.set(x,y,z);s.scale.setScalar(size);s.material.color.set(col);s.material.opacity=op;return s;}
@@ -690,7 +912,7 @@ let lastT=0;
 function frame3d(){
   fit();renderer.info.reset();
   if(me.g!==G||!FLOOR)build();
-  const now=performance.now(),dt=Math.min(.05,lastT?(now-lastT)/1000:0);lastT=now;
+  const now=performance.now(),dt=me.fixedDt??Math.min(.05,lastT?(now-lastT)/1000:0);lastT=now;   // (fixedDt: a test steps the drawing by hand)
   const F=FLOOR,t=G.time;
   // the camera: high in the south, looking down at you. Wider screens see more; tall ones step back.
   const px=wx(P.x),pz=wz(P.y),tgt=tmpV.set(px,.8,pz);
@@ -726,7 +948,7 @@ function frame3d(){
   for(const e of G.enemies){if(Math.abs(wx(e.x)-camT.x)>reachX||Math.abs(wz(e.y)-camT.z)>reachZ)continue;
     const a=foeActor(e);seenIds.add('e'+e.id);a.last=e;a.seen=now;animFoe(a,e,dt);
     if(a.o.orb)DLIGHTS.push({x:a.x,y:1.4,z:a.z,col:a.o.orb,int:3,dist:5,pri:0});
-    if(e.boss)DLIGHTS.push({x:a.x,y:5.5*(a.o.s||1)/2.7,z:a.z+1,col:'#ff3020',int:40,dist:16,pri:9});
+    if(e.boss&&!e.gone)DLIGHTS.push({x:a.x,y:5.5*(a.o.s||1)/2.7,z:a.z+1,col:e.phase>1?'#40c0b0':'#ff3020',int:40,dist:16,pri:9});
     if(e.burrowed){const m=take(P_MOUND);m.position.set(wx(e.x),0,wz(e.y));m.scale.set(1+.1*Math.sin(t*8),.35,1);}
     if(e.state==='channel'&&e.cx!=null){const sx=a.x,sz=a.z,ex=wx(e.cx),ez=wz(e.cy);
       line(u=>[sx+(ex-sx)*u,2.2*(1-u)+.5*u+Math.sin(u*Math.PI)*.8+Math.sin(u*18+t*8)*.06,sz+(ez-sz)*u],'#8cf07a');
@@ -755,7 +977,8 @@ function frame3d(){
   // telegraphs: red on the floor, filling as the blow comes
   for(const q of G.tele){const p=clamp(q.t/q.d,0,1),x=wx(q.x),z=wz(q.y);
     if(q.cone){for(const[r,op]of[[q.len,.18],[q.len*p,.32]]){const g=take(P_CONE);g.userData.m.geometry=sector(q.half);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.setScalar(wx(Math.max(r,.1)));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
-    else if(q.line){for(const[l,op]of[[q.len,.22],[q.len*p,.3]]){const g=take(P_LANE);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.set(wx(Math.max(l,.1)),1,wx(26));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
+    else if(q.line){for(const[l,op]of[[q.len,.22],[q.len*p,.3]]){const g=take(P_LANE);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.set(wx(Math.max(l,.1)),1,wx(q.w?q.w*2:26));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
+    else if(q.inner){const R_=wx(q.r),k=q.inner/q.r;donut(x,z,R_,k,'#ff2a1a',.18);donut(x,z,R_,k,'#ff2a1a',.3*p);ring(x,z,R_,'#ff4a2a',.9);ring(x,z,wx(q.inner),'#ff4a2a',.7);}
     else{disc(x,z,wx(q.r),'#ff2a1a',.16);disc(x,z,wx(q.r)*p,'#ff2a1a',.3);ring(x,z,wx(q.r),'#ff4a2a',.9);}}
   // your side's skills that land later (Judgement): a gold mark that fills as the strike comes
   for(const q of G.pfx||[]){const p=clamp(q.t/q.d,0,1),x=wx(q.x),z=wz(q.y),r=wx(q.r||8),tt=performance.now()/1000;
@@ -792,17 +1015,50 @@ function frame3d(){
   // effects
   for(const f of G.fx){const p=f.t/f.d,x=wx(f.x),z=wz(f.y),al=1-p*p;
     if(f.k==='slash'||f.k==='eslash'){const half=(f.arc||120)/2*Math.PI/180,r=wx(f.r);
-      if(f.k==='slash'&&f.arc>=360){const a=f.a+p*TAU;arc(x,z,1.15,r,.5,a-2.6,a,'#bfe9ff',al);}
-      else if(f.k==='slash'){const s=Math.min(1,p*1.6),a0=f.a+(f.dir>0?-half:half),a1=f.a+(f.dir>0?-half+2*half*s:half-2*half*s);arc(x,z,1.15,r,.45,a0,a1,'#cfe8ff',al);}
+      if(f.k==='slash'&&f.arc>=360){const a=f.a+p*TAU;arc(x,z,1.15,r,.5,a-2.6,a,f.c||'#bfe9ff',al);arc(x,z,1.2,r*.8,.25,a-1.6,a,'#ffffff',al*.7);}
+      else if(f.k==='slash'){const s=Math.min(1,.3+p*1.6),a0=f.a+(f.dir>0?-half:half),a1=f.a+(f.dir>0?-half+2*half*s:half-2*half*s);arc(x,z,1.15,r,f.c?.7:.45,a0,a1,f.c||'#cfe8ff',al);
+        if(f.c){arc(x,z,1.2,r*.86,.22,a0,a1,'#ffffff',al*.8);glow(x+Math.cos(a1)*r,1.2,z+Math.sin(a1)*r,f.c,1.6,al*.7);}}
+      else if(f.big){const s=Math.min(1,p*1.5),d=f.dir<0?-1:1,a0=f.a-d*half,a1=a0+d*2*half*s,h=2.2;   // the Warden's blade: a wide red wake at its own height
+        arc(x,z,h,r*.78,r*.44,a0,a1,f.c||'#ff9a7a',al*.75);arc(x,z,h+.05,r*.97,.3,a0,a1,'#ffffff',al);DLIGHTS.push({x:x+Math.cos(a1)*r*.8,y:h,z:z+Math.sin(a1)*r*.8,col:f.c||'#ff9a7a',int:30*al,dist:10,pri:8});}
       else arc(x,z,1.2,r,.35,f.a-1,f.a-1+2*Math.min(1,p*1.8),'#d9d4c4',al*.8);}
-    else if(f.k==='line'){const g=take(P_LANE);g.position.set(x,1.1,z);g.rotation.y=-f.a;g.scale.set(wx(f.len),1,f.w?.5:.18);g.userData.m.material.color.set('#cfe8ff');g.userData.m.material.opacity=al*.8;}
+    else if(f.k==='hit'){const w=f.w||.5,cs=Math.cos(f.a),sn=Math.sin(f.a),h=1.25,k=1-p;   // a blow landing: a burst of light and streaks flying on along the blow
+      glow(x,h,z,'#ffffff',(.25+.25*w)*(1+p),k*.45);glow(x,h,z,f.c,(.7+.6*w)*(1+p),k*.25);
+      const n=Math.min(6,2+Math.round(w*1.5));for(let i=0;i<n;i++){const sp=((i*.618)%1-.5)*(1.3+.3*w),c2=Math.cos(f.a+sp),s2=Math.sin(f.a+sp),L=(.35+.5*w)*(.6+((i*.37)%1)*.6),r0=.2+p*L*1.4;
+        line(u=>[x+c2*(r0+L*u*(1-p*.5)),h+(((i*.77)%1)-.4)*(.5+u*.8)*(1+p),z+s2*(r0+L*u*(1-p*.5))],i%2?'#ffffff':f.c,k*.8).material.color.multiplyScalar(.3);}
+      if(w>=1){ring(x-cs*.2,z-sn*.2,(.4+.9*w)*(.3+p),f.c,k*.8,.14);DLIGHTS.push({x,y:h,z,col:f.c,int:7*w*k,dist:6,pri:7});}}
+    else if(f.k==='thrust'){const L=wx(f.len)*Math.min(1,.4+p*(f.small?5:4)),c=f.c||'#cfe8ff',wd=f.big?.95:f.small?.3:.6,k=al,cs=Math.cos(f.a),sn=Math.sin(f.a);   // a lance of light down the line
+      lane(x,z,f.a,L,wd*(1-p*.6),c,k*.55);lane(x,z,f.a,L,wd*.3*(1-p*.5),'#ffffff',k,1.14);
+      glow(x+cs*L,1.15,z+sn*L,'#ffffff',f.small?.5:.9,k*.8);if(!f.small){glow(x+cs*L,1.15,z+sn*L,c,f.big?2.4:1.6,k*.4);
+        for(const sd of[-1,1])line(u=>[x+cs*L*u-sn*sd*(wd*.5+.25*Math.sin(u*Math.PI)),1.15,z+sn*L*u+cs*sd*(wd*.5+.25*Math.sin(u*Math.PI))],c,k*.8);
+        ring(x+cs*L*.3,z+sn*L*.3,.3+p*(f.big?2.2:1.4),c,k*.6,.14);DLIGHTS.push({x:x+cs*L*.6,y:1.2,z:z+sn*L*.6,col:c,int:9*k,dist:8,pri:6});}}
+    else if(f.k==='cut'){const L=wx(f.len),c=f.c||'#e8f4ff',s=Math.min(1,.45+p*3),cs=Math.cos(f.a),sn=Math.sin(f.a),x0=x-cs*L/2,z0=z-sn*L/2;   // one cut across a body
+      lane(x0,z0,f.a,L*s,.34*(1-p),c,al*.7,1.25);lane(x0,z0,f.a,L*s,.1,'#ffffff',al,1.28);glow(x0+cs*L*s,1.25,z0+sn*L*s,'#ffffff',.6,al*.7);}
+    else if(f.k==='quake'){const r=wx(f.r),c=f.c||'#c9a46a',g=Math.min(1,.35+p*2.4),n=f.big?11:7;   // the floor breaks: cracks run out, dust rises
+      disc(x,z,r*g,'#0a0806',(1-p)*.5);ring(x,z,r*Math.min(1.25,.3+p*1.6),c,al*.9,.12);ring(x,z,r*Math.min(1,.2+p*1.1),'#ffffff',al*.5,.13);
+      for(let i=0;i<n;i++){const a=i/n*TAU+(f.x*.13+f.y*.07)%1,j1=((i*.618)%1-.5)*.5,j2=((i*.33)%1-.5)*.6,L=r*(.7+((i*.41)%1)*.55)*g;
+        line(u=>[x+Math.cos(a+j1*u+j2*u*u)*L*u,.12,z+Math.sin(a+j1*u+j2*u*u)*L*u],c,al);}
+      for(let i=0;i<n;i++){const a=i/n*TAU+1,rr=r*(.4+((i*.53)%1)*.6);glow(x+Math.cos(a)*rr,.3+p*(1.2+(i%3)*.6),z+Math.sin(a)*rr,'#8a7a66',.9+p*1.4,(1-p)*.45);}
+      DLIGHTS.push({x,y:1,z,col:c,int:10*(1-p),dist:9,pri:7});}
+    else if(f.k==='pillar'){const c=f.c||'#ffe9a8',r=wx(f.r),k=1-p;const b=take(P_BEAM);b.position.set(x,0,z);b.scale.set(r*6*(1-p*.5),4,r*6*(1-p*.5));b.material.color.set(c);b.material.opacity=k*.75;   // light from above
+      glow(x,.6,z,'#ffffff',r*2.4,k);glow(x,3,z,c,r*3,k*.5);DLIGHTS.push({x,y:2,z,col:c,int:60*k,dist:16,pri:9});}
+    else if(f.k==='glint'){const k=Math.sin(Math.min(1,p*1.2)*Math.PI),h=5.4;glow(x,h,z,'#ffffff',1+3*k,k);glow(x,h,z,'#ffe9a8',2+6*k,k*.5);   // the blade catches the light: parry this one
+      for(let i=0;i<4;i++){const a=i*Math.PI/4+p*1.5,L=(i%2?1.2:2.4)*k;line(u=>[x+Math.cos(a)*L*(u*2-1),h+Math.sin(a)*L*(u*2-1),z],'#fff3c0',k);}}
+    else if(f.k==='chain'){const L=wx(f.len),w=wx((f.w||10)*2),k=1-p,cs=Math.cos(f.a),sn=Math.sin(f.a);   // a chain tears along its lane
+      lane(x,z,f.a,L,w*(1+p*.4),'#40d0b8',k*.5,.12);lane(x,z,f.a,L,w*.3,'#ffffff',k*.9,.14);
+      line(u=>[x+cs*L*u-sn*Math.sin(u*40+p*20)*.25,.5+.5*Math.abs(Math.sin(u*31+p*9))*k,z+sn*L*u+cs*Math.sin(u*40+p*20)*.25],'#7fe0d0',k);
+      for(let i=0;i<5;i++){const u=(i+.5)/5;glow(x+cs*L*u,.6+p,z+sn*L*u,'#7fe0d0',w*1.6,k*.4);}}
+    else if(f.k==='frost'){const r=wx(f.r),g=Math.min(1,p*6),k=p>.7?(1-p)/.3:1;for(let i=0;i<12;i++){const a=i/12*TAU+.2,rr=r*(.55+(i%3)*.2),sp=take(P_SPIKE);   // ice stands where the nova passed
+        sp.position.set(x+Math.cos(a)*rr,0,z+Math.sin(a)*rr);sp.scale.set(1.3,g*k*(1+(i%3)*.5),1.3);sp.material.color.set('#bfe6ff');sp.material.emissive.set('#3a7ab0');}
+      disc(x,z,r,'#9fd8ff',.14*k);}
+    else if(f.k==='line'){lane(x,z,f.a,wx(f.len)*Math.min(1,p*4),.5,'#cfe8ff',al*.6);}
+    else if(f.k==='oldline'){const g=take(P_LANE);g.position.set(x,1.1,z);g.rotation.y=-f.a;g.scale.set(wx(f.len),1,f.w?.5:.18);g.userData.m.material.color.set('#cfe8ff');g.userData.m.material.opacity=al*.8;}
     else if(f.k==='ring'){ring(x,z,wx(f.r)*p,f.c||'#cfe8ff',al*.9,.15);}
     else if(f.k==='pulse'){ring(x,z,wx(f.r)*Math.min(1,.3+p*1.2),f.c||'#9be08a',al*.9,.15);}
     else if(f.k==='boom'){const r=wx(f.r)*Math.min(1,p*1.8),c=f.c||'#ff8a2a';disc(x,z,r,f.c||'#f08a3c',(1-p)*.45);ring(x,z,r,'#ffe9a8',al);glow(x,1,z,c,r*3,(1-p)*.8);DLIGHTS.push({x,y:1.5,z,col:c,int:40*(1-p),dist:14,pri:8});}
     else if(f.k==='heal'){const r=wx(6+(f.r-6)*Math.min(1,p*1.7));ring(x,z,r,'#9be08a',al);disc(x,z,r,'#9be08a',(1-p)*.2);   // where the heal lands
       for(let i=0;i<6;i++){const a=i*1.05+.4;glow(x+Math.cos(a)*.8,.4+p*2.6+(i%3)*.3,z+Math.sin(a)*.8,i%2?'#ffe9a8':'#9be08a',.5,al);}
       DLIGHTS.push({x,y:1.5,z,col:'#9be08a',int:20*(1-p),dist:9,pri:7});}
-    else if(f.k==='spikes'){for(let i=0;i<8;i++){const a=i*.85,r=wx(3+(i%3)*6),s=take(P_SPIKE);s.position.set(x+Math.cos(a)*r,0,z+Math.sin(a)*r*.8);s.scale.set(1,(1-p)*(.9+(i%3)*.5),1);}}
+    else if(f.k==='spikes'){for(let i=0;i<8;i++){const a=i*.85,r=wx(3+(i%3)*6),s=take(P_SPIKE);s.position.set(x+Math.cos(a)*r,0,z+Math.sin(a)*r*.8);s.scale.set(1,(1-p)*(.9+(i%3)*.5),1);s.material.color.set('#d9d4c4');s.material.emissive.set('#000000');}}
     else if(f.k==='raise'){const x2=wx(f.x2),z2=wz(f.y2);line(u=>[x+(x2-x)*u,2.2*(1-u)+.5*u+Math.sin(u*Math.PI)*.8,z+(z2-z)*u],'#9be08a',al);}
     else if(f.k==='bolt'){const x2=wx(f.x2),z2=wz(f.y2);line(u=>[x+(x2-x)*u+(u>0&&u<1?rand(-.15,.15):0),1.4+(u>0&&u<1?rand(-.15,.15):0),z+(z2-z)*u],'#6fd6e6',al);}
   }
@@ -854,7 +1110,8 @@ function overlay(){
     c.fillStyle='#000';c.fillRect(X-1,Y-1,w+2,4);c.fillStyle=broken?(Math.floor(G.time*10)%2?'#ffffff':'#ffe9a8'):'#e8d9a8';c.fillRect(X,Y,Math.ceil(w*clamp(f,0,1)),2);};
   // enemy health, once hurt; elites and bosses by name
   for(const e of G.enemies){const a=ACTORS.get('e'+e.id);if(!a||e.burrowed)continue;const top=2.6*(a.o.s||1)*(e.elite?1.12:1);
-    if(e.hurtT>0&&!e.boss&&e.type!=='dummy'){const w=e.elite?74:58;bar(a.x,top,a.z,w,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
+    if(e.split&&!e.gone&&e.maxPoise)poiseBar(a.x,top+.3,a.z,90,e.staggerT>0?1:e.poise/e.maxPoise,e.staggerT>0);   // split: the true Warden is the one whose poise shows
+    if(e.hurtT>0&&!e.boss&&!e.echo&&e.type!=='dummy'){const w=e.elite?74:58;bar(a.x,top,a.z,w,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
       if(e.maxPoise)poiseBar(a.x,top,a.z,w,e.staggerT>0?1:e.poise/e.maxPoise,e.staggerT>0);}
     if(e.elite&&!e.boss&&hyp(e.x-P.x,e.y-P.y)<200)label((ETYPES[e.type].name||'')+', elite',a.x,top+.55,a.z,'#e9c87a','600 13px Cinzel,Georgia,serif');}
   // your party: name and health
@@ -902,21 +1159,28 @@ function npcs(dt){
     upd(a,dt);});
 }
 
-/* ---------- the character preview: your model, turning slowly, in the Gear panel ---------- */
-let PV=null;
-me.preview=function(cv){
+/* ---------- the character preview: your model, turning slowly, in the Gear panel and the creator ---------- */
+// One small renderer per canvas. wt: the weapon type it holds (the model follows it), the save's by default.
+const PVS=new Map();
+me.preview=function(cv,wt,school){
   if(!me.ready||Q.off)return false;
+  let PV=PVS.get(cv);
   if(!PV){const r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.1;r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
     const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(28,1,.1,50);cam.position.set(0,1.7,6.9);cam.lookAt(0,1.3,0);
     sc.add(new THREE.HemisphereLight('#c8d0e8','#2a2016',1.4));const k=new THREE.DirectionalLight('#ffe2c0',2.2);k.position.set(2,4,5);sc.add(k);
     const rim=new THREE.DirectionalLight('#8aa0ff',1.6);rim.position.set(-3,3,-4);sc.add(rim);
     const disc=new THREE.Mesh(new THREE.CircleGeometry(1.1,40),new THREE.MeshBasicMaterial({color:'#000',transparent:true,opacity:.45}));disc.rotation.x=-Math.PI/2;sc.add(disc);
-    PV={r,sc,cam,a:null,key:'',cv,t:0,last:0};}
-  const wt=S.equip.weapon.type,key='pv:'+wt+':'+S.equip.weapon.school;
-  if(PV.key!==key){if(PV.a)PV.sc.remove(PV.a.root);const h=HERO[wt]||HERO.sword;const a=makeActor(key,h);scene.remove(a.root);a.root.position.set(0,0,0);PV.sc.add(a.root);play(a,h.idle||'Idle');PV.a=a;PV.key=key;}
+    PV={r,sc,cam,a:null,key:'',cv,t:0,last:0};PVS.set(cv,PV);}
+  if(!wt){wt=S.equip.weapon.type;school=S.equip.weapon.school;}
+  const key='pv:'+wt+':'+school;
+  if(PV.key!==key){let rot=0;if(PV.a){rot=PV.a.root.rotation.y;PV.sc.remove(PV.a.root);}const h=HERO[wt]||HERO.sword;const a=makeActor(key,h);scene.remove(a.root);
+    a.root.position.set(0,0,0);a.root.rotation.y=rot;PV.sc.add(a.root);play(a,h.idle||'Idle');PV.a=a;PV.key=key;
+    if(PV.key0){play(a,h.atk[0],{once:true,restart:true});a.lock=1;}PV.key0=key;}   // a new weapon: a swing to show it off
   const w=cv.clientWidth||180,hh=cv.clientHeight||220;PV.r.setSize(w,hh,false);PV.cam.aspect=w/hh;PV.cam.updateProjectionMatrix();
   if(!PV.loop){PV.loop=true;const step=now=>{if(!PV.cv.isConnected||PV.cv.offsetParent===null){PV.loop=false;PV.last=0;return;}
-      const dt=PV.last?Math.min(.05,(now-PV.last)/1000):0;PV.last=now;PV.a.root.rotation.y+=dt*.5;upd(PV.a,dt);PV.r.render(PV.sc,PV.cam);requestAnimationFrame(step);};
+      const dt=PV.last?Math.min(.05,(now-PV.last)/1000):0;PV.last=now;PV.a.root.rotation.y+=dt*.5;
+      if(PV.a.lock>0){PV.a.lock-=dt;if(PV.a.lock<=0){const h=HERO[PV.key.split(':')[1]]||HERO.sword;play(PV.a,h.idle||'Idle',{fade:.25});}}
+      upd(PV.a,dt);PV.r.render(PV.sc,PV.cam);requestAnimationFrame(step);};
     requestAnimationFrame(step);}
   return true;
 };
@@ -924,7 +1188,23 @@ me.info=()=>renderer&&Object.assign({},renderer.info.render,{geometries:renderer
 function applyStyle(){const g=STYLE.grade||[1,1,0,0,0],u=grade.uniforms;u.con.value=g[0];u.sat.value=g[1];u.cold.value=g[2];u.grain.value=g[3];u.lift.value=g[4]||0;
   for(const k in PROTO)for(const p of PROTO[k].parts)if(p.mat.flatShading!==!!STYLE.flat){p.mat.flatShading=!!STYLE.flat;p.mat.needsUpdate=true;}}
 me.style=i=>{if(i!=null){STYLE=STYLES[i];applyStyle();me.g=null;for(const a of ACTORS.values())dropActor(a);ACTORS.clear();FREE.clear();}return STYLE.name;};
-me.debug=()=>({floaters:FLOOR&&FLOOR.floatSet?FLOOR.floatSet.list.slice(0,3):null,torches:FLOOR&&FLOOR.torches.length,top:TOP.skull_candle,candle:TOP.candle_thin});
+me.feet=id=>{const a=ACTORS.get(id);if(!a)return null;a.root.updateMatrixWorld(true);const v=new THREE.Vector3();return['foot.l','foot.r'].map(n=>{bone(a.root,n).getWorldPosition(v);return[v.x,v.y,v.z];}).concat([[a.curName,a.cur?+a.cur.timeScale.toFixed(2):0,+(a.sp||0).toFixed(2)]]);};
+me.ids=()=>[...ACTORS.keys()];
+// A check, for the tests and the tuning: walk an actor in a line at a speed (world units a second) facing a way
+// (relative to its travel: 0 ahead, PI/2 its left side leading...), and report how fast its planted feet slide over
+// the floor (0: they hold it), with the clip it chose. old: the way it was before (the jog at one fixed rate).
+me.slip=(id,speed,rel=0,old=false,force=null)=>{
+  const a=ACTORS.get(id);if(!a||!a.mixer)return null;const save=[a.root.position.clone(),a.face,a.root.visible];
+  const feet=footBones(a),v=new THREE.Vector3(),dt=1/60,fr=feet.map(f=>f.map(()=>[]));let x=0;
+  a.px=null;a.face=Math.PI/2-rel;a.root.rotation.set(0,a.face,0);a.gaitClip=null;stopUp(a,0);a.lock=0;   // travelling along +x
+  for(let i=0;i<220;i++){x+=speed*dt;motion(a,x,0,dt);a.root.position.set(x,0,0);
+    if(force)play(a,force,{speed:speed/gaitOf(a)[force]});else if(old)play(a,'Running_A',{speed:1.05});else if(!loco(a,a.vx,a.vz))play(a,'Idle');
+    upd(a,dt);if(i<60)continue;a.root.updateMatrixWorld(true);
+    feet.forEach((f,j)=>f.forEach((b,k)=>{b.getWorldPosition(v);fr[j][k].push([v.x,v.y,v.z]);}));}
+  const sp=plantedSpeeds(fr,dt),out={clip:a.curName,rate:+a.cur.timeScale.toFixed(2),slide:+(sp.reduce((p,q)=>p+q,0)/Math.max(1,sp.length)).toFixed(2)};
+  a.root.visible=save[2];
+  a.root.position.copy(save[0]);a.face=save[1];a.root.rotation.y=a.face;a.px=null;return out;};
+me.debug=()=>({foot:FOOT,gait:Object.fromEntries([...ACTORS.values()].map(a=>[a.key,gaitOf(a)])),floaters:FLOOR&&FLOOR.floatSet?FLOOR.floatSet.list.slice(0,3):null,torches:FLOOR&&FLOOR.torches.length,top:TOP.skull_candle,candle:TOP.candle_thin});
 me.zoom=z=>{if(z)zoom=z;return zoom;};
 me.use=()=>me.ready&&!Q.off&&!!G&&!!P;
 me.draw=function(){

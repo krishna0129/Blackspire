@@ -33,7 +33,7 @@ const FLOOR3_AI={
     if(d<42&&e.blinkCd<=0){const q=blinkSpot(e,70,105);if(q){burst(e.x,e.y,10,'#4b3f5c',50);e.x=q.x;e.y=q.y;burst(e.x,e.y,10,'#9be08a',50);e.blinkCd=5;sfx('cast');return;}}
     if(e.raiseCd<=0){const c=nearestCorpse(e,130);if(c){e.state='channel';e.t=1.2;e.chan=c;c.claim=e;e.cx=c.x;e.cy=c.y;return;}}
     const ux=dx/d,uy=dy/d,mv=d<64?-1:d>110?1:0;
-    if(mv){moveEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);e.moving=true;}
+    if(mv){walkEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);e.moving=true;}
     e.fire-=dt;
     if(e.fire<=0&&d<160&&los(e.x,e.y,P.x,P.y)){e.fire=rand(2.2,3);e.flash=.06;
       G.proj.push({x:e.x,y:e.y-6,vx:ux*T.pspeed,vy:uy*T.pspeed,dmg:e.dmg,life:2.4,c:T.pcol,fam:famOf(e),dtype:ETYPES[e.type].dtype});}
@@ -72,7 +72,7 @@ const FLOOR3_AI={
     if(e.state==='emerge')return;   // the telegraph's callback brings it up
     if(e.state==='exposed'){e.t-=dt;if(e.t<=0){e.state='shell';e.t=2.6;e.bite=0;}return;}
     if(e.state==='shell'){e.t-=dt;e.bite-=dt;
-      if(d>e.r+P.r+4){moveEnt(e,dx/d*e.speed*.6*dt,dy/d*e.speed*.6*dt);e.moving=true;}
+      if(d>e.r+P.r+4){walkEnt(e,dx/d*e.speed*.6*dt,dy/d*e.speed*.6*dt);e.moving=true;}
       else if(e.bite<=0){e.bite=1.1;e.lunge=.12;hurtPlayer(e.dmg,e);}
       if(e.t<=0){e.state='burrowed';e.burrowed=true;e.t=4;burst(e.x,e.y,10,'#4a3f2c',40);}
       return;}
@@ -90,7 +90,7 @@ function collectWalk(e,dt){
   if(d<b.r+e.r+2){const ph3=b.hp/b.maxHp<.33,h=Math.round(b.maxHp*(ph3?.12:.08));
     b.hp=Math.min(b.maxHp,b.hp+h);addNum(b.x,b.y-b.r-8,'+'+h,'heal');vfx({k:'pulse',x:b.x,y:b.y,r:26,t:0,d:.5,c:'#9be08a'});
     burst(e.x,e.y,10,'#9be08a',50);sfx('heal');e.dead=true;return;}
-  moveEnt(e,dx/d*e.speed*dt,dy/d*e.speed*dt);e.moving=true;
+  walkEnt(e,dx/d*e.speed*dt,dy/d*e.speed*dt);e.moving=true;
 }
 // How far a beam from (x,y) at angle a reaches before the first wall (or a sealed gate), up to len.
 function beamReach(x,y,a,len){const c=Math.cos(a),s=Math.sin(a);for(let r=4;r<len;r+=3)if(solid(x+c*r,y+s*r))return r;return len;}
@@ -111,7 +111,7 @@ function collectorAI(e,dt,d,ux,uy){
   const f=e.hp/e.maxHp,phase=f>.66?1:f>.33?2:3,r=G.boss;
   if(!G.beams)G.beams=[];
   if(e.state==='cast'){e.t-=dt;if(e.t<=0)e.state='chase';return;}
-  if(d>78)moveEnt(e,ux*e.speed*dt,uy*e.speed*dt);else if(d<36)moveEnt(e,-ux*e.speed*.6*dt,-uy*e.speed*.6*dt);
+  if(d>78)walkEnt(e,ux*e.speed*dt,uy*e.speed*dt);else if(d<36)walkEnt(e,-ux*e.speed*.6*dt,-uy*e.speed*.6*dt);
   e.raiseT=(e.raiseT??3)-dt;
   if(e.raiseT<=0){e.raiseT=phase===1?9:phase===2?8:7;
     const inRoom=G.corpses.filter(c=>c.x>r.x*TILE&&c.x<(r.x+r.w)*TILE&&c.y>r.y*TILE&&c.y<(r.y+r.h)*TILE).sort((a,b)=>hyp(a.x-e.x,a.y-e.y)-hyp(b.x-e.x,b.y-e.y));

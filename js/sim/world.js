@@ -5,7 +5,7 @@
 // Builds floor n. The layout depends only on (seed, n), so a server and its clients build the same map.
 function genFloor(n,seed){
   const rng=mulberry32((seed^Math.imul(n,2654435761))>>>0),ri=(a,b)=>a+Math.floor(rng()*(b-a+1));
-  const map=new Uint8Array(MW*MH),rooms=[];   // 0 void, 1 floor, 2 wall, 3 boss gate (solid until the boss dies)
+  const map=new Uint8Array(MW*MH),rooms=[];   // 0 void, 1 floor, 2 wall, 3 boss gate (solid until the boss dies), 4 clutter (a floor tile with something on it you cannot walk through)
   const fits=r=>rooms.every(o=>r.x+r.w+2<=o.x||o.x+o.w+2<=r.x||r.y+r.h+2<=o.y||o.y+o.h+2<=r.y);
   const start={x:ri(3,9),y:ri(4,MH-13),w:8,h:7,kind:'start'};rooms.push(start);
   // The boss chamber sits alone on the east side. Everything else stays west of `limit`,
@@ -83,10 +83,24 @@ function genFloor(n,seed){
       for(let y=Y;y<Y+h;y++)for(let x=X;x<X+w;x++)if(map[y*MW+x]===1)g.thorns[y*MW+x]=1;
     }
   }
+  // Clutter in the corners of ordinary rooms: barrels, crates, coffins, a heap of rubble. Each stands on one tile and
+  // blocks it (map 4), so you walk around it. Never on a tile beside a doorway. Its own random numbers, so the layouts
+  // of floors made before it stay the same; render3d.js draws what is here (k picks the kind, rot turns it).
+  const crng=mulberry32(((seed*7919)^Math.imul(n,40503)^0x5bd1e995)>>>0);g.clutter=[];
+  for(const r of rooms){
+    if(r.kind!=='room')continue;
+    for(const[i,j,c]of[[0,0,'n'],[r.w-1,0,'n'],[0,r.h-1,'s'],[r.w-1,r.h-1,'s']]){
+      const k=crng(),rot=crng()*6;if(crng()<.45)continue;const x=r.x+i,y=r.y+j;if(map[y*MW+x]!==1)continue;
+      const door=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]].some(([X,Y])=>(X<r.x||X>=r.x+r.w||Y<r.y||Y>=r.y+r.h)&&map[Y*MW+X]!==2&&map[Y*MW+X]!==0);
+      if(door||g.chests.some(q=>Math.floor(q.x/TILE)===x&&Math.floor(q.y/TILE)===y))continue;
+      map[y*MW+x]=4;g.clutter.push({x,y,c,k,rot,room:rooms.indexOf(r)});}
+  }
   // The boss is always there, even on a floor you have cleared: a rematch is optional (the floor gate takes you past it)
   // and it is how boss loot is farmed. Its looks and behaviour come from the floor's entry in FLOORS.
   const b=makeEnemy('boss',(cx(boss)+.5)*TILE,(cy(boss)+.5)*TILE,hpM,dmgM,false),B=FL.boss;
-  Object.assign(b,{boss:true,name:B.name,fam:B.fam||null,sprite:B.sprite,ai:B.ai,mres:B.mres||0,calls:B.calls||null,atkT:1.5,summons:0});g.enemies.push(b);g.bossEnt=b;
+  Object.assign(b,{boss:true,name:B.name,fam:B.fam||null,sprite:B.sprite,ai:B.ai,mres:B.mres||0,calls:B.calls||null,atkT:1.5,summons:0});
+g.enemies.push(b);g.bossEnt=b;
+  if(B.hpX){b.hp=b.maxHp=Math.round(b.maxHp*B.hpX);}   // a boss rebuilt for a long fight (docs/design/bosses.md)
   if(B.corpses){   // bodies lying in the chamber, for the boss to raise
     const pts=[[2,2],[boss.w-3,2],[2,boss.h-3],[boss.w-3,boss.h-3],[boss.w>>1,2],[boss.w>>1,boss.h-3]];
     g.arena=pts.map(([i,j])=>({x:(boss.x+i+.5)*TILE,y:(boss.y+j+.5)*TILE}));

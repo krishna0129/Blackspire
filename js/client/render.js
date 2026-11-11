@@ -235,7 +235,7 @@ function drawMini(){
   const id=mctx.createImageData(MW,MH),d=id.data,r=G.boss;
   if(G.village){for(let i=0;i<MW*MH;i++){if(G.map[i]!==1)continue;const j=i*4;d[j]=58;d[j+1]=84;d[j+2]=50;d[j+3]=255;}
     const sq=G.home;d[((sq.y/TILE|0)*MW+(sq.x/TILE|0))*4+2]=230;}
-  else for(let i=0;i<MW*MH;i++){const m=G.map[i];if(!G.seen[i]||(m!==1&&m!==3))continue;const x=i%MW,y=(i/MW)|0,inB=x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h,j=i*4;
+  else for(let i=0;i<MW*MH;i++){const m=G.map[i];if(!G.seen[i]||(m!==1&&m!==3&&m!==4))continue;const x=i%MW,y=(i/MW)|0,inB=x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h,j=i*4;
     if(m===3){d[j]=226;d[j+1]=80;d[j+2]=74;d[j+3]=255;continue;}
     if(inSafe(x*TILE+8,y*TILE+8)){d[j]=168;d[j+1]=124;d[j+2]=72;d[j+3]=255;continue;}   // safe rooms show amber
     d[j]=inB?120:92;d[j+1]=inB?56:90;d[j+2]=inB?64:112;d[j+3]=255;}

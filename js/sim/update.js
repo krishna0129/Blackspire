@@ -37,7 +37,7 @@ function simUpdate(dt){
       const ox=p.x,oy=p.y;p.x+=p.vx*dt/2;p.y+=p.vy*dt/2;
       if(solid(p.x,p.y)){p.life=0;if(fire)explode(ox,oy,p.use);else{shotEnds(p,ox,oy);burst(ox,oy,3,p.k==='arrow'?'#8d8b98':'#cfc8ff',30);}break;}
       for(const e of G.enemies){if(e.dead||hyp(e.x-p.x,e.y-p.y)>e.r+(fire?4:3))continue;
-        if(p.f==='split'){if((p.hit||(p.hit=new Set())).has(e))continue;p.hit.add(e);damageEnemy(e,p.mult,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use});continue;}   // it goes on through
+        if(p.f==='split'){if((p.hit||(p.hit=new Set())).has(e))continue;p.hit.add(e);damageEnemy(e,p.mult,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use});if(p.hit.size>=REACH.split)p.life=0;continue;}   // it goes on through, up to four enemies
         p.life=0;if(fire)explode(p.x,p.y,p.use);
         else{if(damageEnemy(e,p.mult||1,{fx:ox-p.vx,fy:oy-p.vy,tags:p.tags,use:p.use,slow:p.k==='frost'?3:0}))gainMomentum();
           if(p.f==='light')chain(e,3,.8,p.tags,p.use);shotEnds(p,p.x,p.y);}
@@ -81,6 +81,7 @@ function simUpdate(dt){
 function resetBoss(){
   const b=G.bossEnt;G.bossAwake=false;G.tele=[];G.timers=[];
   Object.assign(b,{hp:b.maxHp,state:'idle',summons:0,atkT:1.5,stun:0,kx:0,ky:0,bleedT:0,sunder:0,x:(G.boss.x+G.boss.w/2)*TILE,y:(G.boss.y+G.boss.h/2)*TILE});
+  if(b.ai==='warden'){wardenInit(b);b.phase=null;}
   G.enemies=G.enemies.filter(e=>e===b||!e.summoned);G.beams=[];bossBar(null);
   if(G.arena){G.corpses=G.corpses.filter(c=>!c.arena);for(const q of G.arena)G.corpses.push({x:q.x,y:q.y,t:1e9,arena:true});}   // the chamber's bodies are back
 }
@@ -136,8 +137,8 @@ function updatePlayer(dt){
       const E=takeEmpower();   // an empowered attack (Smite and the like) hits harder
       if(ST.magic)castBolt(E.m);
       else if(ST.ranged)fireArrow(P.aim,E.m);
-      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,E.m,{melee:true,pz:E.pz,poison:E.poison});
-      if(ST.thrust)vfx({k:'line',x:P.x,y:P.y,a:s.a,len:ST.range+5,t:0,d:.1});else slashFx(s.a,ST.arc,ST.range,s.dir,.14);}}
+      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,E.m,{melee:true,pz:E.pz,poison:E.poison,w:E.c?1.4:undefined,c:E.c});   // an empowered blow lands in its skill's colour, harder
+      if(ST.thrust)vfx({k:'thrust',x:P.x,y:P.y,a:s.a,len:ST.range+5,c:E.c,small:1,t:0,d:.14});else vfx({k:'slash',x:P.x,y:P.y,a:s.a,arc:ST.arc,r:ST.range,dir:s.dir,c:E.c,t:0,d:E.c?.2:.14});}}
     if(s.t>=s.d)P.swing=null;}
 }
 // Aiming, blocking and moving. Online, each browser runs this for its own player so movement answers at once, and
@@ -164,15 +165,26 @@ function steerPlayer(dt){
   // A blow's push (P.kx, P.ky), set by hurtPlayer; it dies away quickly.
   if(Math.abs(P.kx)+Math.abs(P.ky)>1){if(!P.remote)moveEnt(P,P.kx*dt,P.ky*dt);const k=Math.max(0,1-10*dt);P.kx*=k;P.ky*=k;}else P.kx=P.ky=0;
   if(P.dash){
-    const D=P.dash;if(!P.remote)moveEnt(P,D.vx*dt,D.vy*dt);D.t-=dt;
+    const D=P.dash;if(!P.remote||D.leap)moveEnt(P,D.vx*Math.min(dt,D.t),D.vy*Math.min(dt,D.t));D.t-=dt;   // (a Leap Slam is the server's to move: it ends in a blow)
     if(Math.random()<.7)part({x:P.x,y:P.y+rand(-6,4),vx:0,vy:0,t:0,d:.22,c:'#4a4a5e'});
-    if(D.t<=0)P.dash=null;
+    if(D.t<=0){if(D.leap&&P.remote)P.tp++;P.dash=null;P.vx=mx*ST.move;P.vy=my*ST.move;}   // you come out of a dash already running
   }else{
-    // you keep moving while you attack, slower (COMBAT.swingSlow); staggered, you don't move at all
-    const sp=P.stagger>0?0:ST.move*(P.swing?COMBAT.swingSlow:P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1)*(P.buff&&P.buff.id==='morning'?1.08:1);
+    // you keep moving while you attack, slower (COMBAT.swingSlow), through the whole of a string of swings (attack
+    // held: the gaps between swings no longer let you bolt); staggered, you don't move at all
+    const sp=P.stagger>0?0:ST.move*(P.swing||(P.in.atk&&P.atkCd>0&&!P.safe)?COMBAT.swingSlow:P.blocking?SHIELDS[ST.shield].slow:1)*(onThorns(P.x,P.y)?THORN_SLOW:1)*(P.food<NEED_LOW?.9:1)*(P.buff&&P.buff.id==='morning'?1.08:1);
     if(P.lunge>0){P.lunge-=dt;if(!P.remote)moveEnt(P,Math.cos(P.aim)*110*dt,Math.sin(P.aim)*110*dt);}
-    if(!P.remote)moveEnt(P,mx*sp*dt,my*sp*dt);
-    P.moving=m>.1&&sp>0;if(P.moving)P.walk+=dt*(sp/64)*7;
+    // Your pace is a velocity that gathers and sheds speed (COMBAT.walk): about a tenth of a second to full speed,
+    // a little less to stop, and a reversal has to brake first. Short enough to stay sharp, long enough that the
+    // body has weight. (Remote: the server takes the position the client sends.)
+    if(P.remote)P.moving=m>.1&&sp>0;
+    else{
+      const W=COMBAT.walk,tx=mx*sp,ty=my*sp,ex=tx-P.vx,ey=ty-P.vy,ed=hyp(ex,ey);
+      if(ed>.01){const pushing=m>.1&&sp>0,step=Math.min(ed,ST.move/(pushing?W.up:W.down)*dt);P.vx+=ex/ed*step;P.vy+=ey/ed*step;}else{P.vx=tx;P.vy=ty;}
+      const ox=P.x,oy=P.y;moveEnt(P,P.vx*dt,P.vy*dt);
+      if(dt>0){if(Math.abs(P.x-ox)<1e-6&&Math.abs(P.vx)>1)P.vx*=.5;if(Math.abs(P.y-oy)<1e-6&&Math.abs(P.vy)>1)P.vy*=.5;}   // a wall takes the pace out of you
+      P.moving=hyp(P.vx,P.vy)>ST.move*.08;
+    }
+    if(P.moving)P.walk+=dt*(sp/64)*7;
   }
 }
 // where a skill's shot stops (it hit, met a wall, or ran out): a Caustic Arrow leaves poison, a Tornado Shot bursts
@@ -191,7 +203,7 @@ function updateEnemy(e,dt){   // enemies never step into a safe room, whether wa
 function updateEnemyCore(e,dt){
   if(e.flash>0)e.flash-=dt;if(e.hurtT>0)e.hurtT-=dt;if(e.sunder>0)e.sunder-=dt;if(e.staggerT>0)e.staggerT-=dt;
   // poise comes back after a few seconds without a blow (COMBAT.epoise)
-  if(e.maxPoise&&e.poise<e.maxPoise&&G.time-(e.poiseT??-9)>COMBAT.epoise.delay)e.poise=Math.min(e.maxPoise,e.poise+e.maxPoise*COMBAT.epoise.regen*dt);
+  if(e.maxPoise&&e.poise<e.maxPoise&&G.time-(e.poiseT??-9)>COMBAT.epoise.delay)e.poise=Math.min(e.maxPoise,e.poise+e.maxPoise*(e.poiseBack||COMBAT.epoise.regen)*dt);
   if(ETYPES[e.type].dummy){   // a scarecrow: shrugs off knockback and stuns, and is whole again once left alone
     e.kx=e.ky=0;e.stun=0;if(e.hurtT<=0){e.hp=e.maxHp;e.bleedT=0;}else if(e.bleedT>0){e.bleedT-=dt;e.bleedAcc+=e.bleedDps*dt;
       if(e.bleedAcc>=1){const d=Math.floor(e.bleedAcc);e.bleedAcc-=d;e.hp-=d;addNum(e.x,e.y-e.r-5,d,'bleed');}}
@@ -205,7 +217,7 @@ function updateEnemyCore(e,dt){
   if(e.state==='idle'){if(!e.boss&&d<96&&!P.dead&&!P.locked&&!P.safe)e.state='chase';return;}
   if(P.dead)return;
   if(Math.abs(dx)>2)e.face=dx>0?1:-1;
-  if(e.boss)return updateBoss(e,dt,d,ux,uy);
+  if(e.boss||e.ai==='warden')return updateBoss(e,dt,d,ux,uy);
   const T=ETYPES[e.type];
   // separation
   let sx=0,sy=0;for(const o of G.enemies){if(o===e||o.dead)continue;const ox=e.x-o.x,oy=e.y-o.y,od=hyp(ox,oy),min=e.r+o.r;if(od<min&&od>.01){sx+=ox/od*(min-od);sy+=oy/od*(min-od);}}
@@ -214,13 +226,13 @@ function updateEnemyCore(e,dt){
   if(T.ai)return zeldaAI(e,dt,T,dx,dy,d);
   if(T.ranged){
     let mv=0;if(d<52)mv=-1;else if(d>92)mv=1;
-    moveEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);
+    walkEnt(e,ux*mv*e.speed*dt,uy*mv*e.speed*dt);
     e.fire-=dt;
     if(e.fire<=0&&d<140&&los(e.x,e.y,P.x,P.y)){e.fire=rand(1.9,2.6);e.flash=.06;const v=T.pspeed||88;G.proj.push({x:e.x,y:e.y,vx:ux*v,vy:uy*v,dmg:e.dmg,life:2.4,c:T.pcol,fam:famOf(e),dtype:ETYPES[e.type].dtype});}
     return;
   }
   if(e.state==='chase'){
-    moveEnt(e,ux*e.speed*dt,uy*e.speed*dt);
+    walkEnt(e,ux*e.speed*dt,uy*e.speed*dt);
     if(d<e.r+P.r+T.reach){e.state='windup';e.t=T.windup;}
   }else if(e.state==='windup'){
     e.t-=dt;if(e.t<=0){if(d<e.r+P.r+T.reach+7)hurtPlayer(e.dmg,e);e.state='recover';e.t=T.recover;e.lunge=.12;}
@@ -234,7 +246,7 @@ function updateEnemyCore(e,dt){
      darknut  bone knight: turns slowly, shield stops everything from its front, heavy swing with a long recovery */
 function faceTo(e,dx,dy){e.dir=Math.abs(dx)>=Math.abs(dy)?(dx>0?3:2):(dy>0?0:1);}
 function stepAxis(e,dt,dx,dy,speed){
-  const a=DIR_ANGLE[e.dir],ox=e.x,oy=e.y;moveEnt(e,Math.cos(a)*speed*dt,Math.sin(a)*speed*dt);e.moving=true;
+  const a=DIR_ANGLE[e.dir],ox=e.x,oy=e.y;walkEnt(e,Math.cos(a)*speed*dt,Math.sin(a)*speed*dt);e.moving=true;
   if(hyp(e.x-ox,e.y-oy)<speed*dt*.3)e.dir=e.dir>=2?(dy>0?0:1):(dx>0?3:2);   // walked into a wall: try the other axis
 }
 function zeldaAI(e,dt,T,dx,dy,d){
@@ -283,6 +295,7 @@ function zeldaAI(e,dt,T,dx,dy,d){
 function updateBoss(e,dt,d,ux,uy){
   const rage=e.hp/e.maxHp<.3?.7:1;
   if(e.ai==='collector')return collectorAI(e,dt,d,ux,uy);
+  if(e.ai==='warden')return wardenAI(e,dt,d,ux,uy);
   if(e.state==='charge'){
     moveEnt(e,e.cvx*dt,e.cvy*dt);e.t-=dt;
     forPlayers(pl=>{if(!pl.dead&&!e.chHit.includes(pl.id)&&hyp(pl.x-e.x,pl.y-e.y)<e.r+pl.r+2){e.chHit.push(pl.id);hurtPlayer(e.dmg*1.3,e,true);}});
@@ -291,7 +304,7 @@ function updateBoss(e,dt,d,ux,uy){
     return;
   }
   if(e.state==='cast'){e.t-=dt;if(e.t<=0)e.state='chase';return;}
-  if(d>e.r+P.r+6)moveEnt(e,ux*e.speed*dt,uy*e.speed*dt);
+  if(d>e.r+P.r+6)walkEnt(e,ux*e.speed*dt,uy*e.speed*dt);
   const need=e.summons===0?.66:e.summons===1?.33:-1;
   if(e.hp/e.maxHp<need){e.summons++;banner(e.ai==='regent'?'The dead answer':'It calls the swarm','',1400);
     for(let i=0;i<(e.ai==='regent'?2:3+Math.min(3,G.n-1));i++){const a=Math.random()*TAU,s=makeEnemy(e.calls||'skitter',e.x,e.y,G.hpM,G.dmgM,false);s.state='chase';s.summoned=true;s.kx=Math.cos(a)*120;s.ky=Math.sin(a)*120;G.enemies.push(s);}}

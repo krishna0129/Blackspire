@@ -6,6 +6,7 @@
 //   git clone --depth 1 https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Skeletons-1.0
 //   git clone --depth 1 https://github.com/KayKit-Game-Assets/KayKit-Halloween-Bits-1.0
 // Clone them side by side, then:  node tools/pack-models.mjs <folder with the four clones>
+// To repack the animations alone (it needs only the Skeletons clone):  node tools/pack-models.mjs <folder> anims
 //
 // What comes out, each one a .glb packed as base64 so the game opens from a plain file with no server:
 //   props   every prop, wall, floor tile and weapon the floors use, one named node each, sharing their textures
@@ -20,6 +21,7 @@ import fs from 'node:fs';
 // Disposing an animation leaves its samplers holding their keyframes, so those go too (prune then drops the orphaned keyframes).
 const dropClip=a=>{for(const c of a.listChannels())c.dispose();for(const s of a.listSamplers())s.dispose();a.dispose();};import path from 'node:path';
 
+const ONLY=process.argv[3]||'';   // 'anims': the clips alone, the rest of js/vendor/models.js kept as it is
 const SRC=process.argv[2];if(!SRC){console.error('usage: node tools/pack-models.mjs <folder with the KayKit clones>');process.exit(1);}
 const find=(pack,name)=>{   // a model by file name, wherever it sits in a pack
   const root=path.join(SRC,pack);const out=[];
@@ -53,8 +55,10 @@ for(const n of['pot_large','table_round_A','crate_potatoes','crate_carrots','cra
 for(const n of['table_medium','table_medium_long','chair_A_wood','lamp_standing'])PROPS[n]=[FUR,n+'.gltf'];
 const CHARS={Knight:ADV,Barbarian:ADV,Mage:ADV,Rogue:ADV,Rogue_Hooded:ADV,Skeleton_Warrior:SKL,Skeleton_Mage:SKL,Skeleton_Minion:SKL,Skeleton_Rogue:SKL};
 const CLIPS=['Idle','Idle_B','Idle_Combat','Unarmed_Idle','2H_Melee_Idle','Walking_A','Walking_D_Skeletons','Running_A','Running_B',
+  'Running_C','Running_Strafe_Left','Running_Strafe_Right','Walking_Backwards','Dodge_Backward','Dodge_Left','Dodge_Right',   // moving any way while facing another
   '1H_Melee_Attack_Slice_Horizontal','1H_Melee_Attack_Slice_Diagonal','1H_Melee_Attack_Chop','1H_Melee_Attack_Stab',
   '2H_Melee_Attack_Chop','2H_Melee_Attack_Slice','2H_Melee_Attack_Spin','2H_Melee_Attack_Stab','Dualwield_Melee_Attack_Slice','Dualwield_Melee_Attack_Stab',
+  '1H_Melee_Attack_Jump_Chop','2H_Melee_Attack_Spinning','Dualwield_Melee_Attack_Chop','Block_Attack','Unarmed_Melee_Attack_Kick','Throw','Jump_Full_Short','Spawn_Air','Taunt_Longer',   // skills and the bosses
   '1H_Ranged_Shoot','2H_Ranged_Shoot','2H_Ranged_Aiming','Spellcast_Shoot','Spellcasting','Spellcast_Summon','Spellcast_Raise','Spellcast_Long',
   'Blocking','Block_Hit','Dodge_Forward','Hit_A','Hit_B','Death_A','Death_A_Pose','Death_C_Skeletons','Death_C_Pose',
   'Skeletons_Awaken_Floor','Skeletons_Inactive_Floor_Pose','Spawn_Ground','Taunt','Cheer','Use_Item','Sit_Floor_Idle','Interact','PickUp'];
@@ -67,7 +71,7 @@ const squeeze=async(doc,anim,plain)=>{
 const out={};
 
 // props: every model's nodes under one node named after it, in one scene
-{
+if(!ONLY){
   const doc=new (await import('@gltf-transform/core')).Document();doc.createBuffer();
   const scene=doc.createScene('props');
   for(const[k,[pack,file]]of Object.entries(PROPS)){
@@ -80,8 +84,6 @@ const out={};
   for(const b of doc.getRoot().listBuffers().slice(1))b.dispose();
   for(const a of doc.getRoot().listAccessors())a.setBuffer(doc.getRoot().listBuffers()[0]);
   doc.getRoot().setDefaultScene(scene);
-  {const {getBounds}=await import('@gltf-transform/functions');const sz={};for(const h of scene.listChildren()){const b=getBounds(h);sz[h.getName()]=[b.max[0]-b.min[0],b.max[1]-b.min[1],b.max[2]-b.min[2]].map(v=>+v.toFixed(2));}
-    fs.writeFileSync('/tmp/claude-0/-home-claude/b2c8b46c-bdce-538a-96a6-f470e8d698c7/scratchpad/sizes.json',JSON.stringify(sz));}
   out.props=await squeeze(doc);
 }
 // the clips, from one skeleton (every character has the same rig)
@@ -93,11 +95,17 @@ const out={};
   for(const s of doc.getRoot().listSkins())s.dispose();
   out.anims=await squeeze(doc,true);
 }
-for(const[k,pack]of Object.entries(CHARS)){
+if(!ONLY)for(const[k,pack]of Object.entries(CHARS)){
   const doc=await io.read(find(pack,k+'.glb'));for(const a of doc.getRoot().listAnimations())dropClip(a);
   out[k]=await squeeze(doc,false,true);   // not quantized: render3d.js joins each body into one mesh, which needs plain vertices
 }
 let js='\'use strict\';\n// Blackspire: the 3D models, packed by tools/pack-models.mjs from KayKit\'s CC0 packs (kaylousberg.com). Generated: do not edit.\nconst MODELS={\n';
 let total=0;for(const[k,b]of Object.entries(out)){total+=b.length;console.log(k.padEnd(18),(b.length/1024).toFixed(0)+' KB');js+=`${JSON.stringify(k)}:${JSON.stringify(b.toString('base64'))},\n`;}
-js+='};\n';fs.mkdirSync('js/vendor',{recursive:true});fs.writeFileSync('js/vendor/models.js',js);
+js+='};\n';
+if(ONLY){   // put the new entries in place of the old, line for line
+  let old=fs.readFileSync('js/vendor/models.js','utf8');
+  for(const[k,b]of Object.entries(out)){const at=old.indexOf(JSON.stringify(k)+':"'),end=old.indexOf('\n',at);if(at<0)throw new Error('no '+k+' in models.js');
+    old=old.slice(0,at)+`${JSON.stringify(k)}:${JSON.stringify(b.toString('base64'))},`+old.slice(end);}
+  js=old;}
+fs.mkdirSync('js/vendor',{recursive:true});fs.writeFileSync('js/vendor/models.js',js);
 console.log('total',(total/1024).toFixed(0)+' KB','→ js/vendor/models.js',(js.length/1024).toFixed(0)+' KB');

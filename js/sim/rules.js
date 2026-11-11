@@ -149,7 +149,7 @@ function makePlayer(id,save){
   if(save.inRoom){wake(save);save.inRoom=false;}   // logged off in a room at the inn: that was a night's sleep   // every arrival on a floor comes through here, in single player and on the server
   const st=computeStats(save.char,save.equip,save.tree,save.fat||0),s=G.start,cp=save.cpFloor===G.n&&save.cp>0&&G.points&&G.points[save.cp]?G.points[save.cp]:null;
   return{id,S:save,ST:st,x:cp?cp.x:(s.x+s.w/2)*TILE,y:cp?cp.y+24:(s.y+s.h/2)*TILE,safe:true,locked:false,r:5,cr:4,hp:st.maxHp,mp:st.maxMp,sta:st.maxSta,poise:st.maxPoise,food:save.food==null?100:save.food,drink:save.drink==null?100:save.drink,buff:save.buff?Object.assign({},save.buff):null,fat:save.fat||0,rested:save.rested||0,awake:save.awake??1e9,fireCd:save.fireCd||0,room:false,
-    aim:0,face:1,atkCd:0,atkBuf:0,cds:{},cdMax:{},emp:null,shield:0,shieldT:0,deadAt:-99,lost:null,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
+    aim:0,face:1,atkCd:0,atkBuf:0,cds:{},cdMax:{},emp:null,shield:0,shieldT:0,deadAt:-99,lost:null,aimD:null,vx:0,vy:0,dodgeCd:0,potCd:0,eatCd:0,inv:0,dir:0,lunge:0,swing:null,dash:null,mom:0,momT:0,walk:0,moving:false,dead:false,
     guard:0,hot:null,ward:0,tp:0,in:{mx:0,my:0,atk:false,block:false,aim:null},lastBreak:-9,lastSheath:-9,lastNoMana:-9,
     kx:0,ky:0,kbN:0,stagger:0,staT:-9,poiseT:-9,parryAt:-9,wasBlock:false,bag:null};
 }

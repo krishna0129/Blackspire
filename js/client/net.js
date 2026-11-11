@@ -35,7 +35,7 @@ Object.assign(NET,{
   send(o){if(this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(o));},
   act(name,args,done){const id=++this.aid;if(done)this.acts.set(id,done);this.send({t:'act',id,name,args:args||[]});},
   // one-off presses; a dodge-roll also starts here at once so it feels instant (the server runs its own)
-  press(a,s){this.send({t:'p',a,s,aim:P&&P.in.aim!=null?Math.round(P.in.aim*1000)/1000:undefined});if(a==='dodge'&&mode==='play')dodge();},
+  press(a,s){this.send({t:'p',a,s,aim:P&&P.in.aim!=null?Math.round(P.in.aim*1000)/1000:undefined,ad:P&&P.aimD!=null?P.aimD:undefined});if(a==='dodge'&&mode==='play')dodge();},
 
   receive(o){
     switch(o.t){
@@ -86,8 +86,16 @@ Object.assign(NET,{
     if(!G||!P)return;
     o.at=performance.now();this.snaps.push(o);while(this.snaps.length>4)this.snaps.shift();
     const me=o.me;
+    // when each enemy's move began and when it was last struck, on this browser's clock (kept steady from one snapshot to the next)
+    this.marks=this.marks||new Map();for(const e of o.en){let m=this.marks.get(e.id);if(!m)this.marks.set(e.id,m={});
+      if(e.aa!=null){const at=G.time-e.aa;if(m.act!==e.act||Math.abs(at-m.at)>.25){m.act=e.act;m.at=at;}e.actAtC=m.at;}
+      if(e.hit){const at=G.time-e.hit[2];if(m.hit==null||Math.abs(at-m.hit)>.1)m.hit=at;e.hitAtC=m.hit;}}
+    if(this.marks.size>400)this.marks.clear();
     if(me.tp>P.tp){P.x=me.x;P.y=me.y;P.tp=me.tp;P.dash=null;}   // the server moved us (a teleport, a respawn, or a refused report)
     P.fightT=me.fight?G.time:-99;
+    // a skill you used, as the server saw it (for its animation), and a Leap Slam's flight
+    if(me.ca){if(me.ca[0]!==P.castId||me.ca[1]<(P.castAge??9)-.01){P.castId=me.ca[0];P.castAt=G.time-me.ca[1];}P.castAge=me.ca[1];}
+    if(me.lp){if(!P.dash||!P.dash.leap){P.x=me.x;P.y=me.y;}P.dash={vx:me.lp[0],vy:me.lp[1],t:me.lp[2],leap:1,remoteLeap:1};}
     {const was=fatigueTier(P.fat||0);Object.assign(P,{fat:me.fat,rested:me.rested,awake:me.awake,fireCd:me.fireCd,room:me.room});if(fatigueTier(P.fat)!==was)calcStats();}   // fatigue, as the server keeps it   // in a fight, as the server sees it: the skill board waits
     P.buff=me.buff?{id:me.buff[0],t:me.buff[1]}:null;
     // stamina, poise and a stagger, as the server keeps them; a new push (kb[2] counts them) is played out here
@@ -117,12 +125,13 @@ Object.assign(NET,{
     const at=performance.now()-DELAY;let a=this.snaps[0],b=this.snaps[n-1];
     for(let i=0;i<n-1;i++)if(this.snaps[i].at<=at&&this.snaps[i+1].at>=at){a=this.snaps[i];b=this.snaps[i+1];break;}
     const u=b.at>a.at?clamp((at-a.at)/(b.at-a.at),0,1):1,prev=new Map(a.en.map(e=>[e.id,e]));
-    G.enemies=b.en.map(e=>{const q=prev.get(e.id),c=Object.assign({},e,{r:ETYPES[e.type].r,kx:0,ky:0,bobY:0,maxPoise:e.po==null?0:1,poise:e.po,staggerT:e.sg});
+    G.enemies=b.en.map(e=>{const q=prev.get(e.id),c=Object.assign({},e,{actAt:e.actAtC,hitA:e.hit?e.hit[0]:0,hitW:e.hit?e.hit[1]:0,hitAt:e.hitAtC??-9,r:ETYPES[e.type].r,kx:0,ky:0,bobY:0,maxPoise:e.po==null?0:1,poise:e.po,staggerT:e.sg});
       if(q){c.x=q.x+(e.x-q.x)*u;c.y=q.y+(e.y-q.y)*u;}if(e.boss)c.r=ETYPES.boss.r;return c;});
     const pprev=new Map(a.pl.map(q=>[q.id,q]));
     for(const q of this.others){const s=b.pl.find(x=>x.id===q.id);if(!s){q.x=-999;continue;}const r=pprev.get(q.id)||s;
       const nx=r.x+(s.x-r.x)*u,ny=r.y+(s.y-r.y)*u;q.moving=Math.hypot(nx-q.x,ny-q.y)>.05;if(q.moving)q.walk+=dt*7;q.x=nx;q.y=ny;
       Object.assign(q,{dir:s.dir,dead:s.dead,inv:s.inv,guard:s.guard,hp:s.hp,maxHp:s.maxHp,blocking:s.blocking,dash:s.dash,aim:s.a,shield:s.sh,emp:s.em,hot:s.ho});
+      if(s.ca){if(s.ca[0]!==q.castId||s.ca[1]<(q.castAge??9)-.01){q.castId=s.ca[0];q.castAt=G.time-s.ca[1];}q.castAge=s.ca[1];}
       q.swing=s.swing?{t:s.swing[0],d:s.swing[1],a:s.a??DIR_ANGLE[s.dir],hit:s.swing[0]>=s.swing[1]*.4}:null;}
   },
 });
