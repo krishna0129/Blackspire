@@ -662,6 +662,63 @@ const faceOf=ang=>Math.atan2(Math.cos(ang),Math.sin(ang));   // a game angle as 
 function flash(a,on,col,k=.9){for(const m of a.mats){const b=m.userData.base;if(!b||!b[0])continue;
   if(on){m.emissive.set(col||'#ffffff');m.emissiveIntensity=k;}else if(m.emissiveIntensity!==b[1]||!m.emissive.equals(b[0])){m.emissive.copy(b[0]);m.emissiveIntensity=b[1];}}}
 
+// When a clip's blow lands: the moment the weapon hand moves fastest (measured once per clip, on whoever asks first).
+const HITT=new Map();
+function hitT(a,name){
+  if(HITT.has(name))return HITT.get(name);const clip=CLIP[name],h=bone(a.root,'handslot.r')||bone(a.root,'hand.r');
+  if(!clip||!a.mixer||!h){return clip?clip.duration*.4:.3;}
+  a.mixer.stopAllAction();const act=a.mixer.clipAction(clip);act.reset();act.play();
+  const N=60,D=clip.duration,inv=new THREE.Matrix4(),v=new THREE.Vector3(),pts=[];
+  for(let i=0;i<=N;i++){act.time=Math.min(D*i/N,D-1e-4);upd(a,0);a.root.updateMatrixWorld(true);inv.copy(a.root.matrixWorld).invert();h.getWorldPosition(v).applyMatrix4(inv);pts.push([v.x,v.y,v.z]);}
+  let best=0,bi=N>>1;for(let i=2;i<N-1;i++){const d=Math.hypot(pts[i+1][0]-pts[i-1][0],pts[i+1][1]-pts[i-1][1],pts[i+1][2]-pts[i-1][2]);if(d>best){best=d;bi=i;}}
+  act.stop();a.mixer.stopAllAction();a.cur=null;a.curName='';a.up=null;
+  const t=D*bi/N;HITT.set(name,t);return t;
+}
+// Each skill's own motion. [clip, speed, lead]: lead is how long before the clip's blow it starts (skills land at once,
+// so the body is already most of the way through the swing when the effect shows).
+const SKILL_ANIM={circle:['2H_Melee_Attack_Spin',1.5,.16],sunder:['2H_Melee_Attack_Chop',1.3,.14],pierce:['2H_Melee_Attack_Stab',1.2,.1],storm:['2H_Melee_Attack_Stab',1.9,.07],
+  heavy:['2H_Melee_Attack_Chop',1,.3],riposte:['Block_Attack',1.3,.3],double:['Dualwield_Melee_Attack_Slice',1.4,.12],cuts:['Dualwield_Melee_Attack_Stab',2.2,.06],dance:['Dualwield_Melee_Attack_Chop',1.8,.08],
+  blink:['Dualwield_Melee_Attack_Chop',1.3,.1],vortex:['2H_Melee_Attack_Spinning',1.6,.15],viper:['Dualwield_Melee_Attack_Stab',1.2,.12],quake:['1H_Melee_Attack_Jump_Chop',1.3,.14],
+  volley:['2H_Ranged_Shoot',1.3,.1],lightarrow:['2H_Ranged_Shoot',1.3,.1],caustic:['2H_Ranged_Shoot',1.3,.1],split:['2H_Ranged_Shoot',1.3,.1],tornado:['2H_Ranged_Shoot',1.1,.12],rain:['2H_Ranged_Shoot',1,.15],
+  fireball:['Spellcast_Shoot',1.3,.14],frostbolt:['Spellcast_Shoot',1.5,.12],arc:['Spellcast_Shoot',1.5,.12],smite:['Spellcast_Shoot',1.3,.14],
+  icenova:['Spellcast_Raise',1.4,.2],heal:['Spellcast_Raise',1.3,.25],renewal:['Spellcast_Raise',1.3,.25],aegis:['Spellcast_Raise',1.3,.25],guard:['Block_Attack',1,.4],
+  meteor:['Spellcast_Long',1.4,.5],blizzard:['Spellcast_Long',1.4,.5],judgement:['Spellcast_Long',1.4,.5],partyheal:['Spellcast_Long',1.5,.5],massheal:['Spellcast_Long',1.5,.5],resurrect:['Spellcast_Long',1.2,.6],
+  raise:['Spellcast_Summon',1.3,.4],revive:['Spellcast_Summon',1.3,.4],pool:['Spellcast_Summon',1.4,.3],cry:['Taunt_Longer',1.6,.3],challenge:['Taunt_Longer',1.6,.3],berserk:['Taunt_Longer',1.6,.3],
+  smoke:['Throw',1.4,.2],deathmark:['Throw',1.4,.2],ballista:['Throw',1.2,.25],vanish:['Dodge_Backward',1.5,.1]};
+// The Gate Warden's moves (js/sim/warden.js: e.act, since e.actAt, landing after e.actD, facing e.aimA).
+// timed: the clip is drawn out so its blow lands exactly when the rules say (raise, hold, strike).
+const WACT={sweep:{c:'2H_Melee_Attack_Slice',timed:1},back:{c:'1H_Melee_Attack_Slice_Horizontal',timed:1},cleave:{c:'2H_Melee_Attack_Chop',timed:1},whirl:{c:'2H_Melee_Attack_Spinning',timed:1,loop:1},
+  leap:{c:'1H_Melee_Attack_Jump_Chop',timed:1},brace:{c:'Blocking'},charge:{c:'Running_B',sp:1.7},summon:{c:'Spellcast_Summon'},chains:{c:'Spellcast_Raise',sp:.8},vanish:{c:'Spellcast_Raise',sp:1.6},
+  appear:{c:'Idle_Combat'},roar:{c:'Taunt_Longer',sp:.75},reel:{c:'Hit_B',sp:.6}};
+function animWarden(a,e,dt,nx,nz){
+  const W=e.act==='reel'&&!(e.stun>0)?null:WACT[e.act],age=G.time-(e.actAt||0),D=Math.max(.05,e.actD||.3);let y=0,alpha=e.echo&&Math.sin(G.time*1.7+e.id)>.93?.35:1;   // (the echo flickers, now and then: the tell)
+  a.root.visible=!e.gone;
+  if(W){turn(a,faceOf(e.aimA||0),dt,e.act==='charge'?30:9);
+    if(a.wAct!==e.act||a.wAt!==e.actAt){a.wAct=e.act;a.wAt=e.actAt;a.wHit=W.timed?hitT(a,W.c):0;stopUp(a,.05);const c=play(a,W.c,{once:!!W.timed,restart:true,speed:W.sp||1,fade:.12});if(c&&W.timed)c.timeScale=0;}
+    if(W.timed&&a.cur){const u=clamp(age/D,0,1),f=u<.8?.6*(u/.8)*(u/.8)*(3-2*u/.8):.6+.4*((u-.8)/.2)**2,dur=a.cur.getClip().duration;
+      let t=age<D?a.wHit*f:a.wHit+(age-D)*1.1;if(W.loop&&t>dur-.05)t=a.wHit*.6+((t-a.wHit*.6)%(dur-a.wHit*.6-.05));a.cur.time=Math.min(t,dur-.02);}
+    if(e.act==='leap'&&age<D){const u=clamp((age/D-.25)/.75,0,1);y=Math.sin(u*Math.PI)*4.2;}
+    if(e.act==='vanish')alpha=1-clamp(age/D,0,1);else if(e.act==='appear')alpha=clamp(age/D,0,1);
+    if(e.act==='cleave'&&age<D){const u=age/D,b=bone(a.root,'handslot.r');if(b){b.getWorldPosition(tmpV);glow(tmpV.x,tmpV.y+.6,tmpV.z,'#fff3c0',.6+2.4*u,.35+.5*u);DLIGHTS.push({x:tmpV.x,y:tmpV.y,z:tmpV.z,col:'#ffe9a8',int:30*u,dist:10,pri:9});}}
+    a.root.rotation.x=e.act==='charge'?.28:e.act==='brace'?-.1:0;
+  }else{a.wAct=null;a.root.rotation.x=0;
+    if(e.stun>0||e.staggerT>0)play(a,'Hit_B',{speed:.6,fade:.1});
+    else if(!loco(a,a.vx,a.vz)){const t=nearestHero(e);if(t&&G.bossAwake)turn(a,Math.atan2(wx(t.x)-nx,wz(t.y)-nz),dt,6);play(a,G.bossAwake?'Idle_Combat':'Idle',{fade:.25});}
+    else if(Math.hypot(a.vx,a.vz)>.4)turn(a,Math.atan2(a.vx,a.vz),dt,8);
+  }
+  if((e.stun>0||e.staggerT>0)&&Math.random()<.5)glow(nx+rand(-1,1),4.6+rand(-.3,.3),nz+rand(-.6,.6),'#ffe9a8',.5,.8);   // reeling: stars about its head
+  a.root.position.y=y;fade(a,alpha);
+  const hit=e.flash>0;flash(a,hit||e.immune||e.enraged,hit?'#ffffff':e.immune?'#3fd0c0':'#ff3020',hit?.9:e.immune?.5:.25+.15*Math.sin(G.time*9));
+  recoil(a,e,.35);
+  upd(a,dt);
+}
+// A blow shows on the one struck: knocked along the blow and bent back by it for a moment (e.hitA, e.hitW, e.hitAt).
+function recoil(a,e,k=1){
+  const age=G.time-(e.hitAt??-9);if(!(age>=0&&age<.2)||!e.hitW)return;
+  const u=Math.sin(age/.2*Math.PI),w=Math.min(2.6,e.hitW)*k,dx=Math.cos(e.hitA),dz=Math.sin(e.hitA),f=dx*Math.sin(a.face)+dz*Math.cos(a.face),r=dx*Math.cos(a.face)-dz*Math.sin(a.face);
+  a.root.position.x+=dx*u*.14*w;a.root.position.z+=dz*u*.14*w;a.root.rotation.x+=f*u*.22*w;a.root.rotation.z+=-r*u*.22*w;
+}
+
 // A player: you, or someone in your party online. wt: their weapon type.
 function heroActor(id,wt){
   const h=HERO[wt]||HERO.sword,key='hero:'+wt;let a=ACTORS.get(id);
@@ -702,6 +759,10 @@ function animHero(a,pl,wt,dt){
   let ang=a.fight>0||a.run==null?aim:a.run;
   // (nobody sprints backward: in the moment after a cast, still at a run and heading away from the aim, you look where you run)
   if(a.fight>0&&!sw&&!pl.blocking&&!pl.parrying&&a.run!=null&&a.sp>(gaitOf(a).Running_Strafe_Left||4.5)*1.3&&Math.abs(angDiff(aim,a.run))>1.9)ang=a.run;
+  // a skill just used: its own motion, begun just before its blow
+  if(pl.castAt!=null&&pl.castAt!==a.castSeen){const first=a.castSeen===undefined;a.castSeen=pl.castAt;const K=SKILL_ANIM[pl.castId];
+    if(K&&!first&&G.time-pl.castAt<.3&&CLIP[K[0]]){const ht=hitT(a,K[0]),t0=Math.max(0,ht-K[2]*K[1]);a.fight=.6;a.lock=(CLIP[K[0]].duration-t0)/K[1]*.8;a.atk=K[0];a.atkSp=K[1];a.atkNew=true;
+      const u=playUp(a,K[0],{once:true,restart:true,fade:.05,speed:K[1]});if(u)u.time=t0;a.swT=sw?sw.t:-1;}}
   if(sw){ang=sw.a??aim;if(a.swT<0||sw.t<a.swT-1e-3){   // a new swing: the arms take it at once, whatever the legs are doing
       const clip=h.atk[(a.n++)%h.atk.length],dur=Math.max(.36,sw.d*2.4);a.lock=dur*.85;a.atk=clip;a.atkSp=CLIP[clip].duration/dur;a.atkNew=true;
       playUp(a,clip,{once:true,restart:true,fade:.06,speed:a.atkSp});}
@@ -709,14 +770,19 @@ function animHero(a,pl,wt,dt){
   a.lock-=dt;
   turn(a,faceOf(ang),dt);
   const moving=a.sp>.7&&(pl.moving||Math.abs(pl.kx||0)+Math.abs(pl.ky||0)>1);
-  if(pl.dash){   // the dodge, the way it goes against the way you face
+  const leaping=pl.dash&&(pl.dash.leap||pl.dash===2);a.leapT=leaping?(a.leapT||0)+dt:0;
+  if(leaping){   // Leap Slam: up and over, the axe coming down as you land
+    stopUp(a,.05);a.atk=null;const act=play(a,'1H_Melee_Attack_Jump_Chop',{once:true,fade:.05}),u=clamp(a.leapT/.32,0,1);
+    if(act)act.timeScale=0,act.time=hitT(a,'1H_Melee_Attack_Jump_Chop')*(.25+.75*u);a.root.position.y=Math.sin(u*Math.PI)*1.7;a.lock=.25;a.atk='1H_Melee_Attack_Jump_Chop';a.atkSp=1.1;a.landed=1;}
+  else if(pl.dash){   // the dodge, the way it goes against the way you face
     stopUp(a,.05);a.atk=null;const D=pl.dash,rel=angDiff(Math.atan2(D.vx,D.vy),a.face),ar=Math.abs(rel);
     play(a,ar<.8?'Dodge_Forward':ar>2.35?'Dodge_Backward':rel>0?'Dodge_Left':'Dodge_Right',{once:true,speed:1.6,fade:.08});}
+  else if(a.landed&&a.lock>0){if(a.cur)a.cur.timeScale=1.1;}   // the landing plays out
   else if(a.lock>0&&a.atk){   // swinging: the legs keep running under it if you move, else the whole body swings
-    if(!(moving&&loco(a,a.vx,a.vz,'lo'))){const was=a.cur,act=play(a,a.atk,{part:'lo',once:true,speed:a.atkSp,fade:.1,restart:a.atkNew});
+    a.landed=0;if(!(moving&&loco(a,a.vx,a.vz,'lo'))){const was=a.cur,act=play(a,a.atk,{part:'lo',once:true,speed:a.atkSp,fade:.1,restart:a.atkNew});
       if(act&&(a.atkNew||was!==act))act.time=a.up?a.up.time:0;}
     a.atkNew=false;}
-  else{a.atk=null;
+  else{a.atk=null;a.landed=0;
     if(pl.blocking||pl.parrying){   // the guard stays up while the legs walk
       if(moving&&loco(a,a.vx,a.vz,'lo'))playUp(a,'Blocking',{fade:.08});else{stopUp(a,.08);play(a,'Blocking',{fade:.06});}}
     else{stopUp(a);if(!(moving&&loco(a,a.vx,a.vz)))play(a,h.idle||'Idle',{fade:.18});}
@@ -736,7 +802,7 @@ function foeActor(e){
   a=makeActor(key,Object.assign({},d,{eyes,rim:true,xray:'#e0503f',s:(d.s||1)*(e.elite?1.12:1)}));ACTORS.set('e'+e.id,a);
   a.x=wx(e.x);a.z=wz(e.y);a.face=Math.random()*TAU;
   // something that arrived after the floor was built climbs out of the ground (raised, called, summoned)
-  if(performance.now()-FLOOR.born>1500&&!d.orb&&!d.prop&&!d.bloom&&!e.boss)play(a,'Skeletons_Awaken_Floor',{once:true,speed:1.6}),a.lock=1.1;
+  if(performance.now()-FLOOR.born>1500&&!d.orb&&!d.prop&&!d.bloom&&!e.boss&&!e.echo)play(a,'Skeletons_Awaken_Floor',{once:true,speed:1.6}),a.lock=1.1;
   return a;
 }
 const ATK=d=>d.two?'2H_Melee_Attack_Chop':'1H_Melee_Attack_Chop';
@@ -746,6 +812,7 @@ function animFoe(a,e,dt){
   if(d.orb){y=Math.sin(G.time*3+(e.ph||0))*.18;   // it drifts, and its flame licks upward
     a.root.userData.flame.forEach((f,i)=>{f.position.x=Math.sin(G.time*7+i*1.7)*.06*(i+1);f.material.opacity=(.45-i*.1)*(.75+.25*Math.sin(G.time*11+i));});}
   a.root.position.set(nx,y,nz);
+  if(e.act!==undefined&&a.mixer){animWarden(a,e,dt,nx,nz);return;}
   // where it looks: at whoever is nearest while it attacks, else where it walks
   const st=e.state,fighting=st==='windup'||st==='strike'||st==='draw'||st==='cast'||st==='channel'||st==='charge'||st==='shell';
   if(fighting){const t=nearestHero(e);if(t)turn(a,Math.atan2(wx(t.x)-nx,wz(t.y)-nz),dt,10);}
@@ -776,6 +843,7 @@ function animFoe(a,e,dt){
   else if(e.stun>0)play(a,'Hit_A',{fade:.05});
   else if(!loco(a,a.vx,a.vz))play(a,st==='idle'?'Idle':'Idle_Combat',{fade:.25});   // walking, running, or backing off, in step with the ground
   lean(a,dt);
+  recoil(a,e,e.boss?.35:e.elite?.7:1);
   upd(a,dt);
 }
 function nearestHero(e){let best=null,bd=1e9;for(const q of[P,...(NET.on?NET.others:[])]){if(!q||q.dead||q.x<-900)continue;const d=hyp(q.x-e.x,q.y-e.y);if(d<bd){bd=d;best=q;}}return best;}
@@ -814,6 +882,10 @@ function arc(x,z,h,r,w,a0,a1,col,op=.9){const m=take(P_ARC),p=m.geometry.attribu
   for(let i=0;i<33;i++){const u=i/32,a=a0+(a1-a0)*u,k=Math.pow(u,1.6),cs=Math.cos(a),sn=Math.sin(a);
     p.setXYZ(i*2,x+cs*(r-w/2),h,z+sn*(r-w/2));p.setXYZ(i*2+1,x+cs*(r+w/2),h,z+sn*(r+w/2));c.setXYZ(i*2,k,k,k);c.setXYZ(i*2+1,k,k,k);}
   p.needsUpdate=c.needsUpdate=true;m.geometry.computeBoundingSphere();m.material.color.set(col).multiplyScalar(1.6);m.material.opacity=op;return m;}
+const DONUTS=new Map(),P_DONUT=pool(ground(unitRing,{c:'#ff2a1a',o:.25}));
+function donut(x,z,r,k,col,op){const g=take(P_DONUT),key=Math.round(k*50);if(!DONUTS.has(key))DONUTS.set(key,new THREE.RingGeometry(key/50,1,64));
+  g.userData.m.geometry=DONUTS.get(key);g.position.set(x,.08+op*.01,z);g.scale.setScalar(Math.max(r,.01));g.userData.m.material.color.set(col);g.userData.m.material.opacity=op;return g;}
+function lane(x,z,a,len,w,col,op,h=1.1){const g=take(P_LANE);g.position.set(x,h,z);g.rotation.y=-a;g.scale.set(Math.max(len,.01),1,w);g.userData.m.material.color.set(col);g.userData.m.material.opacity=op;return g;}
 function disc(x,z,r,col,op){const g=take(P_DISC);g.position.set(x,.08,z);g.scale.setScalar(Math.max(r,.01));g.userData.m.material.color.set(col);g.userData.m.material.opacity=op;return g;}
 function ring(x,z,r,col,op,y=.09){const g=take(P_RING);g.position.set(x,y,z);g.scale.setScalar(Math.max(r,.01));g.userData.m.material.color.set(col);g.userData.m.material.opacity=op;return g;}
 function glow(x,y,z,col,size,op=1){const s=take(P_GLOW);s.position.set(x,y,z);s.scale.setScalar(size);s.material.color.set(col);s.material.opacity=op;return s;}
@@ -875,7 +947,7 @@ function frame3d(){
   for(const e of G.enemies){if(Math.abs(wx(e.x)-camT.x)>reachX||Math.abs(wz(e.y)-camT.z)>reachZ)continue;
     const a=foeActor(e);seenIds.add('e'+e.id);a.last=e;a.seen=now;animFoe(a,e,dt);
     if(a.o.orb)DLIGHTS.push({x:a.x,y:1.4,z:a.z,col:a.o.orb,int:3,dist:5,pri:0});
-    if(e.boss)DLIGHTS.push({x:a.x,y:5.5*(a.o.s||1)/2.7,z:a.z+1,col:'#ff3020',int:40,dist:16,pri:9});
+    if(e.boss&&!e.gone)DLIGHTS.push({x:a.x,y:5.5*(a.o.s||1)/2.7,z:a.z+1,col:e.phase>1?'#40c0b0':'#ff3020',int:40,dist:16,pri:9});
     if(e.burrowed){const m=take(P_MOUND);m.position.set(wx(e.x),0,wz(e.y));m.scale.set(1+.1*Math.sin(t*8),.35,1);}
     if(e.state==='channel'&&e.cx!=null){const sx=a.x,sz=a.z,ex=wx(e.cx),ez=wz(e.cy);
       line(u=>[sx+(ex-sx)*u,2.2*(1-u)+.5*u+Math.sin(u*Math.PI)*.8+Math.sin(u*18+t*8)*.06,sz+(ez-sz)*u],'#8cf07a');
@@ -904,7 +976,8 @@ function frame3d(){
   // telegraphs: red on the floor, filling as the blow comes
   for(const q of G.tele){const p=clamp(q.t/q.d,0,1),x=wx(q.x),z=wz(q.y);
     if(q.cone){for(const[r,op]of[[q.len,.18],[q.len*p,.32]]){const g=take(P_CONE);g.userData.m.geometry=sector(q.half);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.setScalar(wx(Math.max(r,.1)));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
-    else if(q.line){for(const[l,op]of[[q.len,.22],[q.len*p,.3]]){const g=take(P_LANE);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.set(wx(Math.max(l,.1)),1,wx(26));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
+    else if(q.line){for(const[l,op]of[[q.len,.22],[q.len*p,.3]]){const g=take(P_LANE);g.position.set(x,.08+op*.01,z);g.rotation.y=-q.a;g.scale.set(wx(Math.max(l,.1)),1,wx(q.w?q.w*2:26));g.userData.m.material.color.set('#ff2a1a');g.userData.m.material.opacity=op;}}
+    else if(q.inner){const R_=wx(q.r),k=q.inner/q.r;donut(x,z,R_,k,'#ff2a1a',.18);donut(x,z,R_,k,'#ff2a1a',.3*p);ring(x,z,R_,'#ff4a2a',.9);ring(x,z,wx(q.inner),'#ff4a2a',.7);}
     else{disc(x,z,wx(q.r),'#ff2a1a',.16);disc(x,z,wx(q.r)*p,'#ff2a1a',.3);ring(x,z,wx(q.r),'#ff4a2a',.9);}}
   // your side's skills that land later (Judgement): a gold mark that fills as the strike comes
   for(const q of G.pfx||[]){const p=clamp(q.t/q.d,0,1),x=wx(q.x),z=wz(q.y),r=wx(q.r||8),tt=performance.now()/1000;
@@ -941,17 +1014,50 @@ function frame3d(){
   // effects
   for(const f of G.fx){const p=f.t/f.d,x=wx(f.x),z=wz(f.y),al=1-p*p;
     if(f.k==='slash'||f.k==='eslash'){const half=(f.arc||120)/2*Math.PI/180,r=wx(f.r);
-      if(f.k==='slash'&&f.arc>=360){const a=f.a+p*TAU;arc(x,z,1.15,r,.5,a-2.6,a,'#bfe9ff',al);}
-      else if(f.k==='slash'){const s=Math.min(1,p*1.6),a0=f.a+(f.dir>0?-half:half),a1=f.a+(f.dir>0?-half+2*half*s:half-2*half*s);arc(x,z,1.15,r,.45,a0,a1,'#cfe8ff',al);}
+      if(f.k==='slash'&&f.arc>=360){const a=f.a+p*TAU;arc(x,z,1.15,r,.5,a-2.6,a,f.c||'#bfe9ff',al);arc(x,z,1.2,r*.8,.25,a-1.6,a,'#ffffff',al*.7);}
+      else if(f.k==='slash'){const s=Math.min(1,p*1.6),a0=f.a+(f.dir>0?-half:half),a1=f.a+(f.dir>0?-half+2*half*s:half-2*half*s);arc(x,z,1.15,r,f.c?.7:.45,a0,a1,f.c||'#cfe8ff',al);
+        if(f.c){arc(x,z,1.2,r*.86,.22,a0,a1,'#ffffff',al*.8);glow(x+Math.cos(a1)*r,1.2,z+Math.sin(a1)*r,f.c,1.6,al*.7);}}
+      else if(f.big){const s=Math.min(1,p*1.5),d=f.dir<0?-1:1,a0=f.a-d*half,a1=a0+d*2*half*s,h=2.2;   // the Warden's blade: a wide red wake at its own height
+        arc(x,z,h,r*.78,r*.44,a0,a1,f.c||'#ff9a7a',al*.75);arc(x,z,h+.05,r*.97,.3,a0,a1,'#ffffff',al);DLIGHTS.push({x:x+Math.cos(a1)*r*.8,y:h,z:z+Math.sin(a1)*r*.8,col:f.c||'#ff9a7a',int:30*al,dist:10,pri:8});}
       else arc(x,z,1.2,r,.35,f.a-1,f.a-1+2*Math.min(1,p*1.8),'#d9d4c4',al*.8);}
-    else if(f.k==='line'){const g=take(P_LANE);g.position.set(x,1.1,z);g.rotation.y=-f.a;g.scale.set(wx(f.len),1,f.w?.5:.18);g.userData.m.material.color.set('#cfe8ff');g.userData.m.material.opacity=al*.8;}
+    else if(f.k==='hit'){const w=f.w||.5,cs=Math.cos(f.a),sn=Math.sin(f.a),h=1.25,k=1-p;   // a blow landing: a burst of light and streaks flying on along the blow
+      glow(x,h,z,'#ffffff',(.5+.7*w)*(1+p),k*.95);glow(x,h,z,f.c,(1.2+1.3*w)*(1+p),k*.6);
+      const n=Math.min(7,2+Math.round(w*2));for(let i=0;i<n;i++){const sp=((i*.618)%1-.5)*(1.3+.3*w),c2=Math.cos(f.a+sp),s2=Math.sin(f.a+sp),L=(.5+.9*w)*(.6+((i*.37)%1)*.6),r0=.2+p*L*1.4;
+        line(u=>[x+c2*(r0+L*u*(1-p*.5)),h+(((i*.77)%1)-.4)*(.5+u*.8)*(1+p),z+s2*(r0+L*u*(1-p*.5))],i%2?'#ffffff':f.c,k);}
+      if(w>=1){ring(x-cs*.2,z-sn*.2,(.4+.9*w)*(.3+p),f.c,k*.8,.14);DLIGHTS.push({x,y:h,z,col:f.c,int:14*w*k,dist:7,pri:7});}}
+    else if(f.k==='thrust'){const L=wx(f.len)*Math.min(1,p*(f.small?5:4)),c=f.c||'#cfe8ff',wd=f.big?.95:f.small?.3:.6,k=al,cs=Math.cos(f.a),sn=Math.sin(f.a);   // a lance of light down the line
+      lane(x,z,f.a,L,wd*(1-p*.6),c,k*.55);lane(x,z,f.a,L,wd*.3*(1-p*.5),'#ffffff',k,1.14);
+      glow(x+cs*L,1.15,z+sn*L,'#ffffff',f.small?.7:1.4,k);if(!f.small){glow(x+cs*L,1.15,z+sn*L,c,f.big?3.4:2.2,k*.6);
+        for(const sd of[-1,1])line(u=>[x+cs*L*u-sn*sd*(wd*.5+.25*Math.sin(u*Math.PI)),1.15,z+sn*L*u+cs*sd*(wd*.5+.25*Math.sin(u*Math.PI))],c,k*.8);
+        ring(x+cs*L*.3,z+sn*L*.3,.3+p*(f.big?2.2:1.4),c,k*.6,.14);DLIGHTS.push({x:x+cs*L*.6,y:1.2,z:z+sn*L*.6,col:c,int:18*k,dist:9,pri:6});}}
+    else if(f.k==='cut'){const L=wx(f.len),c=f.c||'#e8f4ff',s=Math.min(1,p*3),cs=Math.cos(f.a),sn=Math.sin(f.a),x0=x-cs*L/2,z0=z-sn*L/2;   // one cut across a body
+      lane(x0,z0,f.a,L*s,.34*(1-p),c,al*.7,1.25);lane(x0,z0,f.a,L*s,.1,'#ffffff',al,1.28);glow(x0+cs*L*s,1.25,z0+sn*L*s,'#ffffff',.9,al*.9);}
+    else if(f.k==='quake'){const r=wx(f.r),c=f.c||'#c9a46a',g=Math.min(1,p*2.4),n=f.big?11:7;   // the floor breaks: cracks run out, dust rises
+      disc(x,z,r*g,'#0a0806',(1-p)*.5);ring(x,z,r*Math.min(1.25,.3+p*1.6),c,al*.9,.12);ring(x,z,r*Math.min(1,.2+p*1.1),'#ffffff',al*.5,.13);
+      for(let i=0;i<n;i++){const a=i/n*TAU+(f.x*.13+f.y*.07)%1,j1=((i*.618)%1-.5)*.5,j2=((i*.33)%1-.5)*.6,L=r*(.7+((i*.41)%1)*.55)*g;
+        line(u=>[x+Math.cos(a+j1*u+j2*u*u)*L*u,.12,z+Math.sin(a+j1*u+j2*u*u)*L*u],c,al);}
+      for(let i=0;i<n;i++){const a=i/n*TAU+1,rr=r*(.4+((i*.53)%1)*.6);glow(x+Math.cos(a)*rr,.3+p*(1.2+(i%3)*.6),z+Math.sin(a)*rr,'#8a7a66',.9+p*1.4,(1-p)*.45);}
+      DLIGHTS.push({x,y:1,z,col:c,int:24*(1-p),dist:10,pri:7});}
+    else if(f.k==='pillar'){const c=f.c||'#ffe9a8',r=wx(f.r),k=1-p;const b=take(P_BEAM);b.position.set(x,0,z);b.scale.set(r*6*(1-p*.5),4,r*6*(1-p*.5));b.material.color.set(c);b.material.opacity=k*.75;   // light from above
+      glow(x,.6,z,'#ffffff',r*2.4,k);glow(x,3,z,c,r*3,k*.5);DLIGHTS.push({x,y:2,z,col:c,int:60*k,dist:16,pri:9});}
+    else if(f.k==='glint'){const k=Math.sin(Math.min(1,p*1.2)*Math.PI),h=5.4;glow(x,h,z,'#ffffff',1+3*k,k);glow(x,h,z,'#ffe9a8',2+6*k,k*.5);   // the blade catches the light: parry this one
+      for(let i=0;i<4;i++){const a=i*Math.PI/4+p*1.5,L=(i%2?1.2:2.4)*k;line(u=>[x+Math.cos(a)*L*(u*2-1),h+Math.sin(a)*L*(u*2-1),z],'#fff3c0',k);}}
+    else if(f.k==='chain'){const L=wx(f.len),w=wx((f.w||10)*2),k=1-p,cs=Math.cos(f.a),sn=Math.sin(f.a);   // a chain tears along its lane
+      lane(x,z,f.a,L,w*(1+p*.4),'#40d0b8',k*.5,.12);lane(x,z,f.a,L,w*.3,'#ffffff',k*.9,.14);
+      line(u=>[x+cs*L*u-sn*Math.sin(u*40+p*20)*.25,.5+.5*Math.abs(Math.sin(u*31+p*9))*k,z+sn*L*u+cs*Math.sin(u*40+p*20)*.25],'#7fe0d0',k);
+      for(let i=0;i<5;i++){const u=(i+.5)/5;glow(x+cs*L*u,.6+p,z+sn*L*u,'#7fe0d0',w*1.6,k*.4);}}
+    else if(f.k==='frost'){const r=wx(f.r),g=Math.min(1,p*6),k=p>.7?(1-p)/.3:1;for(let i=0;i<12;i++){const a=i/12*TAU+.2,rr=r*(.55+(i%3)*.2),sp=take(P_SPIKE);   // ice stands where the nova passed
+        sp.position.set(x+Math.cos(a)*rr,0,z+Math.sin(a)*rr);sp.scale.set(1.3,g*k*(1+(i%3)*.5),1.3);sp.material.color.set('#bfe6ff');sp.material.emissive.set('#3a7ab0');}
+      disc(x,z,r,'#9fd8ff',.14*k);}
+    else if(f.k==='line'){lane(x,z,f.a,wx(f.len)*Math.min(1,p*4),.5,'#cfe8ff',al*.6);}
+    else if(f.k==='oldline'){const g=take(P_LANE);g.position.set(x,1.1,z);g.rotation.y=-f.a;g.scale.set(wx(f.len),1,f.w?.5:.18);g.userData.m.material.color.set('#cfe8ff');g.userData.m.material.opacity=al*.8;}
     else if(f.k==='ring'){ring(x,z,wx(f.r)*p,f.c||'#cfe8ff',al*.9,.15);}
     else if(f.k==='pulse'){ring(x,z,wx(f.r)*Math.min(1,.3+p*1.2),f.c||'#9be08a',al*.9,.15);}
     else if(f.k==='boom'){const r=wx(f.r)*Math.min(1,p*1.8),c=f.c||'#ff8a2a';disc(x,z,r,f.c||'#f08a3c',(1-p)*.45);ring(x,z,r,'#ffe9a8',al);glow(x,1,z,c,r*3,(1-p)*.8);DLIGHTS.push({x,y:1.5,z,col:c,int:40*(1-p),dist:14,pri:8});}
     else if(f.k==='heal'){const r=wx(6+(f.r-6)*Math.min(1,p*1.7));ring(x,z,r,'#9be08a',al);disc(x,z,r,'#9be08a',(1-p)*.2);   // where the heal lands
       for(let i=0;i<6;i++){const a=i*1.05+.4;glow(x+Math.cos(a)*.8,.4+p*2.6+(i%3)*.3,z+Math.sin(a)*.8,i%2?'#ffe9a8':'#9be08a',.5,al);}
       DLIGHTS.push({x,y:1.5,z,col:'#9be08a',int:20*(1-p),dist:9,pri:7});}
-    else if(f.k==='spikes'){for(let i=0;i<8;i++){const a=i*.85,r=wx(3+(i%3)*6),s=take(P_SPIKE);s.position.set(x+Math.cos(a)*r,0,z+Math.sin(a)*r*.8);s.scale.set(1,(1-p)*(.9+(i%3)*.5),1);}}
+    else if(f.k==='spikes'){for(let i=0;i<8;i++){const a=i*.85,r=wx(3+(i%3)*6),s=take(P_SPIKE);s.position.set(x+Math.cos(a)*r,0,z+Math.sin(a)*r*.8);s.scale.set(1,(1-p)*(.9+(i%3)*.5),1);s.material.color.set('#d9d4c4');s.material.emissive.set('#000000');}}
     else if(f.k==='raise'){const x2=wx(f.x2),z2=wz(f.y2);line(u=>[x+(x2-x)*u,2.2*(1-u)+.5*u+Math.sin(u*Math.PI)*.8,z+(z2-z)*u],'#9be08a',al);}
     else if(f.k==='bolt'){const x2=wx(f.x2),z2=wz(f.y2);line(u=>[x+(x2-x)*u+(u>0&&u<1?rand(-.15,.15):0),1.4+(u>0&&u<1?rand(-.15,.15):0),z+(z2-z)*u],'#6fd6e6',al);}
   }
@@ -1003,7 +1109,8 @@ function overlay(){
     c.fillStyle='#000';c.fillRect(X-1,Y-1,w+2,4);c.fillStyle=broken?(Math.floor(G.time*10)%2?'#ffffff':'#ffe9a8'):'#e8d9a8';c.fillRect(X,Y,Math.ceil(w*clamp(f,0,1)),2);};
   // enemy health, once hurt; elites and bosses by name
   for(const e of G.enemies){const a=ACTORS.get('e'+e.id);if(!a||e.burrowed)continue;const top=2.6*(a.o.s||1)*(e.elite?1.12:1);
-    if(e.hurtT>0&&!e.boss&&e.type!=='dummy'){const w=e.elite?74:58;bar(a.x,top,a.z,w,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
+    if(e.split&&!e.gone&&e.maxPoise)poiseBar(a.x,top+.3,a.z,90,e.staggerT>0?1:e.poise/e.maxPoise,e.staggerT>0);   // split: the true Warden is the one whose poise shows
+    if(e.hurtT>0&&!e.boss&&!e.echo&&e.type!=='dummy'){const w=e.elite?74:58;bar(a.x,top,a.z,w,e.hp/e.maxHp,e.elite?'#e8b24a':'#d24b47',e.elite?'#7a6436':null);
       if(e.maxPoise)poiseBar(a.x,top,a.z,w,e.staggerT>0?1:e.poise/e.maxPoise,e.staggerT>0);}
     if(e.elite&&!e.boss&&hyp(e.x-P.x,e.y-P.y)<200)label((ETYPES[e.type].name||'')+', elite',a.x,top+.55,a.z,'#e9c87a','600 13px Cinzel,Georgia,serif');}
   // your party: name and health

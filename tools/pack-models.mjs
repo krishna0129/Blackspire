@@ -58,6 +58,7 @@ const CLIPS=['Idle','Idle_B','Idle_Combat','Unarmed_Idle','2H_Melee_Idle','Walki
   'Running_C','Running_Strafe_Left','Running_Strafe_Right','Walking_Backwards','Dodge_Backward','Dodge_Left','Dodge_Right',   // moving any way while facing another
   '1H_Melee_Attack_Slice_Horizontal','1H_Melee_Attack_Slice_Diagonal','1H_Melee_Attack_Chop','1H_Melee_Attack_Stab',
   '2H_Melee_Attack_Chop','2H_Melee_Attack_Slice','2H_Melee_Attack_Spin','2H_Melee_Attack_Stab','Dualwield_Melee_Attack_Slice','Dualwield_Melee_Attack_Stab',
+  '1H_Melee_Attack_Jump_Chop','2H_Melee_Attack_Spinning','Dualwield_Melee_Attack_Chop','Block_Attack','Unarmed_Melee_Attack_Kick','Throw','Jump_Full_Short','Spawn_Air','Taunt_Longer',   // skills and the bosses
   '1H_Ranged_Shoot','2H_Ranged_Shoot','2H_Ranged_Aiming','Spellcast_Shoot','Spellcasting','Spellcast_Summon','Spellcast_Raise','Spellcast_Long',
   'Blocking','Block_Hit','Dodge_Forward','Hit_A','Hit_B','Death_A','Death_A_Pose','Death_C_Skeletons','Death_C_Pose',
   'Skeletons_Awaken_Floor','Skeletons_Inactive_Floor_Pose','Spawn_Ground','Taunt','Cheer','Use_Item','Sit_Floor_Idle','Interact','PickUp'];

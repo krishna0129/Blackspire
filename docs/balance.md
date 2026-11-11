@@ -11,47 +11,48 @@ health), and falls count how often it died and was stood up again.
 
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
-| Longsword | 34 | +3% | 1.4 s | 0.0 | 12.9 s | 0.2 | 0, 0 |
-| Spear | 34 | +3% | 4.5 s | 0.1 | 11.9 s | 0.3 | 0, 0 |
-| Greatsword | 58 | ⚠ +76% | 1.4 s | 0.0 | 9.8 s | 0.2 | 0, 0 |
-| Mace | 28 | -15% | 4.6 s | 0.1 | 17.8 s | 0.3 | 0, 0 |
-| Dagger | 33 | +0% | 4.4 s | 0.1 | 16.5 s | 0.8 | 0, 0 |
-| Bow | 33 | +0% | 6.6 s | 0.2 | 12.4 s | 0.5 | 0, 0 |
-| Grimoire (magic) | 28 | -15% | 5.4 s | 0.2 | 18.6 s | 0.7 | 0, 0 |
-| Grimoire (faith) | 19 | ⚠ -42% | 13.5 s | 0.6 | 32.9 s | 1.4 | 0, 0 |
+| Longsword | 37 | +16% | 1.4 s | 0.0 | 337.2 s | 10.3 | 0, 8 |
+| Spear | 37 | +16% | 4.5 s | 0.1 | 322.6 s | 10.6 | 0, 9 |
+| Greatsword | 59 | ⚠ +84% | 1.4 s | 0.0 | 205.1 s | 5.1 | 0, 4 |
+| Mace | 30 | -6% | 4.6 s | 0.1 | 379.6 s | 8.8 | 0, 7 |
+| Dagger | 30 | -6% | 4.1 s | 0.1 | 398 s | 8.5 | 0, 6 |
+| Bow | 34 | +6% | 6.6 s | 0.2 | 443.5 s | 18.4 | 0, 17 |
+| Grimoire (magic) | 30 | -6% | 5.4 s | 0.2 | 489.7 s | 25.0 | 0, 24 |
+| Grimoire (faith) | 21 | ⚠ -34% | 13.5 s | 0.6 | 701.8 s | 29.5 | 0, 28 |
 
 ## Floor 2 (level 10)
 
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
-| Longsword | 50 | +9% | 8.4 s | 0.0 | 10.9 s | 0.3 | 0, 0 |
-| Spear | 51 | +11% | 10.6 s | 0.3 | 10.8 s | 0.4 | 0, 0 |
-| Greatsword | 83 | ⚠ +80% | 8.8 s | 0.1 | 9.8 s | 0.1 | 0, 0 |
-| Mace | 43 | -7% | 13.6 s | 0.2 | 16.5 s | 0.4 | 0, 0 |
-| Dagger | 44 | -4% | 12.3 s | 0.3 | 17.8 s | 1.1 | 0, 0 |
-| Bow | 48 | +4% | 14 s | 0.6 | 15.1 s | 0.8 | 0, 0 |
-| Grimoire (magic) | 42 | -9% | not cleared | 2.8 | not killed in 5 min | 14.3 | 1, 12 |
-| Grimoire (faith) | 30 | ⚠ -35% | not cleared | 3.0 | not killed in 5 min | 12.6 | 2, 11 |
+| Longsword | 55 | ⚠ +24% | 9 s | 0.1 | 11.8 s | 0.4 | 0, 0 |
+| Spear | 51 | +15% | 7.6 s | 0.2 | 12.2 s | 0.5 | 0, 0 |
+| Greatsword | 89 | ⚠ +100% | 9.1 s | 0.3 | 9.8 s | 0.0 | 0, 0 |
+| Mace | 44 | -1% | 12.7 s | 0.3 | 14.6 s | 0.4 | 0, 0 |
+| Dagger | 42 | -6% | 11.9 s | 0.6 | 16.3 s | 0.7 | 0, 0 |
+| Bow | 45 | +1% | 14.8 s | 0.5 | 15.1 s | 0.8 | 0, 0 |
+| Grimoire (magic) | 40 | -10% | not cleared | 2.8 | 35.6 s | 1.9 | 1, 1 |
+| Grimoire (faith) | 30 | ⚠ -33% | not cleared | 2.9 | 53.4 s | 3.2 | 1, 2 |
 
 ## Floor 3 (level 14)
 
 | Build | Dummy dps | vs median | Room: clear | Room: health lost | Boss: kill | Boss: health lost | Falls (room, boss) |
 |---|---|---|---|---|---|---|---|
-| Longsword | 78 | +18% | 14.6 s | 0.5 | 18.5 s | 0.4 | 0, 0 |
-| Spear | 76 | +15% | 12.2 s | 0.5 | 10.8 s | 0.2 | 0, 0 |
-| Greatsword | 128 | ⚠ +94% | 8.6 s | 0.2 | 7.4 s | 0.1 | 0, 0 |
-| Mace | 63 | -5% | 17.3 s | 0.5 | 19.6 s | 0.1 | 0, 0 |
-| Dagger | 48 | ⚠ -27% | 19.4 s | 1.2 | 21.6 s | 0.3 | 0, 0 |
-| Bow | 69 | +5% | 31.3 s | 1.8 | 19.1 s | 0.5 | 1, 0 |
-| Grimoire (magic) | 62 | -6% | 16.1 s | 0.9 | 21.9 s | 0.8 | 0, 0 |
-| Grimoire (faith) | 44 | ⚠ -33% | 34.6 s | 1.9 | 28.9 s | 0.8 | 1, 0 |
+| Longsword | 74 | +13% | 15.2 s | 0.5 | 17.3 s | 0.3 | 0, 0 |
+| Spear | 80 | ⚠ +22% | 12.2 s | 0.6 | 12.1 s | 0.1 | 0, 0 |
+| Greatsword | 135 | ⚠ +106% | 9.8 s | 0.1 | 9.9 s | 0.1 | 0, 0 |
+| Mace | 55 | -16% | 16.5 s | 0.5 | 21.2 s | 0.1 | 0, 0 |
+| Dagger | 53 | -19% | 20.7 s | 1.2 | 21.2 s | 0.4 | 0, 0 |
+| Bow | 70 | +7% | 33.1 s | 2.1 | 17.5 s | 0.4 | 1, 0 |
+| Grimoire (magic) | 61 | -7% | 14.4 s | 0.9 | 20.9 s | 0.7 | 0, 0 |
+| Grimoire (faith) | 42 | ⚠ -36% | not cleared | 1.4 | 38.9 s | 0.9 | 0, 0 |
 
 ## Marked
 
-- floor 1, Greatsword: +76%
-- floor 1, Grimoire (faith): -42%
-- floor 2, Greatsword: +80%
-- floor 2, Grimoire (faith): -35%
-- floor 3, Greatsword: +94%
-- floor 3, Dagger: -27%
-- floor 3, Grimoire (faith): -33%
+- floor 1, Greatsword: +84%
+- floor 1, Grimoire (faith): -34%
+- floor 2, Longsword: +24%
+- floor 2, Greatsword: +100%
+- floor 2, Grimoire (faith): -33%
+- floor 3, Spear: +22%
+- floor 3, Greatsword: +106%
+- floor 3, Grimoire (faith): -36%

@@ -241,7 +241,7 @@ const ETYPES={
   bloodbloom:{fam:'plant',name:'Bloodbloom',hp:30,dmg:0,speed:0,r:6,xp:14,eye:'#9be08a',line:'#4e1520',ai:'bloodbloom',rooted:true,plant:true},
   hermit:{fam:'beast',name:'Ossuary hermit',hp:120,dmg:20,speed:52,r:9,xp:30,eye:'#f2a03c',line:'#2b261c',ai:'hermit',heavy:true,famDrop:[1,1,2]},
   wisp:{fam:'spirit',dtype:'cold',name:'Wisp',hp:22,dmg:8,speed:32,r:4,ranged:true,xp:11,eye:'#6fd6e6'},
-  boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d'},
+  boss:{name:'Boss',hp:520,dmg:22,speed:36,r:15,xp:160,eye:'#ff4a3d',heavy:true},
 };
 // Materials. The first three are for enhancing, from common to rare: enemies, chests and bosses drop them, and
 // salvaging gear gives them back. The rest are monster drops, one per family (fam): only that family drops it, and the
@@ -291,7 +291,7 @@ const MARKET_HOUR=3600000;
 const FLOORS=[
   {theme:0,intro:'Find the boss chamber. It is somewhere to the east.',introMs:2800,
     spawns:['shade','shade','shade','skitter','skitter','skitter','brute','wisp'],
-    boss:{name:'The Gate Warden',fam:'spirit',sprite:'boss',ai:'warden',line:'#7a4a52',calls:'skitter'}},
+    boss:{name:'The Gate Warden',fam:'spirit',sprite:'boss',ai:'warden',line:'#7a4a52',calls:'skitter',hpX:18}},
   {theme:1,intro:'The dead here shrug off magic. Bring steel.',introMs:4200,
     spawns:['skel','skel','skel','skelarcher','skelarcher','skelknight','skitter','wisp'],
     boss:{name:'The Bone Regent',fam:'undead',sprite:'boneboss',ai:'regent',line:'#9a8f6a',mres:.5,calls:'skel'}},

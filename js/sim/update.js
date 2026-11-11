@@ -81,6 +81,7 @@ function simUpdate(dt){
 function resetBoss(){
   const b=G.bossEnt;G.bossAwake=false;G.tele=[];G.timers=[];
   Object.assign(b,{hp:b.maxHp,state:'idle',summons:0,atkT:1.5,stun:0,kx:0,ky:0,bleedT:0,sunder:0,x:(G.boss.x+G.boss.w/2)*TILE,y:(G.boss.y+G.boss.h/2)*TILE});
+  if(b.ai==='warden'){wardenInit(b);b.phase=null;}
   G.enemies=G.enemies.filter(e=>e===b||!e.summoned);G.beams=[];bossBar(null);
   if(G.arena){G.corpses=G.corpses.filter(c=>!c.arena);for(const q of G.arena)G.corpses.push({x:q.x,y:q.y,t:1e9,arena:true});}   // the chamber's bodies are back
 }
@@ -136,8 +137,8 @@ function updatePlayer(dt){
       const E=takeEmpower();   // an empowered attack (Smite and the like) hits harder
       if(ST.magic)castBolt(E.m);
       else if(ST.ranged)fireArrow(P.aim,E.m);
-      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,E.m,{melee:true,pz:E.pz,poison:E.poison});
-      if(ST.thrust)vfx({k:'line',x:P.x,y:P.y,a:s.a,len:ST.range+5,t:0,d:.1});else slashFx(s.a,ST.arc,ST.range,s.dir,.14);}}
+      else{hitArc(s.a,Math.max(ST.arc,ST.thrust?40:0),ST.range,E.m,{melee:true,pz:E.pz,poison:E.poison,w:E.c?1.4:undefined,c:E.c});   // an empowered blow lands in its skill's colour, harder
+      if(ST.thrust)vfx({k:'thrust',x:P.x,y:P.y,a:s.a,len:ST.range+5,c:E.c,small:1,t:0,d:.14});else vfx({k:'slash',x:P.x,y:P.y,a:s.a,arc:ST.arc,r:ST.range,dir:s.dir,c:E.c,t:0,d:E.c?.2:.14});}}
     if(s.t>=s.d)P.swing=null;}
 }
 // Aiming, blocking and moving. Online, each browser runs this for its own player so movement answers at once, and
@@ -164,9 +165,9 @@ function steerPlayer(dt){
   // A blow's push (P.kx, P.ky), set by hurtPlayer; it dies away quickly.
   if(Math.abs(P.kx)+Math.abs(P.ky)>1){if(!P.remote)moveEnt(P,P.kx*dt,P.ky*dt);const k=Math.max(0,1-10*dt);P.kx*=k;P.ky*=k;}else P.kx=P.ky=0;
   if(P.dash){
-    const D=P.dash;if(!P.remote)moveEnt(P,D.vx*dt,D.vy*dt);D.t-=dt;
+    const D=P.dash;if(!P.remote||D.leap)moveEnt(P,D.vx*Math.min(dt,D.t),D.vy*Math.min(dt,D.t));D.t-=dt;   // (a Leap Slam is the server's to move: it ends in a blow)
     if(Math.random()<.7)part({x:P.x,y:P.y+rand(-6,4),vx:0,vy:0,t:0,d:.22,c:'#4a4a5e'});
-    if(D.t<=0){P.dash=null;P.vx=mx*ST.move;P.vy=my*ST.move;}   // you come out of a dash already running
+    if(D.t<=0){if(D.leap&&P.remote)P.tp++;P.dash=null;P.vx=mx*ST.move;P.vy=my*ST.move;}   // you come out of a dash already running
   }else{
     // you keep moving while you attack, slower (COMBAT.swingSlow), through the whole of a string of swings (attack
     // held: the gaps between swings no longer let you bolt); staggered, you don't move at all
@@ -202,7 +203,7 @@ function updateEnemy(e,dt){   // enemies never step into a safe room, whether wa
 function updateEnemyCore(e,dt){
   if(e.flash>0)e.flash-=dt;if(e.hurtT>0)e.hurtT-=dt;if(e.sunder>0)e.sunder-=dt;if(e.staggerT>0)e.staggerT-=dt;
   // poise comes back after a few seconds without a blow (COMBAT.epoise)
-  if(e.maxPoise&&e.poise<e.maxPoise&&G.time-(e.poiseT??-9)>COMBAT.epoise.delay)e.poise=Math.min(e.maxPoise,e.poise+e.maxPoise*COMBAT.epoise.regen*dt);
+  if(e.maxPoise&&e.poise<e.maxPoise&&G.time-(e.poiseT??-9)>COMBAT.epoise.delay)e.poise=Math.min(e.maxPoise,e.poise+e.maxPoise*(e.poiseBack||COMBAT.epoise.regen)*dt);
   if(ETYPES[e.type].dummy){   // a scarecrow: shrugs off knockback and stuns, and is whole again once left alone
     e.kx=e.ky=0;e.stun=0;if(e.hurtT<=0){e.hp=e.maxHp;e.bleedT=0;}else if(e.bleedT>0){e.bleedT-=dt;e.bleedAcc+=e.bleedDps*dt;
       if(e.bleedAcc>=1){const d=Math.floor(e.bleedAcc);e.bleedAcc-=d;e.hp-=d;addNum(e.x,e.y-e.r-5,d,'bleed');}}
@@ -216,7 +217,7 @@ function updateEnemyCore(e,dt){
   if(e.state==='idle'){if(!e.boss&&d<96&&!P.dead&&!P.locked&&!P.safe)e.state='chase';return;}
   if(P.dead)return;
   if(Math.abs(dx)>2)e.face=dx>0?1:-1;
-  if(e.boss)return updateBoss(e,dt,d,ux,uy);
+  if(e.boss||e.ai==='warden')return updateBoss(e,dt,d,ux,uy);
   const T=ETYPES[e.type];
   // separation
   let sx=0,sy=0;for(const o of G.enemies){if(o===e||o.dead)continue;const ox=e.x-o.x,oy=e.y-o.y,od=hyp(ox,oy),min=e.r+o.r;if(od<min&&od>.01){sx+=ox/od*(min-od);sy+=oy/od*(min-od);}}
@@ -294,6 +295,7 @@ function zeldaAI(e,dt,T,dx,dy,d){
 function updateBoss(e,dt,d,ux,uy){
   const rage=e.hp/e.maxHp<.3?.7:1;
   if(e.ai==='collector')return collectorAI(e,dt,d,ux,uy);
+  if(e.ai==='warden')return wardenAI(e,dt,d,ux,uy);
   if(e.state==='charge'){
     moveEnt(e,e.cvx*dt,e.cvy*dt);e.t-=dt;
     forPlayers(pl=>{if(!pl.dead&&!e.chHit.includes(pl.id)&&hyp(pl.x-e.x,pl.y-e.y)<e.r+pl.r+2){e.chHit.push(pl.id);hurtPlayer(e.dmg*1.3,e,true);}});

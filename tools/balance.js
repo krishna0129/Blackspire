@@ -10,7 +10,7 @@
 // attribute and vitality, a common weapon of the floor, nothing from the tree yet. The scenes, on floors 1 to 3:
 //   dummy  one target that never fights back, 10 seconds: damage per second, skill included when it does damage
 //   room   six of the floor's own enemies around you: seconds to clear (60 at most), health lost, falls
-//   boss   the floor's boss alone, 5 minutes at most: seconds to kill, health lost, falls
+//   boss   the floor's boss alone, 20 minutes at most: seconds to kill, health lost, falls
 // Everything is seeded, so the same rules give the same table. A build that falls is stood up again where it fell,
 // and the fall is counted, so every scene runs to its end.
 // Budgets: until the new combat sets the reference damage R per floor, each build is held against the median of the
@@ -34,6 +34,7 @@ function scene(floor,start,wkey,attr,kind,cls){
     setWorld(genFloor(${floor},4242));const pl=makePlayer(1,s);G.players=[pl];setPlayer(pl);calcStats();P.hp=ST.maxHp;P.mp=ST.maxMp;
     s.char.slots.q=skillOf(s.equip.weapon);   // each build uses its weapon's own skill, as before the four slots
     god=false;let lost=0,falls=0,dealt=0,t=0,casts=0;
+    die=()=>{falls++;P.hp=ST.maxHp;P.inv=1;};   // a fall: stood up again where it fell (a real fall would empty the chamber and heal the boss)
     const room=G.rooms.filter(r=>r.kind==='room').sort((a,b)=>b.w*b.h-a.w*a.h)[0];
     let foes=[];
     if('${kind}'==='boss'){const b=G.bossEnt;G.enemies=[b];foes=[b];enterChamber(G.gates[1]);}   // in through the west gate, as a player comes
@@ -41,7 +42,7 @@ function scene(floor,start,wkey,attr,kind,cls){
       if('${kind}'==='dummy'){const e=makeEnemy('dummy',P.x+12,P.y,1,1,false);e.hp=e.maxHp=1e9;G.enemies=[e];foes=[e];}
       else{const bag=floorDef(G.n).spawns.filter(k=>!ETYPES[k].rooted);for(let i=0;i<6;i++){const a=i/6*TAU;
         const e=makeEnemy(bag[i%bag.length],P.x+Math.cos(a)*56,P.y+Math.sin(a)*40,G.hpM,G.dmgM,false);e.state='chase';G.enemies.push(e);foes.push(e);}}}
-    const limit='${kind}'==='dummy'?10:'${kind}'==='room'?60:300;
+    const limit='${kind}'==='dummy'?10:'${kind}'==='room'?60:1200;
     while(t<limit){
       const live=foes.filter(e=>!e.dead);if(!live.length)break;
       let tg=live[0],bd=1e9;for(const e of live){const d=hyp(e.x-P.x,e.y-P.y);if(d<bd){bd=d;tg=e;}}
@@ -53,7 +54,6 @@ function scene(floor,start,wkey,attr,kind,cls){
       if(P.hp<ST.maxHp*.35&&P.potCd<=0&&S.potions>0)usePotion();
       simUpdate(${STEP});t+=${STEP};
       dealt+=before-foes.reduce((n,e)=>n+Math.max(0,e.hp),0);lost+=Math.max(0,hp-P.hp);
-      if(P.dead){falls++;P.dead=false;P.hp=ST.maxHp;P.inv=1;}
       P.food=P.drink=100;
     }
     const left=foes.filter(e=>!e.dead).length;
@@ -81,7 +81,7 @@ health), and falls count how often it died and was stood up again.\n`;
     for(const[start]of BUILDS){const r=R[n][start],off=(r.dummy.dps-m)/m,warn=Math.abs(off)>.2;
       if(warn)flags.push(`floor ${n}, ${names[start]}: ${off>0?'+':''}${Math.round(off*100)}%`);
       const b=BUDGET[start];if(b&&Math.abs(r.dummy.dps-b[n])/b[n]>.35)flags.push('FAIL '+names[start]);
-      md+=`| ${names[start]} | ${r.dummy.dps} | ${warn?'⚠ ':''}${off>=0?'+':''}${Math.round(off*100)}% | ${r.room.cleared?r.room.t+' s':'not cleared'} | ${(r.room.lost/r.room.hp).toFixed(1)} | ${r.boss.cleared?r.boss.t+' s':'not killed in 5 min'} | ${(r.boss.lost/r.boss.hp).toFixed(1)} | ${r.room.falls}, ${r.boss.falls} |\n`;}
+      md+=`| ${names[start]} | ${r.dummy.dps} | ${warn?'⚠ ':''}${off>=0?'+':''}${Math.round(off*100)}% | ${r.room.cleared?r.room.t+' s':'not cleared'} | ${(r.room.lost/r.room.hp).toFixed(1)} | ${r.boss.cleared?r.boss.t+' s':'not killed in 20 min'} | ${(r.boss.lost/r.boss.hp).toFixed(1)} | ${r.room.falls}, ${r.boss.falls} |\n`;}
   }
   md+=`\n## Marked\n\n${flags.length?flags.map(f=>'- '+f).join('\n'):'Nothing is more than 20% from its floor\'s median.'}\n`;
   return{md,fail:flags.some(f=>f.startsWith('FAIL'))};

@@ -47,7 +47,7 @@ function resOf(e,type){const F=FAMILIES[famOf(e)],r=(F&&F.res&&F.res[type]||0)/1
 // Returns true if the blow landed, false if it was blocked or the target was already dead.
 // o.tags: the blow's tags (TAGS), when it is not the basic attack; o.type: its damage type, if not the tags'.
 function damageEnemy(e,mult,o={}){
-  if(e.dead||e.burrowed)return false;   // an Ossuary hermit under the floor is out of reach
+  if(e.dead||e.burrowed||e.immune)return false;   // an Ossuary hermit under the floor is out of reach; a boss mid-roar or mid-blink cannot be touched
   // A bone knight's shield stops anything that comes from the side it faces, unless it is mid-swing or reeling.
   if(ETYPES[e.type].shield&&!e.boss&&e.stun<=0&&(e.state==='chase'||e.state==='idle')){
     const fa=DIR_ANGLE[e.dir||0];
@@ -76,8 +76,9 @@ function damageEnemy(e,mult,o={}){
   const T=ETYPES[e.type];
   if(T.weak&&T.weak[type])d*=T.weak[type];        // a weakness to a type: Thornroot to fire (its burn is scaled the same way below)
   if(e.state==='shell')d*=.4;                       // a hermit's skull shell
+  d*=wardenShield(e);                               // the Gate Warden while its echo stands
   // melee hits land with a beat of freeze-frame and stagger whatever they hit
-  if(o.melee){hitstop(crit?.075:.045);if(!e.boss&&!ETYPES[e.type].heavy){e.stun=Math.max(e.stun,.2);if(e.state==='windup'||e.state==='draw')e.state='chase';}}   // a hit breaks a light enemy's attack
+  if(o.melee){if(!e.boss&&!ETYPES[e.type].heavy){e.stun=Math.max(e.stun,.2);if(e.state==='windup'||e.state==='draw')e.state='chase';}}   // a hit breaks a light enemy's attack
   const res=resOf(e,type),resisted=res>0;d*=1-res;
   d=Math.max(1,Math.round(d));
   e.hp-=d;e.flash=.09;e.hurtT=4;if(e.state==='idle'){if(e.boss)wakeBoss();else e.state='chase';}
@@ -89,8 +90,7 @@ function damageEnemy(e,mult,o={}){
   if(P.berserkT>0)heal(d*.1);
   addNum(e.x,e.y-e.r-5,d,resisted?'resist':crit?'crit':bane?'bane':'hit');
   if(resisted){if(G.time-e.resT>1.8){e.resT=G.time;addNum(e.x,e.y-e.r-13,'RESIST','resist');}}
-  burst(e.x,e.y,crit?6:3,crit?'#ffe9a8':'#b9b4c8',crit?70:45);
-  sfx(crit?'crit':'hit');
+  impact(e,o,type,crit);
   if(ST.p.lifesteal)heal(d*ST.p.lifesteal/100);
   if(!o.noProc){
     if(ST.p.bleed){e.bleedT=3;e.bleedDps=ST.dmg*ST.p.bleed/100/3;}
@@ -110,30 +110,47 @@ function damageEnemy(e,mult,o={}){
 }
 // An enemy's poise (COMBAT.epoise): a share of its health, worn down by blows (heavier weapons wear it faster). Broken,
 // the enemy is staggered for a moment and takes more damage; then its poise is whole again.
+// What a blow looks, sounds and feels like. Sparks in its colour (its element's, or the skill's own) thrown the way
+// it travelled, a flash on what it struck, and by its weight a shake and a beat of freeze-frame. o.w: about .8 for
+// a basic sword blow, 1.5 to 2 a heavy skill, 3 an ultimate's; things that tick (pools, storms) weigh little.
+const HIT_COL={fire:'#ff8a3a',cold:'#9fd8ff',lightning:'#f2e676',rot:'#9ad86a',physical:'#efe6d2'};
+function impact(e,o,type,crit){
+  const w=o.w??(o.melee?.8:.5),a=Math.atan2(e.y-(o.fy??P.y),e.x-(o.fx??P.x)),c=o.c||HIT_COL[type]||HIT_COL.physical,W=w*(crit?1.35:1);
+  vfx({k:'hit',x:e.x,y:e.y,a,c,w:W,t:0,d:.14+.05*W});
+  for(let i=0,n=Math.round(2+3*W);i<n;i++){const b=a+rand(-.8,.8),s=rand(35,70+45*W);part({x:e.x,y:e.y,vx:Math.cos(b)*s,vy:Math.sin(b)*s,t:0,d:rand(.15,.4),c:i%3?c:'#fff6dc'});}
+  if(W>=1)shake(Math.min(8,.6+1.9*W));
+  if(o.melee||W>=1.4)hitstop(Math.min(.12,.03+.022*W));
+  e.hitA=a;e.hitW=W;e.hitAt=G.time;   // the way it was struck, for its recoil
+  sfx(crit?'crit':W>=1.9?'hitHeavy':type==='fire'?'hitFire':type==='cold'?'hitCold':type==='lightning'?'hitZap':o.melee?'hit':'hitSoft');
+}
 function wearPoise(e,v){
-  if(e.dead||ETYPES[e.type].dummy)return;
+  if(e.dead||ETYPES[e.type].dummy||e.noPoise)return;
   const E=COMBAT.epoise;
   if(e.maxPoise==null){e.maxPoise=e.maxHp*(e.boss?E.boss:e.elite?E.elite:E.share);e.poise=e.maxPoise;}
   if(e.staggerT>0)return;
   e.poise-=v;e.poiseT=G.time;
   if(e.poise<=0){const t=e.boss?E.bossStun:E.stun;e.staggerT=t;e.stun=Math.max(e.stun||0,t);e.poise=e.maxPoise;
     if(e.state==='windup'||e.state==='draw'||e.state==='cast'||e.state==='channel')e.state='chase';
-    addNum(e.x,e.y-e.r-13,'STAGGERED','crit');burst(e.x,e.y-6,10,'#ffe9a8',60);sfx('crit');}
+    addNum(e.x,e.y-e.r-13,'STAGGERED','crit');burst(e.x,e.y-6,10,'#ffe9a8',60);sfx('crit');
+    if(e.ai==='warden')wardenBroken(e);}
 }
 function wakeBoss(){
   const b=G.bossEnt;if(!b||b.dead||G.bossAwake)return;
+  // with a party: +80% health for each player after the first (docs/design/bosses.md)
+  const n=Math.max(1,G.players.filter(pl=>!pl.gone).length);b.baseHp=b.baseHp||b.maxHp;b.maxHp=Math.round(b.baseHp*(1+.8*(n-1)));b.hp=b.maxHp;b.maxPoise=null;
+  if(b.ai==='warden')wardenInit(b);   // (its own poise)
   G.bossAwake=true;b.state='chase';bossBar(b.name);banner(b.name,'Floor '+G.n+' boss',2600);sfx('boss');shake(6);
 }
 // Every player on the floor shares the kill: each gets the experience and their own roll of the loot.
 function killEnemy(e){
   if(e.dead)return;
   if(ETYPES[e.type].dummy){e.hp=1;return;}   // a training scarecrow can't fall, however hard it is hit
-  e.dead=true;sfx('kill');
+  e.dead=true;sfx('kill');if(e.echo)wardenEchoFell(e);
   burst(e.x,e.y,e.boss?40:10,'#3a3a4c',e.boss?120:60);burst(e.x,e.y,e.boss?14:3,ETYPES[e.type].eye,70);
   const T=ETYPES[e.type];
   if(T.corpse&&!e.collect)G.corpses.push({x:e.x,y:e.y,t:6});   // a thrall leaves its body behind, for a Gravecaller to raise
   forPlayers(pl=>{
-    S.kills++;if(e.raised)return;   // the raised dead give nothing: no experience, no loot, so raising cannot be farmed
+    S.kills++;if(e.raised||e.echo)return;   // the raised dead give nothing: no experience, no loot, so raising cannot be farmed
     gainXp(T.xp*(1+.3*(G.n-1))*(e.elite?3:1));questKill(e);
     dropLoot(e.boss?'boss':e.elite?'elite':'normal',e.x,e.y,e);
     if(e.boss){
@@ -182,18 +199,18 @@ function hurtPlayer(dmg,src,sure,from,ground){
   if(P.inv>0||P.dead||god||P.vanishT>0)return;   // Vanish: nothing touches you
   const o=from||src,C=COMBAT;
   const type=(from&&from.dtype)||(src&&ETYPES[src.type]&&ETYPES[src.type].dtype)||'physical',magic=type!=='physical';
-  const heavy=!magic&&!!(sure||(src&&(src.boss||(ETYPES[src.type]&&ETYPES[src.type].heavy))));
+  const heavy=!magic&&!!(sure||(src&&(src.boss||src.echo||(ETYPES[src.type]&&ETYPES[src.type].heavy))));
   const facing=arc=>o&&Math.abs(angDiff(Math.atan2(o.y-P.y,o.x-P.x),P.aim))<=arc*Math.PI/360;
   // Parry: block pressed just before the blow, facing it, with a shield, a sword or a dagger. Nothing gets through,
   // and the attacker is staggered (a boss only briefly). Telegraphed area attacks and the ground can't be parried.
   // Riposte: for a moment every blow from the front is parried, free, and answered hard
   if(P.riposteT>0&&!sure&&!ground&&facing(160)){P.inv=.15;addNum(P.x,P.y-16,'RIPOSTE','crit');sfx('block');
-    if(src&&!src.dead&&src.maxHp){src.stun=Math.max(src.stun||0,src.boss?C.parry.bossStun:C.parry.stun);damageEnemy(src,3,{crit:true,melee:true,tags:SKILLS.riposte.tags});slashFx(Math.atan2(src.y-P.y,src.x-P.x),100,ST.range+6);}
+    if(src&&!src.dead&&src.maxHp){src.parried=1;src.stun=Math.max(src.stun||0,src.boss||src.echo?C.parry.bossStun:C.parry.stun);damageEnemy(src,3,{crit:true,melee:true,tags:SKILLS.riposte.tags});slashFx(Math.atan2(src.y-P.y,src.x-P.x),100,ST.range+6);}
     return;}
   if(ST.parry&&!sure&&!ground&&G.time-P.parryAt<C.parry.win&&facing(ST.shield?SHIELDS[ST.shield].arc:C.parry.arc)&&P.sta>=C.parry.cost){
     P.sta-=C.parry.cost;P.staT=G.time;P.parryAt=-9;P.inv=.15;
     addNum(P.x,P.y-16,'PARRY','evade');sfx('block');burst(P.x+Math.cos(P.aim)*8,P.y+Math.sin(P.aim)*8,8,'#ffe9a8',70);
-    if(src&&!src.dead&&src.maxHp){src.stun=Math.max(src.stun||0,src.boss?C.parry.bossStun:C.parry.stun);if(src.state==='windup'||src.state==='strike')src.state='recover',src.t=Math.max(src.t||0,.4);}
+    if(src&&!src.dead&&src.maxHp){src.parried=1;src.stun=Math.max(src.stun||0,src.boss||src.echo?C.parry.bossStun:C.parry.stun);if(src.state==='windup'||src.state==='strike')src.state='recover',src.t=Math.max(src.t||0,.4);}
     return;
   }
   // Blocking: a raised shield stops blows from the side you face. Each one costs stamina; without it, the block breaks.

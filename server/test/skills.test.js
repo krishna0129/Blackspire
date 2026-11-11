@@ -131,7 +131,7 @@ test('every class has its whole pool: at least four everyday skills and three ul
 test('the Marauder: Leap Slam, Enduring Cry, Earthquake and its aftershock, Berserk',()=>{
   const run=cls('great','marauder');
   run(`globalThis.e=foe('skel',90,0);e.maxHp=e.hp=1e6;slot('q','leap');`);fresh(run);
-  const x0=run(`P.x`);run(`useSkill('q');`);
+  const x0=run(`P.x`);run(`useSkill('q');`);assert.ok(run(`!!P.dash&&e.hp===1e6`),'in the air first');run(`tick(.4);`);
   assert.ok(run(`P.x`)>x0+40,'leapt forward');assert.ok(run(`e.hp`)<1e6,'and slammed');
   run(`slot('x','cry');`);fresh(run);run(`useSkill('x');`);
   assert.ok(run(`P.cryT`)>0&&run(`ally.cryT`)>0||run(`hyp(ally.x-P.x,ally.y-P.y)`)>=140,'the cry reaches allies near');

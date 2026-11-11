@@ -218,7 +218,27 @@ How far skills go, in tiles (a tile is 16 units; the numbers are `REACH` in js/s
 | Melee lines (Piercing Line, Piercing Storm) | the weapon's reach plus about 3 tiles (Storm: plus about 4) |
 | Thousand Cuts | an enemy within the weapon's reach plus 2.5 tiles |
 | Ground skills (Rain of Arrows, Meteor, Blizzard, Judgement) | land **at the mouse**, no farther than 7 to 8 tiles |
-| Leap Slam | to the mouse, up to about 5.5 tiles |
+| Leap Slam | to the mouse, up to about 5.5 tiles: a third of a second in the air (nothing hits you), then the slam |
 | Shots (arrows, bolts, Fireball, Frostbolt) | the weapon's range (bow about 9 tiles, grimoire about 8.5) |
 | Split Arrow | through up to four enemies |
 | Aimed at an enemy (Arc, Death Mark, Challenge, Shadowstep) | 7.5 to 10 tiles |
+
+## How a blow lands
+
+Every hit on an enemy goes through one place (`impact` in combat.js), and how hard it shows depends on the blow's
+**weight**: about 0.5 for a shot or a tick, 0.8 for a sword swing, 1.5 to 2 for a skill's main hit, 3 for Meteor and
+Earthquake (a critical is a third heavier).
+
+- **Light:** a burst at the point of contact with streaks flying on along the blow, in the colour of the damage
+  (pale for physical, orange fire, blue cold, yellow lightning, green rot) or of the skill.
+- **The enemy:** knocked a little along the blow and bent back by it for a fifth of a second (bosses a third as far).
+- **The pause and the shake:** melee blows and heavy ones stop the game for a few hundredths of a second; blows of
+  weight 1 and up shake the screen, more with weight.
+- **Sound:** a different sound for a light hit, a melee hit, a heavy one, a critical, fire, cold and lightning, each a
+  tone over a burst of noise.
+
+Each skill also has **its own motion** (SKILL_ANIM in render3d.js: a spin for Circular Slash, an overhead chop for
+Sunder, a lunge for Piercing Line, a jump for Leap Slam, a raised hand for the novas and heals, a long cast for the
+ultimates) begun just before the clip's blow, since skills land the instant they are pressed; and its own effect
+(a lance of light for the thrusts, cuts drawn across the body for Thousand Cuts and Death Dance, cracks in the floor
+for the slams, a pillar of light for Judgement, standing ice for Ice Nova).

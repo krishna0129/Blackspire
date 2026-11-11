@@ -10,7 +10,7 @@
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 
 const ROOT=path.join(__dirname,'..');
-const SIM_FILES=['util','data','tree','items','rules','world','village','quests','fields','market','combat','skills','update','floor3','actions'];
+const SIM_FILES=['util','data','tree','items','rules','world','village','quests','fields','market','combat','skills','update','warden','floor3','actions'];
 const TICK=1/30;          // the rules run 30 times a second
 const SNAP_EVERY=2;       // each player gets a snapshot every second tick (15 a second)
 const VIEW=360;           // enemies and shots further than this from a player are left out of their snapshot
@@ -237,12 +237,13 @@ class Game{
   snapshot(w,m){
     const G=w.G,me=m.pl,near=e=>Math.abs(e.x-me.x)<VIEW&&Math.abs(e.y-me.y)<VIEW*.7;
     return{t:'s',time:r1(G.time),
-      me:{hp:r1(me.hp),mp:r1(me.mp),food:r1(me.food),drink:r1(me.drink),buff:me.buff?[me.buff.id,Math.round(me.buff.t)]:0,x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
+      me:{ca:me.castAt!=null?[me.castId,r1(G.time-me.castAt)]:0,lp:me.dash&&me.dash.leap?[r1(me.dash.vx),r1(me.dash.vy),r1(me.dash.t)]:0,hp:r1(me.hp),mp:r1(me.mp),food:r1(me.food),drink:r1(me.drink),buff:me.buff?[me.buff.id,Math.round(me.buff.t)]:0,x:r1(me.x),y:r1(me.y),tp:me.tp,dead:me.dead,safe:me.safe,locked:me.locked,inv:r1(me.inv),guard:r1(me.guard),
         swing:me.swing?[r1(me.swing.t),r1(me.swing.d),me.swing.hit?1:0]:0,cds:Object.fromEntries(Object.entries(me.cds||{}).filter(e=>e[1]>0).map(([k,v])=>[k,[r1(v),r1(me.cdMax[k])]])),shield:Math.round(me.shield||0),emp:me.emp?me.emp.n:0,hot:me.hot?1:0,deadAt:me.dead?r1(R.G.time-(me.deadAt??R.G.time)):0,potCd:r1(me.potCd),dodgeCd:r1(me.dodgeCd),mom:me.mom,blocking:!!me.blocking,sta:r1(me.sta),poise:r1(me.poise),stagger:r1(me.stagger),kb:[r1(me.kx),r1(me.ky),me.kbN],bag:me.bag?[r1(me.bag.x),r1(me.bag.y)]:0,fat:Math.round(me.fat||0),rested:Math.round(me.rested||0),awake:Math.round(Math.min(me.awake??1e9,1e9)),fireCd:Math.round(me.fireCd||0),room:!!me.room,fight:G.time-(me.fightT??-99)<5?1:0},
       // in a busy village, only the people near you
       pl:G.players.filter(q=>q!==me&&!q.gone&&(w.kind!=='village'||near(q))).map(q=>({id:q.id,x:r1(q.x),y:r1(q.y),dir:q.dir,moving:q.moving,dead:q.dead,inv:r1(q.inv),guard:r1(q.guard),hp:Math.ceil(q.hp),maxHp:q.ST.maxHp,
-        swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,blocking:!!q.blocking||!!q.parrying,dash:!!q.dash,a:r1(q.aim),sh:q.shield>0?1:0,em:q.emp?1:0,ho:q.hot?1:0})),
-      en:G.enemies.filter(e=>!e.dead&&(e.boss||near(e))).map(e=>({id:e.id,type:e.type,x:r1(e.x),y:r1(e.y),dir:e.dir,face:e.face,state:e.state,t:r1(e.t||0),hopT:e.hopT,
+        swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,blocking:!!q.blocking||!!q.parrying,dash:q.dash?(q.dash.leap?2:1):0,ca:q.castAt!=null?[q.castId,r1(G.time-q.castAt)]:0,a:r1(q.aim),sh:q.shield>0?1:0,em:q.emp?1:0,ho:q.hot?1:0})),
+      en:G.enemies.filter(e=>!e.dead&&(e.boss||e.echo||near(e))).map(e=>({hit:G.time-(e.hitAt??-9)<.3?[r1(e.hitA),r1(e.hitW),Math.round((G.time-e.hitAt)*100)/100]:undefined,
+        ...(e.ai==='warden'?{act:e.act||null,aa:Math.round((G.time-e.actAt)*100)/100,actD:e.actD,aimA:r1(e.aimA),gone:e.gone?1:0,echo:e.echo?1:0,split:e.split?1:0,phase:e.phase,immune:e.immune?1:0,enraged:e.enraged?1:0}:null),id:e.id,type:e.type,x:r1(e.x),y:r1(e.y),dir:e.dir,face:e.face,state:e.state,t:r1(e.t||0),hopT:e.hopT,
         flash:e.flash>0?1:0,stun:e.stun>0?1:0,hurtT:e.hurtT>0?1:0,hp:Math.ceil(e.hp),maxHp:e.maxHp,elite:e.elite,boss:!!e.boss,sprite:e.sprite||null,name:e.name||null,moving:!!e.moving,lunge:e.lunge>0?1:0,ph:r1(e.ph),burrowed:!!e.burrowed,cx:e.state==='channel'?e.cx:undefined,cy:e.state==='channel'?e.cy:undefined,po:e.maxPoise?Math.round(e.poise/e.maxPoise*100)/100:undefined,sg:e.staggerT>0?1:0})),
       pr:G.proj.filter(near).map(q=>({x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),c:q.c,arrow:!!q.arrow,a:q.a})),
       pp:G.pproj.filter(near).map(q=>({k:q.k,f:q.f,x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),a:q.a})),
@@ -250,7 +251,7 @@ class Game{
       co:G.corpses.filter(near).map(c=>({x:r1(c.x),y:r1(c.y)})),
       be:(G.beams||[]).map(B=>({x:r1(B.x),y:r1(B.y),a:B.a,va:B.va,len:B.len,t:r1(B.t)})),
       pf:(G.pfx||[]).filter(q=>q.mark||q.vis).map(q=>({k:q.k,x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,mark:q.mark,vis:q.vis,a:q.a,i:q.i})),
-      te:G.tele.map(q=>({x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,line:!!q.line,cone:!!q.cone,a:q.a,len:q.len,half:q.half})),
+      te:G.tele.map(q=>({x:r1(q.x),y:r1(q.y),r:q.r,t:r1(q.t),d:q.d,line:!!q.line,cone:!!q.cone,a:q.a,len:q.len,half:q.half,w:q.w,inner:q.inner})),
       g:{open:G.gatesOpen,gate:G.gate,awake:G.bossAwake,boss:G.bossEnt?{hp:Math.ceil(G.bossEnt.hp),maxHp:G.bossEnt.maxHp,dead:G.bossEnt.dead,poise:G.bossEnt.maxPoise?Math.round(G.bossEnt.poise/G.bossEnt.maxPoise*100)/100:1,maxPoise:1,staggerT:G.bossEnt.staggerT>0?1:0}:null},
       ev:m.out.splice(0)};
   }
@@ -283,7 +284,7 @@ class Game{
     // a dash moves faster (by the class's dash), and a blow's push (kx, ky) adds its own distance
     const fast=pl.ST.move,dash=3.3*(pl.ST.dashMul||1)*1.1,cap=fast*dash*.25+16+Math.hypot(pl.kx||0,pl.ky||0)*.3;
     m.budget=Math.min(cap,m.budget+(fast*(pl.dash?dash:1.25)+Math.hypot(pl.kx||0,pl.ky||0)*1.2)*TICK);
-    if(!q||pl.dead||q.tp!==pl.tp)return;
+    if(!q||pl.dead||q.tp!==pl.tp||(pl.dash&&pl.dash.leap))return;   // (a Leap Slam's flight is the server's)
     const d=Math.hypot(q.x-pl.x,q.y-pl.y);if(d<.01)return;
     let ok=d<=m.budget;
     for(let i=1,n=Math.ceil(d/3);ok&&i<=n;i++){const u=i/n;if(R.__boxSolid(pl.x+(q.x-pl.x)*u,pl.y+(q.y-pl.y)*u,pl.cr))ok=false;}

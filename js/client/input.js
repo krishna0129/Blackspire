@@ -130,18 +130,28 @@ function press(a,s){
 const readInput=()=>({mx:moveX(),my:moveY(),atk:!!inp.atk,block:!!inp.block,aim:aimAngle()});
 
 /* ---------- sound ---------- */
-let AC=null;
-const SFX={block:[320,170,.07,'square',.06],swing:[220,90,.06,'triangle',.05],hit:[170,60,.08,'square',.05],crit:[520,140,.12,'square',.06],hurt:[110,40,.18,'sawtooth',.09],
+let AC=null,NOISE=null;
+const SFX={block:[320,170,.07,'square',.06],swing:[220,90,.06,'triangle',.05,[.08,.05,1200,3600]],hurt:[110,40,.18,'sawtooth',.09],
   pick:[660,990,.08,'square',.035],lvl:[440,880,.35,'triangle',.08],skill:[330,660,.16,'sawtooth',.05],kill:[200,50,.14,'square',.045],boss:[70,38,.7,'sawtooth',.1],gate:[300,900,.5,'triangle',.07],
-  cast:[720,420,.07,'sine',.04],boom:[150,40,.32,'sawtooth',.09],heal:[520,1040,.42,'sine',.07],rare:[620,1480,.5,'triangle',.08],lock:[95,45,.5,'square',.07]};
+  // (a sixth entry: a burst of noise under the tone, [seconds, loudness, low-pass from, to])
+  hit:[190,70,.09,'square',.05,[.07,.09,2600,500]],hitSoft:[240,120,.06,'triangle',.04,[.05,.05,3000,900]],hitHeavy:[120,36,.22,'sawtooth',.09,[.2,.16,1800,160]],crit:[560,150,.13,'square',.06,[.1,.12,5000,700]],
+  hitFire:[200,70,.16,'sawtooth',.05,[.22,.11,1400,300]],hitCold:[1500,700,.1,'sine',.04,[.1,.07,7000,3000]],hitZap:[900,180,.09,'square',.04,[.07,.08,8000,2500]],
+  heavy:[90,30,.35,'sawtooth',.12,[.3,.2,1200,90]],glint:[1900,2600,.28,'sine',.05],chain:[420,90,.2,'square',.05,[.22,.1,4200,600]],blink:[700,180,.22,'sine',.06,[.2,.06,2400,6000]],
+  thrust:[500,140,.1,'triangle',.06,[.12,.1,6000,1200]],whoosh:[260,110,.2,'triangle',.04,[.24,.12,900,3200]],roar:[130,60,.5,'sawtooth',.09,[.45,.1,700,250]],
+  boom:[150,40,.32,'sawtooth',.09,[.3,.18,1500,120]],
+  cast:[720,420,.07,'sine',.04],heal:[520,1040,.42,'sine',.07],rare:[620,1480,.5,'triangle',.08],lock:[95,45,.5,'square',.07]};
 const sfxLast={};
 function sfx(k){
   if(muted)return;const d=SFX[k];if(!d)return;
-  const now=performance.now();if((k==='hit'||k==='crit')&&now-(sfxLast[k]||0)<45)return;sfxLast[k]=now;   // a wide swing is one sound, not ten
+  const now=performance.now();if((k.startsWith('hit')||k==='crit')&&now-(sfxLast[k]||0)<45)return;sfxLast[k]=now;   // a wide swing is one sound, not ten
   try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
     const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=d[3];
     o.frequency.setValueAtTime(d[0],t);o.frequency.exponentialRampToValueAtTime(d[1],t+d[2]);
     g.gain.setValueAtTime(d[4],t);g.gain.exponentialRampToValueAtTime(.0001,t+d[2]);
-    o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d[2]+.02);}catch(e){}
+    o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d[2]+.02);
+    if(d[5]){const[len,vol,f0,f1]=d[5];NOISE=NOISE||(()=>{const b=AC.createBuffer(1,AC.sampleRate,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1;return b;})();
+      const n=AC.createBufferSource(),f=AC.createBiquadFilter(),ng=AC.createGain();n.buffer=NOISE;f.type='lowpass';f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(f1,t+len);
+      ng.gain.setValueAtTime(vol,t);ng.gain.exponentialRampToValueAtTime(.0001,t+len);n.connect(f);f.connect(ng);ng.connect(AC.destination);n.start(t,Math.random()*.5,len+.02);}
+    }catch(e){}
 }
 function toggleMute(){muted=!muted;$('#pMute').textContent='Sound: '+(muted?'off':'on');}
