@@ -432,7 +432,7 @@ function buildVillage(){
   instance(group,placed);
   for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAME_SETS[k])group.add(points(flames[k],col,size,op));
   scene.add(group);
-  FLOOR={g,group,torches,gates:[],chests:[],stashes,floatSet:null,born:performance.now(),village:true,lit:tm.lit};me.g=g;
+  FLOOR={g,group,torches,gates:[],chests:[],stashes,floatSet:null,born:performance.now(),village:true};me.g=g;
 }
 const FLAME_SETS={warm:[['#ff8a2a',1.7,.85],['#ffcf6a',.65,1],[null,.22,1]],green:[['#2fd05a',.9,.55],['#a8ffa0',.35,.8],[null,.14,1]],blue:[['#3a6cff',1.6,.9],['#9cc0ff',.7,1],[null,.26,1]]};
 for(const k in FLAME_SETS)FLAME_SETS[k][2][0]=typeof THREE==='undefined'?'#fff':new THREE.Color(k==='warm'?'#fff0c0':k==='green'?'#e8ffe0':'#eef4ff').multiplyScalar(2);
@@ -465,7 +465,7 @@ function townBuilder(){
         if(r()<.45){const sc=pick(SHUT);for(const sx of[-.53,.53])box(px+sx,wy,zF+.05,.24,.95,.06,sc);}
         else if(r()<.4){box(px,wy-.7,zF+.2,.9,.2,.26,'#5a3a22');box(px,wy-.55,zF+.2,.8,.16,.2,pick(['#b8405a','#d8b040','#c86a8a','#5a8a3a']));}}}
     // the roof: mostly eaves to the street; on some narrow houses the gable faces it
-    const jz=jet/2,Dr=D+jet,gable=!h.barn&&h.w<=5&&r()<.45,dark=new THREE.Color(roof).multiplyScalar(.62).getStyle(),lite=new THREE.Color(roof).multiplyScalar(1.18).getStyle();
+    const jz=jet/2,Dr=D+jet,gable=!h.barn&&h.w<=5&&r()<.3,dark=new THREE.Color(roof).multiplyScalar(.62).getStyle(),lite=new THREE.Color(roof).multiplyScalar(1.18).getStyle();
     if(gable){const half=W/2+.4,rise=Math.min(3.6,W*.48),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
       prism(X,top,zc+jz,Dr,rise,W,plaster,Math.PI/2);
       for(const sd of[-1,1]){box(X+sd*half/2,top+rise/2+.06,zc+jz,L+.1,.18,Dr+.8,sd<0?roof:lite,0,0,-sd*th);
@@ -491,16 +491,13 @@ function townBuilder(){
       im.instanceColor.needsUpdate=true;im.castShadow=shadow;im.receiveShadow=shadow;im.computeBoundingSphere();im.frustumCulled=false;out.push(im);};
     make(boxes,unit,new THREE.MeshStandardMaterial({roughness:.95}),true);
     make(prisms,pg,new THREE.MeshStandardMaterial({roughness:.95}),true);
-    // candlelight behind the panes: three sets of windows, each breathing at its own pace (breathe, below); never bright
-    const lit=[0,1,2].map(()=>new THREE.MeshBasicMaterial({color:'#000'}));
-    for(let k=0;k<3;k++)make(glows.filter(q=>q[1]===k).map(q=>[q[0],'#ffffff']),unit,lit[k],false);
-    out.lit=lit;return out;
+    // the panes: dark glass by day; in the evening and at night a dim, steady candlelight (VILLAGE_HOUR, village.js)
+    const dayTime=VILLAGE_HOUR==='day';
+    make(glows.map(q=>[q[0],dayTime?'#1d242c':q[1]===0?'#5a3414':q[1]===1?'#4e2c12':'#633a18']),unit,dayTime?new THREE.MeshStandardMaterial({roughness:.4}):new THREE.MeshBasicMaterial({}),false);
+    return out;
   }
   return{box,prism,house,meshes};
 }
-// Candlelit windows: a low amber that swells and sinks slowly, with a candle's small unsteadiness.
-const CANDLE=typeof THREE==='undefined'?null:new THREE.Color('#e08a3a');
-function breathe(mats,t){mats.forEach((m,k)=>{const b=.3+.09*Math.sin(t*(.5+k*.17)+k*2.1)+.035*Math.sin(t*(5.3+k*1.9)+k)+.02*Math.sin(t*13.7+k*4);m.color.copy(CANDLE).multiplyScalar(b);});
 }
 // The village's ground, painted once into a canvas: grass with its lighter and darker patches, the worn paths, the
 // square's flagstones, the market's cobbles, the fields' tilled earth and the training yard's packed dirt.
@@ -1021,7 +1018,6 @@ function frame3d(){
   // the moon's shadows follow you; snapped to its texels so they do not shimmer
   const snap=52/2048;moon.target.position.set(Math.round(camT.x/snap)*snap,0,Math.round(camT.z/snap)*snap);moon.position.set(moon.target.position.x-18,40,moon.target.position.z-6);
   CUT.value.set(px,0,pz);
-  if(FLOOR.lit)breathe(FLOOR.lit,t);
   lantern.position.set(px,5,pz+1.2);lantern.intensity=MOOD.village?6:P.dead?6:24;
   // the floating candles drift up and down
   if(F.floatSet){const fs=F.floatSet,m=new THREE.Matrix4(),tmp=new THREE.Matrix4(),arr=fs.pts[0].geometry.attributes.position;

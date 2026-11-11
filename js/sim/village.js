@@ -57,18 +57,18 @@ const VILLAGE={
     [5,20,37,4,0],[22,33,37,4,0],[47,58,37,4,0],[60,75,37,4,0],
     [5,20,43,4,1],[22,37,43,4,1],[69,75,43,4,1]],
 };
-// The houses: rows only loosely. Each is 3 to 6 tiles wide and stands a little forward or back of its neighbours, turned
-// a few degrees its own way; between some there is a gap with a tree, a cart's worth of crates or a woodpile in it, or
-// just room to slip through. shift: a row's houses step away from the street they keep clear (-1 north, 1 south).
+// The houses, row by row: 4 to 6 tiles wide, mostly wall to wall, now and then a gap you can slip through.
 function villageHouses(){
-  const r=mulberry32(1907),out=[],extras=[],FILL=['tree_single_A','tree_single_B','barrel','crate_A_big','resource_lumber','sack','crate_B_small','pallet'];
-  for(const[x0,x1,base,depth,tall]of VILLAGE.rows){let x=x0;const shift=tall?-1:1;
-    while(x1-x>=3){let w=3+Math.floor(r()*4);if(w>x1-x||x1-x-w<3)w=x1-x;if(w>7)w=Math.ceil(w/2);
-      const d=Math.max(3,depth-(depth>3&&r()<.35?1:0)),off=r()<.45?shift:0;
-      out.push({x,y:base-d+off,w,h:d,floors:tall?(r()<.65?2:1):1,seed:Math.floor(r()*1e6),rot:(r()<.25?0:(r()-.5)*.5),dx:(r()-.5)*.5});x+=w;
-      if(r()<.45&&x1-x>=4){if(r()<.7){const k=FILL[Math.floor(r()*FILL.length)],tree=k.startsWith('tree');extras.push([k,x+.5,base-(tall?1.5:d-.5)+r(),tree?4.2+r()*.8:k==='crate_B_small'?4:3.5,r()*6]);}x+=1;}}}
-  return{houses:out,extras};
+  const r=mulberry32(1907),out=[];
+  for(const[x0,x1,base,depth,tall]of VILLAGE.rows){let x=x0;
+    while(x1-x>=3){let w=4+Math.floor(r()*3);if(w>x1-x||x1-x-w<3)w=x1-x;if(w>7){w=Math.ceil(w/2);}
+      const d=depth-(depth>3&&r()<.25?1:0);
+      out.push({x,y:base-d,w,h:d,floors:tall?(r()<.7?2:1):1,seed:Math.floor(r()*1e6)});x+=w+(r()<.3?1:0);}}
+  return{houses:out,extras:[]};
 }
+// The hour in the village, for its lights: 'day' (windows dark), 'evening' or 'night' (windows lit, dim and steady).
+// Always day for now: evening and night are still to come.
+const VILLAGE_HOUR='day';
 function genVillage(){
   const map=new Uint8Array(MW*MH),at=(x,y)=>(VOY+y)*MW+VOX+x;   // 0 void, 1 open ground, 2 blocked
   for(let y=0;y<VH;y++)for(let x=0;x<VW;x++){const edge=Math.min(x,y,VW-1-x,VH-1-y);map[at(x,y)]=edge<3?2:1;}   // the town wall
