@@ -57,14 +57,17 @@ const VILLAGE={
     [5,20,37,4,0],[22,33,37,4,0],[47,58,37,4,0],[60,75,37,4,0],
     [5,20,43,4,1],[22,37,43,4,1],[69,75,43,4,1]],
 };
-// The houses, row by row: 4 to 6 tiles wide, mostly wall to wall, now and then a gap you can slip through.
+// The houses: rows only loosely. Each is 3 to 6 tiles wide and stands a little forward or back of its neighbours, turned
+// a few degrees its own way; between some there is a gap with a tree, a cart's worth of crates or a woodpile in it, or
+// just room to slip through. shift: a row's houses step away from the street they keep clear (-1 north, 1 south).
 function villageHouses(){
-  const r=mulberry32(1907),out=[];
-  for(const[x0,x1,base,depth,tall]of VILLAGE.rows){let x=x0;
-    while(x1-x>=3){let w=4+Math.floor(r()*3);if(w>x1-x||x1-x-w<3)w=x1-x;if(w>7){w=Math.ceil(w/2);}
-      const d=depth-(depth>3&&r()<.25?1:0);
-      out.push({x,y:base-d,w,h:d,floors:tall?(r()<.7?2:1):1,seed:Math.floor(r()*1e6)});x+=w+(r()<.3?1:0);}}
-  return out;
+  const r=mulberry32(1907),out=[],extras=[],FILL=['tree_single_A','tree_single_B','barrel','crate_A_big','resource_lumber','sack','crate_B_small','pallet'];
+  for(const[x0,x1,base,depth,tall]of VILLAGE.rows){let x=x0;const shift=tall?-1:1;
+    while(x1-x>=3){let w=3+Math.floor(r()*4);if(w>x1-x||x1-x-w<3)w=x1-x;if(w>7)w=Math.ceil(w/2);
+      const d=Math.max(3,depth-(depth>3&&r()<.35?1:0)),off=r()<.45?shift:0;
+      out.push({x,y:base-d+off,w,h:d,floors:tall?(r()<.65?2:1):1,seed:Math.floor(r()*1e6),rot:(r()<.25?0:(r()-.5)*.5),dx:(r()-.5)*.5});x+=w;
+      if(r()<.45&&x1-x>=4){if(r()<.7){const k=FILL[Math.floor(r()*FILL.length)],tree=k.startsWith('tree');extras.push([k,x+.5,base-(tall?1.5:d-.5)+r(),tree?4.2+r()*.8:k==='crate_B_small'?4:3.5,r()*6]);}x+=1;}}}
+  return{houses:out,extras};
 }
 function genVillage(){
   const map=new Uint8Array(MW*MH),at=(x,y)=>(VOY+y)*MW+VOX+x;   // 0 void, 1 open ground, 2 blocked
@@ -73,7 +76,7 @@ function genVillage(){
   const prop=(s,x,y,o={})=>{props.push(Object.assign({s,x:vx(x),y:vy(y)},o));};
   // the tower's trunk behind the town, the houses, and the inn, the guild and the well
   block(31,0,18,4);prop('village/trunk',40,4.4);
-  const houses=villageHouses();for(const h of houses)block(h.x,h.y,h.w,h.h);
+  const{houses,extras}=villageHouses();for(const h of houses)block(h.x,h.y,h.w,h.h);for(const[,x,y]of extras)block(Math.floor(x),Math.floor(y),1,1);
   block(INN.x,INN.y,INN.w,INN.h);prop('village/inn',INN.x+INN.w/2,INN.y+INN.h);
   block(GUILD.x,GUILD.y,GUILD.w,GUILD.h);prop('village/guild',GUILD.x+GUILD.w/2,GUILD.y+GUILD.h);
   block(35,24,2,1);prop('village/well',36,25);
@@ -130,7 +133,7 @@ function genVillage(){
   const all={x0:vx(0),y0:vy(0),x1:vx(VW),y1:vy(VH)},spawn=VILLAGE.square;
   return{n:0,village:true,map,rooms:[],start:{x:VOX+39,y:VOY+33,w:2,h:2},boss:{x:0,y:0,w:0,h:0},gates:[],gatesOpen:true,locked:false,
     enemies,spar,chests:[],drops:[],proj:[],pproj:[],pfx:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
-    gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],houses,
+    gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],houses,extras,
     safe:[all],points:[],smiths,traders,talkers,props,wells,stashes,guild,board:{x:vx(45),y:vy(35.3)},fieldDesk,crops:['potato','glowcap'],home:{x:vx(spawn.x),y:vy(spawn.y)}};
 }
 const nearArcanist=(r=24)=>{for(const q of G.talkers||[])if(q.arcanist&&hyp(q.x-P.x,q.y-P.y)<r)return q;return null;};

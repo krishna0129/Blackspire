@@ -423,7 +423,8 @@ function buildVillage(){
   // trees and street lamps
   for(const[x,y,v]of VILLAGE.trees)put(v==='a'?'tree_single_A':'tree_single_B',x,y-.4,rnd()*6,4.2+rnd()*.8);
   for(const[x,y]of VILLAGE.lamps){put('post_lantern',x,y,rnd()*6,1.1);const[X,Z]=VT(x,y);flames.warm.push(X,3.1,Z);torches.push({x:X,y:3.4,z:Z,col:'#ffc070',int:14,dist:12});}
-  group.add(...T.meshes());
+  for(const[k,x,y,sc,ry]of g.extras||[])put(k,x,y-(k.startsWith('tree')?.4:0),ry,sc);
+  const tm=T.meshes();group.add(...tm);
   // the inn's stash, by its door
   const stashes=(g.stashes||[]).map(q=>{const o=single('chest_gold');o.position.set(wx(q.x),0,wz(q.y));group.add(o);return o;});
   // grass and stones on the open ground
@@ -431,7 +432,7 @@ function buildVillage(){
   instance(group,placed);
   for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAME_SETS[k])group.add(points(flames[k],col,size,op));
   scene.add(group);
-  FLOOR={g,group,torches,gates:[],chests:[],stashes,floatSet:null,born:performance.now(),village:true};me.g=g;
+  FLOOR={g,group,torches,gates:[],chests:[],stashes,floatSet:null,born:performance.now(),village:true,lit:tm.lit};me.g=g;
 }
 const FLAME_SETS={warm:[['#ff8a2a',1.7,.85],['#ffcf6a',.65,1],[null,.22,1]],green:[['#2fd05a',.9,.55],['#a8ffa0',.35,.8],[null,.14,1]],blue:[['#3a6cff',1.6,.9],['#9cc0ff',.7,1],[null,.26,1]]};
 for(const k in FLAME_SETS)FLAME_SETS[k][2][0]=typeof THREE==='undefined'?'#fff':new THREE.Color(k==='warm'?'#fff0c0':k==='green'?'#e8ffe0':'#eef4ff').multiplyScalar(2);
@@ -440,33 +441,36 @@ for(const k in FLAME_SETS)FLAME_SETS[k][2][0]=typeof THREE==='undefined'?'#fff':
 function townBuilder(){
   const boxes=[],prisms=[],glows=[];
   const mat=(x,y,z,sx,sy,sz,rx=0,ry=0,rz=0)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz,'YXZ')),new THREE.Vector3(sx,sy,sz));
-  const box=(x,y,z,sx,sy,sz,c,rx,ry,rz)=>boxes.push([mat(x,y,z,sx,sy,sz,rx,ry,rz),c]),prism=(x,y,z,sx,sy,sz,c,ry)=>prisms.push([mat(x,y,z,sx,sy,sz,0,ry),c]);
+  let cur=null;const emit=(list,M,c)=>list.push([cur?M.premultiply(cur):M,c]);   // cur: where the house being built stands, and how it is turned
+  const box=(x,y,z,sx,sy,sz,c,rx,ry,rz)=>emit(boxes,mat(x,y,z,sx,sy,sz,rx,ry,rz),c),prism=(x,y,z,sx,sy,sz,c,ry)=>emit(prisms,mat(x,y,z,sx,sy,sz,0,ry),c);
   const PLASTER=['#d8cdb4','#cfc3a4','#c4b698','#d6c6a8','#bdb29c','#cbbf9f'],ROOF=['#8a3a2e','#7a3328','#94452f','#5a4a40','#3f5566','#6b4a2c','#4d5a3c','#7d3b34'],SHUT=['#3f5a44','#6a2f2a','#34506a','#5a4a2a'],TIMBER='#3a2a1e',STONE='#77736a';
   function house(h){
-    const r=mulberry32(h.seed),pick=a=>a[Math.floor(r()*a.length)],[X,Zb]=VT(h.x+h.w/2,h.y);
-    const W=h.w*2-.24,D=h.h*2-.8,zc=Zb+.25+D/2,st=2.7,fl=h.floors,plaster=h.barn?'#7a4a34':pick(PLASTER),roof=h.barn?'#4a3a30':pick(ROOF),timber=h.barn?'#4a2c20':TIMBER;
+    const r=mulberry32(h.seed),pick=a=>a[Math.floor(r()*a.length)],[X0,Zb]=VT(h.x+h.w/2,h.y),turned=Math.abs(h.rot||0)>.02;
+    const ar=Math.abs(h.rot||0),W=h.w*2-.24-ar*h.h*2.2,D=h.h*2-.8-ar*h.w*1.1,X=0,zc=0,st=2.7,fl=h.floors,plaster=h.barn?'#7a4a34':pick(PLASTER),roof=h.barn?'#4a3a30':pick(ROOF),timber=h.barn?'#4a2c20':TIMBER;
     const stoneLow=!h.barn&&fl===2&&r()<.35,jet=fl===2&&r()<.55?.5:0,H=st*fl,y0=.4,top=y0+H;
+    cur=mat(X0+(h.dx||0),0,Zb+.25+(h.h*2-.8)/2,1,1,1,0,h.rot||0);
     box(X,.22,zc,W+.2,.44,D+.2,'#66625a');
     for(let f=0;f<fl;f++){const j=f?jet:0,zF=zc+D/2+j,yb=y0+f*st,col=f===0&&stoneLow?STONE:plaster;
       box(X,yb+st/2,zc+j/2,W,st,D+j,col);
       box(X,yb+st-.1,zc+j/2,W+.08,.2,D+j+.08,timber);if(f)box(X,yb+.08,zc+j/2,W+.1,.2,D+j+.1,timber);
-      const n=Math.max(2,Math.round(W/2)),pw=(W-.2)/n,door=f===0?Math.floor(r()*n):-1;
+      const n=Math.max(2,Math.round(W/2)),pw=(W-.2)/n,door=f===0?Math.floor(r()*n):-1,wins=new Set();
+      {const free=[];for(let i=0;i<n;i++)if(i!==door)free.push(i);for(let k=Math.min(free.length,h.w>=5?3:2,1+Math.floor(r()*3));k>0;k--)wins.add(free.splice(Math.floor(r()*free.length),1)[0]);}   // three windows a floor at most
       if(!(f===0&&stoneLow))for(let i=0;i<=n;i++)box(X-W/2+.1+i*pw,yb+st/2,zF+.02,.18,st,.1,timber);
       for(let i=0;i<n;i++){const px=X-W/2+.1+(i+.5)*pw;
         if(i===door){const dw=h.barn?1.8:1;box(px,y0+.95,zF+.05,dw,1.9,.12,h.barn?'#3a241a':'#3b2616');box(px,y0+1.96,zF+.05,dw+.24,.14,.16,timber);box(px,.2,zF+.4,dw+.5,.4,.7,STONE);
-          if(!h.barn&&r()<.5){glows.push([mat(px+dw/2+.35,y0+1.75,zF+.2,.2,.26,.2),'#ffcf7a']);box(px+dw/2+.35,y0+1.95,zF+.12,.06,.06,.3,timber);}continue;}
-        if(h.barn||r()<.2){if(!(f===0&&stoneLow)&&r()<.6)box(px,yb+st/2,zF+.03,.14,st*1.12,.08,timber,0,0,r()<.5?.5:-.5);continue;}
-        const wy=yb+1.5,lit=r()<.62;(lit?glows:boxes).push([mat(px,wy,zF+.04,.8,.95,.08),lit?(r()<.5?'#ffd27a':'#ffbe5c'):'#232c36']);
+          if(!h.barn&&r()<.5){emit(glows,mat(px+dw/2+.35,y0+1.75,zF+.2,.16,.2,.16),0);box(px+dw/2+.35,y0+1.95,zF+.12,.06,.06,.3,timber);}continue;}
+        if(h.barn||!wins.has(i)){if(!(f===0&&stoneLow)&&r()<.6)box(px,yb+st/2,zF+.03,.14,st*1.12,.08,timber,0,0,r()<.5?.5:-.5);continue;}
+        const wy=yb+1.5,lit=r()<.45;emit(lit?glows:boxes,mat(px,wy,zF+.04,.8,.95,.08),lit?Math.floor(r()*3):'#1d242c');
         box(px,wy,zF+.07,.06,.95,.06,timber);box(px,wy,zF+.07,.8,.06,.06,timber);box(px,wy-.56,zF+.1,1,.1,.22,timber);
         if(r()<.45){const sc=pick(SHUT);for(const sx of[-.53,.53])box(px+sx,wy,zF+.05,.24,.95,.06,sc);}
         else if(r()<.4){box(px,wy-.7,zF+.2,.9,.2,.26,'#5a3a22');box(px,wy-.55,zF+.2,.8,.16,.2,pick(['#b8405a','#d8b040','#c86a8a','#5a8a3a']));}}}
     // the roof: mostly eaves to the street; on some narrow houses the gable faces it
-    const jz=jet/2,Dr=D+jet,gable=!h.barn&&h.w<=5&&r()<.3,dark=new THREE.Color(roof).multiplyScalar(.62).getStyle(),lite=new THREE.Color(roof).multiplyScalar(1.18).getStyle();
+    const jz=jet/2,Dr=D+jet,gable=!h.barn&&h.w<=5&&r()<.45,dark=new THREE.Color(roof).multiplyScalar(.62).getStyle(),lite=new THREE.Color(roof).multiplyScalar(1.18).getStyle();
     if(gable){const half=W/2+.4,rise=Math.min(3.6,W*.48),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
       prism(X,top,zc+jz,Dr,rise,W,plaster,Math.PI/2);
       for(const sd of[-1,1]){box(X+sd*half/2,top+rise/2+.06,zc+jz,L+.1,.18,Dr+.8,sd<0?roof:lite,0,0,-sd*th);
         for(let k=1;k<5;k++){const u=k/5;box(X+sd*half*u,top+rise*(1-u)+.17,zc+jz,.09,.06,Dr+.82,dark,0,0,-sd*th);}}
-      box(X,top+rise+.1,zc+jz,.26,.2,Dr+.84,dark);glows.push([mat(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06),'#ffd27a']);
+      box(X,top+rise+.1,zc+jz,.26,.2,Dr+.84,dark);if(r()<.5)emit(glows,mat(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06),Math.floor(r()*3));else box(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06,'#1d242c');
       box(X,top+.05,zc+jz+Dr/2+.03,W,.16,.08,timber);}
     else{const half=Dr/2+.45,rise=Math.min(3.3,Dr*.5),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
       prism(X,top,zc+jz,W,rise,Dr,plaster);
@@ -474,8 +478,9 @@ function townBuilder(){
         for(let k=1;k<5;k++){const u=k/5;box(X,top+rise*(1-u)+.17,zc+jz+sd*half*u,W+.82,.06,.09,dark,sd*th);}}
       box(X,top+rise+.1,zc+jz,W+.84,.2,.26,dark);
       if(!h.barn&&h.w>=5&&r()<.4){const dx=X+(r()-.5)*(W-3);   // a dormer in the roof
-        box(dx,top+rise*.55,zc+jz+half*.45,1.3,1.1,1.2,plaster);glows.push([mat(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06),'#ffd27a']);box(dx,top+rise*.55+.66,zc+jz+half*.45,1.6,.16,1.5,roof);}}
+        box(dx,top+rise*.55,zc+jz+half*.45,1.3,1.1,1.2,plaster);if(r()<.5)emit(glows,mat(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06),Math.floor(r()*3));else box(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06,'#1d242c');box(dx,top+rise*.55+.66,zc+jz+half*.45,1.6,.16,1.5,roof);}}
     if(!h.barn){const rise=gable?Math.min(3.6,W*.48):Math.min(3.3,Dr*.5);box(X+(r()<.5?-1:1)*(W/2-1),top+rise*.5+.5,zc-D*.15,.62,rise+1.2,.62,'#6a665e');}
+    cur=null;
   }
   function meshes(){
     const out=[],col=new THREE.Color(),unit=new THREE.BoxGeometry(1,1,1);
@@ -486,10 +491,16 @@ function townBuilder(){
       im.instanceColor.needsUpdate=true;im.castShadow=shadow;im.receiveShadow=shadow;im.computeBoundingSphere();im.frustumCulled=false;out.push(im);};
     make(boxes,unit,new THREE.MeshStandardMaterial({roughness:.95}),true);
     make(prisms,pg,new THREE.MeshStandardMaterial({roughness:.95}),true);
-    glows.forEach(q=>{q[1]=new THREE.Color(q[1]).multiplyScalar(1.7);});make(glows,unit,new THREE.MeshBasicMaterial({fog:false}),false);
-    return out;
+    // candlelight behind the panes: three sets of windows, each breathing at its own pace (breathe, below); never bright
+    const lit=[0,1,2].map(()=>new THREE.MeshBasicMaterial({color:'#000'}));
+    for(let k=0;k<3;k++)make(glows.filter(q=>q[1]===k).map(q=>[q[0],'#ffffff']),unit,lit[k],false);
+    out.lit=lit;return out;
   }
   return{box,prism,house,meshes};
+}
+// Candlelit windows: a low amber that swells and sinks slowly, with a candle's small unsteadiness.
+const CANDLE=typeof THREE==='undefined'?null:new THREE.Color('#e08a3a');
+function breathe(mats,t){mats.forEach((m,k)=>{const b=.3+.09*Math.sin(t*(.5+k*.17)+k*2.1)+.035*Math.sin(t*(5.3+k*1.9)+k)+.02*Math.sin(t*13.7+k*4);m.color.copy(CANDLE).multiplyScalar(b);});
 }
 // The village's ground, painted once into a canvas: grass with its lighter and darker patches, the worn paths, the
 // square's flagstones, the market's cobbles, the fields' tilled earth and the training yard's packed dirt.
@@ -1010,6 +1021,7 @@ function frame3d(){
   // the moon's shadows follow you; snapped to its texels so they do not shimmer
   const snap=52/2048;moon.target.position.set(Math.round(camT.x/snap)*snap,0,Math.round(camT.z/snap)*snap);moon.position.set(moon.target.position.x-18,40,moon.target.position.z-6);
   CUT.value.set(px,0,pz);
+  if(FLOOR.lit)breathe(FLOOR.lit,t);
   lantern.position.set(px,5,pz+1.2);lantern.intensity=MOOD.village?6:P.dead?6:24;
   // the floating candles drift up and down
   if(F.floatSet){const fs=F.floatSet,m=new THREE.Matrix4(),tmp=new THREE.Matrix4(),arr=fs.pts[0].geometry.attributes.position;
