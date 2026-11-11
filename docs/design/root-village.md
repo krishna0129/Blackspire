@@ -32,6 +32,14 @@ There is no fighting anywhere in it: weapons stay sheathed, as in a safe room. H
 - **Everywhere else:** about fifty **houses** in rows. Nobody lives in them yet (they can't be entered); they are
   the town. Rows with a street behind them are one storey and set back, so they never hide the street.
 
+**The hour.** The village has an hour (`VILLAGE_HOUR` in village.js): `day` (an overcast daylight, windows dark),
+`evening` (golden dusk, windows lit dim and steady) or `night`. It is fixed at day for now; a real cycle is still to
+come. To look at the others, type `R3.hour('evening')` or `R3.hour('night')` in the browser's console.
+
+**Surfaces** are drawn by shaders, not textures: stone in courses with dark mortar, old plaster with stains, rain
+streaks, cracks and patches fallen away to the brick, roof tiles in lapping rows with moss, weathered wood. Each
+house has its own roof, ending in dark bargeboards at its own walls.
+
 Everyone you can talk to stands on the north side of a street, facing south, where no roof covers them. Houses are
 built in the renderer from boxes (footings, plaster, a timber frame, doors, lit windows, pitched roofs, chimneys),
 each different by its own seed. The old flat renderer still works but draws no houses.

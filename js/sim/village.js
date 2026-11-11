@@ -67,8 +67,8 @@ function villageHouses(){
   return{houses:out,extras:[]};
 }
 // The hour in the village, for its lights: 'day' (windows dark), 'evening' or 'night' (windows lit, dim and steady).
-// Always day for now: evening and night are still to come.
-const VILLAGE_HOUR='day';
+// Day for now: evening and night are still to come. To look at the others, in the browser's console: R3.hour('night').
+let VILLAGE_HOUR='day';
 function genVillage(){
   const map=new Uint8Array(MW*MH),at=(x,y)=>(VOY+y)*MW+VOX+x;   // 0 void, 1 open ground, 2 blocked
   for(let y=0;y<VH;y++)for(let x=0;x<VW;x++){const edge=Math.min(x,y,VW-1-x,VH-1-y);map[at(x,y)]=edge<3?2:1;}   // the town wall

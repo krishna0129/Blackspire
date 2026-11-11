@@ -345,8 +345,9 @@ function camp(group,x,z){
 /* ---------- the root village ---------- */
 // The tower is night and torchlight; the village, at the foot of the great tree, is a long golden evening.
 function mood(village){
-  if(village){scene.background.set('#2a2e3a');scene.fog.color.set('#2a2e3a');scene.fog.density=.0065;hemi.color.set('#c8d0e8');hemi.groundColor.set('#3a3020');hemi.intensity=1.3;
-    moon.color.set('#ffd2a0');moon.intensity=2.1;}
+  if(village){const[bg,fog,sky,gnd,hi,sun,si]={   // by the village's hour: an overcast day, the long golden evening, night
+      day:['#7d8794','#7d8794','#dfe6f0','#5a5444',2.1,'#fff1dc',3.1],evening:['#2a2e3a','#2a2e3a','#c8d0e8','#3a3020',1.3,'#ffd2a0',2.1],night:['#0c1018','#0c1018','#6f86b8','#141210',.7,'#9fb4e0',1]}[VILLAGE_HOUR]||[];
+    scene.background.set(bg);scene.fog.color.set(fog);scene.fog.density=.0065;hemi.color.set(sky);hemi.groundColor.set(gnd);hemi.intensity=hi;moon.color.set(sun);moon.intensity=si;}
   else{scene.background.set('#030304');scene.fog.color.set('#05060a');scene.fog.density=.016;hemi.color.set('#4a5a80');hemi.groundColor.set('#0b0806');hemi.intensity=.42;
     moon.color.set('#8aa0d8');moon.intensity=.42;}
   MOOD.village=village;
@@ -371,7 +372,7 @@ function buildVillage(){
   group.add(trunk(...VT(40,-1)));
   const T=townBuilder(),lamp=(x,y,h,col,int,dist,fire)=>{const[X,Z]=VT(x,y);flames.warm.push(X,h,Z);torches.push({x:X,y:h+.3,z:Z,col,int,dist,fire});};
   // the town wall: tall behind and at the sides, knee-high along the south so it hides nothing; towers at the far corners
-  {const[x0,z0]=VT(2.5,2.5),[x1,z1]=VT(VILLAGE_W-2.5,VILLAGE_H-2.5),[ta,]=VT(30.5,0),[tb,]=VT(49.5,0),st='#77736a',st2='#66625a';
+  {const[x0,z0]=VT(2.5,2.5),[x1,z1]=VT(VILLAGE_W-2.5,VILLAGE_H-2.5),[ta,]=VT(30.5,0),[tb,]=VT(49.5,0),st='#6f6b62|s',st2='#5e5a52|s';
     const run=(xa,za,xb,zb,h)=>{const len=Math.hypot(xb-xa,zb-za),ry=Math.atan2(-(zb-za),xb-xa),n=Math.floor(len/1.5);T.box((xa+xb)/2,h/2,(za+zb)/2,len,h,1.3,st,0,ry);T.box((xa+xb)/2,h*.12,(za+zb)/2,len+.2,h*.24,1.6,st2,0,ry);
       if(h>2)for(let i=0;i<n;i+=2){const u=(i+.5)/n;T.box(xa+(xb-xa)*u,h+.3,za+(zb-za)*u,.8,.6,1.3,st,0,ry);}};
     run(x0,z0,ta,z0,5);run(tb,z0,x1,z0,5);run(x0,z0,x0,z1,5);run(x1,z0,x1,z1,5);
@@ -436,20 +437,55 @@ function buildVillage(){
 }
 const FLAME_SETS={warm:[['#ff8a2a',1.7,.85],['#ffcf6a',.65,1],[null,.22,1]],green:[['#2fd05a',.9,.55],['#a8ffa0',.35,.8],[null,.14,1]],blue:[['#3a6cff',1.6,.9],['#9cc0ff',.7,1],[null,.26,1]]};
 for(const k in FLAME_SETS)FLAME_SETS[k][2][0]=typeof THREE==='undefined'?'#fff':new THREE.Color(k==='warm'?'#fff0c0':k==='green'?'#e8ffe0':'#eef4ff').multiplyScalar(2);
+// What the town is made of, drawn into each surface by where it is in the world (no textures): s stone laid in
+// courses with dark mortar, each block its own shade; p old plaster, stained, streaked by rain and damp at the foot;
+// r roof tiles in overlapping rows, some darker, moss where it gathers; w wood, weathered.
+const TOWN_MATS={};
+function townMat(k){
+  if(TOWN_MATS[k])return TOWN_MATS[k];const m=new THREE.MeshStandardMaterial({roughness:k==='r'?.85:.97});
+  const body={
+    s:`vec2 b=uv/vec2(.7,.34);b.x+=.5*mod(floor(b.y),2.);vec2 id=floor(b),f=fract(b);
+       float mo=smoothstep(0.,.07,f.x)*smoothstep(0.,.07,1.-f.x)*smoothstep(0.,.13,f.y)*smoothstep(0.,.13,1.-f.y);
+       float g=mix(.38,.7+.45*gH(id),mo)*mix(.7,1.08,gF(uv*2.2));g*=1.-.25*step(.93,gH(id+7.));   // mortar, each block its own shade, a few blackened
+       float low=1.-smoothstep(0.,1.4,vGW.y);diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.72,.86,.6),low*.6*smoothstep(.35,.6,gF(uv*.6+4.)));
+       diffuseColor.rgb*=g*1.35;`,
+    p:`float g=mix(.66,1.08,gF(uv*1.3))*mix(.7,1.,smoothstep(.28,.6,gF(uv*.4+3.)));                    // grime, and big stains
+       g*=mix(.72,1.,smoothstep(.3,.62,gF(vec2(uv.x*5.,uv.y*.3+2.))));                                 // rain streaks, running down
+       float low=1.-smoothstep(.3,2.4,vGW.y);g*=1.-low*.4;diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.78,.86,.66),low*.6);
+       vec2 cu=uv*.9+vec2(gF(uv*2.1),gF(uv*2.1+9.))*.8;float cd=gCrack(cu),patchy=smoothstep(.42,.55,gF(uv*.3+17.));
+       g*=1.-(1.-smoothstep(0.,.06,cd))*patchy*.8;                                                      // cracks, in patches
+       float bare=smoothstep(.66,.7,gF(uv*.8+31.));                                                     // plaster fallen away: the brick under it
+       vec2 b=uv/vec2(.5,.22);b.x+=.5*mod(floor(b.y),2.);vec2 f=fract(b);float mo=smoothstep(0.,.1,f.x)*smoothstep(0.,.18,f.y);
+       diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.3,.16,.11)*(.7+.5*gH(floor(b)))*mix(.5,1.,mo),bare);
+       diffuseColor.rgb*=g*1.6;`,
+    r:`float across=abs(vGN.z)>abs(vGN.x)?vGW.x:vGW.z,v=vGW.y/.24;across=across/.36+.5*mod(floor(v),2.);
+       vec2 id=vec2(floor(across),floor(v)),f=vec2(fract(across),fract(v));
+       float g=mix(.42,1.,smoothstep(0.,.3,f.y))*mix(.55,1.,smoothstep(0.,.1,f.x)*smoothstep(0.,.1,1.-f.x))*(.68+.5*gH(id));   // each tile laps the row below
+       g*=1.-.45*step(.94,gH(id+3.));g*=mix(.7,1.05,gF(vGW.xz*.9));                                     // slipped and blackened tiles; soot
+       float moss=smoothstep(.56,.72,gF(vGW.xz*.45+7.))*smoothstep(.2,.6,f.y);
+       diffuseColor.rgb=mix(diffuseColor.rgb*g*1.55,vec3(.2,.25,.11)*(.7+.5*gH(id)),moss*.55);`,
+    w:`float g=mix(.7,1.1,gF(uv*vec2(2.,7.)))*mix(.8,1.,gF(uv*.7+5.));float low=1.-smoothstep(0.,1.2,vGW.y);g*=1.-low*.25;diffuseColor.rgb*=g*1.25;`}[k];
+  m.onBeforeCompile=sh=>{
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGW;varying vec3 vGN;').replace('#include <project_vertex>',
+      '#include <project_vertex>\nvec4 gw=vec4(transformed,1.);vec3 gn=objectNormal;\n#ifdef USE_INSTANCING\ngw=instanceMatrix*gw;gn=mat3(instanceMatrix)*gn;\n#endif\nvGW=(modelMatrix*gw).xyz;vGN=normalize(mat3(modelMatrix)*gn);');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vGW;varying vec3 vGN;'+GRIT_GLSL).replace('#include <color_fragment>',
+      '#include <color_fragment>\n{vec3 an=abs(vGN);vec2 uv=an.y>.75?vGW.xz:(an.x>an.z?vGW.zy:vGW.xy);\n'+body+'}');};
+  m.customProgramCacheKey=()=>'town-'+k;return TOWN_MATS[k]=m;
+}
 // The town's own carpentry: boxes and gable ends by the thousand, in two draws, each with its own colour. A house is
 // stone footings, plaster walls in a timber frame, a door, windows (most of them lit), a pitched roof and a chimney.
 function townBuilder(){
   const boxes=[],prisms=[],glows=[];
   const mat=(x,y,z,sx,sy,sz,rx=0,ry=0,rz=0)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz,'YXZ')),new THREE.Vector3(sx,sy,sz));
-  let cur=null;const emit=(list,M,c)=>list.push([cur?M.premultiply(cur):M,c]);   // cur: where the house being built stands, and how it is turned
+  let cur=null;const emit=(list,M,c)=>{const i=typeof c==='string'?c.indexOf('|'):-1;list.push([cur?M.premultiply(cur):M,i<0?c:c.slice(0,i),i<0?'w':c[i+1]]);};   // a colour may name its stuff: '#777|s' stone, p plaster, r roof tiles, w wood (the default)   // cur: where the house being built stands, and how it is turned
   const box=(x,y,z,sx,sy,sz,c,rx,ry,rz)=>emit(boxes,mat(x,y,z,sx,sy,sz,rx,ry,rz),c),prism=(x,y,z,sx,sy,sz,c,ry)=>emit(prisms,mat(x,y,z,sx,sy,sz,0,ry),c);
-  const PLASTER=['#d8cdb4','#cfc3a4','#c4b698','#d6c6a8','#bdb29c','#cbbf9f'],ROOF=['#8a3a2e','#7a3328','#94452f','#5a4a40','#3f5566','#6b4a2c','#4d5a3c','#7d3b34'],SHUT=['#3f5a44','#6a2f2a','#34506a','#5a4a2a'],TIMBER='#3a2a1e',STONE='#77736a';
+  const PLASTER=['#b3a688','#a6997b','#9a8e76','#ad9d80','#8f8672','#a39478'],ROOF=['#6e3328','#5e2c24','#743a2a','#4a3d36','#39444c','#54402a','#414832','#63302b'],SHUT=['#33473a','#532823','#2c4052','#4a3d24'],TIMBER='#2e2118',STONE='#6f6b62|s';
   function house(h){
     const r=mulberry32(h.seed),pick=a=>a[Math.floor(r()*a.length)],[X0,Zb]=VT(h.x+h.w/2,h.y),turned=Math.abs(h.rot||0)>.02;
-    const ar=Math.abs(h.rot||0),W=h.w*2-.24-ar*h.h*2.2,D=h.h*2-.8-ar*h.w*1.1,X=0,zc=0,st=2.7,fl=h.floors,plaster=h.barn?'#7a4a34':pick(PLASTER),roof=h.barn?'#4a3a30':pick(ROOF),timber=h.barn?'#4a2c20':TIMBER;
-    const stoneLow=!h.barn&&fl===2&&r()<.35,jet=fl===2&&r()<.55?.5:0,H=st*fl,y0=.4,top=y0+H;
+    const ar=Math.abs(h.rot||0),W=h.w*2-.24-ar*h.h*2.2,D=h.h*2-.8-ar*h.w*1.1,X=0,zc=0,st=2.7,fl=h.floors,plaster=h.barn?'#663c2c|w':pick(PLASTER)+'|p',roofB=h.barn?'#40332b':pick(ROOF),roof=roofB+'|r',timber=h.barn?'#40261c':TIMBER;
+    const stoneLow=!h.barn&&fl===2&&r()<.35,jet=fl===2&&r()<.55?.5:0,H=st*fl,y0=.4+r()*.5,top=y0+H,pitch=.42+r()*.2;   // (no two eaves at one height, no two roofs at one pitch)
     cur=mat(X0+(h.dx||0),0,Zb+.25+(h.h*2-.8)/2,1,1,1,0,h.rot||0);
-    box(X,.22,zc,W+.2,.44,D+.2,'#66625a');
+    box(X,y0/2+.02,zc,W+.2,y0+.04,D+.2,'#625e56|s');
     for(let f=0;f<fl;f++){const j=f?jet:0,zF=zc+D/2+j,yb=y0+f*st,col=f===0&&stoneLow?STONE:plaster;
       box(X,yb+st/2,zc+j/2,W,st,D+j,col);
       box(X,yb+st-.1,zc+j/2,W+.08,.2,D+j+.08,timber);if(f)box(X,yb+.08,zc+j/2,W+.1,.2,D+j+.1,timber);
@@ -457,7 +493,7 @@ function townBuilder(){
       {const free=[];for(let i=0;i<n;i++)if(i!==door)free.push(i);for(let k=Math.min(free.length,h.w>=5?3:2,1+Math.floor(r()*3));k>0;k--)wins.add(free.splice(Math.floor(r()*free.length),1)[0]);}   // three windows a floor at most
       if(!(f===0&&stoneLow))for(let i=0;i<=n;i++)box(X-W/2+.1+i*pw,yb+st/2,zF+.02,.18,st,.1,timber);
       for(let i=0;i<n;i++){const px=X-W/2+.1+(i+.5)*pw;
-        if(i===door){const dw=h.barn?1.8:1;box(px,y0+.95,zF+.05,dw,1.9,.12,h.barn?'#3a241a':'#3b2616');box(px,y0+1.96,zF+.05,dw+.24,.14,.16,timber);box(px,.2,zF+.4,dw+.5,.4,.7,STONE);
+        if(i===door){const dw=h.barn?1.8:1;box(px,y0+.95,zF+.05,dw,1.9,.12,h.barn?'#3a241a':'#3b2616');box(px,y0+1.96,zF+.05,dw+.24,.14,.16,timber);box(px,y0/2,zF+.4,dw+.5,y0,.7,STONE);
           if(!h.barn&&r()<.5){emit(glows,mat(px+dw/2+.35,y0+1.75,zF+.2,.16,.2,.16),0);box(px+dw/2+.35,y0+1.95,zF+.12,.06,.06,.3,timber);}continue;}
         if(h.barn||!wins.has(i)){if(!(f===0&&stoneLow)&&r()<.6)box(px,yb+st/2,zF+.03,.14,st*1.12,.08,timber,0,0,r()<.5?.5:-.5);continue;}
         const wy=yb+1.5,lit=r()<.45;emit(lit?glows:boxes,mat(px,wy,zF+.04,.8,.95,.08),lit?Math.floor(r()*3):'#1d242c');
@@ -465,21 +501,21 @@ function townBuilder(){
         if(r()<.45){const sc=pick(SHUT);for(const sx of[-.53,.53])box(px+sx,wy,zF+.05,.24,.95,.06,sc);}
         else if(r()<.4){box(px,wy-.7,zF+.2,.9,.2,.26,'#5a3a22');box(px,wy-.55,zF+.2,.8,.16,.2,pick(['#b8405a','#d8b040','#c86a8a','#5a8a3a']));}}}
     // the roof: mostly eaves to the street; on some narrow houses the gable faces it
-    const jz=jet/2,Dr=D+jet,gable=!h.barn&&h.w<=5&&r()<.3,dark=new THREE.Color(roof).multiplyScalar(.62).getStyle(),lite=new THREE.Color(roof).multiplyScalar(1.18).getStyle();
-    if(gable){const half=W/2+.4,rise=Math.min(3.6,W*.48),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
+    const jz=jet/2,Dr=D+jet,gable=!h.barn&&h.w<=5&&r()<.3,dark='#'+new THREE.Color(roofB).multiplyScalar(.55).getHexString()+'|r',lite='#'+new THREE.Color(roofB).multiplyScalar(1.12).getHexString()+'|r',board='#'+new THREE.Color(roofB).multiplyScalar(.4).getHexString();
+    if(gable){const half=W/2+.3,rise=Math.min(3.8,W*pitch*1.05),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
       prism(X,top,zc+jz,Dr,rise,W,plaster,Math.PI/2);
-      for(const sd of[-1,1]){box(X+sd*half/2,top+rise/2+.06,zc+jz,L+.1,.18,Dr+.8,sd<0?roof:lite,0,0,-sd*th);
-        for(let k=1;k<5;k++){const u=k/5;box(X+sd*half*u,top+rise*(1-u)+.17,zc+jz,.09,.06,Dr+.82,dark,0,0,-sd*th);}}
-      box(X,top+rise+.1,zc+jz,.26,.2,Dr+.84,dark);if(r()<.5)emit(glows,mat(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06),Math.floor(r()*3));else box(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06,'#1d242c');
+      for(const sd of[-1,1]){box(X+sd*half/2,top+rise/2+.06,zc+jz,L+.1,.2,Dr+.7,sd<0?roof:lite,0,0,-sd*th);
+        for(const e of[-1,1])box(X+sd*half/2,top+rise/2+.02,zc+jz+e*(Dr/2+.37),L+.16,.26,.1,board,0,0,-sd*th);}   // bargeboards: each roof ends in its own dark edge
+      box(X,top+rise+.1,zc+jz,.26,.2,Dr+.74,dark);if(r()<.5)emit(glows,mat(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06),Math.floor(r()*3));else box(X,top+rise*.38,zc+jz+Dr/2+.03,.6,.7,.06,'#1d242c');
       box(X,top+.05,zc+jz+Dr/2+.03,W,.16,.08,timber);}
-    else{const half=Dr/2+.45,rise=Math.min(3.3,Dr*.5),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
+    else{const half=Dr/2+.45,rise=Math.min(3.5,Dr*pitch),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
       prism(X,top,zc+jz,W,rise,Dr,plaster);
-      for(const sd of[-1,1]){box(X,top+rise/2+.06,zc+jz+sd*half/2,W+.8,.18,L+.1,sd>0?lite:roof,sd*th);
-        for(let k=1;k<5;k++){const u=k/5;box(X,top+rise*(1-u)+.17,zc+jz+sd*half*u,W+.82,.06,.09,dark,sd*th);}}
-      box(X,top+rise+.1,zc+jz,W+.84,.2,.26,dark);
+      for(const sd of[-1,1]){box(X,top+rise/2+.06,zc+jz+sd*half/2,W+.16,.2,L+.1,sd>0?lite:roof,sd*th);   // (the roof stops at the house's own walls: next door's is another roof)
+        for(const e of[-1,1])box(X+e*(W/2+.1),top+rise/2+.02,zc+jz+sd*half/2,.1,.26,L+.16,board,sd*th);}
+      box(X,top+rise+.1,zc+jz,W+.2,.2,.26,dark);
       if(!h.barn&&h.w>=5&&r()<.4){const dx=X+(r()-.5)*(W-3);   // a dormer in the roof
         box(dx,top+rise*.55,zc+jz+half*.45,1.3,1.1,1.2,plaster);if(r()<.5)emit(glows,mat(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06),Math.floor(r()*3));else box(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06,'#1d242c');box(dx,top+rise*.55+.66,zc+jz+half*.45,1.6,.16,1.5,roof);}}
-    if(!h.barn){const rise=gable?Math.min(3.6,W*.48):Math.min(3.3,Dr*.5);box(X+(r()<.5?-1:1)*(W/2-1),top+rise*.5+.5,zc-D*.15,.62,rise+1.2,.62,'#6a665e');}
+    if(!h.barn){const rise=gable?Math.min(3.8,W*pitch*1.05):Math.min(3.5,Dr*pitch);box(X+(r()<.5?-1:1)*(W/2-1),top+rise*.5+.5,zc-D*.15,.62,rise+1.2,.62,'#5f5b54|s');}
     cur=null;
   }
   function meshes(){
@@ -489,8 +525,7 @@ function townBuilder(){
       -.5,0,-.5, -.5,0,.5, -.5,1,0,  .5,0,.5, .5,0,-.5, .5,1,0]),3));pg.computeVertexNormals();
     const make=(list,geo,m,shadow)=>{if(!list.length)return;const im=new THREE.InstancedMesh(geo,m,list.length);list.forEach(([M,c],i)=>{im.setMatrixAt(i,M);im.setColorAt(i,col.set(c));});
       im.instanceColor.needsUpdate=true;im.castShadow=shadow;im.receiveShadow=shadow;im.computeBoundingSphere();im.frustumCulled=false;out.push(im);};
-    make(boxes,unit,new THREE.MeshStandardMaterial({roughness:.95}),true);
-    make(prisms,pg,new THREE.MeshStandardMaterial({roughness:.95}),true);
+    for(const k of'sprw'){make(boxes.filter(q=>q[2]===k),unit,townMat(k),true);make(prisms.filter(q=>q[2]===k),pg,townMat(k),true);}
     // the panes: dark glass by day; in the evening and at night a dim, steady candlelight (VILLAGE_HOUR, village.js)
     const dayTime=VILLAGE_HOUR==='day';
     make(glows.map(q=>[q[0],dayTime?'#1d242c':q[1]===0?'#5a3414':q[1]===1?'#4e2c12':'#633a18']),unit,dayTime?new THREE.MeshStandardMaterial({roughness:.4}):new THREE.MeshBasicMaterial({}),false);
@@ -1300,6 +1335,8 @@ me.slip=(id,speed,rel=0,old=false,force=null)=>{
   a.root.position.copy(save[0]);a.face=save[1];a.root.rotation.y=a.face;a.px=null;return out;};
 me.debug=()=>({foot:FOOT,gait:Object.fromEntries([...ACTORS.values()].map(a=>[a.key,gaitOf(a)])),floaters:FLOOR&&FLOOR.floatSet?FLOOR.floatSet.list.slice(0,3):null,torches:FLOOR&&FLOOR.torches.length,top:TOP.skull_candle,candle:TOP.candle_thin});
 me.zoom=z=>{if(z)zoom=z;return zoom;};
+// The village's hour, to look at it by day, in the evening or at night (its windows for now): R3.hour('night').
+me.hour=h=>{if(h){VILLAGE_HOUR=h;if(G&&G.village)buildVillage();}return VILLAGE_HOUR;};
 me.use=()=>me.ready&&!Q.off&&!!G&&!!P;
 me.draw=function(){
   canvas.hidden=false;over.hidden=false;cv.style.visibility='hidden';
