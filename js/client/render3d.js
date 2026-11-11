@@ -709,6 +709,7 @@ function animWarden(a,e,dt,nx,nz){
   if((e.stun>0||e.staggerT>0)&&Math.random()<.5)glow(nx+rand(-1,1),4.6+rand(-.3,.3),nz+rand(-.6,.6),'#ffe9a8',.5,.8);   // reeling: stars about its head
   a.root.position.y=y;fade(a,alpha);
   const hit=e.flash>0;flash(a,hit||e.immune||e.enraged,hit?'#ffffff':e.immune?'#3fd0c0':'#ff3020',hit?.9:e.immune?.5:.25+.15*Math.sin(G.time*9));
+  a.root.rotation.z=0;   // (the recoil adds to the pose: it must start from upright every frame)
   recoil(a,e,.35);
   upd(a,dt);
 }
