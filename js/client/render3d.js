@@ -498,7 +498,6 @@ function townBuilder(){
   }
   return{box,prism,house,meshes};
 }
-}
 // The village's ground, painted once into a canvas: grass with its lighter and darker patches, the worn paths, the
 // square's flagstones, the market's cobbles, the fields' tilled earth and the training yard's packed dirt.
 const GP=24;   // canvas pixels a tile
