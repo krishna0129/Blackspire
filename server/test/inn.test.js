@@ -70,9 +70,15 @@ test('a sleeping bag is laid out in a safe room, then slept in; no bonus; a camp
   assert.strictEqual(run(`P.fat+'|'+P.rested+'|'+S.bags+'|'+P.bag`),'0|0|0|null');
   assert.ok(run(`TRADER_SELLS.food.supplies.includes('bag')`),'sold at the food and drink stall');
   run(`const f=G.fires[0];P.x=f.x+10;P.y=f.y;P.fat=4000;`);
-  assert.strictEqual(run(`runAction('restFire',[])`),true);
+  assert.strictEqual(run(`runAction('restFire',[])`),2);
   assert.strictEqual(run(`P.fat`),2000);
-  assert.strictEqual(run(`runAction('restFire',[])`),false,'once an hour of play');
+  assert.strictEqual(run(`runAction('restFire',[])`),1,'the fatigue once an hour of play; you can still sit');
+  assert.strictEqual(run(`P.fat`),2000);
+  // sitting by it brings health and mana back; moving gets you up
+  run(`P.hp=1;P.mp=0;P.safe=true;P.in={mx:0,my:0};for(let i=0;i<60;i++)steerPlayer(1/30);`);
+  assert.ok(run(`P.hp>ST.maxHp*.35&&P.mp>ST.maxMp*.35`),'two seconds by the fire');
+  run(`P.in={mx:1,my:0};steerPlayer(1/30);`);assert.strictEqual(run(`P.restT`),0);
+  assert.ok(run(`G.fires.length===G.safe.length`),'a fire in every safe place, the start room too');
   run(`P.fireCd=0;P.x=-500;`);
   assert.strictEqual(run(`runAction('restFire',[])`),false,'only by the fire');
 });

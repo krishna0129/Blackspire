@@ -147,6 +147,9 @@ function updatePlayer(dt){
 function steerPlayer(dt){
   P.dodgeCd=Math.max(0,P.dodgeCd-dt);
   let mx=P.in.mx,my=P.in.my;const m=hyp(mx,my);if(m>1){mx/=m;my/=m;}
+  // sitting by a fire (ACTIONS.restFire): a fifth of your health, mana and stamina back each second; any move ends it
+  if(P.restT>0){if(m>.1||P.in.atk||P.in.block||P.dash||!P.safe)P.restT=0;
+    else{P.restT-=dt;P.hp=Math.min(ST.maxHp,P.hp+ST.maxHp*REST_HEAL*dt);P.mp=Math.min(ST.maxMp,P.mp+ST.maxMp*REST_HEAL*dt);P.sta=Math.min(ST.maxSta,P.sta+ST.maxSta*REST_HEAL*dt);}}
   // Aiming: attacks, shots and skills go toward the mouse (P.in.aim, an angle). The model faces it; the four-way
   // facing (P.dir) follows, for the 2D drawing. Without a mouse (touch), they go the way you walk, as before.
   const aim=P.in.aim;

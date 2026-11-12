@@ -61,8 +61,9 @@ function genFloor(n,seed){
   g.safe=safeRooms.map(r=>({x0:r.x*TILE,y0:r.y*TILE,x1:(r.x+r.w)*TILE,y1:(r.y+r.h)*TILE}));
   g.points=safeRooms.map((r,i)=>i?{x:(r.x+(r.smith?r.smith[0]:r.w/2))*TILE,y:(r.y+(r.smith?r.smith[1]:r.h/2))*TILE-(r.smith?0:6)}:{x:(r.x+1.8)*TILE,y:(r.y+1.6)*TILE});
   g.smiths=[];
-  // a campfire in each safe room past the start, beside its trader (render3d.js draws it here)
-  g.fires=rooms.filter(r=>r.kind==='safe').map(r=>({x:(r.x+Math.max(1.5,r.w/2-2.5))*TILE,y:(r.y+r.h/2+1.2)*TILE}));
+  // a campfire to rest by in every safe place: the start room's first, then each safe room's, beside its trader
+  // (render3d.js draws them here; ACTIONS.restFire)
+  g.fires=[{x:(start.x+Math.max(1.5,start.w-2.2))*TILE,y:(start.y+start.h-1.8)*TILE},...rooms.filter(r=>r.kind==='safe').map(r=>({x:(r.x+Math.max(1.5,r.w/2-2.5))*TILE,y:(r.y+r.h/2+1.2)*TILE}))];
   g.traders=g.points.map(q=>({x:q.x,y:q.y+5,name:'Trader',sells:'all'}));
   g.stashes=g.points.map((q,i)=>{const r=safeRooms[i];return{x:Math.min(q.x+30,(r.x+r.w-.8)*TILE),y:q.y+6};});
   const FL=floorDef(n),bag=FL.spawns;g.corpses=[];

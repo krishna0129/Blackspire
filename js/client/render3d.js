@@ -41,6 +41,65 @@ function joinBody(root){
     first.parent.add(body);for(const p of list)p.parent.remove(p);}
   return root;
 }
+/* ---------- dressing a hero: the body follows the armour, the legs the boots, the head and hair the look ---------- */
+// The adventurers share one skeleton, so any one's arms, body, legs or head can be worn on another's bones. Kept here
+// before joinBody welds each model into one mesh: WEAR.Knight.Body and so on.
+const WEAR={};
+function keepParts(k,scene){scene.updateMatrixWorld(true);const o=WEAR[k]={};
+  scene.traverse(c=>{if(!c.isSkinnedMesh)return;const n=c.name.replace(/^(Knight|Barbarian|Mage|Rogue)_/,'').replace('_Hooded','');
+    o[n]={geo:c.geometry,bind:c.bindMatrix.clone(),names:c.skeleton.bones.map(b=>b.name),inv:c.skeleton.boneInverses.map(m=>m.clone()),map:c.material.map};});}
+// What each armour and each pair of boots looks like: whose body, and which of its colours takes the item's own
+// colour (cloth: that colour as it is in the model's texture; steel is only shaded toward it).
+const BODY_OF={tunic:{m:'Rogue',cloth:'#008050'},leather:{m:'Barbarian',cloth:'#406080'},coat:{m:'Mage',cloth:'#404070'},plate:{m:'Knight',steel:'#809090',trim:'#c03028'}};
+const LEGS_OF={greaves:'plate',striders:'tunic'};   // (plain boots: the armour's own legs)
+const SKIN_REF='#f0b890';
+// A model's texture with some of its colours changed: each of up to three colours (matched by hue, whatever its shade)
+// becomes another, keeping the shading; dark: what the darkest texels become (a head's eyes and brows).
+function dyed(map,swaps,dark){
+  const m=new THREE.MeshStandardMaterial({map,roughness:.9}),ref=[],to=[],tol=[];
+  for(let i=0;i<3;i++){const w=swaps[i];ref.push(new THREE.Vector3(...(w?hex3(w[0]):[0,0,0])));to.push(new THREE.Color(w?w[1]:'#000'));tol.push(w?(w[2]||.3):0);}
+  m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,{uRef:{value:ref},uTo:{value:to},uTol:{value:tol},uDark:{value:new THREE.Color(dark||'#000')},uDarkOn:{value:dark?1:0}});
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform vec3 uRef[3];uniform vec3 uTo[3];uniform float uTol[3];uniform vec3 uDark;uniform float uDarkOn;')
+      .replace('#include <map_fragment>',`#include <map_fragment>
+      {vec3 sx=pow(max(diffuseColor.rgb,vec3(0.)),vec3(1./2.2));float mx=max(sx.r,max(sx.g,sx.b));vec3 cn=sx/max(mx,.001);
+       if(uDarkOn>.5&&mx<.3)diffuseColor.rgb=uDark;
+       else for(int i=0;i<3;i++){if(uTol[i]<=0.)continue;float rm=max(uRef[i].r,max(uRef[i].g,uRef[i].b));
+         if(distance(cn,uRef[i]/rm)<uTol[i]&&mx>.12){diffuseColor.rgb=uTo[i]*pow(clamp(mx/rm,.35,1.6),2.2);break;}}}`);};
+  m.customProgramCacheKey=()=>'dyed';return m;
+}
+const hex3=h=>{const c=parseInt(h.slice(1),16);return[(c>>16&255)/255,(c>>8&255)/255,(c&255)/255];};
+// The six hair styles (STYLES, data.js), built on the head from a few plain shapes in the hair's colour.
+function hairOn(model,head,style,col){
+  const hd=WEAR.Knight&&WEAR.Knight.Head,hb=bone(model,'head');if(!hd||!hb||!head)return null;
+  if(!hd.box){   // where the head really is on a standing model: its vertices as the skeleton places them, in the model's own space
+    model.updateMatrixWorld(true);head.skeleton.update();const v=new THREE.Vector3(),inv=new THREE.Matrix4().copy(model.matrixWorld).invert(),b=new THREE.Box3(),n=head.geometry.attributes.position.count;
+    for(let i=0;i<n;i+=3){head.getVertexPosition(i,v);v.applyMatrix4(head.matrixWorld).applyMatrix4(inv);b.expandByPoint(v);}hd.box=b;}
+  const b=hd.box,c=b.getCenter(new THREE.Vector3()),sz=b.getSize(new THREE.Vector3()),w=sz.x,h=sz.y,d=sz.z,g=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:col,roughness:.85});
+  const add=(geo,x,y,z,sx,sy,sz_,rx=0,rz=0)=>{const m=new THREE.Mesh(geo,mat);m.position.set(c.x+x*w,c.y+y*h,c.z+z*d);m.scale.set(sx*w,sy*h,sz_*d);m.rotation.set(rx,0,rz);m.castShadow=true;m.frustumCulled=false;g.add(m);return m;};
+  const cap=new THREE.SphereGeometry(1,12,8,0,TAU,0,Math.PI*.5),ball=new THREE.SphereGeometry(1,10,8),boxg=new THREE.BoxGeometry(1,1,1),cone=new THREE.ConeGeometry(1,1,5);
+  const top=(k=1,low=0)=>add(cap,0,.12-low,-.07,.57*k,.5*k,.6*k,-.28);
+  if(style===5)top(.97,.02);                                                                           // buzz: close to the skull
+  else if(style===1){top(1);for(let i=0;i<9;i++){const a=i/9*TAU,r=i%3?.3:.12;add(cone,Math.cos(a)*r,.6+(i%3?0:.08),-.05+Math.sin(a)*r,.13,.3,.13,Math.sin(a)*.5,-Math.cos(a)*.5);}}   // spiked
+  else if(style===2){top(1.04);add(boxg,0,-.28,-.5,1.04,.95,.22);add(boxg,-.5,-.2,-.2,.14,.8,.5);add(boxg,.5,-.2,-.2,.14,.8,.5);}   // long: down the back and past the ears
+  else if(style===3){top(1.02);add(ball,0,.34,-.62,.16,.16,.16);add(ball,0,-.05,-.78,.13,.42,.13,.25);}  // tail
+  else if(style===4){top(1.06);add(boxg,0,-.02,-.3,1.14,.6,.62);}                                      // bob: to the jaw, round the back
+  else top(1.03);                                                                                      // short
+  model.add(g);model.updateMatrixWorld(true);hb.attach(g);return mat;   // (laid out where the head's mesh is, then handed to the head bone to follow)
+}
+// Dresses a freshly cloned adventurer (its own body taken off) in what `sp` says: {armor:{type,tint}, boots:{type}, look:{skin,hair,style,eyes}}.
+function dress(model,sp,mats){
+  const bones={};model.traverse(c=>{if(c.isBone)bones[c.name]=c;if(c.isSkinnedMesh)c.userData.own=true;if(/_(Helmet|Hat|Cape)$/.test(c.name))c.visible=false;});
+  let host=null;model.traverse(c=>{if(c.userData.own&&!host)host=c.parent;});
+  for(const c of[...host.children])if(c.userData.own)host.remove(c);
+  const look=sp.look||{},skin=[SKIN_REF,look.skin||SKIN_REF,.17],arm=sp.armor||{type:'tunic'},B=BODY_OF[arm.type]||BODY_OF.tunic,L=BODY_OF[LEGS_OF[sp.boots&&sp.boots.type]||arm.type]||B;
+  const dye=(D,tint)=>D.cloth?[D.cloth,tint||D.cloth,.34]:[D.steel,'#'+new THREE.Color(D.steel).lerp(new THREE.Color(tint||D.steel),.3).getHexString(),.12];
+  const wear=(D,name,mat)=>{const p=WEAR[D]&&WEAR[D][name];if(!p)return null;const m=new THREE.SkinnedMesh(p.geo,mat);m.name='Worn_'+name;m.castShadow=m.receiveShadow=true;m.frustumCulled=false;
+    host.add(m);m.bind(new THREE.Skeleton(p.names.map(n=>bones[n]),p.inv),p.bind);return m;};
+  const sw=D=>[skin,dye(D,arm.tint)].concat(D.trim&&arm.tint?[[D.trim,arm.tint,.4]]:[]);   // (plate keeps its steel: its cloth takes the colour)
+  const bm=dyed(WEAR[B.m].Body.map,sw(B)),lm=L===B?bm:dyed(WEAR[L.m].Body.map,sw(L)),hm=dyed(WEAR.Knight.Head.map,[skin],look.eyes||'#1c1c24');
+  for(const n of['Body','ArmLeft','ArmRight'])wear(B.m,n,bm);for(const n of['LegLeft','LegRight'])wear(L.m,n,lm);const head=wear('Knight','Head',hm);
+  mats.push(bm,hm);if(lm!==bm)mats.push(lm);const hair=hairOn(model,head,look.style||0,look.hair||'#4a2f1e');if(hair)mats.push(hair);
+}
 function b64(s){const bin=atob(s),n=bin.length,a=new Uint8Array(n);for(let i=0;i<n;i++)a[i]=bin.charCodeAt(i);return a.buffer;}
 me.init=async function(){
   if(typeof THREE==='undefined'||typeof MODELS==='undefined'){me.failed=true;return;}
@@ -68,7 +127,7 @@ me.init=async function(){
     for(const c of anims.animations)CLIP[c.name]=c;
     for(const k in PROTO){const b=new THREE.Box3();for(const p of PROTO[k].parts){p.geo.computeBoundingBox();b.union(p.geo.boundingBox.clone().applyMatrix4(p.m));}TOP[k]=b.max.y;
       FOOT[k]=Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z);}   // the footprint's diagonal: how wide it can get when turned
-    for(const k of Object.keys(MODELS))if(k!=='props'&&k!=='anims')CHARS[k]=joinBody((await parse(k)).scene);
+    for(const k of Object.keys(MODELS))if(k!=='props'&&k!=='anims'){const sc=(await parse(k)).scene;if(!/^Skeleton/.test(k))keepParts(k,sc);CHARS[k]=joinBody(sc);}
   }catch(e){console.warn('3D models failed to load, drawing in 2D',e);me.failed=true;return;}
   // post: bloom on everything hot, a vignette, then tone mapping
   composer=new THREE.EffectComposer(renderer,new THREE.WebGLRenderTarget(4,4,{type:THREE.HalfFloatType,samples:4}));
@@ -292,7 +351,7 @@ function build(){
     if(safe){   // a camp: shelves and barrels along the walls; in a safe room, the fire the rules keep (g.fires), to rest by
       put('shelf_large',(r.x+r.w/2)*2,0,r.y*2+.9,0);put('barrel_large',r.x*2+1.1,0,(r.y+r.h-1)*2+.6,0);put('barrel_small_stack',r.x*2+1,0,(r.y+r.h-2)*2+.6,.4);
       put('crates_stacked',(r.x+r.w-1)*2+.6,0,(r.y+r.h-1)*2+.6,-.3);
-      if(r.kind==='safe'){const fi=g.rooms.filter(q=>q.kind==='safe').indexOf(r),fp=(g.fires||[])[fi]||{x:(r.x+r.w/2)*TILE,y:(r.y+r.h/2)*TILE},fx=wx(fp.x),fz=wz(fp.y);camp(group,fx,fz);flames.warm.push(fx,.55,fz);torches.push({x:fx,y:1.3,z:fz,col:'#ff9a48',int:34,dist:16,fire:true});}
+      {const fi=r.kind==='safe'?1+g.rooms.filter(q=>q.kind==='safe').indexOf(r):0,fp=(g.fires||[])[fi]||{x:(r.x+r.w/2)*TILE,y:(r.y+r.h/2)*TILE},fx=wx(fp.x),fz=wz(fp.y);camp(group,fx,fz);flames.warm.push(fx,.55,fz);torches.push({x:fx,y:1.3,z:fz,col:'#ff9a48',int:34,dist:16,fire:true});}
       continue;
     }
     // an ordinary room: its floor's lights near the walls, clutter in a corner or two, the dead's leftovers
@@ -691,6 +750,7 @@ function makeActor(key,o){
       if(o.tint)c.material.color=new THREE.Color(o.tint);
       if(o.rim)rim(c.material);
     });
+    if(o.hero&&WEAR.Knight)dress(root,o.hero,mats);
     for(const[slot,w]of[['handslot.r',o.r],['handslot.l',o.l]])if(w){const b=bone(root,slot);if(b){const wm=single(w);if(o.ghost)wm.traverse(c=>{if(c.isMesh){c.material=c.material.clone();c.material.emissive=new THREE.Color(o.ghost);c.material.emissiveIntensity=.35;}});b.add(wm);}}
   }
   for(const m of mats){m.userData.base=[m.emissive?m.emissive.clone():null,m.emissiveIntensity||0];if(STYLE.flat){m.flatShading=true;m.needsUpdate=true;}}
@@ -850,10 +910,13 @@ function recoil(a,e,k=1){
 }
 
 // A player: you, or someone in your party online. wt: their weapon type.
-function heroActor(id,wt){
-  const h=HERO[wt]||HERO.sword,key='hero:'+wt;let a=ACTORS.get(id);
+// sp: what they wear and how they look (heroSpec); the model is rebuilt when any of it changes.
+const heroSpec=pl=>pl&&pl.other?(pl.spec||{}):{look:S.char.look,armor:S.equip.armor&&{type:S.equip.armor.type,tint:S.equip.armor.tint},boots:S.equip.boots&&{type:S.equip.boots.type}};
+const specKey=sp=>{const l=sp.look||{},a=sp.armor||{},b=sp.boots||{};return[a.type,a.tint,b.type,l.skin,l.hair,l.style,l.eyes].join(',');};
+function heroActor(id,wt,sp={}){
+  const h=HERO[wt]||HERO.sword,key='hero:'+wt+':'+specKey(sp);let a=ACTORS.get(id);
   if(a&&a.key!==key){dropActor(a);a=null;}
-  if(!a){a=makeActor(key,Object.assign({xray:'#f0cf7a'},h));ACTORS.set(id,a);}
+  if(!a){a=makeActor(key,Object.assign({xray:'#f0cf7a',hero:sp},h));ACTORS.set(id,a);}
   return a;
 }
 // What skills leave on a player: an Aegis (a pale shield around them), an empowered weapon (a gold glow in hand),
@@ -907,6 +970,7 @@ function animHero(a,pl,wt,dt){
   else if(pl.dash){   // the dodge, the way it goes against the way you face
     stopUp(a,.05);a.atk=null;const D=pl.dash,rel=angDiff(Math.atan2(D.vx,D.vy),a.face),ar=Math.abs(rel);
     play(a,ar<.8?'Dodge_Forward':ar>2.35?'Dodge_Backward':rel>0?'Dodge_Left':'Dodge_Right',{once:true,speed:1.6,fade:.08});}
+  else if(pl.restT>0&&!moving){stopUp(a,.15);a.atk=null;a.lock=0;play(a,'Sit_Floor_Idle',{fade:.3});}   // resting by a fire
   else if(a.landed&&a.lock>0){if(a.cur)a.cur.timeScale=1.1;}   // the landing plays out
   else if(a.lock>0&&a.atk){   // swinging: the legs keep running under it if you move, else the whole body swings
     a.landed=0;if(!(moving&&loco(a,a.vx,a.vz,'lo'))){const was=a.cur,act=play(a,a.atk,{part:'lo',once:true,speed:a.atkSp,fade:.1,restart:a.atkNew});
@@ -1066,11 +1130,11 @@ function frame3d(){
   // you and your party
   const wt=S.equip&&S.equip.weapon?S.equip.weapon.type:'sword';
   seenIds.clear();npcs(dt);
-  const mine=heroActor('me',wt);seenIds.add('me');animHero(mine,P,wt,dt);auras(P);
+  const mine=heroActor('me',wt,heroSpec(P));seenIds.add('me');animHero(mine,P,wt,dt);auras(P);
   if(!P.dead){ring(px,pz,.75,'#e9c87a',.35,.06);disc(px,pz,.75,'#e9c87a',.06);   // a faint ring under you, so you never lose yourself in a crowd
     disc(px+Math.cos(P.aim)*.98,pz+Math.sin(P.aim)*.98,.13,'#ffe9a8',.55);}   // and a mark on it where you aim
   bagMesh();
-  if(NET.on)for(const q of NET.others){if(q.x<-900)continue;const a=heroActor('p'+q.id,q.wtype||'sword');seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);auras(q);
+  if(NET.on)for(const q of NET.others){if(q.x<-900)continue;const a=heroActor('p'+q.id,q.wtype||'sword',heroSpec(q));seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);auras(q);
     DLIGHTS.push({x:wx(q.x),y:3.2,z:wz(q.y),col:'#ffe2b8',int:14,dist:11,pri:2});}
   // enemies near enough to matter
   const reachX=dist*.27*camera.aspect+5,reachZ=dist*.62+4;   // about what the camera sees, and a little more
@@ -1291,7 +1355,7 @@ function npcs(dt){
 /* ---------- the character preview: your model, turning slowly, in the Gear panel and the creator ---------- */
 // One small renderer per canvas. wt: the weapon type it holds (the model follows it), the save's by default.
 const PVS=new Map();
-me.preview=function(cv,wt,school){
+me.preview=function(cv,wt,school,sp){
   if(!me.ready||Q.off)return false;
   let PV=PVS.get(cv);
   if(!PV){const r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.1;r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
@@ -1301,10 +1365,10 @@ me.preview=function(cv,wt,school){
     const disc=new THREE.Mesh(new THREE.CircleGeometry(1.1,40),new THREE.MeshBasicMaterial({color:'#000',transparent:true,opacity:.45}));disc.rotation.x=-Math.PI/2;sc.add(disc);
     PV={r,sc,cam,a:null,key:'',cv,t:0,last:0};PVS.set(cv,PV);}
   if(!wt){wt=S.equip.weapon.type;school=S.equip.weapon.school;}
-  const key='pv:'+wt+':'+school;
-  if(PV.key!==key){let rot=0;if(PV.a){rot=PV.a.root.rotation.y;PV.sc.remove(PV.a.root);}const h=HERO[wt]||HERO.sword;const a=makeActor(key,h);scene.remove(a.root);
+  sp=sp||heroSpec();const key='pv:'+wt+':'+school+':'+specKey(sp);
+  if(PV.key!==key){let rot=0;if(PV.a){rot=PV.a.root.rotation.y;PV.sc.remove(PV.a.root);}const h=HERO[wt]||HERO.sword;const a=makeActor(key,Object.assign({hero:sp},h));scene.remove(a.root);
     a.root.position.set(0,0,0);a.root.rotation.y=rot;PV.sc.add(a.root);play(a,h.idle||'Idle');PV.a=a;PV.key=key;
-    if(PV.key0){play(a,h.atk[0],{once:true,restart:true});a.lock=1;}PV.key0=key;}   // a new weapon: a swing to show it off
+    if(PV.wt0&&PV.wt0!==wt){play(a,h.atk[0],{once:true,restart:true});a.lock=1;}PV.wt0=wt;}   // a new weapon: a swing to show it off
   const w=cv.clientWidth||180,hh=cv.clientHeight||220;PV.r.setSize(w,hh,false);PV.cam.aspect=w/hh;PV.cam.updateProjectionMatrix();
   if(!PV.loop){PV.loop=true;const step=now=>{if(!PV.cv.isConnected||PV.cv.offsetParent===null){PV.loop=false;PV.last=0;return;}
       const dt=PV.last?Math.min(.05,(now-PV.last)/1000):0;PV.last=now;PV.a.root.rotation.y+=dt*.5;
@@ -1313,6 +1377,7 @@ me.preview=function(cv,wt,school){
     requestAnimationFrame(step);}
   return true;
 };
+me.actors=ACTORS;
 me.info=()=>renderer&&Object.assign({},renderer.info.render,{geometries:renderer.info.memory.geometries,actors:ACTORS.size});
 function applyStyle(){const g=STYLE.grade||[1,1,0,0,0],u=grade.uniforms;u.con.value=g[0];u.sat.value=g[1];u.cold.value=g[2];u.grain.value=g[3];u.lift.value=g[4]||0;
   for(const k in PROTO)for(const p of PROTO[k].parts)if(p.mat.flatShading!==!!STYLE.flat){p.mat.flatShading=!!STYLE.flat;p.mat.needsUpdate=true;}}

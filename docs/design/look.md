@@ -44,3 +44,17 @@ friends' playtest ([roadmap](../roadmap.md)).
 - Which sound and music packs.
 - The hair styles and faces themselves.
 - The slowest computer the game must run well on, measured once friends try it.
+
+## Heroes wear what they wear
+
+Built (render3d.js, `dress`): a hero's model is put together from the adventurer models, which share one skeleton.
+
+- **Body and arms** follow the armour: a tunic (the Rogue's cloth, in the tunic's own colour), a leather jerkin (the
+  Barbarian's furs), a longcoat (the Mage's coat, in its colour), plate (the Knight's steel, its cloth in the colour).
+- **Legs** follow the boots: greaves are the Knight's, striders the Rogue's, plain boots the armour's own.
+- **Head**: one bare head for everyone, in the chosen skin colour, with the chosen eye colour, and the chosen hair
+  (six styles built from plain shapes, in the hair colour). No helmets or capes, so the face you made always shows.
+- **Hands** still follow the weapon, as before.
+
+Colours are changed in the shader by hue, keeping the model's shading. Everyone starts in a tunic. The creator and
+the Gear panel show the same model; other players are dressed from what the server says they wear.
