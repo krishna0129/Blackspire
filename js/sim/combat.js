@@ -76,7 +76,7 @@ function damageEnemy(e,mult,o={}){
   const T=ETYPES[e.type];
   if(T.weak&&T.weak[type])d*=T.weak[type];        // a weakness to a type: Thornroot to fire (its burn is scaled the same way below)
   if(e.state==='shell')d*=.4;                       // a hermit's skull shell
-  d*=wardenShield(e);                               // the Gate Warden while its echo stands
+  d*=wardenShield(e)*regentGuard(e,o);                               // the Gate Warden while its echo stands
   // melee hits land with a beat of freeze-frame and stagger whatever they hit
   if(o.melee){if(!e.boss&&!ETYPES[e.type].heavy){e.stun=Math.max(e.stun,.2);if(e.state==='windup'||e.state==='draw')e.state='chase';}}   // a hit breaks a light enemy's attack
   const res=resOf(e,type),resisted=res>0;d*=1-res;
@@ -132,13 +132,13 @@ function wearPoise(e,v){
   if(e.poise<=0){const t=e.boss?E.bossStun:E.stun;e.staggerT=t;e.stun=Math.max(e.stun||0,t);e.poise=e.maxPoise;
     if(e.state==='windup'||e.state==='draw'||e.state==='cast'||e.state==='channel')e.state='chase';
     addNum(e.x,e.y-e.r-13,'STAGGERED','crit');burst(e.x,e.y-6,10,'#ffe9a8',60);sfx('crit');
-    if(e.ai==='warden')wardenBroken(e);}
+    if(e.ai==='warden')wardenBroken(e);if(e.ai==='regent')regentBroken(e);}
 }
 function wakeBoss(){
   const b=G.bossEnt;if(!b||b.dead||G.bossAwake)return;
   // with a party: +80% health for each player after the first (docs/design/bosses.md)
   const n=Math.max(1,G.players.filter(pl=>!pl.gone).length);b.baseHp=b.baseHp||b.maxHp;b.maxHp=Math.round(b.baseHp*(1+.8*(n-1)));b.hp=b.maxHp;b.maxPoise=null;
-  if(b.ai==='warden')wardenInit(b);   // (its own poise)
+  if(b.ai==='warden')wardenInit(b);if(b.ai==='regent')regentInit(b);   // (its own poise)
   G.bossAwake=true;b.state='chase';bossBar(b.name);banner(b.name,'Floor '+G.n+' boss',2600);sfx('boss');shake(6);
 }
 // Every player on the floor shares the kill: each gets the experience and their own roll of the loot.

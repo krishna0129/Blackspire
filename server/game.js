@@ -10,7 +10,7 @@
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 
 const ROOT=path.join(__dirname,'..');
-const SIM_FILES=['util','data','tree','items','rules','world','village','quests','fields','market','combat','skills','update','warden','floor3','actions'];
+const SIM_FILES=['util','data','tree','items','rules','world','village','quests','fields','market','combat','skills','update','warden','regent','floor3','actions'];
 const TICK=1/30;          // the rules run 30 times a second
 const SNAP_EVERY=2;       // each player gets a snapshot every second tick (15 a second)
 const VIEW=360;           // enemies and shots further than this from a player are left out of their snapshot
@@ -243,7 +243,7 @@ class Game{
       pl:G.players.filter(q=>q!==me&&!q.gone&&(w.kind!=='village'||near(q))).map(q=>({id:q.id,x:r1(q.x),y:r1(q.y),dir:q.dir,moving:q.moving,dead:q.dead,inv:r1(q.inv),guard:r1(q.guard),hp:Math.ceil(q.hp),maxHp:q.ST.maxHp,
         swing:q.swing?[r1(q.swing.t),r1(q.swing.d)]:0,rest:q.restT>0?1:0,blocking:!!q.blocking||!!q.parrying,dash:q.dash?(q.dash.leap?2:1):0,ca:q.castAt!=null?[q.castId,r1(G.time-q.castAt)]:0,a:r1(q.aim),sh:q.shield>0?1:0,em:q.emp?1:0,ho:q.hot?1:0})),
       en:G.enemies.filter(e=>!e.dead&&(e.boss||e.echo||near(e))).map(e=>({hit:G.time-(e.hitAt??-9)<.3?[r1(e.hitA),r1(e.hitW),Math.round((G.time-e.hitAt)*100)/100]:undefined,
-        ...(e.ai==='warden'?{act:e.act||null,aa:Math.round((G.time-e.actAt)*100)/100,actD:e.actD,aimA:r1(e.aimA),gone:e.gone?1:0,echo:e.echo?1:0,split:e.split?1:0,phase:e.phase,immune:e.immune?1:0,enraged:e.enraged?1:0}:null),id:e.id,type:e.type,x:r1(e.x),y:r1(e.y),dir:e.dir,face:e.face,state:e.state,t:r1(e.t||0),hopT:e.hopT,
+        ...(e.ai==='regent'?{guard:!!e.guard,shield:e.shield!==false}:null),...(e.ai==='warden'||e.ai==='regent'?{act:e.act||null,aa:Math.round((G.time-e.actAt)*100)/100,actD:e.actD,aimA:r1(e.aimA),gone:e.gone?1:0,echo:e.echo?1:0,split:e.split?1:0,phase:e.phase,immune:e.immune?1:0,enraged:e.enraged?1:0}:null),id:e.id,type:e.type,x:r1(e.x),y:r1(e.y),dir:e.dir,face:e.face,state:e.state,t:r1(e.t||0),hopT:e.hopT,
         flash:e.flash>0?1:0,stun:e.stun>0?1:0,hurtT:e.hurtT>0?1:0,hp:Math.ceil(e.hp),maxHp:e.maxHp,elite:e.elite,boss:!!e.boss,sprite:e.sprite||null,name:e.name||null,moving:!!e.moving,lunge:e.lunge>0?1:0,ph:r1(e.ph),burrowed:!!e.burrowed,cx:e.state==='channel'?e.cx:undefined,cy:e.state==='channel'?e.cy:undefined,po:e.maxPoise?Math.round(e.poise/e.maxPoise*100)/100:undefined,sg:e.staggerT>0?1:0})),
       pr:G.proj.filter(near).map(q=>({x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),c:q.c,arrow:!!q.arrow,a:q.a})),
       pp:G.pproj.filter(near).map(q=>({k:q.k,f:q.f,x:r1(q.x),y:r1(q.y),vx:r1(q.vx),vy:r1(q.vy),a:q.a})),

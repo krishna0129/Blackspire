@@ -82,6 +82,7 @@ function resetBoss(){
   const b=G.bossEnt;G.bossAwake=false;G.tele=[];G.timers=[];
   Object.assign(b,{hp:b.maxHp,state:'idle',summons:0,atkT:1.5,stun:0,kx:0,ky:0,bleedT:0,sunder:0,x:(G.boss.x+G.boss.w/2)*TILE,y:(G.boss.y+G.boss.h/2)*TILE});
   if(b.ai==='warden'){wardenInit(b);b.phase=null;}
+  if(b.ai==='regent'){regentInit(b);b.phase=null;G.enemies=G.enemies.filter(e=>!e.summoned);}
   G.enemies=G.enemies.filter(e=>e===b||!e.summoned);G.beams=[];bossBar(null);
   if(G.arena){G.corpses=G.corpses.filter(c=>!c.arena);for(const q of G.arena)G.corpses.push({x:q.x,y:q.y,t:1e9,arena:true});}   // the chamber's bodies are back
 }
@@ -299,6 +300,7 @@ function updateBoss(e,dt,d,ux,uy){
   const rage=e.hp/e.maxHp<.3?.7:1;
   if(e.ai==='collector')return collectorAI(e,dt,d,ux,uy);
   if(e.ai==='warden')return wardenAI(e,dt,d,ux,uy);
+  if(e.ai==='regent')return regentAI(e,dt,d,ux,uy);
   if(e.state==='charge'){
     moveEnt(e,e.cvx*dt,e.cvy*dt);e.t-=dt;
     forPlayers(pl=>{if(!pl.dead&&!e.chHit.includes(pl.id)&&hyp(pl.x-e.x,pl.y-e.y)<e.r+pl.r+2){e.chHit.push(pl.id);hurtPlayer(e.dmg*1.3,e,true);}});

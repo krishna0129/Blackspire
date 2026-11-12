@@ -1,6 +1,6 @@
 # Bosses
 
-Status: **the Gate Warden is built** (js/sim/warden.js); the Bone Regent and the Pale Collector are decided, not built yet.
+Status: **the Gate Warden and the Bone Regent are built** (js/sim/warden.js, regent.js); the Pale Collector is decided, not built yet.
 Fight lengths come from the balance runner ([balance.md](../balance.md), [skills.md](skills.md#the-balance-runner)).
 Part of the road to the first friends' playtest ([roadmap](../roadmap.md)); it builds on
 [combat.md](combat.md) (parry, poise, markers only for area attacks, the death rule).
@@ -58,6 +58,25 @@ Each phase begins with a roar of about two seconds during which nothing hurts it
 2. **The guard (70%):** it calls a guard of skeletons. While it channels the call, its resistance to magic drops.
 3. **The broken throne (35%):** its throne breaks; bone spikes burst from the floor (area markers), and it attacks
    faster.
+
+**As built.** A crowned skeleton in gilded bone with a blade and a tower shield. Health is 16 times a common boss's:
+the balance runner's bot, which stands in front of it and never stops attacking, takes 3 minutes with a greatsword,
+4.5 to 7.5 with the other weapons, and 11.5 to 14 as a caster. Its own poise (30% of health); enrage at 15 minutes.
+
+| Move | How to read it | Answer |
+|---|---|---|
+| **The shield wall** (phases 1 and 2) | while it walks, its shield is up: blows from the front 150° do 12% and say BLOCKED | hit it while it attacks (the shield comes down for every move), or get behind it: it turns slowly |
+| Wheel (if you stay behind it 1.6 s) | a marked circle around it | step out |
+| Blade swing | no marker: a wide arc | step out or block |
+| Shield bash | no marker, fast and short | block it or stay off its front; it throws you back |
+| **Overhead strike** | a long wind-up, **the blade glints** | **parry it**: it reels 3 s with its shield down and loses 30% of its poise |
+| Rib volley | a marked cone, then seven bone shards | sidestep; a swing knocks shards down |
+| **The call** (at 70% and 50%) | it channels for 3 s, shield down, **no resistance to magic** | hit it hard; breaking its poise stops the guard coming. Otherwise two skeletons stand (one more per extra player) |
+| Bone lanes (phase 2 on) | two marked crosses through where you stand | stand between the lanes |
+| Shield charge (phase 2 on, from range) | a marked lane | sidestep |
+| **The throne breaks** (35%) | the shield shatters: no more wall. It is faster and chains a bash onto its swings | |
+| Grave spikes (phase 3) | four marked circles under your feet, one after another | keep moving |
+| Rings (phase 3) | two marked rings round it, then the two rings between them | stand in a gap, then step into where the first rings were |
 
 ### The Pale Collector (floor 3, undead)
 
