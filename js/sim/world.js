@@ -120,7 +120,7 @@ const inSafe=(x,y)=>safeIndex(x,y)>=0;
 const nearHome=()=>G.home&&hyp(G.home.x-P.x,G.home.y-P.y)<20;
 function nearSmith(){for(const q of G.smiths)if(hyp(q.x-P.x,q.y-P.y)<26)return q;return null;}
 function nearTrader(){for(const q of G.traders)if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;}
-function nearStash(r=20){if(P&&P.room&&G.village)return(G.stashes||[])[0]||null;   // your room at the inn has the stash
+function nearStash(r=20){
   for(const q of G.stashes||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}
 // a safe room's campfire (g.fires, genFloor), near enough to rest by
 function nearFire(r=30){for(const q of G.fires||[])if(hyp(q.x-P.x,q.y-P.y)<r)return q;return null;}

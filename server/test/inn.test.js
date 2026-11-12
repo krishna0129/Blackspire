@@ -41,10 +41,12 @@ test('a room at the inn: rented for the day, slept in for a clean slate and a we
   assert.strictEqual(run(`runAction('enterRoom',[${i}])`),true);
   run(`play(60);`);
   assert.strictEqual(run(`P.fat`),5*3600,'no fatigue while in the room');
-  assert.ok(run(`!!nearStash()`),'the stash is in the room');
+  assert.ok(run(`!!insideOf(P.x,P.y)&&insideOf(P.x,P.y).k==='room'`),'you are standing in it');
+  assert.ok(run(`!nearStash()`),'the chest is across the room');
+  run(`P.x=G.stashes[0].x;P.y=G.stashes[0].y;`);assert.ok(run(`!!nearStash()`),'the stash is in the room');
   assert.strictEqual(run(`runAction('sleep',[])`),true);
   assert.strictEqual(run(`P.fat+'|'+P.rested+'|'+FATIGUE[ST.fatigue].name`),`0|${3600}|Rested`);
-  run(`runAction('leaveRoom',[]);S.char.xp=0;gainXp(100);`);
+  run(`runAction('leaveRoom',[]);S.char.xp=0;gainXp(100);`);assert.strictEqual(run(`insideOf(P.x,P.y).k`),'inn','back down in the common room');run(`atInn();`);
   assert.strictEqual(run(`S.char.xp`),110,'well rested: 10% more experience');
   // breakfast, only just after waking
   assert.strictEqual(run(`runAction('eatMeal',[${i},'breakfast'])`),true);

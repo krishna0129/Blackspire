@@ -23,7 +23,7 @@ test('every building, stall and tree blocks its footprint, and every person can 
   const run=village();
   for(const q of['G.traders','G.smiths','G.talkers'])
     assert.ok(run(`${q}.every(n=>[[0,1],[0,1.6],[0,2]].some(([dx,dy])=>!solid(n.x+dx*TILE,n.y+dy*TILE)&&hyp(dy*TILE,0)<24))`),q+' reachable from the front');
-  assert.ok(run(`solid(vx(28.5),vy(24))`),'inside the inn is blocked');
+  assert.ok(run(`solid(vx(28.5),vy(22))`),'inside the inn is blocked');
   assert.ok(run(`solid(vx(49),vy(25.5))`),'a stall is blocked');
   assert.ok(run(`G.houses.length>=40&&G.houses.every(h=>solid(vx(h.x+h.w/2),vy(h.y+h.h/2)))`),'a town of houses, each solid');
   // every street is open from end to end, and the plaza
@@ -196,4 +196,19 @@ test('the broker sells harvests for a cut; selling yourself at the food stall pa
   assert.strictEqual(run(`runAction('sellCrops',[food,'potato'])`),40);
   assert.strictEqual(run(`[S.shards-s1,S.crops.potato].join()`),'40,0','ten potatoes at 4 each, all yours');
   assert.strictEqual(run(`runAction('sellCrops',[0,'potato'])`),false,'only the food and drink stall buys crops');
+});
+
+test('indoors: doors carry you in and out; the only stash in town is in the room you rented',()=>{
+  const run=village();
+  assert.strictEqual(run(`G.stashes.length`),1);assert.strictEqual(run(`insideOf(G.stashes[0].x,G.stashes[0].y).k`),'room');
+  assert.ok(run(`G.doors.every(d=>!solid(d.x,d.y)&&!solid(d.tx,d.ty))`),'every door stands on open floor, and leads to it');
+  assert.ok(run(`G.furn.every(f=>solid(vx(f.x+.5),vy(f.y+.5)))`),'furniture is solid');
+  const go=i=>run(`setPlayer(pl);pl.x=G.doors[${i}].x;pl.y=G.doors[${i}].y;runAction('door',[])`);
+  assert.strictEqual(go(0),true);assert.strictEqual(run(`insideOf(pl.x,pl.y).k`),'hall');assert.ok(run(`pl.safe!==false`));
+  assert.ok(run(`hyp(G.guild.x-pl.x,G.guild.y-pl.y)<12*TILE`),'the clerk is in here');
+  assert.strictEqual(go(1),true);assert.strictEqual(run(`insideOf(pl.x,pl.y)`),null,'out on the avenue again');
+  assert.strictEqual(go(2),true);assert.strictEqual(run(`insideOf(pl.x,pl.y).k`),'inn');
+  assert.strictEqual(go(4),'rent','the stairs are for those with a room');
+  run(`S.room=questDay();`);assert.strictEqual(go(4),true);assert.strictEqual(run(`insideOf(pl.x,pl.y).k+'|'+pl.room`),'room|true');
+  assert.strictEqual(go(5),true);assert.strictEqual(run(`insideOf(pl.x,pl.y).k+'|'+pl.room`),'inn|false');
 });

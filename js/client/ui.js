@@ -35,13 +35,15 @@ function updateHud(){
   if(G.bossEnt&&G.bossAwake&&!G.bossEnt.dead){const b=G.bossEnt;setStyle('bw',elBoss,'width',(clamp(b.hp/b.maxHp,0,1)*100).toFixed(1)+'%');
     setStyle('bpw',elBossP,'width',(b.maxPoise?clamp(b.staggerT>0?1:b.poise/b.maxPoise,0,1)*100:100).toFixed(1)+'%');if(hc.bst!==(b.staggerT>0)){hc.bst=b.staggerT>0;elBossP.classList.toggle('broken',hc.bst);}}
   const tr=nearTrader(),tk=nearTalker(),wl=nearWell();
-  const near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
+  const dr=nearDoor(),near=G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20?'up':nearHome()?'home':nearGate()?'boss':dr?'door:'+dr.name:nearBed()&&P.room?'bed':tr?'trader:'+tr.name:nearStash()?'stash':nearSmith()?'smith':
     nearGuild()?'guild':nearBoard()?'board':plotAt()>=0?'plot'+plotAt()+plotPrompt(plotAt()):nearFields(24)?'fields':
     wl?'well'+(S.empties>0?S.empties:''):nearFire()?'fire':tk?'talk:'+tk.name:nearBag()?'bag':P.safe&&S.bags>0&&!P.bag&&!P.room?'laybag':'';
   if(hc.near!==near){hc.near=near;elPrompt.hidden=!near;
     if(near.startsWith('trader:'))elPrompt.innerHTML=esc(tr.name)+'<kbd>F</kbd>';
     else if(near.startsWith('talk:')&&tk.arcanist)elPrompt.innerHTML='Arcanist<kbd>F</kbd>';
     else if(near.startsWith('talk:'))elPrompt.innerHTML='Talk to the '+esc(tk.name.toLowerCase().startsWith('captain')?tk.name.replace('Captain','captain'):tk.name.toLowerCase())+'<kbd>F</kbd>';
+    if(near.startsWith('door:'))elPrompt.innerHTML=esc(dr.name)+'<kbd>F</kbd>';
+    else if(near==='bed')elPrompt.innerHTML='Sleep<kbd>F</kbd>';
     if(near==='up')elPrompt.innerHTML='Climb to floor '+(G.n+1)+'<kbd>F</kbd>';
     else if(near==='boss')elPrompt.innerHTML='Boss chamber gate<kbd>F</kbd>';
     else if(near==='home')elPrompt.innerHTML=(G.village?'Teleport Gate':'Floor gate')+'<kbd>F</kbd>';
@@ -91,7 +93,7 @@ function enterFloor(n,cp){
   if(cp!=null){S.cp=cp;S.cpFloor=n;}
   S.floor=n;S.best=Math.max(S.best||1,n);
   startWorld(n);
-  if(S.wakeInn&&G.village){delete S.wakeInn;const q=G.traders.find(t=>TRADER_SELLS[t.sells].meals);if(q){P.x=q.x;P.y=q.y+18;}setTimeout(()=>log('You wake in your bed at the inn, aching.'),400);}
+  if(S.wakeInn&&G.village){delete S.wakeInn;const q=(G.beds||[])[0];if(q){P.x=q.x+6;P.y=q.y+10;P.room=true;S.inRoom=true;}setTimeout(()=>log('You wake in your bed at the inn, aching.'),400);}
   if(S.hp!=null&&S.hp>0)P.hp=Math.min(ST.maxHp,S.hp);
   refreshSprites();refreshHudStatic();reveal();drawMini();
   for(const k in hc)delete hc[k];
@@ -296,7 +298,7 @@ function renderRoom(){const F=FATIGUE[fatigueTier(P.fat)],h=Math.floor(P.fat/360
   $('#roomTxt').textContent=`You have been up for ${h?h+' h ':''}${m} min of play. You are ${F.name.toLowerCase()}${F.cd?': '+fatigueText():''}.`+(P.rested>0?` Well rested for ${Math.ceil(P.rested/60)} more minutes.`:'');}
 function leaveRoom(){if(mode!=='room')return;act('leaveRoom');$('#room').hidden=true;mode='play';hc.near=null;save();}
 function sleepNow(){const f=$('#sleepFade');f.hidden=false;f.classList.remove('go');void f.offsetWidth;f.classList.add('go');
-  setTimeout(()=>act('sleep',[],r=>{if(r){sfx('heal');bannerMe('Well rested',`Fatigue gone, and ${REST_XP}% more experience for an hour of play. Breakfast is on downstairs.`,3600);}renderRoom();}),1600);
+  setTimeout(()=>act('sleep',[],r=>{if(r){sfx('heal');bannerMe('Well rested',`Fatigue gone, and ${REST_XP}% more experience for an hour of play. Breakfast is on downstairs.`,3600);}}),1600);
   setTimeout(()=>{f.hidden=true;},4200);}
 // B: a sleeping bag, in a safe area
 // A sleeping bag (docs/design/combat.md#keys): interact in a safe place to lay it out, then interact with it to sleep.
@@ -315,6 +317,8 @@ function interact(){
   if(G.gate&&hyp(G.gate.x-P.x,G.gate.y-P.y)<20){if(NET.on)NET.send({t:'climb'});else{S.hp=null;startFloor(G.n+1);}return;}
   if(nearHome()){openTravel();return;}
   const q=nearGate();if(q){askChamber(q);return;}
+  if(nearDoor()){act('door',[],r=>{if(r==='rent')log('The stairs lead to the rooms. Rent one from the innkeeper first.');else if(r){sfx('pick');hc.near=null;}});return;}
+  if(P.room&&nearBed()){if(P.fat<1&&P.hp>=ST.maxHp)log('You are not tired.');else sleepNow();return;}
   const tr=nearTrader();if(tr){openPanel(tr,'trader');return;}
   const st=nearStash();if(st){openPanel(st,'stash');return;}
   const sm=nearSmith();if(sm){openPanel(sm,'smith');return;}
@@ -497,7 +501,6 @@ function askPending(n,commit,discard,go){
   $('#pendYes').onclick=()=>{a.hidden=true;commit(()=>go());};$('#pendNo').onclick=()=>{a.hidden=true;discard();go();};$('#pendStay').onclick=()=>{a.hidden=true;};
 }
 function closePanel(){if(mode!=='panel')return;
-  if(P.room&&atWho==='stash'&&!Object.keys(attrPend).length){$('#panel').hidden=true;atSmith=atWho=null;mode='play';openRoom();return;}   // the stash in your room: back to the room
   const n=Object.values(attrPend).reduce((a,b)=>a+b,0);if(n)return askPending(n,commitAttrs,()=>{attrPend={};},()=>closePanel());atSmith=atWho=null;act('seen');bagBadge();$('#panel').hidden=true;mode='play';save();}
 function cell(it,on,label,bag){
   const b=document.createElement('button');b.className='cell'+(on?' on':'')+(it?'':' empty');
@@ -592,7 +595,7 @@ function renderDetail(){
     el.innerHTML=`<h4>A room upstairs</h4><div class="sub">A bed and a door that locks, for the day. Sleep there and your fatigue is gone and you wake well rested (${REST_XP}% more experience for an hour of play), with breakfast waiting. Your stash is in the room, and logging off in it counts as a night's sleep.</div>
       <div class="pas">You are ${F.name.toLowerCase()}: ${fatigueText()}.</div>`;
     const a=document.createElement('div');a.className='acts';const b=document.createElement('button');b.className='btn small primary';
-    if(rented){b.textContent='Go to your room';b.onclick=()=>act('enterRoom',[atSmith],r=>{if(r){closePanel();openRoom();}});}
+    if(rented){b.textContent='Go to your room';b.onclick=()=>act('enterRoom',[atSmith],r=>{if(r){closePanel();sfx('pick');}});}
     else{b.textContent=`Rent it for ${pr} shards`;b.disabled=S.shards<pr;b.onclick=()=>act('rentRoom',[atSmith],r=>{if(r)sfx('pick');renderPanel();});}
     a.appendChild(b);el.appendChild(a);return;}
   if(sel&&sel.from==='pack'&&shop){const have=S.crops.potato||0;

@@ -36,8 +36,13 @@ const ACTIONS={
     if(!nearInn(si)||S.room===questDay())return false;const pr=roomPrice(S.char.level);if(S.shards<pr)return false;
     S.shards-=pr;S.room=questDay();return true;
   },
-  enterRoom(si){if(!nearInn(si)||S.room!==questDay())return false;P.room=true;S.inRoom=true;storeNeeds(P);return true;},
-  leaveRoom(){if(!P.room)return false;P.room=false;S.inRoom=false;return true;},
+  // Doors (G.doors, village.js): F at one carries you to its other side. The stairs to your room only open with a
+  // room rented today; being in the room is what P.room means (no fatigue there, and its bed is yours to sleep in).
+  door(){const d=nearDoor();if(!d||P.dead)return false;if(d.rent&&S.room!==questDay())return 'rent';
+    P.x=d.tx;P.y=d.ty;P.vx=P.vy=0;P.dash=null;P.tp=(P.tp||0)+1;if(d.room){P.room=true;S.inRoom=true;storeNeeds(P);}if(d.leave){P.room=false;S.inRoom=false;}return true;},
+  // (from the innkeeper: straight up the stairs)
+  enterRoom(si){if(!nearInn(si)||S.room!==questDay())return false;const d=G.doors.find(q=>q.room);if(!d)return false;P.x=d.tx;P.y=d.ty;P.vx=P.vy=0;P.tp=(P.tp||0)+1;P.room=true;S.inRoom=true;storeNeeds(P);return true;},
+  leaveRoom(){if(!P.room)return false;const d=G.doors.find(q=>q.leave);if(d){P.x=d.tx;P.y=d.ty;P.tp=(P.tp||0)+1;}P.room=false;S.inRoom=false;return true;},
   sleep(){if(!P.room)return false;wake(P);P.hp=ST.maxHp;P.mp=ST.maxMp;calcStats();storeNeeds(P);return true;},
   // a sleeping bag (SUPPLIES.bag): a night's sleep in any safe area, without the inn's well-rested bonus
   // the four skill slots (js/sim/skills.js): a skill of your class's pool into Q, E or C (everyday) or X (ultimate),

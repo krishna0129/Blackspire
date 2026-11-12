@@ -43,7 +43,7 @@ function questProgress(q){const L=questLog();return[q.kind==='deliver'?Math.min(
 const questReady=q=>{const[h,n]=questProgress(q);return h>=n;};
 // The guild clerk (in the village) and the notice board in the square.
 const nearGuild=(r=24)=>!!G.guild&&hyp(G.guild.x-P.x,G.guild.y-P.y)<r;
-const nearBoard=(r=24)=>!!G.board&&hyp(G.board.x-P.x,G.board.y-P.y)<r;
+const nearBoard=(r=24)=>(G.boards||(G.board?[G.board]:[])).some(b=>hyp(b.x-P.x,b.y-P.y)<r);
 // Called for every player credited with a kill (killEnemy).
 function questKill(e){
   const L=questLog();

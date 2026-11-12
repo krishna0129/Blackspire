@@ -18,7 +18,28 @@ const STALLS=[   // the market, along the high street east of the plaza: x, y of
   {x:67,y:25,kind:'food',name:'Food and drink stall',awning:'#6b4a2c'},
 ];
 const FORGE={x:44,y:40},WITCH={x:50,y:40},EXCHANGE={x:62,y:41};   // the craftsmen, on the south lane
-const INN={x:26,y:22,w:6,h:5},GUILD={x:10,y:23,w:6,h:4};   // (what each blocks is what you see of it, no more)
+// The inn: two wings in an L round a courtyard open to the high street (main: along the back; wing: down the west
+// side; yard: the courtyard; stable: a lean-to on the lane side). The guild hall stands at the head of the avenue,
+// before the tree, facing down it to the plaza.
+const INN={main:{x:24,y:20,w:9,h:4},wing:{x:24,y:24,w:4,h:3},yard:{x:28,y:24,w:5,h:3},stable:{x:22,y:24,w:2,h:3},door:{x:30.5,y:24.6}};
+const GUILD={x:35,y:5,w:10,h:6,door:{x:40,y:11.6}};
+// Indoors. Each inside is a room of its own off to the west of the town on the same map (village tiles, x below 0):
+// you go in and out by a door (F), which carries you between the two. hall: the guild hall; inn: the common room;
+// room: the rented room upstairs, which only opens to those who have rented it today (and holds the only stash in town).
+const INSIDE={
+  hall:{x:-18,y:8,w:13,h:9,name:'The guild hall'},
+  inn:{x:-18,y:23,w:12,h:8,name:'The inn'},
+  room:{x:-18,y:37,w:7,h:5,name:'Your room'},
+};
+// doors: where you stand to use each, where it takes you, and what it says. rent: only with a room rented today.
+const DOORS=[
+  {x:GUILD.door.x,y:GUILD.door.y,to:[-11.5,15.6],name:'Enter the guild hall'},
+  {x:-11.5,y:16.4,to:[GUILD.door.x,GUILD.door.y+.9],name:'Leave the hall',out:true},
+  {x:INN.door.x,y:INN.door.y,to:[-12,29.6],name:'Enter the inn'},
+  {x:-12,y:30.4,to:[INN.door.x,INN.door.y+.9],name:'Leave the inn',out:true},
+  {x:-7.5,y:25.4,to:[-14.5,40.6],name:'Upstairs, to your room',rent:true,room:true},
+  {x:-14.5,y:41.4,to:[-8.5,25.9],name:'Downstairs',out:true,leave:true},
+];
 const KINGDOMS=[   // the three camps inside the palisade, each a command tent with its captain out front
   {x:8.5,y:51,name:'Iron Crown',color:'#8e97b5',armor:'plate',line:'The Iron Crown holds floor after floor. We could use another blade.'},
   {x:16,y:51,name:'Sun Choir',color:'#e6d9a8',armor:'coat',line:'The Choir prays for every climber. Come back alive and we will pray less.'},
@@ -27,17 +48,17 @@ const KINGDOMS=[   // the three camps inside the palisade, each a command tent w
 const VILLAGE={
   square:{x:40,y:30,r:7},
   // cobbled streets [x, y, w, h]: the avenue, the high street, the north and south lanes, the west and east side streets
-  streets:[[38,4,4,53],[3,28,74,4],[5,15,70,2],[5,43,70,2],[20,15,2,30],[58,15,2,30],
+  streets:[[38,11,4,46],[35,11,10,2],[3,28,74,4],[5,15,70,2],[5,43,70,2],[20,15,2,30],[58,15,2,30],
     [11,45,3,3],[28,45,3,3],[52,45,2,3]],   // and the short ways in: to the camps' gate, the training yard, the fields' gate
   market:[46,24,28,4],
   camp:[5,47,15,10],campGate:[11,14],
   fields:[45,47,30,10],fieldGate:[52,54],fieldSign:[51.3,47],plots:[[47,49],[52,49],[57,49],[47,53],[52,53],[57,53]],
   yard:[23,48,13,7],
   paths:[],   // (no dirt tracks left: every way is cobbled)
-  trees:[[49,23,'a'],[55.5,22.5,'b'],[63.5,23,'a'],[70.5,22.6,'b'],[74.5,26.5,'a'],[6,26.5,'b'],[19,24.5,'a'],[34.5,25,'b'],[23,26.8,'a'],
+  trees:[[49,23,'a'],[55.5,22.5,'b'],[63.5,23,'a'],[70.5,22.6,'b'],[74.5,26.5,'a'],[6,26.5,'b'],[19,24.5,'a'],[34.5,22.5,'b'],[23,22.8,'a'],[9,24.5,'a'],[14,26,'b'],[17,22.6,'a'],[35.5,19.5,'b'],
     [34.5,35.5,'a'],[45.5,35.2,'b'],[45.5,24.6,'a'],[4.5,46.2,'b'],[21.5,50,'a'],[21.3,55,'b'],[36.8,56.5,'a'],[43.5,48,'b'],[43.4,54,'a'],
-    [76,48,'a'],[76.2,54,'b'],[69,56.5,'a'],[4.5,12,'b'],[75.5,12,'a'],[36,6.5,'b'],[44,6.5,'a'],[57,38.5,'b'],[76,38,'a'],[4,35,'b']],
-  lamps:[[37.4,10],[42.6,10],[37.4,20],[42.6,20],[37.4,40],[42.6,40],[37.4,50],[42.6,50],[42.6,56.5],
+    [76,48,'a'],[76.2,54,'b'],[69,56.5,'a'],[4.5,12,'b'],[75.5,12,'a'],[57,38.5,'b'],[76,38,'a'],[4,35,'b']],
+  lamps:[[34.4,12.6],[45.6,12.6],[37.4,20],[42.6,20],[37.4,40],[42.6,40],[37.4,50],[42.6,50],[42.6,56.5],
     [8,32.5],[16,32.5],[25,32.5],[31,32.5],[49,32.5],[56,32.5],[64,32.5],[72,32.5],[22.5,27.4],[46.2,27.4],[60.5,27.6],
     [12,17.4],[28,17.4],[52,17.4],[68,17.4],[10,45.4],[19.5,45.4],[36,45.4],[49.5,45.4],[57,45.4],[68,45.4],[33.4,22.6],[46.6,37.4]],
   scarecrows:[[26.5,52.5],[29.5,52.5],[32.5,52.5]],
@@ -45,10 +66,11 @@ const VILLAGE={
   decor:[['campfire',12.5,49.6],['weaponrack',6.5,49.4,4,0],['weaponrack',18.4,52.5,4,1.57],['target',17.6,55.6,4.5,-.5],['crate_A_big',6.4,55.5,3.5,.3],['barrel',7.5,56.3,3.5,0],
     ['sack',16,56.4,4,1],['pallet',9.6,56.3,3.5,.2],['tent',5.9,53.4,3.6,.5],['tent',18,49.6,3.6,-.4],
     ['wheelbarrow',63.5,50.5,3.5,.6],['crate_potatoes',62.5,54.5,.5,0],['crate_carrots',63.6,54.6,.5,.4],['sack',64.5,53.6,4,2],['resource_lumber',70.5,48.6,3.5,.2],
-    ['crate_A_big',52.5,22.6,3.5,.2],['barrel',66.4,22.6,3.5,0],['barrel',67.2,23.1,3.5,1],['crate_B_small',57.3,23.4,4,.5],['weaponrack',35.5,49.5,4,1.57]],
+    ['crate_A_big',52.5,22.6,3.5,.2],['barrel',66.4,22.6,3.5,0],['barrel',67.2,23.1,3.5,1],['crate_B_small',57.3,23.4,4,.5],['weaponrack',35.5,49.5,4,1.57],
+    ['barrel',32.5,24.5,3.5,0],['barrel',32.4,25.5,3.5,1],['crate_A_big',28.6,26.4,3.5,.2]],
   // rows of houses [x0, x1, the row's south edge, depth, tall]: a row with a street at its back is low and set back from it
-  rows:[[5,37,9,4,1],[43,75,9,4,1],[5,37,15,4,1],[43,75,15,4,1],
-    [5,20,21,3,0],[22,37,21,3,0],[43,58,21,3,0],[60,75,21,3,0],
+  rows:[[5,34,9,4,1],[46,75,9,4,1],[5,34,15,4,1],[46,75,15,4,1],
+    [5,20,21,3,0],[43,58,21,3,0],[60,75,21,3,0],
     [5,20,37,4,0],[22,33,37,4,0],[47,58,37,4,0],[60,75,37,4,0],
     [5,20,43,4,1],[22,37,43,4,1],[69,75,43,4,1]],
 };
@@ -72,10 +94,23 @@ function genVillage(){
   // the tower's trunk behind the town, the houses, and the inn, the guild and the well
   block(31,0,18,4);prop('village/trunk',40,4.4);
   const{houses,extras}=villageHouses();for(const h of houses)block(h.x,h.y,h.w,h.h);for(const[,x,y]of extras)block(Math.floor(x),Math.floor(y),1,1);
-  block(INN.x,INN.y,INN.w,INN.h);prop('village/inn',INN.x+INN.w/2,INN.y+INN.h);
+  for(const k of['main','wing','stable'])block(INN[k].x,INN[k].y,INN[k].w,INN[k].h);prop('village/inn',INN.main.x+INN.main.w/2,INN.main.y+INN.main.h);
   block(GUILD.x,GUILD.y,GUILD.w,GUILD.h);prop('village/guild',GUILD.x+GUILD.w/2,GUILD.y+GUILD.h);
+  // indoors: each room's floor is opened, and what stands in it blocks its tiles (render3d.js draws them from `inside`)
+  const inside=[],furn=[],open=(R)=>{for(let j=R.y;j<R.y+R.h;j++)for(let i=R.x;i<R.x+R.w;i++)map[at(i,j)]=1;},
+    put=(k,x,y,w=1,h=1,o)=>{for(let j=0;j<h;j++)for(let i=0;i<w;i++)map[at(x+i,y+j)]=2;furn.push(Object.assign({k,x,y,w,h},o));};
+  for(const k in INSIDE){const R=INSIDE[k];open(R);inside.push({k,name:R.name,x:R.x,y:R.y,w:R.w,h:R.h,x0:vx(R.x-1),y0:vy(R.y-1),x1:vx(R.x+R.w+1),y1:vy(R.y+R.h+1)});}
+  {const H=INSIDE.hall,x=H.x,y=H.y;   // the hall: the clerk's desk at the head of the room, long tables down it, the hearth, the quest board
+    put('desk',x+4,y,5,1);put('hearth',x+H.w-1,y+3,1,2);put('board',x,y+2,1,2);put('ltable',x+2,y+3,4,1);put('ltable',x+2,y+6,4,1);put('ltable',x+7,y+4,3,1);
+    put('barrel',x,y);put('barrel',x+1,y);put('shelf',x+10,y,2,1);put('barrel',x+H.w-1,y+H.h-1);put('crate',x,y+H.h-1);}
+  {const I=INSIDE.inn,x=I.x,y=I.y;   // the common room: the bar along the back, round tables, the hearth, the stairs up in the corner
+    put('bar',x+1,y,6,1);put('hearth',x,y+3,1,2);put('rtable',x+3,y+3);put('rtable',x+7,y+3);put('rtable',x+3,y+6);put('rtable',x+8,y+6);
+    put('stairs',x+I.w-1,y,1,2);put('barrel',x+8,y);put('barrel',x,y+I.h-1);put('crate',x+I.w-1,y+I.h-1);}
+  {const M=INSIDE.room,x=M.x,y=M.y;   // your room: the bed, the stash chest, a table
+    put('bed',x,y,2,1);put('chest',x+5,y+1);put('stand',x+2,y);put('wardrobe',x+M.w-1,y,1,1);put('rtable',x+M.w-1,y+3);}
   block(35,24,2,1);prop('village/well',36,25);
-  const wells=[{x:vx(36),y:vy(25.1)}],stashes=[{x:vx(INN.x+.6),y:vy(INN.y+INN.h+.9)}];   // the well, and the inn's stash chest by its door
+  // the well; the only stash in town is the chest in your room at the inn (the tower's safe rooms have theirs)
+  const wells=[{x:vx(36),y:vy(25.1)}],stashes=[{x:vx(INSIDE.room.x+5.5),y:vy(INSIDE.room.y+2.3)}],beds=[{x:vx(INSIDE.room.x+1),y:vy(INSIDE.room.y+1.4)}];
   // the plaza: the Teleport Gate's four pillars and the notice board
   for(const[x,y]of[[36,26],[43,26],[36,33],[43,33]]){block(x,y,1,1);prop('village/pillar',x+.5,y+1);}
   block(44,34,2,1);prop('village/board',45,35);
@@ -101,7 +136,7 @@ function genVillage(){
   for(const k of KINGDOMS){block(Math.floor(k.x)-1,Math.floor(k.y)-2,3,2);block(Math.floor(k.x+1.9),Math.floor(k.y-.6),1,1);prop('village/tent',k.x,k.y,{tint:k.color});
     talkers.push({x:vx(k.x),y:vy(k.y+.8),name:'Captain of the '+k.name,line:k.line,
       look:{skin:SKINS[1+KINGDOMS.indexOf(k)],hair:HAIRS[KINGDOMS.indexOf(k)*2],style:KINGDOMS.indexOf(k)+1,eyes:EYES[0]},eq:{armor:{type:k.armor,tint:k.color}}});}
-  traders.push({x:vx(INN.x+INN.w/2),y:vy(INN.y+INN.h+.7),name:'Innkeeper',sells:'inn',
+  traders.push({x:vx(INSIDE.inn.x+3.5),y:vy(INSIDE.inn.y+1.5),name:'Innkeeper',sells:'inn',
     look:{skin:SKINS[2],hair:HAIRS[2],style:5,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#8a8474'}}});
   traders.push(exchange);
   // the fields' gate on the south lane: a signpost, the farmhand and the crop broker. Any of them, or any plot, opens
@@ -112,10 +147,13 @@ function genVillage(){
   const farmhand={x:vx(50.4),y:vy(45.8),name:'Farmhand',fields:true,look:{skin:SKINS[3],hair:HAIRS[4],style:1,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#5e4620'}}};
   const broker={x:vx(55.6),y:vy(45.8),name:'Crop broker',fields:true,look:{skin:SKINS[1],hair:HAIRS[5],style:3,eyes:EYES[3]},eq:{armor:{type:'coat',tint:'#6b4a2c'}}};
   talkers.push(farmhand,broker);
-  talkers.push({x:vx(INN.x+INN.w/2+2.4),y:vy(INN.y+INN.h+1.2),name:'Barkeep',rumours:true,line:'Pull up a stool. I hear things.',look:{skin:SKINS[2],hair:HAIRS[1],style:5,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#7a3a2a'}}});   // rumours (RUMOURS, data.js)
+  talkers.push({x:vx(INSIDE.inn.x+6),y:vy(INSIDE.inn.y+1.6),name:'Barkeep',rumours:true,line:'Pull up a stool. I hear things.',look:{skin:SKINS[2],hair:HAIRS[1],style:5,eyes:EYES[0]},eq:{armor:{type:'tunic',tint:'#7a3a2a'}}});   // rumours (RUMOURS, data.js)
   const fieldDesk=[{x:vx(sgx),y:vy(sgy-.3),name:'Fields'},farmhand,broker];
   // the Adventurers' Guild's clerk, at its door: quests and party notices (js/sim/quests.js)
-  const guild={x:vx(GUILD.x+GUILD.w/2),y:vy(GUILD.y+GUILD.h+.8),name:'Guild clerk',look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}};
+  for(const[dx,dy,name,line,look,arm]of[[3.4,4.6,'Veteran climber','Floor two? Mind the shield. Get behind him, or make him swing first.',{skin:SKINS[3],hair:HAIRS[5],style:5,eyes:EYES[0]},{type:'plate',tint:'#5a2630'}],
+      [8.4,5.6,'Young scout','They say the tower has a hundred floors. Nobody here has seen the fourth.',{skin:SKINS[0],hair:HAIRS[4],style:3,eyes:EYES[2]},{type:'leather',tint:'#2f4a3a'}]])
+    talkers.push({x:vx(INSIDE.hall.x+dx),y:vy(INSIDE.hall.y+dy),name,line,look,eq:{armor:arm}});
+  const guild={x:vx(INSIDE.hall.x+6.5),y:vy(INSIDE.hall.y+1.5),name:'Guild clerk',look:{skin:SKINS[0],hair:HAIRS[3],style:4,eyes:EYES[1]},eq:{armor:{type:'coat',tint:'#2b3350'}}};
   // scenery
   for(const[x,y,v]of VILLAGE.trees){block(Math.floor(x),Math.floor(y-.4),1,1);prop('village/tree_'+v,x,y);}
   for(const[x,y]of VILLAGE.lamps){block(Math.floor(x),Math.floor(y),1,1);prop('village/lamp',x,y,{lamp:true});}
@@ -129,7 +167,12 @@ function genVillage(){
   return{n:0,village:true,map,rooms:[],start:{x:VOX+39,y:VOY+33,w:2,h:2},boss:{x:0,y:0,w:0,h:0},gates:[],gatesOpen:true,locked:false,
     enemies,spar,chests:[],drops:[],proj:[],pproj:[],pfx:[],fx:[],nums:[],parts:[],tele:[],timers:[],players:[],did:0,seen:new Uint8Array(MW*MH).fill(1),
     gate:null,bossAwake:false,bossEnt:null,shake:0,time:0,hpM:1,dmgM:1,corpses:[],houses,extras,
-    safe:[all],points:[],smiths,traders,talkers,props,wells,stashes,guild,board:{x:vx(45),y:vy(35.3)},fieldDesk,crops:['potato','glowcap'],home:{x:vx(spawn.x),y:vy(spawn.y)}};
+    safe:[all,...inside],inside,furn,doors:DOORS.map(d=>({x:vx(d.x),y:vy(d.y),tx:vx(d.to[0]),ty:vy(d.to[1]),name:d.name,rent:!!d.rent,room:!!d.room,leave:!!d.leave,out:!!d.out})),beds,
+    points:[],smiths,traders,talkers,props,wells,stashes,guild,board:{x:vx(45),y:vy(35.3)},boards:[{x:vx(45),y:vy(35.3)},{x:vx(INSIDE.hall.x+1.4),y:vy(INSIDE.hall.y+3)}],fieldDesk,crops:['potato','glowcap'],home:{x:vx(spawn.x),y:vy(spawn.y)}};
 }
 const nearArcanist=(r=24)=>{for(const q of G.talkers||[])if(q.arcanist&&hyp(q.x-P.x,q.y-P.y)<r)return q;return null;};
 const nearTalker=()=>{for(const q of G.talkers||[])if(hyp(q.x-P.x,q.y-P.y)<24)return q;return null;};
+// Which inside a point is in (G.inside), or null for out of doors.
+function insideOf(x,y){for(const R of G.inside||[])if(x>=R.x0&&x<R.x1&&y>=R.y0&&y<R.y1)return R;return null;}
+const nearDoor=(r=18)=>(G.doors||[]).find(d=>hyp(d.x-P.x,d.y-P.y)<r)||null;
+const nearBed=(r=22)=>(G.beds||[]).find(d=>hyp(d.x-P.x,d.y-P.y)<r)||null;

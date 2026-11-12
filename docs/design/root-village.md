@@ -22,7 +22,10 @@ There is no fighting anywhere in it: weapons stay sheathed, as in a safe room. H
 - **The plaza** in the centre, flagstones in rings round the **Teleport Gate**; the well and the notice board at its edge.
 - **The avenue** runs north to south through the plaza, from the trunk to the south gate. **The high street** crosses
   it west to east. Two lanes (north and south) and two side streets make the rest of the grid.
-- **The high street, west:** the **inn** (innkeeper, barkeep, the stash chest) and the **Adventurers' Guild**.
+- **The head of the avenue:** the **Adventurers' Guild hall**, before the tree, facing down the avenue to the plaza:
+  three tiers under orange roofs, a tower with the guild's banner, great doors between braziers.
+- **The high street, west:** the **inn**: two wings in an L (the main one three storeys) round a courtyard with a
+  porch, and a stable on the lane side.
 - **The high street, east:** the **market**, four stalls in a row (weapons, gear, potions, food).
 - **The south lane, east:** the craftsmen: the **forge**, the **arcanist**, the **exchange**.
 - **South-west:** the **kingdom camps** inside a palisade with a gate: a command tent in each kingdom's colour with
@@ -31,6 +34,16 @@ There is no fighting anywhere in it: weapons stay sheathed, as in a safe room. H
   stand at the gate.
 - **Everywhere else:** about fifty **houses** in rows. Nobody lives in them yet (they can't be entered); they are
   the town. Rows with a street behind them are one storey and set back, so they never hide the street.
+
+**Indoors.** The guild hall and the inn can be entered (F at the door). Each inside is a room of its own on the same
+map, off to the west of the town (village.js: INSIDE, DOORS); the renderer shows only the one you stand in.
+
+- **The guild hall:** the clerk at a desk at the head of the room, a second quest board on the wall, long tables,
+  a hearth, two climbers to talk to.
+- **The inn's common room:** the innkeeper and the barkeep at the bar, round tables, a hearth, and stairs in the
+  corner.
+- **Your room:** up the stairs, which only open with a room rented today. A bed (F to sleep) and **the stash chest,
+  the only one in town.** Without a room, the stash is reached at a safe room's chest in the tower.
 
 **The hour.** The village has an hour (`VILLAGE_HOUR` in village.js): `day` (an overcast daylight, windows dark),
 `evening` (golden dusk, windows lit dim and steady) or `night`. It is fixed at day for now; a real cycle is still to

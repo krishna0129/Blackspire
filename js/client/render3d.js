@@ -444,14 +444,43 @@ function buildVillage(){
   // the landmarks, built the way the houses are (townBuilder): the inn, the guild hall, the well, the market's stalls,
   // the smithy, the arcanist's study. Each blocks exactly its tiles (village.js).
   const WOOD='#4a3422',DARKW='#2e2118',ST='#6f6b62|s',ST2='#5e5a52|s',GOLD='#c8962e';
-  {const I=T.house({x:INN.x,y:INN.y,w:INN.w,h:INN.h,floors:2,seed:4242,plaster:'#b9a47c|p',roof:'#6b2f26',wide:true,stone:1}),f=I.front+I.jet;   // the inn: the biggest house in town, a sign over its door
-    T.box(I.X+I.W/2-.5,4.6,f+.8,.12,.12,1.6,DARKW);T.box(I.X+I.W/2-.5,3.9,f+1.3,.08,1.1,1,WOOD);T.box(I.X+I.W/2-.5,3.9,f+1.3,.1,.5,.4,GOLD);
-    for(const sx of[-1,1])T.lit(I.X+sx*(I.W/2-.3),2.4,f+.25,.22,.3,.22,'#e8a850');
-    T.box(I.X-I.W/2+1.3,.5,f+.45,2.2,.12,.5,WOOD);for(const sx of[-.9,.9])T.box(I.X-I.W/2+1.3+sx,.25,f+.45,.14,.5,.4,DARKW);}   // a bench against the wall
-  {const Gd=T.house({x:GUILD.x,y:GUILD.y,w:GUILD.w,h:GUILD.h,floors:2,seed:99,stone:2,roof:'#2f3f5a',wide:true}),f=Gd.front;   // the guild hall: all stone, slate-roofed, its banners either side of the door
-    for(const sx of[-1,1]){T.box(Gd.X+sx*(Gd.W/2-1),3.9,f+.1,1,2.8,.06,'#2b3350');T.box(Gd.X+sx*(Gd.W/2-1),4.3,f+.14,.5,.5,.05,GOLD);T.box(Gd.X+sx*(Gd.W/2-1),5.36,f+.12,1.2,.12,.12,DARKW);}
-    T.box(Gd.X,.14,f+.9,3.4,.28,1.2,ST2);T.box(Gd.X,.3,f+.6,2.8,.3,.7,ST);
-    T.box(Gd.X,Gd.top+4.2,Gd.Z,.12,3,.12,DARKW);T.box(Gd.X+.7,Gd.top+5.1,Gd.Z,1.3,.9,.05,'#2b3350');}
+  // the inn: two wings round a courtyard. The main wing is three storeys, the tallest house in town; the short wing
+  // turns its gable to the street; a porch runs along the courtyard side, a stable leans on the lane side.
+  {const M=INN.main,Wg=INN.wing,Y=INN.yard,Sb=INN.stable,pl='#b9a47c|p',rf='#6b2f26';
+    const I=T.house({x:M.x,y:M.y,w:M.w,h:M.h,floors:3,seed:4242,plaster:pl,roof:rf,wide:true,stone:1,doorAt:6}),f=I.front;
+    T.house({x:Wg.x,y:Wg.y-1,w:Wg.w,h:Wg.h+1,floors:2,seed:4243,plaster:pl,roof:rf,stone:1,doorAt:-1,gable:true});
+    const[px0,pz]=VT(Y.x,Y.y),[px1]=VT(Y.x+Y.w,Y.y),pw=px1-px0;   // the porch: posts, a tiled lean-to, lanterns that are always lit
+    for(let i=0;i<=3;i++){const x=px0+.3+i*(pw-.6)/3;T.box(x,1.5,pz+1.7,.22,3,.22,WOOD);T.lit(x,2.5,pz+1.9,.2,.28,.2,'#e8a850');}
+    T.box(px0+pw/2,3.1,pz+1.7,pw,.2,.2,DARKW);T.box(px0+pw/2,3.5,pz+.85,pw+.3,.16,2.2,rf+'|r',.38);
+    T.box(px1-.6,4.8,pz+1.2,.12,.12,1.8,DARKW);T.box(px1-.6,4.1,pz+1.9,.08,1.1,1.1,WOOD);T.box(px1-.6,4.1,pz+1.9,.1,.5,.45,GOLD);   // its sign
+    {const[sx,sz]=VT(Sb.x+Sb.w/2,Sb.y+Sb.h/2),sw=Sb.w*2,sd=Sb.h*2;for(const dz of[-sd/2+.3,sd/2-.3])T.box(sx-sw/2+.3,1.3,sz+dz,.22,2.6,.22,WOOD);   // the stable: a lean-to, a trough, hay
+      T.box(sx,2.9,sz,sw+.4,.16,sd+.3,'#54402a|r',0,0,-.3);T.box(sx+.2,.4,sz-1.6,1.6,.8,.9,'#5a4028');T.box(sx+.2,.76,sz-1.6,1.4,.08,.7,'#1c2a3a');
+      for(const[dx,dz]of[[0,1.2],[.5,.4]])T.box(sx+dx,.45,sz+dz,1.3,.9,1,'#b89a4a',0,dx);}
+    const[lx,lz]=VT(INN.door.x,INN.door.y);torches.push({x:lx,y:2.6,z:lz,col:'#ffc070',int:16,dist:11});}
+  // the guild hall, at the head of the avenue before the tree: three tiers stepping up, each with its own skirt of
+  // orange tiles, a tower rising from the top with the guild's banner down its face, great doors between braziers
+  {const[X,Zb]=VT(GUILD.x+GUILD.w/2,GUILD.y),W=GUILD.w*2-.6,D=GUILD.h*2-1,zc=Zb+.3+D/2,RF='#b5532a|r',RD='#7a3418|r',PL='#b3a688|p',BL='#2b3350';
+    const skirt=(y,w,d,z,o=1.2,drop=.8)=>{const L=Math.hypot(o,drop),th=Math.atan2(drop,o);   // a pent roof all the way round a tier
+      for(const sd of[-1,1]){T.box(X,y-drop/2,z+sd*(d/2+o/2),w+o*2,.18,L,RF,sd*th);T.box(X+sd*(w/2+o/2),y-drop/2,z,L,.18,d+o*2,RF,0,0,-sd*th);}
+      T.box(X,y+.06,z,w+.3,.2,d+.3,RD);};
+    const h1=4.4,w2=W-5,d2=D-4,h2=3.4,w3=w2-5,d3=d2-2.6,h3=2.8,z2=zc-.4,f1=zc+D/2;
+    T.box(X,.3,zc,W+.4,.6,D+.4,ST2);T.box(X,h1/2+.4,zc,W,h1,D,ST);skirt(h1+.4,W,D,zc);
+    for(const sx of[-W/2+.2,-W/4,W/4,W/2-.2])T.box(X+sx,h1/2+.4,f1+.06,.5,h1,.3,ST2);   // buttresses on the front
+    const y2=h1+.4;T.box(X,y2+h2/2,z2,w2,h2,d2,PL);skirt(y2+h2,w2,d2,z2,1,.7);
+    for(let i=0;i<=6;i++)T.box(X-w2/2+.1+i*(w2-.2)/6,y2+h2/2,z2+d2/2+.03,.18,h2,.1,DARKW);T.box(X,y2+.1,z2+d2/2+.03,w2,.2,.1,DARKW);
+    for(const i of[0,1,4,5])T.box(X-w2/2+.1+(i+.5)*(w2-.2)/6,y2+h2*.55,z2+d2/2+.05,.9,1.2,.08,'#1d242c');
+    const y3=y2+h2;T.box(X,y3+h3/2,z2,w3,h3,d3,PL);for(const sx of[-w3/2+.1,w3/2-.1])T.box(X+sx,y3+h3/2,z2+d3/2+.03,.18,h3,.1,DARKW);
+    {const half=d3/2+.6,rise=2.2,L=Math.hypot(half,rise),th=Math.atan2(rise,half),top=y3+h3;T.prism(X,top,z2,w3,rise,d3,PL);
+      for(const sd of[-1,1])T.box(X,top+rise/2+.06,z2+sd*half/2,w3+.9,.2,L+.1,RF,sd*th);T.box(X,top+rise+.1,z2,w3+1,.22,.3,RD);}
+    const yt=y3+h3,tw=3,ht=5.2;T.box(X,yt+ht/2,z2,tw,ht,tw,ST);T.box(X,yt+ht+.15,z2,tw+.5,.3,tw+.5,ST2);   // the tower and its pointed cap
+    {const o=tw/2+.35,rise=3.4,L=Math.hypot(o,rise),th=Math.atan2(rise,o),top=yt+ht+.3;for(const sd of[-1,1]){T.box(X,top+rise/2,z2+sd*o/2,tw+.7,.16,L,RF,sd*th);T.box(X+sd*o/2,top+rise/2,z2,L,.16,tw+.7,RF,0,0,-sd*th);}
+      T.box(X,top+rise+.8,z2,.12,1.8,.12,DARKW);T.box(X+.75,top+rise+1.3,z2,1.4,.8,.05,BL);}
+    T.box(X,yt+ht-2.4,z2+tw/2+.06,1.5,4.2,.06,BL);T.box(X,yt+ht-1.6,z2+tw/2+.1,.8,.8,.05,GOLD,0,0,.785);T.box(X,yt+ht-2.9,z2+tw/2+.1,.16,1.3,.05,GOLD);T.box(X,yt+ht-.25,z2+tw/2+.1,1.8,.14,.14,DARKW);
+    T.box(X,1.9,f1+.08,3.2,3,.16,'#3b2616');T.box(X,1.9,f1+.12,.1,3,.1,DARKW);T.box(X,3.5,f1+.1,3.8,.3,.24,DARKW);   // the doors, the emblem over them, the steps, the braziers
+    T.box(X,4.15,f1+.1,1.1,1.1,.1,GOLD,0,0,.785);T.box(X,4.15,f1+.16,.2,1.5,.06,BL);
+    T.box(X,.16,f1+1.3,6,.32,2,ST2);T.box(X,.36,f1+.8,5,.36,1.1,ST);
+    for(const sx of[-2.6,2.6]){T.box(X+sx,.8,f1+.9,.5,1.6,.5,ST2);T.box(X+sx,1.7,f1+.9,.8,.2,.8,'#2a2a30');T.lit(X+sx,1.95,f1+.9,.5,.3,.5,'#ff8a2a');flames.warm.push(X+sx,2.3,f1+.9);torches.push({x:X+sx,y:2.6,z:f1+.9,col:'#ff9a48',int:22,dist:12,fire:true});}
+    for(const sx of[-W/2+.4,W/2-.4]){T.box(X+sx,h1+2,f1-.2,.1,3,.1,DARKW);T.box(X+sx+.6,h1+3,f1-.2,1.1,.7,.05,BL);}}
   {const[X,Z]=VT(36,24.5);for(let i=0;i<10;i++){const a=i/10*TAU;T.box(X+Math.cos(a)*.95,.5,Z+Math.sin(a)*.95,.62,1,.4,i%2?ST:ST2,0,-a+Math.PI/2);}   // the well: a stone ring under a little roof
     T.box(X,.55,Z,1.5,.1,1.5,'#1c2a3a');for(const sx of[-1.15,1.15])T.box(X+sx,1.5,Z,.18,3,.18,WOOD);T.box(X,2.5,Z,2.5,.14,.14,DARKW);T.box(X,1.9,Z,.06,1.1,.06,'#8a8474');T.box(X,1.3,Z,.4,.4,.4,WOOD);
     for(const sd of[-1,1])T.box(X,3.3,Z+sd*.55,3,.12,1.5,'#54402a|r',sd*.6);}
@@ -531,15 +560,65 @@ function buildVillage(){
   for(const[x,y]of VILLAGE.lamps){put('post_lantern',x,y,rnd()*6,1.1);const[X,Z]=VT(x,y);flames.warm.push(X,3.1,Z);torches.push({x:X,y:3.4,z:Z,col:'#ffc070',int:14,dist:12});}
   for(const[k,x,y,sc,ry]of g.extras||[])put(k,x,y-(k.startsWith('tree')?.4:0),ry,sc);
   const tm=T.meshes();group.add(...tm);
-  // the inn's stash, by its door
-  const stashes=(g.stashes||[]).map(q=>{const o=single('chest_gold');o.position.set(wx(q.x),0,wz(q.y));group.add(o);return o;});
   // grass and stones on the open ground
   group.add(...villageTufts());
   instance(group,placed);
   for(const k in flames)if(flames[k].length)for(const[col,size,op]of FLAME_SETS[k])group.add(points(flames[k],col,size,op));
+  // all of that is the town; each inside is its own group, shown only while you stand in it (indoors(), each frame)
+  const town=new THREE.Group();for(const c of[...group.children])town.add(c);group.add(town);
+  const stashes=[],areas=(g.inside||[]).map(R=>{const ig=interior(R,g,torches,stashes);ig.visible=false;group.add(ig);return{k:R.k,group:ig};});
   scene.add(group);
-  FLOOR={g,group,torches,gates:[],chests:[],stashes,floatSet:null,born:performance.now(),village:true};me.g=g;
+  FLOOR={g,group,town,areas,areaK:null,torches,gates:[],chests:[],stashes,floatSet:null,born:performance.now(),village:true};me.g=g;
 }
+// One inside (G.inside, village.js): a floor, three full walls and a low one toward the camera, and its furniture
+// (G.furn) from the same boxes the town is built of. Lit by its hearth and candles; its windows show the day.
+function interior(R,g,torches,stashes){
+  const ig=new THREE.Group(),B=townBuilder(),placed=new Map(),fl=[],[X0,Z0]=VT(R.x,R.y),W=R.w*2,D=R.h*2,cx=X0+W/2,cz=Z0+D/2,H=4.4;
+  const WOOD='#4a3422',DARKW='#2e2118',ST='#6f6b62|s',ST2='#5e5a52|s',GOLD='#c8962e',BL='#2b3350',PL=R.k==='hall'?'#a39478|p':'#b9a47c|p',hall=R.k==='hall';
+  const put=(key,tx,ty,ry=0,sc=1)=>{const[x,z]=VT(tx,ty);(placed.get(key)||placed.set(key,[]).get(key)).push(M4(x,0,z,ry,sc,sc,sc));};
+  const fire=(x,y,z,int=30,dist=13)=>{fl.push(x,y,z,x+.2,y+.25,z+.1,x-.2,y+.15,z-.1);torches.push({x,y:y+.6,z,col:'#ff9a48',int,dist,fire:true});};
+  const candle=(x,y,z)=>{B.box(x,y+.12,z,.08,.24,.08,'#d8d0b8');B.lit(x,y+.3,z,.07,.12,.07,'#ffd27a');torches.push({x,y:y+.6,z,col:'#ffc070',int:7,dist:7});};
+  // the floor (flagstones in the hall, boards elsewhere), the walls, the windows in the back wall
+  B.box(cx,-.15,cz,W+1.2,.3,D+1.2,hall?'#625e56|s':'#5a4028');if(!hall)for(let x=X0+1;x<X0+W;x+=1)B.box(x,.005,cz,.04,.02,D,'#2e2118');
+  B.box(cx,H/2,Z0-.3,W+1.2,H,.6,PL);B.box(cx,.6,Z0+.02,W,1.2,.1,WOOD);B.box(cx,H-.1,Z0+.02,W,.24,.14,DARKW);
+  for(const sd of[-1,1]){B.box(cx+sd*(W/2+.3),H/2,cz,.6,H,D+1.2,PL);B.box(cx+sd*(W/2-.02),.6,cz,.1,1.2,D,WOOD);}
+  for(let x=X0;x<=X0+W+.01;x+=4)B.box(x,H/2,Z0+.06,.26,H,.16,DARKW);
+  for(const sd of[-1,1]){const len=W/2-1.4;B.box(cx+sd*(1.4+len/2),.5,Z0+D+.3,len+.6,1,.6,hall?ST:WOOD);B.box(cx+sd*1.3,1.3,Z0+D+.3,.3,2.6,.5,DARKW);}   // the wall toward you is low; the door is the gap in it
+  B.box(cx,.02,Z0+D-.5,2,.04,1,'#5a2630');
+  for(let i=0;i<Math.floor(R.w/4);i++){const x=X0+W*(i+.5)/Math.floor(R.w/4)+(hall&&Math.abs(X0+W*(i+.5)/Math.floor(R.w/4)-cx)<1?2.4:0);B.lit(x,2.9,Z0+.03,1.1,1.4,.06,'#a8bcc8');B.box(x,2.9,Z0+.06,.08,1.4,.06,DARKW);B.box(x,2.9,Z0+.06,1.1,.08,.06,DARKW);B.box(x,2.14,Z0+.1,1.4,.1,.2,DARKW);}
+  if(hall){for(const sx of[-4.6,4.6]){B.box(cx+sx,2.9,Z0+.06,1.2,2.4,.05,BL);B.box(cx+sx,3.2,Z0+.1,.6,.6,.04,GOLD,0,0,.785);}B.box(cx,3.3,Z0+.08,1.5,1.5,.08,GOLD,0,0,.785);B.box(cx,3.3,Z0+.14,.26,2,.05,BL);}
+  for(const f of g.furn||[]){if(f.x<R.x||f.x>=R.x+R.w||f.y<R.y||f.y>=R.y+R.h)continue;const[x,z]=VT(f.x+f.w/2,f.y+f.h/2),w=f.w*2,d=f.h*2;
+    if(f.k==='desk'||f.k==='bar'){B.box(x,.55,z+.2,w-.2,1.1,1.2,'#5a4028');B.box(x,1.14,z+.2,w,.1,1.4,'#7a5a38');B.box(x,2,Z0+.3,w-.4,.1,.5,WOOD);B.box(x,2.8,Z0+.3,w-.4,.1,.5,WOOD);
+      for(let i=0;i<w-1;i+=.6){const bx=x-w/2+.6+i;if(f.k==='bar'){B.lit(bx,2.26,Z0+.34,.16,.4,.16,['#7a3a1a','#3a6a2a','#8a6a1a'][Math.round(i/.6)%3]);B.box(bx,3.02,Z0+.34,.3,.34,.3,'#6b4e30');}else B.box(bx,2.25,Z0+.34,.14,.4,.34,['#5a2630','#2b3350','#2f4a3a','#6b4a2c'][Math.round(i/.6)%4]);}
+      candle(x-w/2+.5,1.19,z+.2);candle(x+w/2-.5,1.19,z+.2);if(f.k==='desk'){B.box(x,1.22,z+.2,.9,.06,.6,'#d8d0b8');B.box(x+1.4,1.3,z+.1,.5,.22,.4,'#5a2630');}
+      else for(let i=0;i<3;i++)B.box(x-2+i*2,1.33,z+.3,.22,.28,.22,'#8a6a40');}
+    else if(f.k==='ltable'){B.box(x,.95,z,w-.4,.12,1.2,'#6b4e30');for(const sx of[-w/2+.7,w/2-.7])B.box(x+sx,.45,z,.2,.9,1,WOOD);for(const sz of[-.95,.95])B.box(x,.5,z+sz,w-.8,.1,.36,WOOD);
+      candle(x,1.01,z);for(let i=0;i<w/2;i++)B.box(x-w/2+1+i*1.7,1.14,z+((i%2)-.5)*.5,.2,.26,.2,'#8a6a40');}
+    else if(f.k==='rtable'){B.box(x,.95,z,1.5,.12,1.5,'#6b4e30',0,.785);B.box(x,.45,z,.3,.9,.3,WOOD);for(let i=0;i<3;i++){const a=i*2.1+.4;B.box(x+Math.cos(a)*1.15,.3,z+Math.sin(a)*1.15,.5,.6,.5,WOOD,0,a);}candle(x,1.01,z);}
+    else if(f.k==='hearth'){const sd=x<cx?-1:1,hx=cx+sd*(W/2-.7);B.box(hx,1.5,z,1.5,3,d-.2,ST);B.box(hx,3.7,z,1.1,1.5,d-1.2,ST2);B.box(hx-sd*.72,.8,z,.1,1.3,d-1.4,'#120c08');
+      B.lit(hx-sd*.76,.42,z,.1,.4,d-1.8,'#ff7a2a');B.box(hx-sd*.9,.2,z,.5,.2,d-1.6,'#3a2616');fire(hx-sd*.95,.6,z,34,15);}
+    else if(f.k==='board'){B.box(X0+.16,2,z,.14,2.4,d-.4,'#5a4028');B.box(X0+.2,3.3,z,.2,.16,d-.2,DARKW);for(let i=0;i<7;i++)B.box(X0+.26,1.4+(i%3)*.75,z-d/2+.7+((i*37)%10)/10*(d-1.4),.03,.5,.4,i%3?'#d8d0b8':'#c8b890',0,0,0);}
+    else if(f.k==='shelf'){B.box(x,1.5,Z0+.45,w-.2,3,.8,WOOD);for(let j=0;j<3;j++){B.box(x,.5+j*.95,Z0+.5,w-.3,.08,.86,'#6b4e30');for(let i=0;i<w/.32-1;i++)B.box(x-w/2+.35+i*.32,.75+j*.95,Z0+.6,.24,.42,.5,['#5a2630','#2b3350','#2f4a3a','#6b4a2c','#3c2c52'][(i+j)%5]);}}
+    else if(f.k==='stairs'){for(let i=0;i<7;i++)B.box(x,.22*(i+1),z+d/2-.3-i*.5,1.8,.44*(i+1),.5,i%2?'#5a4028':'#6b4e30');B.box(x-.95,1.6,z,.12,3.2,d,WOOD);}
+    else if(f.k==='bed'){B.box(x,.35,z,w-.3,.5,1.7,WOOD);B.box(x-w/2+.2,.8,z,.2,1.4,1.8,DARKW);B.box(x+.1,.68,z,w-.7,.3,1.5,'#d8d0b8');B.box(x+.6,.74,z,w-1.8,.3,1.56,'#5a2630');B.box(x-w/2+.8,.86,z,.7,.2,1.1,'#efe8d4');}
+    else if(f.k==='stand'){B.box(x-.3,.5,z-.2,1,1,1,WOOD);candle(x-.3,1,z-.2);}
+    else if(f.k==='wardrobe'){B.box(x,1.6,z-.2,1.8,3.2,1.3,WOOD);B.box(x,1.6,z+.47,.06,3,.04,DARKW);B.box(x,3.26,z-.2,2,.14,1.5,DARKW);}
+    else if(f.k==='chest'){const o=single('chest_gold');o.position.set(x,0,z);ig.add(o);stashes.push(o);}
+    else if(f.k==='barrel')put('barrel',f.x+.5,f.y+.5,f.x*1.7,3.5);
+    else if(f.k==='crate')put('crate_A_big',f.x+.5,f.y+.5,.3,3.5);}
+  if(R.k==='room'){B.box(cx,.02,cz+.4,4,.04,2.6,'#3c2c52');B.box(cx,.03,cz+.4,3.4,.04,2,'#5a4a72');}
+  else B.box(cx,.02,cz+.6,5,.04,3,hall?BL:'#5a2630');
+  torches.push({x:cx,y:3.4,z:cz,col:'#ffd8a0',int:18,dist:20});
+  ig.add(...B.meshes());instance(ig,placed);if(fl.length)for(const[col,size,op]of FLAME_SETS.warm)ig.add(points(fl,col,size,op));
+  return ig;
+}
+// Out of doors or in: which of the village's groups shows, and the light to see it by.
+function indoors(k){
+  FLOOR.areaK=k;FLOOR.town.visible=!k;for(const a of FLOOR.areas)a.group.visible=a.k===k;
+  if(!k){mood(true);return;}
+  scene.background.set('#090706');scene.fog.color.set('#090706');scene.fog.density=.012;hemi.color.set('#ffe2b8');hemi.groundColor.set('#2a1c10');hemi.intensity=1.75;moon.color.set('#ffe6c4');moon.intensity=1.1;
+}
+const areaKey=q=>{const R=G.village?insideOf(q.x,q.y):null;return R?R.k:null;};
 const FLAME_SETS={warm:[['#ff8a2a',1.7,.85],['#ffcf6a',.65,1],[null,.22,1]],green:[['#2fd05a',.9,.55],['#a8ffa0',.35,.8],[null,.14,1]],blue:[['#3a6cff',1.6,.9],['#9cc0ff',.7,1],[null,.26,1]]};
 for(const k in FLAME_SETS)FLAME_SETS[k][2][0]=typeof THREE==='undefined'?'#fff':new THREE.Color(k==='warm'?'#fff0c0':k==='green'?'#e8ffe0':'#eef4ff').multiplyScalar(2);
 // What the town is made of, drawn into each surface by where it is in the world (no textures): s stone laid in
@@ -595,7 +674,7 @@ function townBuilder(){
     for(let f=0;f<fl;f++){const j=f?jet:0,zF=zc+D/2+j,yb=y0+f*st,col=(f===0&&stoneLow)||h.stone===2?STONE:plaster;
       box(X,yb+st/2,zc+j/2,W,st,D+j,col);
       box(X,yb+st-.1,zc+j/2,W+.08,.2,D+j+.08,timber);if(f)box(X,yb+.08,zc+j/2,W+.1,.2,D+j+.1,timber);
-      const n=Math.max(2,Math.round(W/2)),pw=(W-.2)/n,door=f===0?Math.floor(r()*n):-1,wins=new Set();
+      const n=Math.max(2,Math.round(W/2)),pw=(W-.2)/n,door=f===0?(h.doorAt!=null?h.doorAt:Math.floor(r()*n)):-1,wins=new Set();
       {const free=[];for(let i=0;i<n;i++)if(i!==door)free.push(i);for(let k=Math.min(free.length,h.w>=5?3:2,1+Math.floor(r()*3));k>0;k--)wins.add(free.splice(Math.floor(r()*free.length),1)[0]);}   // three windows a floor at most
       if(!(f===0&&stoneLow))for(let i=0;i<=n;i++)box(X-W/2+.1+i*pw,yb+st/2,zF+.02,.18,st,.1,timber);
       for(let i=0;i<n;i++){const px=X-W/2+.1+(i+.5)*pw;
@@ -607,7 +686,7 @@ function townBuilder(){
         if(r()<.45){const sc=pick(SHUT);for(const sx of[-.53,.53])box(px+sx,wy,zF+.05,.24,.95,.06,sc);}
         else if(r()<.4){box(px,wy-.7,zF+.2,.9,.2,.26,'#5a3a22');box(px,wy-.55,zF+.2,.8,.16,.2,pick(['#b8405a','#d8b040','#c86a8a','#5a8a3a']));}}}
     // the roof: mostly eaves to the street; on some narrow houses the gable faces it
-    const jz=jet/2,Dr=D+jet,gable=!h.barn&&h.w<=5&&r()<.3,dark='#'+new THREE.Color(roofB).multiplyScalar(.55).getHexString()+'|r',lite='#'+new THREE.Color(roofB).multiplyScalar(1.12).getHexString()+'|r',board='#'+new THREE.Color(roofB).multiplyScalar(.4).getHexString();
+    const jz=jet/2,Dr=D+jet,gable=h.gable!=null?h.gable:(!h.barn&&h.w<=5&&r()<.3),dark='#'+new THREE.Color(roofB).multiplyScalar(.55).getHexString()+'|r',lite='#'+new THREE.Color(roofB).multiplyScalar(1.12).getHexString()+'|r',board='#'+new THREE.Color(roofB).multiplyScalar(.4).getHexString();
     if(gable){const half=W/2+.3,rise=Math.min(3.8,W*pitch*1.05),L=Math.hypot(half,rise),th=Math.atan2(rise,half);
       prism(X,top,zc+jz,Dr,rise,W,plaster,Math.PI/2);
       for(const sd of[-1,1]){box(X+sd*half/2,top+rise/2+.06,zc+jz,L+.1,.2,Dr+.7,sd<0?roof:lite,0,0,-sd*th);
@@ -1173,6 +1252,7 @@ function frame3d(){
   // the moon's shadows follow you; snapped to its texels so they do not shimmer
   const snap=52/2048;moon.target.position.set(Math.round(camT.x/snap)*snap,0,Math.round(camT.z/snap)*snap);moon.position.set(moon.target.position.x-18,40,moon.target.position.z-6);
   CUT.value.set(px,0,pz);
+  if(FLOOR.areas){const k=areaKey(P);if(k!==FLOOR.areaK)indoors(k);}
   lantern.position.set(px,5,pz+1.2);lantern.intensity=MOOD.village?6:P.dead?6:24;
   // the floating candles drift up and down
   if(F.floatSet){const fs=F.floatSet,m=new THREE.Matrix4(),tmp=new THREE.Matrix4(),arr=fs.pts[0].geometry.attributes.position;
@@ -1191,7 +1271,7 @@ function frame3d(){
   if(!P.dead){ring(px,pz,.75,'#e9c87a',.35,.06);disc(px,pz,.75,'#e9c87a',.06);   // a faint ring under you, so you never lose yourself in a crowd
     disc(px+Math.cos(P.aim)*.98,pz+Math.sin(P.aim)*.98,.13,'#ffe9a8',.55);}   // and a mark on it where you aim
   bagMesh();
-  if(NET.on)for(const q of NET.others){if(q.x<-900)continue;const a=heroActor('p'+q.id,q.wtype||'sword',heroSpec(q));seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);auras(q);
+  if(NET.on)for(const q of NET.others){if(q.x<-900||(FLOOR.areas&&areaKey(q)!==FLOOR.areaK))continue;const a=heroActor('p'+q.id,q.wtype||'sword',heroSpec(q));seenIds.add('p'+q.id);animHero(a,q,q.wtype||'sword',dt);auras(q);
     DLIGHTS.push({x:wx(q.x),y:3.2,z:wz(q.y),col:'#ffe2b8',int:14,dist:11,pri:2});}
   // enemies near enough to matter
   const reachX=dist*.27*camera.aspect+5,reachZ=dist*.62+4;   // about what the camera sees, and a little more
@@ -1405,7 +1485,7 @@ function npcModel(q){const n=q.name||'';
   return{m:'Rogue_Hooded',hold:[]};}
 function npcs(dt){
   const list=[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[]),...(G.smiths||[]).filter(q=>q.name)];
-  list.forEach((q,i)=>{const id='n'+i;let a=ACTORS.get(id);if(!a){const L=npcLook(q);a=makeActor('npc:'+L.m+L.hold.join()+(L.hero?specKey(L.hero):''),L);ACTORS.set(id,a);a.face=0;play(a,'Idle');a.npc=q;}
+  list.forEach((q,i)=>{if(FLOOR.areas&&areaKey(q)!==FLOOR.areaK)return;const id='n'+i;let a=ACTORS.get(id);if(!a){const L=npcLook(q);a=makeActor('npc:'+L.m+L.hold.join()+(L.hero?specKey(L.hero):''),L);ACTORS.set(id,a);a.face=0;play(a,'Idle');a.npc=q;}
     seenIds.add(id);a.root.position.set(wx(q.x),0,wz(q.y));const d=hyp(P.x-q.x,P.y-q.y);
     turn(a,d<90?Math.atan2(wx(P.x-q.x),wz(P.y-q.y)):0,dt,4);
     if(q.sayUntil>G.time&&a.curName!=='Interact')play(a,'Interact',{once:true,fade:.2});else if(!(q.sayUntil>G.time)&&a.curName==='Interact'&&!a.cur.isRunning())play(a,'Idle',{fade:.3});
