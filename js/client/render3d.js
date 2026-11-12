@@ -437,22 +437,64 @@ function buildVillage(){
     run(x0,z0,ta,z0,5);run(tb,z0,x1,z0,5);run(x0,z0,x0,z1,5);run(x1,z0,x1,z1,5);
     const[ga,]=VT(38,0),[gb,]=VT(42,0);run(x0,z1,ga,z1,1.3);run(gb,z1,x1,z1,1.3);
     for(const gx of[ga,gb]){T.box(gx,1.6,z1,1.6,3.2,1.6,st);T.box(gx,3.35,z1,1.9,.3,1.9,st2);flames.warm.push(gx,3.9,z1);torches.push({x:gx,y:4.2,z:z1,col:'#ffc070',int:14,dist:12});}
-    put('building_tower_A_blue',2.5,2.5,0,7.5);put('building_tower_A_blue',VILLAGE_W-2.5,2.5,0,7.5);}
+    for(const tx of[x0,x1]){T.box(tx,4.2,z0,4.2,8.4,4.2,st);T.box(tx,8.5,z0,4.8,.5,4.8,st2);for(let i=0;i<8;i++){const a=i/8*TAU;T.box(tx+Math.cos(a)*2.1,9.05,z0+Math.sin(a)*2.1,.9,.7,.9,st);}
+      T.prism(tx,8.75,z0,3.6,2.8,3.6,'#39444c|r');T.box(tx,3,z0+2.12,.5,1,.06,'#15100c');}}
   // the houses, row on row
   for(const h of g.houses||[])T.house(h);
-  // the inn, the guild, the well, the Teleport Gate's pillars, the notice board
-  put('building_tavern_red',INN.x+INN.w/2,INN.y+2.4,0,8);
-  put('building_church_blue',GUILD.x+GUILD.w/2,GUILD.y+2,0,8.5);
-  put('building_well_blue',36,24.4,0,4.6);
+  // the landmarks, built the way the houses are (townBuilder): the inn, the guild hall, the well, the market's stalls,
+  // the smithy, the arcanist's study. Each blocks exactly its tiles (village.js).
+  const WOOD='#4a3422',DARKW='#2e2118',ST='#6f6b62|s',ST2='#5e5a52|s',GOLD='#c8962e';
+  {const I=T.house({x:INN.x,y:INN.y,w:INN.w,h:INN.h,floors:2,seed:4242,plaster:'#b9a47c|p',roof:'#6b2f26',wide:true,stone:1}),f=I.front+I.jet;   // the inn: the biggest house in town, a sign over its door
+    T.box(I.X+I.W/2-.5,4.6,f+.8,.12,.12,1.6,DARKW);T.box(I.X+I.W/2-.5,3.9,f+1.3,.08,1.1,1,WOOD);T.box(I.X+I.W/2-.5,3.9,f+1.3,.1,.5,.4,GOLD);
+    for(const sx of[-1,1])T.lit(I.X+sx*(I.W/2-.3),2.4,f+.25,.22,.3,.22,'#e8a850');
+    T.box(I.X-I.W/2+1.3,.5,f+.45,2.2,.12,.5,WOOD);for(const sx of[-.9,.9])T.box(I.X-I.W/2+1.3+sx,.25,f+.45,.14,.5,.4,DARKW);}   // a bench against the wall
+  {const Gd=T.house({x:GUILD.x,y:GUILD.y,w:GUILD.w,h:GUILD.h,floors:2,seed:99,stone:2,roof:'#2f3f5a',wide:true}),f=Gd.front;   // the guild hall: all stone, slate-roofed, its banners either side of the door
+    for(const sx of[-1,1]){T.box(Gd.X+sx*(Gd.W/2-1),3.9,f+.1,1,2.8,.06,'#2b3350');T.box(Gd.X+sx*(Gd.W/2-1),4.3,f+.14,.5,.5,.05,GOLD);T.box(Gd.X+sx*(Gd.W/2-1),5.36,f+.12,1.2,.12,.12,DARKW);}
+    T.box(Gd.X,.14,f+.9,3.4,.28,1.2,ST2);T.box(Gd.X,.3,f+.6,2.8,.3,.7,ST);
+    T.box(Gd.X,Gd.top+4.2,Gd.Z,.12,3,.12,DARKW);T.box(Gd.X+.7,Gd.top+5.1,Gd.Z,1.3,.9,.05,'#2b3350');}
+  {const[X,Z]=VT(36,24.5);for(let i=0;i<10;i++){const a=i/10*TAU;T.box(X+Math.cos(a)*.95,.5,Z+Math.sin(a)*.95,.62,1,.4,i%2?ST:ST2,0,-a+Math.PI/2);}   // the well: a stone ring under a little roof
+    T.box(X,.55,Z,1.5,.1,1.5,'#1c2a3a');for(const sx of[-1.15,1.15])T.box(X+sx,1.5,Z,.18,3,.18,WOOD);T.box(X,2.5,Z,2.5,.14,.14,DARKW);T.box(X,1.9,Z,.06,1.1,.06,'#8a8474');T.box(X,1.3,Z,.4,.4,.4,WOOD);
+    for(const sd of[-1,1])T.box(X,3.3,Z+sd*.55,3,.12,1.5,'#54402a|r',sd*.6);}
   for(const[x,y]of[[36,26],[43,26],[36,33],[43,33]])put('pillar_decorated',x+.5,y+.5,0,.75);
   group.add(noticeBoard(...VT(45,34.6)));
-  // the market: four stalls in their colours, with goods; the forge; the arcanist's tent and cauldron; the exchange
-  const STALL_MODEL={weapons:'building_market_red',gear:'building_market_blue',potions:'building_market_green',food:'building_market_yellow'};
-  for(const st of STALLS){put(STALL_MODEL[st.kind],st.x+2.5,st.y+.6,0,5);
-    {const[X,Z]=VT(st.x+2.5,st.y+2);T.box(X,.55,Z,7.6,1.1,.7,'#5a4028');T.box(X,1.14,Z,7.9,.1,.9,'#7a5a38');for(const sx of[-3.9,3.9])T.box(X+sx,.9,Z,.2,1.8,.2,st.awning);}}   // its counter, with posts in its colour
-  put('building_blacksmith_red',FORGE.x+2.5,FORGE.y+.6,0,5.5);lamp(FORGE.x+4.4,FORGE.y+1.6,1.1,'#ff8a3a',26,12,true);
-  put('tent',WITCH.x+2.5,WITCH.y+.4,0,7);put('pot_large',WITCH.x+2.5,WITCH.y+2.2,0,.75);
-  {const[x,z]=VT(WITCH.x+2.5,WITCH.y+2.2);flames.green.push(x,.8,z,x+.3,.75,z+.2,x-.3,.7,z-.1);torches.push({x,y:1.4,z,col:'#7cf07a',int:14,dist:9});}
+  // the market: each stall a timber frame with a striped awning in its colour over the back, its trader in front of
+  // that, the counter and its goods in front of the trader
+  for(const st of STALLS){const[X,Zb]=VT(st.x+2.5,st.y),cream='#cfc4a4',n=9,wA=9.4/n;
+    for(const sx of[-4.4,4.4]){T.box(X+sx,1.35,Zb+.3,.26,2.7,.26,WOOD);T.box(X+sx,1.75,Zb+2.5,.26,3.5,.26,WOOD);T.box(X+sx,3.05,Zb+1.4,.16,.16,2.5,DARKW,-.33);}
+    T.box(X,1.2,Zb+.22,8.8,2.4,.14,'#5a4028');for(const sy of[1.1,1.9])T.box(X,sy,Zb+.5,8.2,.1,.5,'#6b4e30');
+    for(let i=0;i<n;i++)T.box(X-4.7+wA*(i+.5),3.12,Zb+1.4,wA+.02,.1,2.7,i%2?cream:st.awning,-.33);
+    T.box(X,3.56,Zb+2.66,9.5,.34,.08,st.awning);
+    const Zc=Zb+4;T.box(X,.55,Zc,8.6,1.1,.8,'#5a4028');T.box(X,1.14,Zc,9,.1,1,'#7a5a38');T.lit(X+4.4,3,Zb+2.72,.2,.28,.2,'#e8a850');
+    const g=(dx,c,sx=.5,sy=.3,sz=.5,ry=0)=>T.box(X+dx,1.19+sy/2,Zc+((dx*7)%1)*.2,sx,sy,sz,c,0,ry);
+    if(st.kind==='weapons'){for(let i=0;i<4;i++){g(-3.2+i*1.1,'#9aa0aa',.14,.06,1,.3-i*.2);g(-3.2+i*1.1,'#4a3422',.2,.08,.26,.3-i*.2);}g(2,'#7a8088',.9,.1,.9,.5);g(3.2,'#5a4028',.2,.1,1,.2);for(let i=0;i<3;i++)T.box(X-3+i*3,1.9,Zb+.4,.12,1.5,.1,'#9aa0aa',0,0,.15*(i-1));}
+    else if(st.kind==='gear'){for(const[dx,c]of[[-3.2,'#6b4a2c'],[-2.2,'#2b3350'],[-1.1,'#8a8474'],[.2,'#5a2630'],[1.4,'#3c2c52']])g(dx,c,.8,.24,.7);g(2.8,'#8a8f98',.6,.5,.6);g(3.6,'#4a3422',.5,.4,.7,.3);for(let i=0;i<3;i++)T.box(X-2.6+i*2.6,1.9,Zb+.4,1.2,1.2,.1,['#6b4a2c','#8a8474','#2f4a3a'][i]);}
+    else if(st.kind==='potions'){for(let i=0;i<9;i++){const dx=-3.6+i*.9;g(dx,'#3a3a44',.22,.1,.22);T.lit(X+dx,1.5,Zc+((dx*7)%1)*.2,.2,.34,.2,['#b03030','#3050b0','#3a9a50'][i%3]);}for(let i=0;i<6;i++)T.lit(X-3+i*1.2,2.08,Zb+.5,.18,.3,.18,['#3a9a50','#b03030','#7a3aa0'][i%3]);}
+    else{for(const[dx,c,sx]of[[-3.4,'#b8894a',.8],[-2.4,'#a03a2a',.5],[-1.7,'#a03a2a',.5],[-.6,'#c8a040',.9],[.6,'#5a8a3a',.7],[1.8,'#8a5a30',.8],[3,'#d8c8a0',.6]])g(dx,c,sx,.3,.5);for(let i=0;i<4;i++)T.box(X-3.3+i*2.2,2.15,Zb+.5,.5,.4,.4,['#b8894a','#8a5a30','#c8a040','#a03a2a'][i]);}}
+  // the smithy: a stone forge and its chimney under one end of a lean-to, the anvil under the other
+  {const[X,Zb]=VT(FORGE.x+2,FORGE.y),fx=X+2.1;
+    T.box(fx,1.1,Zb+1.9,3.4,2.2,3,ST);T.box(fx,2.45,Zb+1.9,2.8,.5,2.4,ST2);T.box(fx+.6,4,Zb+1.1,1.4,3.6,1.4,ST);T.box(fx+.6,5.9,Zb+1.1,1.7,.24,1.7,ST2);
+    T.box(fx,1.05,Zb+3.42,1.9,1.2,.1,'#15100c');T.lit(fx,.8,Zb+3.46,1.5,.5,.08,'#ff7a2a');T.lit(fx,.62,Zb+3.5,.9,.2,.1,'#ffd27a');
+    for(const sx of[-3.7,.2])T.box(X+sx,1.6,Zb+3.5,.26,3.2,.26,WOOD);T.box(X-1.8,3.7,Zb+1.9,4.6,.16,4,'#4a3d36|r',-.22);T.box(X-1.75,3.25,Zb+3.75,4.4,.2,.2,DARKW);
+    T.box(X-3.7,1.4,Zb+.3,.26,2.8,.26,WOOD);T.box(X-1.8,1.3,Zb+.2,4,2.6,.14,'#5a4028');
+    T.box(X-1.6,.35,Zb+2.9,.7,.7,.7,'#4a3422');T.box(X-1.6,.82,Zb+2.9,1.3,.26,.5,'#2a2a30');T.box(X-1,.86,Zb+2.9,.5,.16,.3,'#2a2a30');   // the anvil on its block
+    T.box(X-3,.4,Zb+2.6,.9,.8,1.6,'#5a4028');T.box(X-3,.78,Zb+2.6,.7,.06,1.4,'#1c2a3a');   // the quench trough
+    for(let i=0;i<4;i++)T.box(X-3+i*.7,1.9,Zb+.34,.1,1.3,.08,i%2?'#9aa0aa':'#4a3422',0,0,(i-1.5)*.08);
+    lamp(FORGE.x+4.1,FORGE.y+1.9,1,'#ff8a3a',26,12,true);}
+  // the arcanist's study: a narrow stone house under a steep indigo roof, a lit rune over its door and in its round
+  // window, a crystal on its spire, books on a shelf outside, and the cauldron before it
+  {const[X,Zb]=VT(WITCH.x+2.5,WITCH.y),zc=Zb+1.9,f=zc+1.7,ind='#3a3560|r',vio='#a070ff',cy='#60d0e0';
+    T.box(X,1.5,zc,5.4,3,3.4,ST);T.box(X,3.05,zc,5.6,.2,3.6,DARKW);T.box(X,4.2,zc+.15,5.2,2.2,3.5,'#6a6078|p');T.box(X,5.35,zc+.15,5.4,.2,3.7,DARKW);
+    for(const sx of[-2.6,-.9,.9,2.6])T.box(X+sx,4.2,f+.2,.16,2.2,.1,DARKW);
+    const half=2.3,rise=4.2,L=Math.hypot(half,rise),th=Math.atan2(rise,half),top=5.45,zr=zc+.15;T.prism(X,top,zr,5.2,rise,3.5,'#6a6078|p');
+    for(const sd of[-1,1]){T.box(X,top+rise/2+.06,zr+sd*half/2,5.36,.2,L+.1,ind,sd*th);for(const e of[-1,1])T.box(X+e*2.72,top+rise/2+.02,zr+sd*half/2,.1,.26,L+.16,'#1c1a30',sd*th);}
+    T.box(X,top+rise+.9,zr,.14,1.8,.14,DARKW);T.lit(X,top+rise+2,zr,.42,.6,.42,vio,.6,.8,.6);
+    T.box(X,1.05,f+.05,1.2,2.1,.12,'#231a14');T.box(X,2.2,f+.05,1.5,.16,.16,DARKW);T.lit(X,2.62,f+.06,.44,.44,.06,vio,0,0,.785);
+    T.lit(X,4.3,f+.22,1,1,.06,vio,0,0,.785);T.box(X,4.3,f+.24,.08,1.5,.06,DARKW);T.box(X,4.3,f+.24,1.5,.08,.06,DARKW);
+    T.box(X+1.85,1,f+.24,1.4,2,.4,WOOD);for(let j=0;j<3;j++)for(let i=0;i<5;i++)T.box(X+1.33+i*.26,.42+j*.62,f+.3,.2,.44+((i*j)%3)*.04,.3,['#5a2630','#2b3350','#2f4a3a','#6b4a2c','#3c2c52'][(i+j*2)%5]);
+    T.box(X-1.9,2.5,f+.08,.9,2.2,.05,'#3c2c52');T.box(X-1.9,2.9,f+.11,.4,.4,.04,GOLD,0,0,.785);T.box(X-1.9,3.66,f+.1,1.1,.1,.1,DARKW);
+    for(const[dx,h,c,rz]of[[-2.5,.9,vio,.2],[-2.2,.6,cy,-.3],[-2.75,.5,cy,.4]])T.lit(X+dx,h/2,f+.35,.22,h,.22,c,0,.6,rz);
+    put('pot_large',WITCH.x+2.5,WITCH.y+2.5,0,.75);const[x,z]=VT(WITCH.x+2.5,WITCH.y+2.5);flames.green.push(x,.8,z,x+.3,.75,z+.2,x-.3,.7,z-.1);torches.push({x,y:1.4,z,col:'#7cf07a',int:14,dist:9});
+    torches.push({x:X,y:3,z:f+1,col:vio,int:10,dist:8});}
   {const[X,Z]=VT(EXCHANGE.x+2.5,EXCHANGE.y+.5);put('table_medium_long',EXCHANGE.x+2.5,EXCHANGE.y+.5,0,1.3);   // the exchange: a desk under a board of the day's prices
     for(const sx of[-4.2,4.2])T.box(X+sx,1.8,Z-.8,.24,3.6,.24,'#4a3422');T.box(X,2.6,Z-.8,8.4,1.7,.14,'#2a2622');T.box(X,3.55,Z-.8,9,.22,.3,'#4a3422');
     for(let i=0;i<5;i++)T.box(X-3+i*1.5,2.6+(i%2?.2:-.15),Z-.71,.9,.12,.04,'#c9c2a8');}
@@ -473,7 +515,11 @@ function buildVillage(){
     for(let x=fx;x<=fx+fw-3;x+=1){if(x>=g0&&x<=g1&&x!==g0&&x!==g1)continue;const[X,Z]=VT(x,fy+.5);T.box(X,.7,Z,.22,1.4,.22,'#5a4028');
       if(!(x>=g0&&x<g1)){T.box(X+1,1.05,Z,2,.14,.1,'#6b4e30');T.box(X+1,.55,Z,2,.14,.1,'#6b4e30');}}
     for(const[px,py]of VILLAGE.plots){const[X,Z]=VT(px+1.5,py+1);for(const[sx,sz,w,d]of[[0,-2,6,.2],[0,2,6,.2],[-3,0,.2,4.2],[3,0,.2,4.2]])T.box(X+sx,.12,Z+sz,w,.24,d,'#5a4028');}
-    T.house({x:66,y:49,w:4,h:3,floors:1,seed:77,barn:true});put('building_windmill_yellow',72.5,54.6,0,7);
+    T.house({x:66,y:49,w:4,h:3,floors:1,seed:77,barn:true});
+    {const[X,Z]=VT(72.5,54.5),hub=7.2,zf=Z+1.9;   // the windmill: a stone tower narrowing as it rises, a timber cap, four sails
+      [4.8,4.4,4,3.6].forEach((w,i)=>T.box(X,1+i*2,Z,w,2,w,i%2?'#77736a|s':'#6f6b62|s'));T.prism(X,8,Z,3.9,2,3.9,'#54402a|r',Math.PI/2);T.box(X,8.05,Z,4,.14,4,'#2e2118');
+      T.box(X,1,Z+2.42,1,2,.1,'#231a14');T.box(X,4.6,Z+2.12,.7,.9,.08,'#1d242c');T.box(X,hub,zf+.2,.5,.5,.9,'#2e2118');
+      for(let k=0;k<4;k++){const a=.35+k*Math.PI/2,c=Math.cos(a),sn=Math.sin(a);T.box(X+c*2.6,hub+sn*2.6,zf+.6,5,.14,.1,'#4a3422',0,0,a);T.box(X+c*3-sn*.45,hub+sn*3+c*.45,zf+.62,3.6,.8,.04,'#b9a888',0,0,a);}}
     group.add(signpost(...VT(...VILLAGE.fieldSign)));}
   // what stands about: the camps' fire and gear, the fields' barrows and crates, tables by the inn
   for(const[k,x,y,sc,ry]of VILLAGE.decor){
@@ -534,25 +580,26 @@ function townMat(k){
 // The town's own carpentry: boxes and gable ends by the thousand, in two draws, each with its own colour. A house is
 // stone footings, plaster walls in a timber frame, a door, windows (most of them lit), a pitched roof and a chimney.
 function townBuilder(){
-  const boxes=[],prisms=[],glows=[];
+  const boxes=[],prisms=[],glows=[],shine=[];
   const mat=(x,y,z,sx,sy,sz,rx=0,ry=0,rz=0)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz,'YXZ')),new THREE.Vector3(sx,sy,sz));
   let cur=null;const emit=(list,M,c)=>{const i=typeof c==='string'?c.indexOf('|'):-1;list.push([cur?M.premultiply(cur):M,i<0?c:c.slice(0,i),i<0?'w':c[i+1]]);};   // a colour may name its stuff: '#777|s' stone, p plaster, r roof tiles, w wood (the default)   // cur: where the house being built stands, and how it is turned
   const box=(x,y,z,sx,sy,sz,c,rx,ry,rz)=>emit(boxes,mat(x,y,z,sx,sy,sz,rx,ry,rz),c),prism=(x,y,z,sx,sy,sz,c,ry)=>emit(prisms,mat(x,y,z,sx,sy,sz,0,ry),c);
+  const lit=(x,y,z,sx,sy,sz,c,rx,ry,rz)=>emit(shine,mat(x,y,z,sx,sy,sz,rx,ry,rz),c);   // something that glows by its own light, whatever the hour
   const PLASTER=['#b3a688','#a6997b','#9a8e76','#ad9d80','#8f8672','#a39478'],ROOF=['#6e3328','#5e2c24','#743a2a','#4a3d36','#39444c','#54402a','#414832','#63302b'],SHUT=['#33473a','#532823','#2c4052','#4a3d24'],TIMBER='#2e2118',STONE='#6f6b62|s';
   function house(h){
     const r=mulberry32(h.seed),pick=a=>a[Math.floor(r()*a.length)],[X0,Zb]=VT(h.x+h.w/2,h.y),turned=Math.abs(h.rot||0)>.02;
-    const ar=Math.abs(h.rot||0),W=h.w*2-.24-ar*h.h*2.2,D=h.h*2-.8-ar*h.w*1.1,X=0,zc=0,st=2.7,fl=h.floors,plaster=h.barn?'#663c2c|w':pick(PLASTER)+'|p',roofB=h.barn?'#40332b':pick(ROOF),roof=roofB+'|r',timber=h.barn?'#40261c':TIMBER;
-    const stoneLow=!h.barn&&fl===2&&r()<.35,jet=fl===2&&r()<.55?.5:0,H=st*fl,y0=.4+r()*.5,top=y0+H,pitch=.42+r()*.2;   // (no two eaves at one height, no two roofs at one pitch)
+    const ar=Math.abs(h.rot||0),W=h.w*2-.24-ar*h.h*2.2,D=h.h*2-.8-ar*h.w*1.1,X=0,zc=0,st=2.7,fl=h.floors,plaster=h.plaster||(h.barn?'#663c2c|w':pick(PLASTER)+'|p'),roofB=h.roof||(h.barn?'#40332b':pick(ROOF)),roof=roofB+'|r',timber=h.barn?'#40261c':TIMBER;
+    const stoneLow=h.stone||(!h.barn&&fl===2&&r()<.35),jet=h.stone===2?0:fl===2&&r()<.55?.5:0,H=st*fl,y0=.4+r()*.5,top=y0+H,pitch=.42+r()*.2;   // (no two eaves at one height, no two roofs at one pitch)
     cur=mat(X0+(h.dx||0),0,Zb+.25+(h.h*2-.8)/2,1,1,1,0,h.rot||0);
     box(X,y0/2+.02,zc,W+.2,y0+.04,D+.2,'#625e56|s');
-    for(let f=0;f<fl;f++){const j=f?jet:0,zF=zc+D/2+j,yb=y0+f*st,col=f===0&&stoneLow?STONE:plaster;
+    for(let f=0;f<fl;f++){const j=f?jet:0,zF=zc+D/2+j,yb=y0+f*st,col=(f===0&&stoneLow)||h.stone===2?STONE:plaster;
       box(X,yb+st/2,zc+j/2,W,st,D+j,col);
       box(X,yb+st-.1,zc+j/2,W+.08,.2,D+j+.08,timber);if(f)box(X,yb+.08,zc+j/2,W+.1,.2,D+j+.1,timber);
       const n=Math.max(2,Math.round(W/2)),pw=(W-.2)/n,door=f===0?Math.floor(r()*n):-1,wins=new Set();
       {const free=[];for(let i=0;i<n;i++)if(i!==door)free.push(i);for(let k=Math.min(free.length,h.w>=5?3:2,1+Math.floor(r()*3));k>0;k--)wins.add(free.splice(Math.floor(r()*free.length),1)[0]);}   // three windows a floor at most
       if(!(f===0&&stoneLow))for(let i=0;i<=n;i++)box(X-W/2+.1+i*pw,yb+st/2,zF+.02,.18,st,.1,timber);
       for(let i=0;i<n;i++){const px=X-W/2+.1+(i+.5)*pw;
-        if(i===door){const dw=h.barn?1.8:1;box(px,y0+.95,zF+.05,dw,1.9,.12,h.barn?'#3a241a':'#3b2616');box(px,y0+1.96,zF+.05,dw+.24,.14,.16,timber);box(px,y0/2,zF+.4,dw+.5,y0,.7,STONE);
+        if(i===door){const dw=h.barn?1.8:h.wide?1.5:1;box(px,y0+.95,zF+.05,dw,1.9,.12,h.barn?'#3a241a':'#3b2616');box(px,y0+1.96,zF+.05,dw+.24,.14,.16,timber);box(px,y0/2,zF+.4,dw+.5,y0,.7,STONE);
           if(!h.barn&&r()<.5){emit(glows,mat(px+dw/2+.35,y0+1.75,zF+.2,.16,.2,.16),0);box(px+dw/2+.35,y0+1.95,zF+.12,.06,.06,.3,timber);}continue;}
         if(h.barn||!wins.has(i)){if(!(f===0&&stoneLow)&&r()<.6)box(px,yb+st/2,zF+.03,.14,st*1.12,.08,timber,0,0,r()<.5?.5:-.5);continue;}
         const wy=yb+1.5,lit=r()<.45;emit(lit?glows:boxes,mat(px,wy,zF+.04,.8,.95,.08),lit?Math.floor(r()*3):'#1d242c');
@@ -575,7 +622,7 @@ function townBuilder(){
       if(!h.barn&&h.w>=5&&r()<.4){const dx=X+(r()-.5)*(W-3);   // a dormer in the roof
         box(dx,top+rise*.55,zc+jz+half*.45,1.3,1.1,1.2,plaster);if(r()<.5)emit(glows,mat(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06),Math.floor(r()*3));else box(dx,top+rise*.55,zc+jz+half*.45+.62,.7,.7,.06,'#1d242c');box(dx,top+rise*.55+.66,zc+jz+half*.45,1.6,.16,1.5,roof);}}
     if(!h.barn){const rise=gable?Math.min(3.8,W*pitch*1.05):Math.min(3.5,Dr*pitch);box(X+(r()<.5?-1:1)*(W/2-1),top+rise*.5+.5,zc-D*.15,.62,rise+1.2,.62,'#5f5b54|s');}
-    cur=null;
+    cur=null;return{X:X0,Z:Zb+.25+(h.h*2-.8)/2,W,D,top,front:Zb+.25+(h.h*2-.8)/2+D/2,jet};
   }
   function meshes(){
     const out=[],col=new THREE.Color(),unit=new THREE.BoxGeometry(1,1,1);
@@ -588,9 +635,10 @@ function townBuilder(){
     // the panes: dark glass by day; in the evening and at night a dim, steady candlelight (VILLAGE_HOUR, village.js)
     const dayTime=VILLAGE_HOUR==='day';
     make(glows.map(q=>[q[0],dayTime?'#1d242c':q[1]===0?'#5a3414':q[1]===1?'#4e2c12':'#633a18']),unit,dayTime?new THREE.MeshStandardMaterial({roughness:.4}):new THREE.MeshBasicMaterial({}),false);
+    if(shine.length){const sm=new THREE.MeshBasicMaterial({});make(shine,unit,sm,false);}
     return out;
   }
-  return{box,prism,house,meshes};
+  return{box,prism,lit,house,meshes};
 }
 // The village's ground, painted once into a canvas: grass with its lighter and darker patches, the worn paths, the
 // square's flagstones, the market's cobbles, the fields' tilled earth and the training yard's packed dirt.
@@ -1320,7 +1368,7 @@ function overlay(){
   if(NET.on)for(const q of NET.others){if(q.x<-900||q.dead)continue;label(q.name||'',wx(q.x),PERSON_TOP+.8,wz(q.y),'#e9dfc8','600 13px Cinzel,Georgia,serif');bar(wx(q.x),PERSON_TOP+.45,wz(q.y),46,q.hp/q.maxHp,'#7fc24a');}
   // the people and things you can use, when you are near
   const near=(q,r=110)=>q&&hyp(q.x-P.x,q.y-P.y)<r;
-  for(const q of[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[])])if(near(q,G.village?70:110)&&!(q.sayUntil>G.time))label(q.name||'Trader',wx(q.x),PERSON_TOP+.8,wz(q.y),'#e9c87a','600 13px Cinzel,Georgia,serif');
+  for(const q of[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[]),...(G.smiths||[]).filter(q=>q.name)])if(near(q,G.village?70:110)&&!(q.sayUntil>G.time))label(q.name||'Trader',wx(q.x),PERSON_TOP+.8,wz(q.y),'#e9c87a','600 13px Cinzel,Georgia,serif');
   // what a villager says when you talk to them: a box over their head
   for(const q of G.talkers||[])if(q.sayUntil>G.time){const p=scr(wx(q.x),PERSON_TOP+.7,wz(q.y));if(!p)continue;
     c.font="600 16px 'Cormorant Garamond',Georgia,serif";const words=String(q.line).split(' '),lines=[];let cur='';
@@ -1340,7 +1388,10 @@ function overlay(){
 /* ---------- the traders in the tower ---------- */
 // Traders stand in the start room and the safe rooms: hooded, idle, facing the room.
 // Who the townsfolk look like, by name (the tower's traders are hooded); held: what is in their hands.
-function npcLook(q){const n=q.name||'';
+// (each is then dressed as the village made them: their own skin, hair and clothes, like a player: dress())
+function npcLook(q){const L=npcModel(q);if(q.look)L.hero={look:q.look,armor:q.eq&&q.eq.armor,boots:{type:'boots'}};return L;}
+function npcModel(q){const n=q.name||'';
+  if(/Blacksmith/.test(n))return{m:'Barbarian',hold:[]};
   if(/Innkeeper|Barkeep|Farmhand/.test(n))return{m:'Barbarian',hold:/Farmhand/.test(n)?[]:['Mug']};
   if(/Weapons/.test(n))return{m:'Knight',hold:['1H_Sword']};
   if(/Armour/.test(n))return{m:'Knight',hold:['Round_Shield']};
@@ -1353,8 +1404,8 @@ function npcLook(q){const n=q.name||'';
   if(/Food|Crop/.test(n))return{m:'Rogue',hold:[]};
   return{m:'Rogue_Hooded',hold:[]};}
 function npcs(dt){
-  const list=[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[])];
-  list.forEach((q,i)=>{const id='n'+i;let a=ACTORS.get(id);if(!a){const L=npcLook(q);a=makeActor('npc:'+L.m+L.hold.join(),L);ACTORS.set(id,a);a.face=0;play(a,'Idle');a.npc=q;}
+  const list=[...(G.traders||[]),...(G.talkers||[]),...(G.guild?[G.guild]:[]),...(G.smiths||[]).filter(q=>q.name)];
+  list.forEach((q,i)=>{const id='n'+i;let a=ACTORS.get(id);if(!a){const L=npcLook(q);a=makeActor('npc:'+L.m+L.hold.join()+(L.hero?specKey(L.hero):''),L);ACTORS.set(id,a);a.face=0;play(a,'Idle');a.npc=q;}
     seenIds.add(id);a.root.position.set(wx(q.x),0,wz(q.y));const d=hyp(P.x-q.x,P.y-q.y);
     turn(a,d<90?Math.atan2(wx(P.x-q.x),wz(P.y-q.y)):0,dt,4);
     if(q.sayUntil>G.time&&a.curName!=='Interact')play(a,'Interact',{once:true,fade:.2});else if(!(q.sayUntil>G.time)&&a.curName==='Interact'&&!a.cur.isRunning())play(a,'Idle',{fade:.3});
