@@ -70,3 +70,11 @@ from plain shapes onto the adventurers' skeleton, so every animation still plays
 
 The body is one skinned mesh coloured by vertex (one draw), the cloth a second. Still to come from the gear plan:
 the other five chest types, head and hand slots, the rarity looks, each set's colours and emblem, two body types.
+
+
+### Scale and build (second pass)
+
+- The camera sits closer by default (about 17 units out, was 30), so a person stands roughly a fifth of the screen tall. The wheel pulls back as far as the old view.
+- People are a little taller (scale 1.36) and built with muscle under the clothes: a chest that widens to the shoulders, a back, shoulder caps, upper arms, forearms, thighs and calves that swell between the joints.
+- Held weapons are drawn at 46% of the KayKit size so a sword is in proportion to the arm.
+- Gear carries finer parts: lacing, seams, pouch and bracers on the tunic; riveted panels, strap, sheathed knife on leather; lapels, two button rows, pocket flaps, shoulder tabs, cuffs on the coat; fluting, gorget, layered pauldrons, edged tassets, elbow points on plate; strapped and buckled boots.

@@ -92,7 +92,7 @@ me.init=async function(){
   // the 3D canvas covers the 2D one, so it takes the mouse too
   canvas.addEventListener('pointerdown',e=>cv.dispatchEvent(new PointerEvent('pointerdown',e)));
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
-  canvas.addEventListener('wheel',e=>{if(mode!=='play')return;zoom=clamp(zoom*(e.deltaY>0?1.08:1/1.08),.75,1.45);e.preventDefault();},{passive:false});
+  canvas.addEventListener('wheel',e=>{if(mode!=='play')return;zoom=clamp(zoom*(e.deltaY>0?1.08:1/1.08),.75,1.8);e.preventDefault();},{passive:false});
   applyStyle();me.ready=true;
 };
 // The graphics setting, in turn: 3D, 3D (fast), 2D. Kept in this browser.
@@ -782,7 +782,7 @@ const TALL=typeof THREE==='undefined'?[]:(()=>{const hx=.74,hz=.76,sx=.8,sy=1.3,
     ['upperleg.l',V3(1.05,leg,1.05)],['upperleg.r',V3(1.05,leg,1.05)],['foot.l',V3(1/1.05,1/leg,1/1.05)],['foot.r',V3(1/1.05,1/leg,1/1.05)],
     ['upperarm.l',V3(.95,arm,.95)],['upperarm.r',V3(.95,arm,.95)],['wrist.l',V3(1/.95,1/arm,1/.95)],['wrist.r',V3(1/.95,1/arm,1/.95)]];})();
 // The height of a person's head, and of what floats over it (names, bars, speech), in world units.
-const PERSON_TOP=2.6;   // a person stands about 2.5 tall, a helmet a little more
+const PERSON_TOP=2.8;   // a person stands about 2.5 tall, a helmet a little more
 // (The change is taken back before each update: a clip without a scale track for a bone leaves the scale alone, and
 // it would otherwise compound frame after frame.)
 function upd(a,dt){if(!a.mixer)return;if(a.build&&a.built)for(const[b,v]of a.build)b.scale.divide(v);
@@ -1191,7 +1191,7 @@ function frame3d(){
   // the camera: high in the south, looking down at you. Wider screens see more; tall ones step back.
   const px=wx(P.x),pz=wz(P.y),tgt=tmpV.set(px,.8,pz);
   if(camT.lengthSq()===0||camT.distanceTo(tgt)>30)camT.copy(tgt);else camT.lerp(tgt,Math.min(1,dt*9));
-  const pitch=55*Math.PI/180,need=30/(2*Math.tan(15*Math.PI/180)*camera.aspect),dist=clamp(Math.max(30,need),24,64)*zoom;
+  const pitch=55*Math.PI/180,need=30/(2*Math.tan(15*Math.PI/180)*camera.aspect),dist=clamp(Math.max(17,need*.56),14,64)*zoom;   // (close enough to read a face and a coat)
   const sh=G.shake?G.shake*.03:0;
   camera.position.set(camT.x+rand(-sh,sh),camT.y+dist*Math.sin(pitch),camT.z+dist*Math.cos(pitch));camera.lookAt(camT.x,camT.y,camT.z);
   // the moon's shadows follow you; snapped to its texels so they do not shimmer
