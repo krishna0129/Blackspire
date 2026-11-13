@@ -41,65 +41,6 @@ function joinBody(root){
     first.parent.add(body);for(const p of list)p.parent.remove(p);}
   return root;
 }
-/* ---------- dressing a hero: the body follows the armour, the legs the boots, the head and hair the look ---------- */
-// The adventurers share one skeleton, so any one's arms, body, legs or head can be worn on another's bones. Kept here
-// before joinBody welds each model into one mesh: WEAR.Knight.Body and so on.
-const WEAR={};
-function keepParts(k,scene){scene.updateMatrixWorld(true);const o=WEAR[k]={};
-  scene.traverse(c=>{if(!c.isSkinnedMesh)return;const n=c.name.replace(/^(Knight|Barbarian|Mage|Rogue)_/,'').replace('_Hooded','');
-    o[n]={geo:c.geometry,bind:c.bindMatrix.clone(),names:c.skeleton.bones.map(b=>b.name),inv:c.skeleton.boneInverses.map(m=>m.clone()),map:c.material.map};});}
-// What each armour and each pair of boots looks like: whose body, and which of its colours takes the item's own
-// colour (cloth: that colour as it is in the model's texture; steel is only shaded toward it).
-const BODY_OF={tunic:{m:'Rogue',cloth:'#008050'},leather:{m:'Barbarian',cloth:'#406080'},coat:{m:'Mage',cloth:'#404070'},plate:{m:'Knight',steel:'#809090',trim:'#c03028'}};
-const LEGS_OF={greaves:'plate',striders:'tunic'};   // (plain boots: the armour's own legs)
-const SKIN_REF='#f0b890';
-// A model's texture with some of its colours changed: each of up to three colours (matched by hue, whatever its shade)
-// becomes another, keeping the shading; dark: what the darkest texels become (a head's eyes and brows).
-function dyed(map,swaps,dark){
-  const m=new THREE.MeshStandardMaterial({map,roughness:.9}),ref=[],to=[],tol=[];
-  for(let i=0;i<3;i++){const w=swaps[i];ref.push(new THREE.Vector3(...(w?hex3(w[0]):[0,0,0])));to.push(new THREE.Color(w?w[1]:'#000'));tol.push(w?(w[2]||.3):0);}
-  m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,{uRef:{value:ref},uTo:{value:to},uTol:{value:tol},uDark:{value:new THREE.Color(dark||'#000')},uDarkOn:{value:dark?1:0}});
-    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform vec3 uRef[3];uniform vec3 uTo[3];uniform float uTol[3];uniform vec3 uDark;uniform float uDarkOn;')
-      .replace('#include <map_fragment>',`#include <map_fragment>
-      {vec3 sx=pow(max(diffuseColor.rgb,vec3(0.)),vec3(1./2.2));float mx=max(sx.r,max(sx.g,sx.b));vec3 cn=sx/max(mx,.001);
-       if(uDarkOn>.5&&mx<.3)diffuseColor.rgb=uDark;
-       else for(int i=0;i<3;i++){if(uTol[i]<=0.)continue;float rm=max(uRef[i].r,max(uRef[i].g,uRef[i].b));
-         if(distance(cn,uRef[i]/rm)<uTol[i]&&mx>.12){diffuseColor.rgb=uTo[i]*pow(clamp(mx/rm,.35,1.6),2.2);break;}}}`);};
-  m.customProgramCacheKey=()=>'dyed';return m;
-}
-const hex3=h=>{const c=parseInt(h.slice(1),16);return[(c>>16&255)/255,(c>>8&255)/255,(c&255)/255];};
-// The six hair styles (STYLES, data.js), built on the head from a few plain shapes in the hair's colour.
-function hairOn(model,head,style,col){
-  const hd=WEAR.Knight&&WEAR.Knight.Head,hb=bone(model,'head');if(!hd||!hb||!head)return null;
-  if(!hd.box){   // where the head really is on a standing model: its vertices as the skeleton places them, in the model's own space
-    model.updateMatrixWorld(true);head.skeleton.update();const v=new THREE.Vector3(),inv=new THREE.Matrix4().copy(model.matrixWorld).invert(),b=new THREE.Box3(),n=head.geometry.attributes.position.count;
-    for(let i=0;i<n;i+=3){head.getVertexPosition(i,v);v.applyMatrix4(head.matrixWorld).applyMatrix4(inv);b.expandByPoint(v);}hd.box=b;}
-  const b=hd.box,c=b.getCenter(new THREE.Vector3()),sz=b.getSize(new THREE.Vector3()),w=sz.x,h=sz.y,d=sz.z,g=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:col,roughness:.85});
-  const add=(geo,x,y,z,sx,sy,sz_,rx=0,rz=0)=>{const m=new THREE.Mesh(geo,mat);m.position.set(c.x+x*w,c.y+y*h,c.z+z*d);m.scale.set(sx*w,sy*h,sz_*d);m.rotation.set(rx,0,rz);m.castShadow=true;m.frustumCulled=false;g.add(m);return m;};
-  const cap=new THREE.SphereGeometry(1,12,8,0,TAU,0,Math.PI*.5),ball=new THREE.SphereGeometry(1,10,8),boxg=new THREE.BoxGeometry(1,1,1),cone=new THREE.ConeGeometry(1,1,5);
-  const top=(k=1,low=0)=>add(cap,0,.12-low,-.07,.57*k,.5*k,.6*k,-.28);
-  if(style===5)top(.97,.02);                                                                           // buzz: close to the skull
-  else if(style===1){top(1);for(let i=0;i<9;i++){const a=i/9*TAU,r=i%3?.3:.12;add(cone,Math.cos(a)*r,.6+(i%3?0:.08),-.05+Math.sin(a)*r,.13,.3,.13,Math.sin(a)*.5,-Math.cos(a)*.5);}}   // spiked
-  else if(style===2){top(1.04);add(boxg,0,-.28,-.5,1.04,.95,.22);add(boxg,-.5,-.2,-.2,.14,.8,.5);add(boxg,.5,-.2,-.2,.14,.8,.5);}   // long: down the back and past the ears
-  else if(style===3){top(1.02);add(ball,0,.34,-.62,.16,.16,.16);add(ball,0,-.05,-.78,.13,.42,.13,.25);}  // tail
-  else if(style===4){top(1.06);add(boxg,0,-.02,-.3,1.14,.6,.62);}                                      // bob: to the jaw, round the back
-  else top(1.03);                                                                                      // short
-  model.add(g);model.updateMatrixWorld(true);hb.attach(g);return mat;   // (laid out where the head's mesh is, then handed to the head bone to follow)
-}
-// Dresses a freshly cloned adventurer (its own body taken off) in what `sp` says: {armor:{type,tint}, boots:{type}, look:{skin,hair,style,eyes}}.
-function dress(model,sp,mats){
-  const bones={};model.traverse(c=>{if(c.isBone)bones[c.name]=c;if(c.isSkinnedMesh)c.userData.own=true;if(/_(Helmet|Hat|Cape)$/.test(c.name))c.visible=false;});
-  let host=null;model.traverse(c=>{if(c.userData.own&&!host)host=c.parent;});
-  for(const c of[...host.children])if(c.userData.own)host.remove(c);
-  const look=sp.look||{},skin=[SKIN_REF,look.skin||SKIN_REF,.17],arm=sp.armor||{type:'tunic'},B=BODY_OF[arm.type]||BODY_OF.tunic,L=BODY_OF[LEGS_OF[sp.boots&&sp.boots.type]||arm.type]||B;
-  const dye=(D,tint)=>D.cloth?[D.cloth,tint||D.cloth,.34]:[D.steel,'#'+new THREE.Color(D.steel).lerp(new THREE.Color(tint||D.steel),.3).getHexString(),.12];
-  const wear=(D,name,mat)=>{const p=WEAR[D]&&WEAR[D][name];if(!p)return null;const m=new THREE.SkinnedMesh(p.geo,mat);m.name='Worn_'+name;m.castShadow=m.receiveShadow=true;m.frustumCulled=false;
-    host.add(m);m.bind(new THREE.Skeleton(p.names.map(n=>bones[n]),p.inv),p.bind);return m;};
-  const sw=D=>[skin,dye(D,arm.tint)].concat(D.trim&&arm.tint?[[D.trim,arm.tint,.4]]:[]);   // (plate keeps its steel: its cloth takes the colour)
-  const bm=dyed(WEAR[B.m].Body.map,sw(B)),lm=L===B?bm:dyed(WEAR[L.m].Body.map,sw(L)),hm=dyed(WEAR.Knight.Head.map,[skin],look.eyes||'#1c1c24');
-  for(const n of['Body','ArmLeft','ArmRight'])wear(B.m,n,bm);for(const n of['LegLeft','LegRight'])wear(L.m,n,lm);const head=wear('Knight','Head',hm);
-  mats.push(bm,hm);if(lm!==bm)mats.push(lm);const hair=hairOn(model,head,look.style||0,look.hair||'#4a2f1e');if(hair)mats.push(hair);
-}
 function b64(s){const bin=atob(s),n=bin.length,a=new Uint8Array(n);for(let i=0;i<n;i++)a[i]=bin.charCodeAt(i);return a.buffer;}
 me.init=async function(){
   if(typeof THREE==='undefined'||typeof MODELS==='undefined'){me.failed=true;return;}
@@ -127,7 +68,7 @@ me.init=async function(){
     for(const c of anims.animations)CLIP[c.name]=c;
     for(const k in PROTO){const b=new THREE.Box3();for(const p of PROTO[k].parts){p.geo.computeBoundingBox();b.union(p.geo.boundingBox.clone().applyMatrix4(p.m));}TOP[k]=b.max.y;
       FOOT[k]=Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z);}   // the footprint's diagonal: how wide it can get when turned
-    for(const k of Object.keys(MODELS))if(k!=='props'&&k!=='anims'){const sc=(await parse(k)).scene;if(!/^Skeleton/.test(k))keepParts(k,sc);CHARS[k]=joinBody(sc);}
+    for(const k of Object.keys(MODELS))if(k!=='props'&&k!=='anims')CHARS[k]=joinBody((await parse(k)).scene);
   }catch(e){console.warn('3D models failed to load, drawing in 2D',e);me.failed=true;return;}
   // post: bloom on everything hot, a vignette, then tone mapping
   composer=new THREE.EffectComposer(renderer,new THREE.WebGLRenderTarget(4,4,{type:THREE.HalfFloatType,samples:4}));
@@ -239,8 +180,8 @@ function inkMat(w){if(INK.has(w))return INK.get(w);const m=new THREE.MeshBasicMa
   m.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <begin_vertex>','vec3 transformed=position+normalize(normal)*'+w.toFixed(4)+';');};
   m.customProgramCacheKey=()=>'ink'+w;INK.set(w,m);return m;}
 // Gives every mesh under o an outline. Skinned meshes get one that follows the same skeleton.
-function ink(o,w){const add=[];o.traverse(c=>{if(!c.isMesh||c.userData.ink||c.userData.eyes)return;
-    const m=c.isSkinnedMesh?new THREE.SkinnedMesh(c.geometry,inkMat(w)):new THREE.Mesh(c.geometry,inkMat(w));
+function ink(o,w){const add=[];o.traverse(c=>{if(!c.isMesh||c.userData.ink||c.userData.eyes||c.userData.noInk)return;const ig=c.userData.inkGeo||c.geometry,iw=c.userData.inkGeo?.016:w;   // (a figure brings its own rounded copy, and is drawn finer)
+    const m=c.isSkinnedMesh?new THREE.SkinnedMesh(ig,inkMat(iw)):new THREE.Mesh(ig,inkMat(iw));
     if(c.isSkinnedMesh)m.bind(c.skeleton,c.bindMatrix);m.userData.ink=true;m.castShadow=false;m.frustumCulled=false;add.push([c,m]);});
   for(const[c,m]of add){if(c.isSkinnedMesh)c.parent.add(m);else{m.position.copy(c.position);m.quaternion.copy(c.quaternion);m.scale.copy(c.scale);c.parent.add(m);}m.visible=c.visible;c.userData.inkMesh=m;}}
 
@@ -845,10 +786,13 @@ const PERSON_TOP=2.6;   // a person stands about 2.5 tall, a helmet a little mor
 // (The change is taken back before each update: a clip without a scale track for a bone leaves the scale alone, and
 // it would otherwise compound frame after frame.)
 function upd(a,dt){if(!a.mixer)return;if(a.build&&a.built)for(const[b,v]of a.build)b.scale.divide(v);
+  if(a.fig&&a.propOn){for(const[b,f]of a.fig.prop)b.position.divide(f);for(const[b,,qi]of a.fig.turn)b.quaternion.premultiply(qi);}   // a person's proportions: each bone's place, stretched (figure.js)
   a.mixer.update(dt);if(a.build){for(const[b,v]of a.build)b.scale.multiply(v);a.built=true;}
+  if(a.fig){for(const[b,f]of a.fig.prop)b.position.multiply(f);for(const[b,q]of a.fig.turn)b.quaternion.premultiply(q);a.propOn=true;}
   // The sidestep clips turn the hips 58 degrees toward the way they go and twist the chest back. With the arms' own
   // clip over those legs (a swing, a guard) nothing twists back, so the spine is turned by hand to face the front.
-  if(a.twist){const sp=a.spine||(a.spine=bone(a.root,'spine'));if(sp)sp.quaternion.premultiply(TWQ.setFromAxisAngle(UP,a.twist));}}
+  if(a.twist){const sp=a.spine||(a.spine=bone(a.root,'spine'));if(sp)sp.quaternion.premultiply(TWQ.setFromAxisAngle(UP,a.twist));}
+  if(a.fig&&a.fig.cloth)FIGURE.step(a.fig,a.root,dt);}
 const TWQ=new THREE.Quaternion(),UP=new THREE.Vector3(0,1,0);
 const bone=(root,n)=>root.getObjectByName(n)||root.getObjectByName(n.replace('.',''));
 // A character model, ready to animate. key: what it is (for reuse), o: {m, hold, r, l, s, ghost, tint, eyes}
@@ -877,7 +821,6 @@ function makeActor(key,o){
       if(o.tint)c.material.color=new THREE.Color(o.tint);
       if(o.rim)rim(c.material);
     });
-    if(o.hero&&WEAR.Knight)dress(root,o.hero,mats);
     if(o.crown){const hb=bone(root,'head');if(hb){const gold=new THREE.MeshStandardMaterial({color:'#d9a441',roughness:.35,metalness:.7,emissive:'#5a3a08',emissiveIntensity:.5}),g=new THREE.Group();   // a crown: a band and its points
         const band=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,.14,10,1,true),gold);band.material.side=THREE.DoubleSide;g.add(band);
         for(let i=0;i<6;i++){const a=i/6*TAU,p=new THREE.Mesh(new THREE.ConeGeometry(.08,.3,4),gold);p.position.set(Math.cos(a)*.36,.2,Math.sin(a)*.36);g.add(p);}
@@ -885,18 +828,20 @@ function makeActor(key,o){
     for(const[slot,w]of[['handslot.r',o.r],['handslot.l',o.l]])if(w){const b=bone(root,slot);if(b){const wm=single(w);if(o.ghost)wm.traverse(c=>{if(c.isMesh){c.material=c.material.clone();c.material.emissive=new THREE.Color(o.ghost);c.material.emissiveIntensity=.35;}});b.add(wm);}}
   }
   for(const m of mats){m.userData.base=[m.emissive?m.emissive.clone():null,m.emissiveIntensity||0];if(STYLE.flat){m.flatShading=true;m.needsUpdate=true;}}
-  let model=null,build=null;
+  let model=null,build=null,fig=null;
   if(o.m){   // a person or a skeleton: wrapped, so it can be lifted onto its longer legs
     model=root;root=new THREE.Group();root.add(model);
-    build=(me.chibi?[]:/^Skeleton/.test(o.m)?BUILD:TALL).map(([n,v])=>[bone(model,n),v]).filter(q=>q[0]);
+    if(o.hero&&FIGURE){fig=FIGURE.dress(model,o.hero,specKey(o.hero));mats.push(...fig.mats);if(STYLE.flat)for(const m of fig.mats){m.flatShading=true;}}   // a person: built in figure.js, on these bones
+    build=fig?[]:(me.chibi?[]:/^Skeleton/.test(o.m)?BUILD:TALL).map(([n,v])=>[bone(model,n),v]).filter(q=>q[0]);
     model.updateMatrixWorld(true);const toe=bone(model,'toes.l'),y0=toe?toe.getWorldPosition(new THREE.Vector3()).y:0;
     for(const[b,v]of build)b.scale.multiply(v);model.updateMatrixWorld(true);
     const y1=toe?toe.getWorldPosition(new THREE.Vector3()).y:0;for(const[b,v]of build)b.scale.divide(v);
-    model.position.y=y0-y1;}
+    if(!fig)model.position.y=y0-y1;}
   if(STYLE.ink)ink(root,o.s&&o.s>2?.02:.045);
   if(o.xray)xray(root,o.xray);
+  if(fig&&fig.cloth)root.add(fig.cloth.mesh);   // (after the outline and the silhouette are made: the cloth has neither)
   root.scale.setScalar(o.s||1);root.rotation.order='YXZ';scene.add(root);   // (turn first, then lean: the lean follows the facing)
-  const a={key,root,model,build,mats,mixer:model?new THREE.AnimationMixer(model):null,acts:{},cur:null,curName:'',face:0,o,lock:0,swT:-1,st:'',n:0,x:0,z:0,alpha:1,seen:0};
+  const a={key,root,model,build,fig,propOn:false,mats,mixer:model?new THREE.AnimationMixer(model):null,acts:{},cur:null,curName:'',face:0,o,lock:0,swT:-1,st:'',n:0,x:0,z:0,alpha:1,seen:0};
   return a;
 }
 // A faint pale edge on enemies, brightest where a surface turns away from the camera, so a skeleton standing in the
