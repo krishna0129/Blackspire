@@ -45,16 +45,28 @@ friends' playtest ([roadmap](../roadmap.md)).
 - The hair styles and faces themselves.
 - The slowest computer the game must run well on, measured once friends try it.
 
-## Heroes wear what they wear
+## People, as built
 
-Built (render3d.js, `dress`): a hero's model is put together from the adventurer models, which share one skeleton.
+Built (js/client/figure.js): heroes, townsfolk and the crowd are no longer the adventurer models. Each is built
+from plain shapes onto the adventurers' skeleton, so every animation still plays.
 
-- **Body and arms** follow the armour: a tunic (the Rogue's cloth, in the tunic's own colour), a leather jerkin (the
-  Barbarian's furs), a longcoat (the Mage's coat, in its colour), plate (the Knight's steel, its cloth in the colour).
-- **Legs** follow the boots: greaves are the Knight's, striders the Rogue's, plain boots the armour's own.
-- **Head**: one bare head for everyone, in the chosen skin colour, with the chosen eye colour, and the chosen hair
-  (six styles built from plain shapes, in the hair colour). No helmets or capes, so the face you made always shows.
-- **Hands** still follow the weapon, as before.
+- **The build:** about seven and a half heads tall, long legs, narrow hips, square shoulders, arms at the sides.
+  The skeleton's proportions are stretched bone by bone (PROP); held weapons are scaled down to fit real hands.
+- **The face and hair:** a head with a jaw, a brow, eyes in the chosen colour, in the chosen skin; six hair styles
+  (short with a fringe, spiked, long, tail, bob, buzz) in the chosen colour.
+- **Armour, on the body:**
+  - *tunic*: an open-necked tunic in its colour with a trimmed collar, sleeves to the elbow, wrist wraps, a belt,
+    and a short skirt of cloth;
+  - *leather jerkin*: laced leather, one shoulder guard and its strap, bracers, a pouch, four leather flaps;
+  - *longcoat*: a fitted coat in its colour, a high collar open at the throat, edged lapels, two straps across
+    the chest, cuffs, gloves, and **tails to the shin, open at the front and split up the back**;
+  - *plate*: a keeled breastplate, a gorget, layered pauldrons, tassets, steel arms and legs, a tabard in its colour.
+- **Boots:** plain boots (a cuff and a buckle), striders (wrapped shins, light shoes), greaves (steel).
+- **Cloth moves.** Coat tails, the tunic's skirt, the jerkin's flaps and the tabard are chains of points hanging
+  from the waist, simulated every frame: they trail when you run, swing when you turn and settle when you stop,
+  and are pushed off the legs.
+- **Outline:** one ink line round the whole figure (drawn along rounded normals, so it does not break up); small
+  detail like the face has none of its own.
 
-Colours are changed in the shader by hue, keeping the model's shading. Everyone starts in a tunic. The creator and
-the Gear panel show the same model; other players are dressed from what the server says they wear.
+The body is one skinned mesh coloured by vertex (one draw), the cloth a second. Still to come from the gear plan:
+the other five chest types, head and hand slots, the rarity looks, each set's colours and emblem, two body types.
